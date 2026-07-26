@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import {existsSync} from "node:fs";
-import {mkdir, readFile, readdir, rm, stat, writeFile} from "node:fs/promises";
-import {isAbsolute, relative, resolve, sep} from "node:path";
+import {cp, mkdir, readFile, readdir, rm, stat, symlink, writeFile} from "node:fs/promises";
+import {dirname, isAbsolute, relative, resolve, sep} from "node:path";
 import {currentProductPlatform} from "nbook/packages/neuro-book-manager/src/platform";
 import {compileProfileArtifacts} from "nbook/server/agent/profiles/profile-artifact-compiler";
 import {compileVariableDefinitions} from "nbook/server/agent/variables/definition-artifact";
@@ -100,7 +100,6 @@ await measure("write Product Runtime Contract", async () => {
 const patchedImportMetaFiles = await measure("patch import.meta fallbacks", async () => {
     return await patchImportMetaFallbacks(resolve(serverRoot, "chunks"));
 });
-});
 const runtime = await measure("bundle Nitro and native islands", async () => {
     return await bundleProductRuntime(outputRoot, scratchRoot);
 });
@@ -110,6 +109,13 @@ await measure("clean Product build scratch", async () => {
 await measure("prune raw Product build state", async () => {
     await pruneRawServerState();
     await assertFinalRuntimeShape();
+});
+await measure("link bun package cache", async () => {
+    const outputBunCache = resolve(serverRoot, "node_modules", ".bun");
+    const repoBunCache = resolve("node_modules/.bun");
+    if (!existsSync(outputBunCache)) {
+        await symlink(repoBunCache, outputBunCache, "dir");
+    }
 });
 
 console.log(`Product commands: ${commands.commands.join(", ")} (${commands.files} files / ${commands.bytes} bytes)`);
