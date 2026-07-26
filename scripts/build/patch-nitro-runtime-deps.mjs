@@ -86,7 +86,6 @@ await measure("compile clean Product system artifacts", async () => {
         else process.env.NEURO_BOOK_PRODUCT_IMAGE_ROOT = previousImageRoot;
     }
 });
-
 const commands = await measure("bundle Product commands", async () => {
     return await buildProductCommands(outputRoot);
 });
@@ -97,6 +96,10 @@ await measure("write Product Runtime Contract", async () => {
         "utf8",
     );
     await assertProductRuntimeContractFiles(commands.contract, outputRoot);
+});
+const patchedImportMetaFiles = await measure("patch import.meta fallbacks", async () => {
+    return await patchImportMetaFallbacks(resolve(serverRoot, "chunks"));
+});
 });
 const runtime = await measure("bundle Nitro and native islands", async () => {
     return await bundleProductRuntime(outputRoot, scratchRoot);

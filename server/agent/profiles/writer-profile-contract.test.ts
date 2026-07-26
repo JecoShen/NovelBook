@@ -158,6 +158,7 @@ function defaultWriterSettings() {
         paragraphRhythm: "段落节奏偏短段分行。",
         wordCountControl: "2000-2600 字",
         polishingWorkflow: "使用 stop-slop 做自查。",
+        avoidWordsPreset: "avoid-words/default.md",
         adultStylePrompt: "",
         fileChangeAwareness: "minimal" as const,
     };
