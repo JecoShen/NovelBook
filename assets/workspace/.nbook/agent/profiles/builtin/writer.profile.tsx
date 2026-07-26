@@ -10,6 +10,7 @@ import type {ProfilePrepareContext} from "nbook/server/agent/profiles/types";
 import {profileText} from "nbook/server/agent/profiles/profile-text";
 import {DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey} from "nbook/server/agent/profiles/writer-writing-reference";
 import {DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey} from "nbook/server/agent/profiles/writer-writing-style";
+import {DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords} from "nbook/server/agent/profiles/writer-writing-avoid-words";
 import {defineLowCodeForm, profileHomeResource} from "nbook/server/low-code-form";
 import {defineProfileHome} from "nbook/server/agent/profiles/profile-home";
 import {normalizeProjectPath} from "nbook/server/workspace-files/project-path";
@@ -18,7 +19,7 @@ import type {AbsoluteFsPath} from "nbook/server/runtime/paths/file-path";
 
 const DEFAULT_PARAGRAPH_RHYTHM = "段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段；不要为了凑短段打碎完整语义，场景描写、复杂动作和连续心理变化可以保留为较短自然段。";
 const DEFAULT_WORD_COUNT_CONTROL = "2000-2600 字";
-const DEFAULT_POLISHING_WORKFLOW = "润色时使用 .nbook/agent/skills/stop-slop/SKILL.md 作为自查流程，并优先在原文基础上做最小必要修改。不要输出 <refine> JSON，不把润色分析混进正文。";
+const DEFAULT_POLISHING_WORKFLOW = "写完正文后，必须用 bash 运行 `llmlint check <文件路径>` 检查 AI 写作痕迹（filler phrases、机械句式、抽象说理等）。对 error 级别问题必须修正，warning 级别问题审视后决定是否修正。修正后再次运行 llmlint check 确认通过，再执行 report_result。llmlint 路径：.nbook/agent/skills/llmlint/bin/llmlint.ts。";
 
 export const profileManifest = {
     key: "writer",
@@ -42,6 +43,7 @@ export const SettingsSchema = Type.Object({
     paragraphRhythm: Type.String(),
     wordCountControl: Type.String(),
     polishingWorkflow: Type.String(),
+    avoidWordsPreset: Type.String(),
     adultStylePrompt: Type.String(),
     fileChangeAwareness: Type.Union([
         Type.Literal("off"),
@@ -65,6 +67,7 @@ export const WriterSettingsForm = defineLowCodeForm({
         paragraphRhythm: DEFAULT_PARAGRAPH_RHYTHM,
         wordCountControl: DEFAULT_WORD_COUNT_CONTROL,
         polishingWorkflow: DEFAULT_POLISHING_WORKFLOW,
+        avoidWordsPreset: DEFAULT_AVOID_WORDS_PRESET,
         adultStylePrompt: "",
         fileChangeAwareness: "minimal",
     },
@@ -135,6 +138,18 @@ export const WriterSettingsForm = defineLowCodeForm({
             placeholder: "描述写完后如何复查和润色。",
         },
         {
+            path: "avoidWordsPreset",
+            component: "resource-preset",
+            label: "避讳词与禁用句式",
+            description: "写作时需要避免的词汇、句式和表达模式。",
+            placeholder: "选择避讳词预设",
+            resource: profileHomeResource({
+                directory: "avoid-words",
+                extension: ".md",
+                template: "在这里写入需要避免的词汇、句式和表达模式。",
+            }),
+        },
+        {
             path: "adultStylePrompt",
             component: "text",
             label: "成人风格增强",
@@ -193,6 +208,12 @@ async function initializeWriterHome(home: NonNullable<ProfilePrepareContext<Init
     for (const reference of references) {
         await home.writeText(legacyReferenceKeyToHomeKey(reference.key), renderReferenceResource(reference), {mode: "create"});
     }
+    // 写入内置默认避讳词
+    await home.writeText(DEFAULT_AVOID_WORDS_PRESET, [
+        "禁止使用以下词汇：一丝、不容置疑、不易察觉、几不可察。",
+        "禁止使用以下句式：他没有……，而是……；不是……，而是……；与其说……不如说是……。",
+        "如果想表达转折、对比或修正，直接写实际发生的动作、事实或判断，请换一种表述方式。",
+    ].join("\n"), {mode: "create"});
 }
 
 function renderStyleResource(style: Awaited<ReturnType<typeof loadWritingStylePresets>>[number]): string {
@@ -266,6 +287,7 @@ export default defineAgentProfile({
 export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payload, Settings>) {
     const writingStyle = await buildWritingStyle({preset: ctx.settings.writingStylePreset, home: ctx.home});
     const writingReference = await buildWritingReference({preset: ctx.settings.writingReferencePreset, home: ctx.home});
+    const avoidWords = await buildAvoidWords({preset: ctx.settings.avoidWordsPreset, home: ctx.home});
     const narrativePerson = narrativePersonText(ctx.settings.narrativePerson);
     const customTopPrompt = ctx.settings.customTopSystemPrompt.trim();
     const adultStylePrompt = ctx.settings.adultStylePrompt.trim();
@@ -317,7 +339,7 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                     </thinking_protocol>
 
                     <execution_pattern>
-                        收到 brief 后：读取目标文件 → 查证世界状态 → 按需加载上下文 → 构思并写入正文 → 报告结果。
+                        收到 brief 后：读取目标文件 → 审阅 PRD（识别模糊/缺失的决策点）→ 按需加载上下文 → 查证世界状态 → 构思并写入正文 → 报告结果（含决策点标注）。
 
                         详细执行流程、决策点、常见陷阱见 reference 中导入的 novel-workflow-writer-execution skill。
                     </execution_pattern>
@@ -336,13 +358,8 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                         - 默认按 brief 写作，不新增超出范围的关键设定
                         - 只有 brief 明确授权自由发挥时，才可新增角色或改变状态
 
-                        World Engine 查询示例：
-                        查询角色当前状态：const erina = await world.subject.get("erina");
-                        列出所有角色：const characters = await world.subject.list("character");
-                        查询某时间段的切面：const recentSlices = await world.slice.list(options);
-                        查询返回规则：已知道 subject schema 字段含义时，在 CodeAct 脚本内把状态整理成文本摘要并 return string；不要默认回传原始 attrs JSON。
-
-                        工具使用详情见 reference/world-engine/workflow.md 和 novel-workflow-writer-execution skill。
+                        World Engine 查询用法与示例见 novel-workflow-writer-execution skill 第三步。核心规则：查询后优先 return string 文本摘要，不要默认回传原始 attrs JSON。
+                        工具使用详情见 reference/world-engine/workflow.md。
                     </tool_permissions>
                     
                     <content_nodes>
@@ -382,9 +399,7 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                     </writing_style>
                     
                     <avoid_words>
-                        禁止使用以下词汇：一丝、不容置疑、不易察觉、几不可察。
-                        禁止使用以下句式：他没有……，而是……；不是……，而是……；与其说……不如说是……。
-                        如果想表达转折、对比或修正，直接写实际发生的动作、事实或判断，请换一种表述方式。
+                        ${avoidWords}
                     </avoid_words>
                     
                     <paragraph_rhythm>
@@ -421,10 +436,13 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                     </polishing_workflow>
 
                     <output_protocol>
-                        - write 写入 input.path，必要时用 edit 润色，然后 report_result
+                        - write 写入 input.path
+                        - 用 bash 运行 llmlint check <input.path>；对 error 必须修正，warning 审视修正
+                        - llmlint 通过后用 edit 做最终润色
+                        - 然后 report_result
                         - 如果没有可写 path，停止写入并报告原因
                         - 不输出 <summary> 标签，不输出写作分析
-                        - report_result.result：已写入路径 + 润色情况 + 约 100 字剧情总结
+                        - report_result.result：已写入路径 + llmlint 结果 + 润色情况 + 约 100 字剧情总结
                         - report_result.data：默认不填，除非调用方明确需要结构化结果
                     </output_protocol>
                     `}

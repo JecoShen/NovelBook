@@ -16,6 +16,11 @@ const runtimeWorkspaceWatchIgnore = [
 
 export default defineNuxtConfig({
     ssr: false,
+    runtimeConfig: {
+        session: {
+            password: process.env.NUXT_SESSION_PASSWORD || undefined,
+        },
+    },
     alias: {
         nbook: rootDir,
     },

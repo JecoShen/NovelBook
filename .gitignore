@@ -63,5 +63,8 @@ test-results/
 # Agent session / workspace runtime data (server-side)
 server/workspace/.nbook/
 server/.agent/
+# SSL / ACME challenges (deployment-specific)
+.well-known/
+
 # Temporary screenshots / assets
 t16-editor-heat.png

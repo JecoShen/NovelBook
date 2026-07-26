@@ -176,7 +176,7 @@ await world.slice.write({
 
 ## 后续衔接
 
-剧情已确认、状态变化已推进进 World Engine 后，进入 `novel-workflow-09-chapter-writing`。`08` 负责剧情事实与世界状态；`09` 负责把这些事实交给 writer 写成正文。
+剧情已确认、状态变化已推进进 World Engine 后，进入 `novel-workflow-09-chapter-writing`。`08` 负责剧情事实与世界状态；`09` 负责把这些事实交给 writer 写成正文。进入 09 前，leader 应先过 09 的「写前确认清单」——确认目标章节路径、视角、开头状态、结尾落点、不可改设定和文风参考都已明确。
 
 如果本轮只是宏观阶段设计、主线结构或长期走向，还没有具体到可写章节，就留在本流程继续讨论，不急着进入 `09`。
 
@@ -188,3 +188,4 @@ await world.slice.write({
 - 只有用户确认过的剧情事实被写入 World Engine。
 - 写入后的 issues 已按 E / A 分类处理。
 - 已向用户回报时间线和当前状态摘要，并给出是否进入 `09` 的判断。
+- 连续完成多章后，建议引导进入 `novel-workflow-11-analyze` 做阶段性质量检查。
