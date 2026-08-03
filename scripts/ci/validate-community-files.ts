@@ -460,13 +460,15 @@ async function validateWorkflows(): Promise<void> {
     ensureRuntimeSetup(typecheck, "Code Baseline typecheck");
     ensureRuntimeSetup(test, "Code Baseline test");
     ensureCommandOrder(jobCommands(typecheck, "code-baseline/typecheck"), [
-        "bun install --frozen-lockfile",
+        "bun install --frozen-lockfile --linker hoisted",
         "bun run nuxt:prepare",
+        "bun run generate",
         "bun run typecheck",
     ], "Code Baseline typecheck");
     ensureCommandOrder(jobCommands(test, "code-baseline/test"), [
-        "bun install --frozen-lockfile",
+        "bun install --frozen-lockfile --linker hoisted",
         "bun run nuxt:prepare",
+        "bun run generate",
         "bun run test -- --reporter=dot",
     ], "Code Baseline test");
 }
