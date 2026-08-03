@@ -459,8 +459,16 @@ async function validateWorkflows(): Promise<void> {
     ensure(test?.["timeout-minutes"] === 30, "Full tests 超时必须为 30 分钟");
     ensureRuntimeSetup(typecheck, "Code Baseline typecheck");
     ensureRuntimeSetup(test, "Code Baseline test");
-    ensure(jobCommands(typecheck, "code-baseline/typecheck").includes("bun run typecheck"), "缺少 typecheck 命令");
-    ensure(jobCommands(test, "code-baseline/test").includes("bun run test -- --reporter=dot"), "缺少全量测试命令");
+    ensureCommandOrder(jobCommands(typecheck, "code-baseline/typecheck"), [
+        "bun install --frozen-lockfile",
+        "bun run nuxt:prepare",
+        "bun run typecheck",
+    ], "Code Baseline typecheck");
+    ensureCommandOrder(jobCommands(test, "code-baseline/test"), [
+        "bun install --frozen-lockfile",
+        "bun run nuxt:prepare",
+        "bun run test -- --reporter=dot",
+    ], "Code Baseline test");
 }
 
 /** 解析所有新增 YAML，提前发现 GitHub 无法读取的配置。 */
