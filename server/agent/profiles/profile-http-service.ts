@@ -40,6 +40,7 @@ import type {ProfileRuntimeSettings} from "nbook/shared/agent/profile-runtime-se
 import {absoluteFsPath, type AbsoluteFsPath} from "nbook/server/runtime/paths/file-path";
 import {resolvePiModelFromConfig} from "nbook/server/agent/harness/model-resolver";
 import {resolveAgentVisibleModels} from "nbook/server/agent/harness/agent-visible-models";
+import {isAgentSessionNotFoundError} from "nbook/server/agent/session/session-not-found-error";
 
 /**
  * 列出 v3 Agent Profile catalog，并适配旧 profile 工作台 DTO。
@@ -116,8 +117,8 @@ export async function previewAgentProfilePrepare(
 ): Promise<AgentProfilePreparePreviewDto> {
     const profile = await harness.profiles.get(request.profileKey);
     const initial = harness.profiles.parseInitial(profile, buildPreviewInitial(request));
-    const previewSnapshot = request.sessionId ? await harness.repo.readSession(Number(request.sessionId)).catch(() => null) : null;
-    const sessionContext = previewSnapshot ? harness.repo.reduce(previewSnapshot) : await buildPreviewSession(harness, request);
+    const previewSnapshot = request.sessionId ? await harness.repo.readSession(Number(request.sessionId)) : null;
+    const sessionContext = previewSnapshot ? harness.repo.reduce(previewSnapshot) : buildPreviewSession(request);
     const workspaceRoot = absoluteFsPath(harness.repo.rootWorkspace);
     const readyProject = sessionContext.currentProjectRoot
         ? requireActiveReadyProject(projectWorkspaceRef(sessionContext.currentProjectRoot))
@@ -235,6 +236,9 @@ export async function previewAgentProfilePrepare(
                     : null,
             };
         } catch (error) {
+            if (isAgentSessionNotFoundError(error)) {
+                throw error;
+            }
             return {
                 profileKey: request.profileKey,
                 ok: false,
@@ -335,11 +339,7 @@ function buildSchemaDetail(input: {
 /**
  * 构造预览用 session context。传 sessionId 时复用真实 session，否则用请求中的临时历史。
  */
-async function buildPreviewSession(harness: NeuroAgentHarness, request: AgentProfilePreparePreviewRequestDto): Promise<NeuroSessionContext> {
-    if (request.sessionId) {
-        const snapshot = await harness.repo.readSession(Number(request.sessionId));
-        return harness.repo.reduce(snapshot);
-    }
+function buildPreviewSession(request: AgentProfilePreparePreviewRequestDto): NeuroSessionContext {
     return {
         systemPrompt: "",
         messages: (request.historyMessages ?? []).map(toPreviewHistoryMessage),

@@ -1,5 +1,20 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 
+async function withSessionHttpError<T>(sessionId: number, operation: () => Promise<T>): Promise<T> {
+    try {
+        return await operation();
+    } catch (error) {
+        if (error instanceof Error && error.name === "AgentSessionNotFoundError" && "sessionId" in error) {
+            const primary = error.sessionId === sessionId;
+            throw Object.assign(new Error(primary ? "Session 不存在或已不可用" : "关联对话不存在或已不可用"), {
+                statusCode: primary ? 404 : 409,
+                data: {code: primary ? "SESSION_NOT_FOUND" : "SESSION_DEPENDENCY_NOT_FOUND"},
+            });
+        }
+        throw error;
+    }
+}
+
 describe("POST /api/agent/profiles/compile", () => {
     beforeEach(() => {
         vi.resetModules();
@@ -18,6 +33,7 @@ describe("POST /api/agent/profiles/compile", () => {
         }));
         vi.doMock("nbook/server/agent/http", () => ({
             useAgentHarness: vi.fn(() => ({profiles: {}})),
+            withAgentSessionHttpError: withSessionHttpError,
         }));
         vi.doMock("nbook/server/agent/profiles/profile-compile-worker", () => ({
             useProfileCompileWorker: vi.fn(() => ({
@@ -52,6 +68,54 @@ describe("POST /api/agent/profiles/compile", () => {
                 code: "PROJECT_NOT_OPEN",
                 projectRoot: "profile-compile-not-open",
             },
+        });
+    }, 10_000);
+
+    it("compile preview 保留关联 Session 缺失的 409", async () => {
+        vi.doMock("nbook/server/utils/novel-chapter", () => ({
+            validateBody: vi.fn(async () => ({
+                fileName: "builtin/writer.profile.tsx",
+                dryRun: false,
+                preview: true,
+                sessionId: "7",
+            })),
+        }));
+        vi.doMock("nbook/server/agent/http", () => ({
+            useAgentHarness: vi.fn(() => ({profiles: {}, runtimePaths: {}})),
+            withAgentSessionHttpError: withSessionHttpError,
+        }));
+        vi.doMock("nbook/server/agent/profiles/profile-compile-worker", () => ({
+            useProfileCompileWorker: vi.fn(() => ({
+                compile: vi.fn(async () => ({
+                    ok: true,
+                    stale: false,
+                    detail: null,
+                    preview: null,
+                    issues: [],
+                })),
+            })),
+        }));
+        vi.doMock("nbook/server/agent/profiles/workbench-service", () => ({
+            readProfileSource: vi.fn(async () => ({manifest: {key: "writer"}})),
+        }));
+        vi.doMock("nbook/server/agent/profiles/profile-workbench-roots", () => ({
+            profileWorkbenchRootsFromRuntime: vi.fn(() => ({})),
+        }));
+        vi.doMock("nbook/server/agent/profiles/profile-http-service", () => ({
+            previewAgentProfilePrepare: vi.fn(async () => {
+                throw Object.assign(new Error("dependency missing"), {
+                    name: "AgentSessionNotFoundError",
+                    code: "SESSION_NOT_FOUND",
+                    sessionId: 8,
+                });
+            }),
+        }));
+
+        const handler = (await import("nbook/server/api/agent/profiles/compile.post")).default;
+
+        await expect(handler({} as never)).rejects.toMatchObject({
+            statusCode: 409,
+            data: {code: "SESSION_DEPENDENCY_NOT_FOUND"},
         });
     });
 });

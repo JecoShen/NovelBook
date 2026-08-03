@@ -3,6 +3,7 @@ import type {AgentRecoveryApplyResult} from "nbook/app/components/novel-ide/agen
 import type {Ref} from "vue";
 import {ref} from "vue";
 import {SseReconnectBackoff} from "nbook/app/utils/http/sse-reconnect-backoff";
+import {resolveApiErrorCode} from "nbook/app/utils/api-error";
 
 export type AgentSessionStreamRecoveryReason =
     | "initial_load"
@@ -37,7 +38,7 @@ type AgentSessionStreamApi = {
     ): Promise<void>;
 };
 
-type AgentSessionStreamOptions = {
+export type AgentSessionStreamOptions = {
     session: AgentSessionStreamStore;
     api: AgentSessionStreamApi;
     activeSessionId: Ref<number | null>;
@@ -47,6 +48,7 @@ type AgentSessionStreamOptions = {
         owner: AgentSessionStreamOwner,
     ) => void | Promise<void>;
     onEvent?: (event: AgentSessionEventDto, owner: AgentSessionStreamOwner) => void | Promise<void>;
+    onSessionNotFound?: (error: unknown, owner: AgentSessionStreamOwner) => void | Promise<void>;
     onError?: (error: unknown, fallback: string) => void;
 };
 
@@ -205,6 +207,10 @@ export function useAgentSessionStream(options: AgentSessionStreamOptions) {
             } catch (error) {
                 if (!isCurrent()) {
                     return false;
+                }
+                if (resolveApiErrorCode(error) === "SESSION_NOT_FOUND" && options.onSessionNotFound) {
+                    await options.onSessionNotFound(error, {sessionId: targetSessionId, isCurrent});
+                    return true;
                 }
                 if (behavior.reportError) {
                     options.onError?.(error, translate("agent.chatSurface.syncSessionFailed", "同步 Agent session 失败"));

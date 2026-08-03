@@ -8,6 +8,7 @@ import {
     listAgentSessionAttachments,
     listAgentSessions,
     moveAgentSessionTree,
+    mapAgentHttpError,
     runAgentSessionCommand,
     toInvokeInput,
     updateAgentSessionCurrentProject,
@@ -132,6 +133,17 @@ describe("agent session http helpers", () => {
         await expect(getAgentSessionQuery(12, query as never, {getSessionQuery} as never)).rejects.toMatchObject({
             statusCode: 404,
             data: {code: "SESSION_NOT_FOUND"},
+        });
+    });
+
+    it("按请求 Session 身份区分主资源 404 与关联资源 409", () => {
+        expect(mapAgentHttpError(new AgentSessionNotFoundError(12), 12)).toMatchObject({
+            statusCode: 404,
+            data: {code: "SESSION_NOT_FOUND"},
+        });
+        expect(mapAgentHttpError(new AgentSessionNotFoundError(13), 12)).toMatchObject({
+            statusCode: 409,
+            data: {code: "SESSION_DEPENDENCY_NOT_FOUND"},
         });
     });
 

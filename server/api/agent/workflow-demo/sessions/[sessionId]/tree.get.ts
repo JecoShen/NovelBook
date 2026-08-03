@@ -1,5 +1,6 @@
 import {createError, getRouterParam} from "h3";
 import {useWorkflowDemoService} from "nbook/server/agent/workflow/workflow-demo-service";
+import {isAgentSessionLifecycleHttpError, withAgentSessionHttpError} from "nbook/server/agent/http";
 
 /** Workflow demo：参与者 session 的真实树投影（直接读 JSONL 仓库） */
 export default defineEventHandler(async (event) => {
@@ -9,8 +10,14 @@ export default defineEventHandler(async (event) => {
         throw createError({statusCode: 400, message: "sessionId 必须是正整数"});
     }
     try {
-        return await useWorkflowDemoService().sessionTree(sessionId);
+        return await withAgentSessionHttpError(
+            sessionId,
+            () => useWorkflowDemoService().sessionTree(sessionId),
+        );
     } catch (error) {
+        if (isAgentSessionLifecycleHttpError(error)) {
+            throw error;
+        }
         throw createError({statusCode: 404, message: error instanceof Error ? error.message : String(error)});
     }
 });

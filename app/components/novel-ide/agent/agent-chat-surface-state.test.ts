@@ -1,9 +1,11 @@
 import {effectScope, nextTick, ref} from "vue";
 import {describe, expect, it, vi} from "vitest";
+import {readFile} from "node:fs/promises";
 import {
     AgentSurfaceActivationController,
     AgentSurfaceOperationController,
     AgentSurfaceSupersededError,
+    forgetRememberedSession,
     projectAgentComposerAvailability,
     recoverMissingSessionSelection,
     resolveMissingSessionFallback,
@@ -102,6 +104,48 @@ describe("recoverMissingSessionSelection", () => {
                 return true;
             },
         })).resolves.toEqual({status: "superseded"});
+    });
+
+    it("Inline 恢复不借用旧选择，只加载第一个有效 Session 一次", async () => {
+        const load = vi.fn(async () => true);
+
+        await expect(recoverMissingSessionSelection({
+            failedSessionId: 3,
+            previousSessionId: null,
+            accepts: () => true,
+            refresh: async () => [{sessionId: 3}, {sessionId: 40}, {sessionId: 41}],
+            load,
+        })).resolves.toEqual({status: "loaded", sessionId: 40});
+        expect(load).toHaveBeenCalledOnce();
+        expect(load).toHaveBeenCalledWith(40);
+    });
+});
+
+describe("forgetRememberedSession", () => {
+    it("只删除仍指向失效 Session 的记忆", () => {
+        const storage = new MemoryStorage();
+        storage.setItem("main", "3");
+        storage.setItem("inline", "40");
+
+        expect(forgetRememberedSession(storage, "main", 3)).toBe(true);
+        expect(storage.getItem("main")).toBeNull();
+        expect(forgetRememberedSession(storage, "inline", 3)).toBe(false);
+        expect(storage.getItem("inline")).toBe("40");
+    });
+});
+
+describe("AgentChatSurface 缺失 Session 接线", () => {
+    it("Inline fallback 复用列表请求代次且不会进入自动创建入口", async () => {
+        const source = await readFile(new URL("./AgentChatSurface.vue", import.meta.url), "utf8");
+        const recoveryStart = source.indexOf("async function recoverMissingInlineEditorSession(");
+        const recoveryEnd = source.indexOf("async function loadInlineEditorSession(", recoveryStart);
+        const recoverySource = source.slice(recoveryStart, recoveryEnd);
+
+        expect(recoveryStart).toBeGreaterThan(-1);
+        expect(recoveryEnd).toBeGreaterThan(recoveryStart);
+        expect(recoverySource).toContain("invalidateRefresh: false");
+        expect(recoverySource).not.toContain("ensureInlineEditorSession(");
+        expect(recoverySource).not.toContain("createInlineEditorSession(");
     });
 });
 
@@ -331,3 +375,31 @@ describe("projectAgentComposerAvailability", () => {
         })).toEqual({status: "waiting-blocked", readonly: true, canStop: true});
     });
 });
+
+class MemoryStorage implements Storage {
+    private readonly values = new Map<string, string>();
+
+    get length(): number {
+        return this.values.size;
+    }
+
+    clear(): void {
+        this.values.clear();
+    }
+
+    getItem(key: string): string | null {
+        return this.values.get(key) ?? null;
+    }
+
+    key(index: number): string | null {
+        return [...this.values.keys()][index] ?? null;
+    }
+
+    removeItem(key: string): void {
+        this.values.delete(key);
+    }
+
+    setItem(key: string, value: string): void {
+        this.values.set(key, value);
+    }
+}

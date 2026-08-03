@@ -37,6 +37,15 @@ export function resolveMissingSessionFallback(
     return sessions.find((session) => session.sessionId !== failedSessionId)?.sessionId ?? null;
 }
 
+/** 只删除仍指向失效 Session 的浏览器记忆，避免迟到恢复清掉用户的新选择。 */
+export function forgetRememberedSession(storage: Storage, key: string, failedSessionId: number): boolean {
+    if (storage.getItem(key) !== String(failedSessionId)) {
+        return false;
+    }
+    storage.removeItem(key);
+    return true;
+}
+
 export type MissingSessionRecoveryResult =
     | {status: "superseded"}
     | {status: "empty"}

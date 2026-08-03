@@ -1008,3 +1008,13 @@ Phase 4B + Phase 7 的实测规模是 **187 个生产文件 + 101 个测试文�
 - Agent HTTP 统一返回 `404` 与 `SESSION_NOT_FOUND`。recovery/history/systemPrompt、relations、mutation 与 Attachment preflight 复用同一映射；宽泛的用户消息和 Attachment 404 路由先保留 Session Not Found，再处理 entry/locator 自身缺失。
 - 主 Agent Surface 遇到该错误时清除精确失效的记忆 ID，在原 activation ownership 下刷新一次列表并最多加载一次 fallback：优先保留仍有效的原 Session，否则选择第一个有效 Session；空列表进入 empty，不自动创建。fallback 再失败不会递归重试，迟到恢复不能覆盖新选择。
 - 验证使用隔离临时 Workspace Root：Repository 28 项、Agent HTTP 22 项、前端错误解析与 Surface 状态 55 项、两个宽泛 entry/attachment 路由 13 项均通过，受共享错误码解析影响的 ProjectSession 另有 9 项通过，合计 9 files / 127 tests；根 `nuxt typecheck` 通过。未执行浏览器验证，未读取、恢复、复制或删除真实 Session 备份。
+
+### 2026-08-03：Issue #26 跨 State Root 恢复补漏
+
+- PR #34 已完成直接 recovery 请求的 `404 / SESSION_NOT_FOUND` 与主 Agent 面板的一次 fallback；后续审查确认 SSE recovery、Inline Editor、Profile/Workflow/Context Inspector 入口以及关联 Session 缺失仍未进入同一合同。本轮只补齐这些缺口，不扩展到 State Root 实例身份、备份恢复、消息分支、`/fork` 或 Runtime lease。
+- Session-bound HTTP 边界现在必须携带请求 Session ID。领域错误中的 ID 与请求 ID 相同返回 `404 / SESSION_NOT_FOUND`；不同返回 `409 / SESSION_DEPENDENCY_NOT_FOUND` 并保留当前选择。Context Inspector、Profile Preview/Compile、Workflow Preview tree/direct-chat 与 entry/attachment 宽泛 catch 均复用该判定，公开错误不包含磁盘路径或 Session 正文。
+- Profile in-process preview 与 compile worker 都保留 Session lifecycle error；worker 只传稳定 code 与 Session ID，主线程重建领域错误。普通编译 issue 与既有 Project lifecycle error 继续走原合同。
+- Session SSE 的 normal、forced 与新 epoch recovery 先识别缺失 Session：当前 owner 只调用一次专用回调，不再同时发布普通错误；过期 owner 静默。主 Agent 面板与 Inline Editor 均刷新一次、最多加载一个 fallback，fallback 关闭递归恢复且不进入自动创建入口。
+- 主面板在列表为空前先持久化当前输入，再解除草稿 context、推进 Composer generation 并清空可见正文；草稿仍可从原 Session context 读取。浏览器记忆只在仍等于失效 ID 时删除，迟到恢复不能清掉用户的新选择。
+- 实施审查额外发现 Inline fallback 会错误使刚完成的列表请求失效，导致 loading 的旧 `finally` 无权收口。本轮让 fallback 复用同一列表请求代次，并把列表 request ID 纳入通知发布权；这属于既有 owner/request-ID 模型内的接线修复，没有增加第二套恢复状态机。
+- 验证只使用 mock 或隔离临时根，不访问真实 `workspace/`、Session 备份或 lease。最终聚焦回归为 12 files / 104 tests，根 `nuxt typecheck` 与 `docs:build` 通过。首轮并行回归有一个 Profile route 用例在 Windows 冷模块转换时越过默认 5 秒，但该文件隔离重跑 2/2 通过；把这个本轮 route 用例的测试预算收窄提高到 10 秒后，原 12 文件命令完整复跑 104/104。按仓库规则未自动执行浏览器验证。

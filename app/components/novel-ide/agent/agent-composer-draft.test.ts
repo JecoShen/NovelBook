@@ -80,6 +80,21 @@ describe("Agent Composer 草稿", () => {
         await drafts.dispose();
     });
 
+    it("进入 empty 前 clearContext 持久化正文并解除 active context", async () => {
+        const api = new MemoryDraftApi();
+        const drafts = session(api);
+        const initial = await drafts.switchContext("project:a", 3);
+        drafts.update("跨实例切换前仍在编辑的正文");
+
+        const generation = await drafts.clearContext();
+
+        expect(generation).toBeGreaterThan(initial.generation);
+        await expect(api.getComposerDraft({scopeKey: "project:a", sessionId: 3})).resolves.toEqual({
+            text: "跨实例切换前仍在编辑的正文",
+        });
+        expect(drafts.capture("跨实例切换前仍在编辑的正文")).toBeNull();
+    });
+
     it("acceptance 只清除提交 revision，不删除请求期间的新正文", async () => {
         const api = new MemoryDraftApi();
         const drafts = session(api);

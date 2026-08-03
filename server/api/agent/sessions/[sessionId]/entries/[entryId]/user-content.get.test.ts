@@ -12,10 +12,10 @@ vi.mock("h3", async (importOriginal) => ({
 
 vi.mock("nbook/server/agent/http", () => ({
     getAgentSessionUserContent: mocks.getAgentSessionUserContent,
-    isAgentSessionNotFoundHttpError: (error: unknown) => typeof error === "object"
+    isAgentSessionLifecycleHttpError: (error: unknown) => typeof error === "object"
         && error !== null
         && "data" in error
-        && (error as {data?: {code?: string}}).data?.code === "SESSION_NOT_FOUND",
+        && ["SESSION_NOT_FOUND", "SESSION_DEPENDENCY_NOT_FOUND"].includes((error as {data?: {code?: string}}).data?.code ?? ""),
     requireAgentSessionId: () => 12,
 }));
 
@@ -54,6 +54,18 @@ describe("GET /api/agent/sessions/:sessionId/entries/:entryId/user-content", () 
         await expect(handler({} as H3Event)).rejects.toMatchObject({
             statusCode: 404,
             data: {code: "SESSION_NOT_FOUND"},
+        });
+    });
+
+    it("保留 Session Dependency Not Found，不改写为 User Message Not Found", async () => {
+        mocks.getAgentSessionUserContent.mockRejectedValue(Object.assign(new Error("关联对话不存在或已不可用"), {
+            statusCode: 409,
+            data: {code: "SESSION_DEPENDENCY_NOT_FOUND"},
+        }));
+
+        await expect(handler({} as H3Event)).rejects.toMatchObject({
+            statusCode: 409,
+            data: {code: "SESSION_DEPENDENCY_NOT_FOUND"},
         });
     });
 

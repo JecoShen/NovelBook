@@ -220,6 +220,138 @@ describe("useAgentSessionStream", () => {
         expect(session.recoveryShell.value?.activePathRevision).toBe("rev-2");
     });
 
+    it("普通 recovery 的 Session Not Found 只调用一次专用回调", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const onSessionNotFound = vi.fn(async () => undefined);
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => {
+                    throw sessionNotFoundHttpError();
+                }),
+                subscribeSessionEvents: vi.fn(async () => never()),
+            },
+            onSessionNotFound,
+            onError,
+        });
+
+        const first = stream.syncRecovery("snapshot_required");
+        const second = stream.syncRecovery("seq_gap");
+
+        await expect(first).resolves.toBe(true);
+        await expect(second).resolves.toBe(true);
+        expect(onSessionNotFound).toHaveBeenCalledTimes(1);
+        expect(onSessionNotFound).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({sessionId: 1, isCurrent: expect.any(Function)}),
+        );
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("强制 recovery 的 Session Not Found 交给专用回调而不向调用方抛出", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const onSessionNotFound = vi.fn(async () => undefined);
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => {
+                    throw sessionNotFoundHttpError();
+                }),
+                subscribeSessionEvents: vi.fn(async () => never()),
+            },
+            onSessionNotFound,
+            onError,
+        });
+
+        await expect(stream.refreshRecovery("manual_refresh")).resolves.toBe(true);
+        expect(onSessionNotFound).toHaveBeenCalledTimes(1);
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("新 event epoch 触发的 Session Not Found 进入专用恢复", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const onSessionNotFound = vi.fn(async () => undefined);
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => {
+                    throw sessionNotFoundHttpError();
+                }),
+                subscribeSessionEvents: vi.fn(async (_sessionId, _cursor, onEvent, signal, options) => {
+                    options?.onOpen?.();
+                    await onEvent({
+                        ...control(2, {type: "connected", eventEpoch: "epoch-2", latestSeq: 2}),
+                        eventEpoch: "epoch-2",
+                    });
+                    await untilAbort(signal);
+                }),
+            },
+            onSessionNotFound,
+            onError,
+        });
+
+        await stream.start(1);
+        await vi.waitFor(() => expect(onSessionNotFound).toHaveBeenCalledTimes(1));
+        expect(onError).not.toHaveBeenCalled();
+        stream.stop();
+    });
+
+    it("Session Not Found 到达时 owner 已失效则静默丢弃", async () => {
+        const session = useAgentSession();
+        const activeSessionId = ref<number | null>(1);
+        session.applyRecovery(recovery(1, 1));
+        const request = deferred<AgentSessionRecoveryDto>();
+        const onSessionNotFound = vi.fn(async () => undefined);
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId,
+            api: {
+                getSessionRecovery: vi.fn(() => request.promise),
+                subscribeSessionEvents: vi.fn(async () => never()),
+            },
+            onSessionNotFound,
+            onError,
+        });
+
+        const recoveryRequest = stream.syncRecovery("snapshot_required");
+        activeSessionId.value = 2;
+        request.reject(sessionNotFoundHttpError());
+
+        await expect(recoveryRequest).resolves.toBe(false);
+        expect(onSessionNotFound).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("未配置专用回调时保持普通 recovery 错误行为", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => {
+                    throw sessionNotFoundHttpError();
+                }),
+                subscribeSessionEvents: vi.fn(async () => never()),
+            },
+            onError,
+        });
+
+        await expect(stream.syncRecovery("snapshot_required")).resolves.toBe(false);
+        expect(onError).toHaveBeenCalledTimes(1);
+    });
+
     it("强制 recovery 开启新 generation，旧成功和旧错误都静默失效", async () => {
         const session = useAgentSession();
         session.applyRecovery(recovery(1, 1));
@@ -518,4 +650,8 @@ function untilAbort(signal?: AbortSignal): Promise<void> {
     if (!signal) return never();
     if (signal.aborted) return Promise.resolve();
     return new Promise<void>((resolve) => signal.addEventListener("abort", () => resolve(), {once: true}));
+}
+
+function sessionNotFoundHttpError(): {response: {_data: {data: {code: "SESSION_NOT_FOUND"}}}} {
+    return {response: {_data: {data: {code: "SESSION_NOT_FOUND"}}}};
 }
