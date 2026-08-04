@@ -1114,6 +1114,12 @@ async function openInlineEditorSessionChat(): Promise<void> {
     try {
         rightPanelOpen.value = true;
         const result = await owner.surface.openInlineEditorSession();
+        if (result.status === "failed") {
+            if (owner.revision === inlinePromptRequestRevision && agentSurfaceRef.value === owner.surface) {
+                inlinePromptStatusText.value = result.message;
+            }
+            return;
+        }
         if (!acceptsInlinePromptOwner(owner) || result.status === "superseded") return;
     } catch (error) {
         if (!acceptsInlinePromptOwner(owner)) return;

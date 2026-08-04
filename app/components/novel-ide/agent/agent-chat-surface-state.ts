@@ -60,6 +60,104 @@ export type SessionLoadAttemptResult<TResult> =
     | {status: "failed"; error: unknown}
     | {status: "superseded"};
 
+/** 主/Inline Session 加载向调用方报告的结果；只有 loaded 可以提交为成功。 */
+export type AgentSessionLoadResult<TResult> =
+    | {status: "loaded"; value: TResult}
+    | {status: "empty"}
+    | {status: "dependency_missing"; error: unknown}
+    | {status: "failed"; error: unknown}
+    | {status: "superseded"};
+
+/** Session 目标加载的前台/recovery 发布权；两类 owner 共享同一 scope，但互相不会误认。 */
+export type AgentSessionLoadOwner = Readonly<{
+    scopeKey: string;
+    revision: number;
+    kind: "foreground" | "recovery";
+}>;
+
+type SessionRecoveryRequest = {
+    owner: AgentSessionLoadOwner;
+    promise: Promise<unknown>;
+};
+
+/**
+ * 管理一个 Session Surface 内的目标加载竞争。
+ *
+ * 前台选择会立即撤销 recovery；recovery 只在没有前台加载时启动，并在同一代次内
+ * single-flight。它不取消网络请求，只阻止迟到结果、错误和 finally 发布到新 owner。
+ */
+export class AgentSessionLoadController {
+    private nextRevision = 0;
+    private current: AgentSessionLoadOwner | null = null;
+    private recoveryRequest: SessionRecoveryRequest | null = null;
+
+    /** 开始前台加载，并立即使旧 recovery 失效。 */
+    beginForeground(scopeKey: string): AgentSessionLoadOwner {
+        const owner = Object.freeze({scopeKey, revision: ++this.nextRevision, kind: "foreground" as const});
+        this.current = owner;
+        return owner;
+    }
+
+    /**
+     * 启动或复用当前 scope 的 recovery；前台加载存在时返回 null。
+     * recovery work 必须使用传入 owner 检查提交权限。
+     */
+    runRecovery<TResult>(
+        scopeKey: string,
+        work: (owner: AgentSessionLoadOwner) => Promise<TResult>,
+    ): Promise<TResult> | null {
+        if (this.current?.kind === "foreground") {
+            return null;
+        }
+        if (this.recoveryRequest
+            && this.current?.revision === this.recoveryRequest.owner.revision
+            && this.current.scopeKey === scopeKey
+            && this.recoveryRequest.owner.scopeKey === scopeKey) {
+            return this.recoveryRequest.promise as Promise<TResult>;
+        }
+
+        const owner = Object.freeze({scopeKey, revision: ++this.nextRevision, kind: "recovery" as const});
+        this.current = owner;
+        const request: SessionRecoveryRequest = {owner, promise: Promise.resolve()};
+        const promise = (async () => {
+            try {
+                return await work(owner);
+            } finally {
+                if (this.current?.revision === owner.revision) {
+                    this.current = null;
+                }
+                if (this.recoveryRequest === request) {
+                    this.recoveryRequest = null;
+                }
+            }
+        })();
+        request.promise = promise;
+        this.recoveryRequest = request;
+        return promise;
+    }
+
+    /** 判断 owner 是否仍拥有当前 scope 的 Session 提交权。 */
+    accepts(owner: AgentSessionLoadOwner, scopeKey: string): boolean {
+        return this.current?.revision === owner.revision
+            && this.current.scopeKey === owner.scopeKey
+            && owner.scopeKey === scopeKey;
+    }
+
+    /** 完成前台加载；recovery 的生命周期由 runRecovery 自己收口。 */
+    finish(owner: AgentSessionLoadOwner): void {
+        if (!this.accepts(owner, owner.scopeKey)) return;
+        if (owner.kind === "foreground" || !this.recoveryRequest) {
+            this.current = null;
+        }
+    }
+
+    /** 组件/Workspace 重置时立即撤销当前 owner。 */
+    invalidate(): void {
+        this.nextRevision += 1;
+        this.current = null;
+    }
+}
+
 /** 只在 recovery 读取成功且 owner 仍有效时提交目标 Session 状态。 */
 export async function runSessionLoadAttempt<TResult>(input: {
     read: () => Promise<TResult>;
@@ -256,6 +354,10 @@ export class AgentSurfaceActivationController {
 export type AgentSurfaceOperationResult<TResult> =
     | {status: "current"; value: TResult}
     | {status: "superseded"};
+
+/** 打开主 Agent 面板时，真实失败不能伪装成 superseded。 */
+export type AgentSessionOpenResult<TResult> = AgentSurfaceOperationResult<TResult>
+    | {status: "failed"; message: string};
 
 /** Inline Editor 选择结果；空列表和恢复失败都不能被投影为已绑定。 */
 export type InlineEditorSelectionResult =

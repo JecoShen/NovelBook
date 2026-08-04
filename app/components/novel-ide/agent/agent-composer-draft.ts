@@ -1,5 +1,6 @@
 import {parseAgentImageMarkdown} from "nbook/shared/agent/agent-image-markdown";
 import {
+    AgentComposerDraftIdentitySchema,
     AgentComposerDraftScopeKeySchema,
     type AgentComposerDraftIdentity,
     type AgentComposerDraftLoadResult,
@@ -37,6 +38,11 @@ export type AgentComposerDraftContext = AgentComposerDraftIdentity & {
     revision: number;
     text: string;
 };
+
+/** 已从磁盘读取、但尚未成为当前 Composer context 的草稿快照。 */
+export type AgentComposerDraftPreparedContext = Readonly<AgentComposerDraftIdentity & {
+    text: string;
+}>;
 
 export type AgentComposerSubmission = Readonly<AgentComposerDraftContext>;
 
@@ -105,6 +111,28 @@ export class AgentComposerDraftSession {
         private readonly onError?: (error: unknown) => void,
     ) {}
 
+    /** 只读取目标草稿，不改变当前 context；调用方可在异步加载完成后再决定是否激活。 */
+    async prepareContext(scopeKey: string, sessionId: number): Promise<AgentComposerDraftPreparedContext> {
+        const identity = AgentComposerDraftIdentitySchema.parse({scopeKey, sessionId});
+        const loaded = await this.enqueue(() => this.store.load(identity)).catch((error) => {
+            this.onError?.(error);
+            return {text: ""};
+        });
+        return {...identity, text: loaded.text};
+    }
+
+    /** 在调用方完成 owner 检查后同步激活已读取的草稿快照。 */
+    activateContext(prepared: AgentComposerDraftPreparedContext): number {
+        const identity = AgentComposerDraftIdentitySchema.parse({
+            scopeKey: prepared.scopeKey,
+            sessionId: prepared.sessionId,
+        });
+        this.cancelTimer();
+        const generation = ++this.generation;
+        this.context = {...identity, generation, revision: 0, text: prepared.text};
+        return generation;
+    }
+
     /** 保存旧 context 后加载新 Session；过时 load 不会成为当前 context。 */
     async switchContext(scopeKey: string, sessionId: number): Promise<AgentComposerDraftSwitchResult> {
         const parsedScopeKey = AgentComposerDraftScopeKeySchema.parse(scopeKey);
@@ -116,10 +144,7 @@ export class AgentComposerDraftSession {
         if (previous) {
             await this.persist(previous).catch((error) => this.onError?.(error));
         }
-        const loaded = await this.enqueue(() => this.store.load({scopeKey: parsedScopeKey, sessionId})).catch((error) => {
-            this.onError?.(error);
-            return {text: ""};
-        });
+        const loaded = await this.prepareContext(parsedScopeKey, sessionId);
         if (generation !== this.generation) return {...loaded, generation, active: false};
         this.context = {scopeKey: parsedScopeKey, sessionId, generation, revision: 0, text: loaded.text};
         return {...loaded, generation, active: true};

@@ -1,6 +1,7 @@
 import {effectScope, nextTick, ref} from "vue";
 import {describe, expect, it, vi} from "vitest";
 import {
+    AgentSessionLoadController,
     AgentSurfaceActivationController,
     AgentSurfaceOperationController,
     AgentSurfaceSupersededError,
@@ -244,6 +245,69 @@ describe("Inline Editor 选择结果", () => {
         expect(adoptInlineEditorRequest(4, {status: "failed", requestId: 5})).toEqual({status: "current", requestId: 5});
         expect(adoptInlineEditorRequest(4, {status: "current", requestId: 3})).toEqual({status: "superseded"});
         expect(adoptInlineEditorRequest(4, {status: "superseded"})).toEqual({status: "superseded"});
+    });
+});
+
+describe("AgentSessionLoadController", () => {
+    it("前台加载会立即使旧 recovery 失效，迟到 recovery 不能发布", async () => {
+        const controller = new AgentSessionLoadController();
+        const recoveryWork = deferred<string>();
+        const recovery = controller.runRecovery("project:a", async (owner) => {
+            await recoveryWork.promise;
+            return controller.accepts(owner, "project:a") ? "recovered" : "superseded";
+        });
+        expect(recovery).not.toBeNull();
+        const foreground = controller.beginForeground("project:a");
+        expect(controller.accepts(foreground, "project:a")).toBe(true);
+        recoveryWork.resolve("late");
+
+        await expect(recovery).resolves.toBe("superseded");
+        expect(controller.accepts(foreground, "project:a")).toBe(true);
+    });
+
+    it("前台加载存在时不启动 recovery，同一 recovery 只复用一个 Promise", async () => {
+        const controller = new AgentSessionLoadController();
+        const foreground = controller.beginForeground("project:a");
+        expect(controller.runRecovery("project:a", async () => "blocked")).toBeNull();
+        controller.finish(foreground);
+
+        const recoveryWork = deferred<void>();
+        const work = vi.fn(async () => {
+            await recoveryWork.promise;
+            return "ok";
+        });
+        const first = controller.runRecovery("project:a", work);
+        const duplicate = controller.runRecovery("project:a", work);
+        expect(duplicate).toBe(first);
+        expect(work).toHaveBeenCalledOnce();
+        recoveryWork.resolve();
+        await expect(first).resolves.toBe("ok");
+    });
+
+    it("旧 recovery reject 后的 finally 不能清理新的前台 owner", async () => {
+        const controller = new AgentSessionLoadController();
+        const recoveryWork = deferred<void>();
+        const recovery = controller.runRecovery("project:a", async () => {
+            await recoveryWork.promise;
+            throw new Error("recovery failed");
+        });
+        const foreground = controller.beginForeground("project:a");
+        recoveryWork.resolve();
+
+        await expect(recovery).rejects.toThrow("recovery failed");
+        expect(controller.accepts(foreground, "project:a")).toBe(true);
+    });
+
+    it("不同 Surface 的 controller 互不撤销 owner，旧 finally 不能清理新前台加载", () => {
+        const main = new AgentSessionLoadController();
+        const inline = new AgentSessionLoadController();
+        const mainOwner = main.beginForeground("project:a");
+        const inlineOwner = inline.beginForeground("project:a");
+
+        main.invalidate();
+
+        expect(main.accepts(mainOwner, "project:a")).toBe(false);
+        expect(inline.accepts(inlineOwner, "project:a")).toBe(true);
     });
 });
 

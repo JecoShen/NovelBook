@@ -80,6 +80,27 @@ describe("Agent Composer 草稿", () => {
         await drafts.dispose();
     });
 
+    it("prepare 不改变当前 context，只有 activate 才提交目标草稿", async () => {
+        const api = new MemoryDraftApi();
+        const drafts = session(api);
+
+        await drafts.switchContext("project:a", 1);
+        drafts.update("当前正文");
+        await drafts.flush();
+        await api.saveComposerDraft({scopeKey: "project:b", sessionId: 2, text: "目标正文"});
+
+        const prepared = await drafts.prepareContext("project:b", 2);
+
+        expect(drafts.capture("当前正文")).not.toBeNull();
+        expect(prepared).toEqual({scopeKey: "project:b", sessionId: 2, text: "目标正文"});
+
+        drafts.activateContext(prepared);
+
+        expect(drafts.capture("当前正文")).toBeNull();
+        expect(drafts.capture("目标正文")).toMatchObject({scopeKey: "project:b", sessionId: 2});
+        await drafts.dispose();
+    });
+
     it("进入 empty 前 clearContext 持久化正文并解除 active context", async () => {
         const api = new MemoryDraftApi();
         const drafts = session(api);

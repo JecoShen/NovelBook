@@ -39,22 +39,16 @@ vi.mock("h3", async (importOriginal) => ({
     },
 }));
 
-vi.mock("nbook/server/agent/http", () => ({
-    isAgentSessionLifecycleHttpError: (error: unknown) => typeof error === "object"
-        && error !== null
-        && "data" in error
-        && ["SESSION_NOT_FOUND", "SESSION_DEPENDENCY_NOT_FOUND"].includes((error as {data?: {code?: string}}).data?.code ?? ""),
-    mapAgentHttpError: (error: unknown, requestSessionId: number) => error === mocks.sessionNotFoundError || error === mocks.sessionDependencyNotFoundError
-        ? Object.assign(new Error("Session 不存在或已不可用"), {
-            statusCode: (error as {sessionId: number}).sessionId === requestSessionId ? 404 : 409,
-            data: {code: (error as {sessionId: number}).sessionId === requestSessionId ? "SESSION_NOT_FOUND" : "SESSION_DEPENDENCY_NOT_FOUND"},
-        })
-        : error,
-    requireAgentSessionId: (event: TestEvent) => event.sessionId,
-    useAgentHarness: () => ({
-        resolveSessionAttachment: mocks.resolveSessionAttachment,
-    }),
-}));
+vi.mock("nbook/server/agent/http", async () => {
+    const actual = await vi.importActual<typeof import("nbook/server/agent/http")>("nbook/server/agent/http");
+    return {
+        ...actual,
+        requireAgentSessionId: (event: TestEvent) => event.sessionId,
+        useAgentHarness: () => ({
+            resolveSessionAttachment: mocks.resolveSessionAttachment,
+        }),
+    };
+});
 
 vi.mock("nbook/server/media/image-variant-runtime", () => ({
     useImageVariantModule: () => ({render: mocks.render}),
