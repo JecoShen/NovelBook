@@ -19,26 +19,9 @@ vi.mock("nbook/server/agent/workflow/workflow-demo-service", () => ({
     }),
 }));
 
-vi.mock("nbook/server/agent/http", () => ({
-    isAgentSessionLifecycleHttpError: (error: unknown) => typeof error === "object"
-        && error !== null
-        && "data" in error
-        && ["SESSION_NOT_FOUND", "SESSION_DEPENDENCY_NOT_FOUND"].includes((error as {data?: {code?: string}}).data?.code ?? ""),
-    withAgentSessionHttpError: async <T>(requestSessionId: number, operation: () => Promise<T>): Promise<T> => {
-        try {
-            return await operation();
-        } catch (error) {
-            if (error instanceof Error && error.name === "AgentSessionNotFoundError" && "sessionId" in error) {
-                const primary = error.sessionId === requestSessionId;
-                throw Object.assign(new Error(primary ? "Session 不存在或已不可用" : "关联对话不存在或已不可用"), {
-                    statusCode: primary ? 404 : 409,
-                    data: {code: primary ? "SESSION_NOT_FOUND" : "SESSION_DEPENDENCY_NOT_FOUND"},
-                });
-            }
-            throw error;
-        }
-    },
-}));
+vi.mock("nbook/server/agent/http", async () => {
+    return vi.importActual<typeof import("nbook/server/agent/http")>("nbook/server/agent/http");
+});
 
 let treeHandler: (event: H3Event) => Promise<unknown>;
 let directChatHandler: (event: H3Event) => Promise<unknown>;

@@ -11,26 +11,16 @@ vi.mock("h3", async (importOriginal) => ({
     getQuery: () => ({}),
 }));
 
-vi.mock("nbook/server/agent/http", () => ({
-    requireAgentSessionId: () => 12,
-    useAgentHarness: () => ({
-        getSessionContextInspection: mocks.getSessionContextInspection,
-    }),
-    withAgentSessionHttpError: async <T>(requestSessionId: number, operation: () => Promise<T>): Promise<T> => {
-        try {
-            return await operation();
-        } catch (error) {
-            if (error instanceof Error && error.name === "AgentSessionNotFoundError" && "sessionId" in error) {
-                const primary = error.sessionId === requestSessionId;
-                throw Object.assign(new Error(primary ? "Session 不存在或已不可用" : "关联对话不存在或已不可用"), {
-                    statusCode: primary ? 404 : 409,
-                    data: {code: primary ? "SESSION_NOT_FOUND" : "SESSION_DEPENDENCY_NOT_FOUND"},
-                });
-            }
-            throw error;
-        }
-    },
-}));
+vi.mock("nbook/server/agent/http", async () => {
+    const actual = await vi.importActual<typeof import("nbook/server/agent/http")>("nbook/server/agent/http");
+    return {
+        ...actual,
+        requireAgentSessionId: () => 12,
+        useAgentHarness: () => ({
+            getSessionContextInspection: mocks.getSessionContextInspection,
+        }),
+    };
+});
 
 let handler: (event: H3Event) => Promise<unknown>;
 const originalDefineEventHandler = (globalThis as typeof globalThis & {defineEventHandler?: unknown}).defineEventHandler;

@@ -11,9 +11,9 @@
 ## 2026-08-04：Issue #26 / PR #47 跨 State Root 恢复补漏
 
 - 直接请求和 SSE recovery 现在共享同一 Session 生命周期合同：请求 Session 自身缺失返回 `404 / SESSION_NOT_FOUND`；只在读取关联 Session 时缺失返回 `409 / SESSION_DEPENDENCY_NOT_FOUND`。Profile Preview/Compile 的 `sessionId` 仍是字符串 DTO，但路由在进入 worker 或 Profile prepare 前拒绝 `abc`、`NaN`、零、负数和超出安全整数范围的值，统一返回 400；未提供 `sessionId` 的预览请求也不会绕过错误映射。
-- 主 Agent Surface 与 Markdown Studio Inline Editor 都只做一次列表刷新、最多一次 fallback 加载；迟到的 activation/stream owner 不得清理新选择，失效的 localStorage Session 只在仍指向该 ID 时删除。主面板空列表会先保存当前 Composer 草稿再解除 context，不隐式创建 Session；Inline 空或恢复失败只进入对应状态，不伪装成“已绑定”或调用创建入口。
-- Session SSE 的普通 recovery、强制 recovery 和新 event epoch 都在当前 owner 有效时只调用一次专用缺失回调；没有专用回调时保持原错误出口，owner 已失效时静默丢弃。History/System Prompt 等局部读取继续显示局部错误，不自动替换用户正在查看的上下文；Session 备份目录仍不参与在线枚举。
-- 本轮没有引入实例身份协议、备份恢复、lease/heartbeat 变更或数据迁移。浏览器验收未自动执行；使用隔离 State Root 的 focused 测试是本轮 Session 行为证据。验证结果：5 files / 94 tests focused 通过，根 `bun run typecheck`、`bun run docs:build` 通过；完整 Vitest 为 483 个文件通过、1 个跳过，3375 个测试通过、14 个跳过。
+- 主 Agent Surface 与 Markdown Studio Inline Editor 都只做一次列表刷新、最多一次 fallback 加载；迟到的 activation/stream owner 不得清理新选择，失效的 localStorage Session 只在仍指向该 ID 时删除。两者均先读取目标 recovery，读取成功且 owner 仍有效后才停止旧流、切换 ID、清空 shell 和提交新状态。关联 Session 缺失返回 409 时保留稳定的当前对话、草稿、stream 和记忆；没有稳定当前对话时进入明确错误/未绑定状态，不 fallback、不删除记忆、不自动创建。主面板空列表会先保存当前 Composer 草稿再解除 context，不隐式创建 Session。
+- Session SSE 的普通 recovery、强制 recovery 和新 event epoch 都在当前 owner 有效时只调用一次专用缺失回调；没有专用回调时保持原错误出口，409 关联缺失不会误走 `SESSION_NOT_FOUND` 专用恢复，owner 已失效时静默丢弃。History/System Prompt 等局部读取继续显示局部错误，不自动替换用户正在查看的上下文；Session 备份目录仍不参与在线枚举。Context Inspector、Profile Preview/Compile、Workflow Preview route 测试现在消费生产 HTTP mapper，而不是复制映射逻辑。
+- 本轮没有引入实例身份协议、备份恢复、lease/heartbeat 变更或数据迁移。浏览器验收未自动执行；使用隔离 State Root 的 focused 测试是本轮 Session 行为证据。验证结果：12 files / 135 tests focused、根 `bun run typecheck` 与 `bun run docs:build` 均通过；没有把完整 Vitest 或 GitHub Linux advisory 失败写成全绿。
 
 ## 2026-07-28：Project 封面 mutation 与列表性能边界
 

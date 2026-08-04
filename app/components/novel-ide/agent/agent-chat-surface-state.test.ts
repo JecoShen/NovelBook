@@ -10,6 +10,7 @@ import {
     projectInlineEditorSelection,
     recoverMissingSessionSelection,
     resolveMissingSessionFallback,
+    runSessionLoadAttempt,
     watchAgentSurfaceActivation,
     type AgentSurfaceActivationState,
 } from "nbook/app/components/novel-ide/agent/agent-chat-surface-state";
@@ -132,6 +133,98 @@ describe("forgetRememberedSession", () => {
         expect(storage.getItem("main")).toBeNull();
         expect(forgetRememberedSession(storage, "inline", 3)).toBe(false);
         expect(storage.getItem("inline")).toBe("40");
+    });
+});
+
+describe("runSessionLoadAttempt", () => {
+    const errorCode = (error: unknown): string | null => {
+        if (typeof error === "object" && error !== null && "code" in error && typeof error.code === "string") {
+            return error.code;
+        }
+        return null;
+    };
+
+    it("只在读取成功且 owner 仍有效时提交目标状态", async () => {
+        let accepted = true;
+        const commit = vi.fn();
+
+        await expect(runSessionLoadAttempt({
+            read: async () => ({sessionId: 7}),
+            commit,
+            accepts: () => accepted,
+            errorCode,
+        })).resolves.toEqual({status: "loaded", value: {sessionId: 7}});
+        expect(commit).toHaveBeenCalledWith({sessionId: 7});
+
+        accepted = false;
+        commit.mockClear();
+        await expect(runSessionLoadAttempt({
+            read: async () => ({sessionId: 8}),
+            commit,
+            accepts: () => accepted,
+            errorCode,
+        })).resolves.toEqual({status: "superseded"});
+        expect(commit).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ["SESSION_NOT_FOUND", {status: "primary_missing"}],
+        ["SESSION_DEPENDENCY_NOT_FOUND", {status: "dependency_missing"}],
+    ] as const)("保留生命周期错误分区：%s", async (code, expected) => {
+        const error = Object.assign(new Error(code), {code});
+        const commit = vi.fn();
+
+        const result = await runSessionLoadAttempt({
+            read: async () => {
+                throw error;
+            },
+            commit,
+            accepts: () => true,
+            errorCode,
+        });
+
+        expect(result.status).toBe(expected.status);
+        if (expected.status === "dependency_missing") {
+            expect(result).toMatchObject({error});
+        }
+        expect(commit).not.toHaveBeenCalled();
+    });
+
+    it("普通读取错误和提交错误不被误判为 Session 缺失", async () => {
+        const readError = new Error("read failed");
+        await expect(runSessionLoadAttempt({
+            read: async () => {
+                throw readError;
+            },
+            commit: vi.fn(),
+            accepts: () => true,
+            errorCode,
+        })).resolves.toEqual({status: "failed", error: readError});
+
+        const commitError = new Error("commit failed");
+        await expect(runSessionLoadAttempt({
+            read: async () => 1,
+            commit: async () => {
+                throw commitError;
+            },
+            accepts: () => true,
+            errorCode,
+        })).resolves.toEqual({status: "failed", error: commitError});
+    });
+
+    it("提交期间 owner 失效时静默丢弃结果", async () => {
+        let accepted = true;
+        const commit = vi.fn(async () => {
+            accepted = false;
+        });
+
+        await expect(runSessionLoadAttempt({
+            read: async () => 1,
+            commit,
+            accepts: () => accepted,
+            errorCode,
+        })).resolves.toEqual({status: "superseded"});
+        expect(commit).toHaveBeenCalledOnce();
     });
 });
 

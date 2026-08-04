@@ -352,6 +352,53 @@ describe("useAgentSessionStream", () => {
         expect(onError).toHaveBeenCalledTimes(1);
     });
 
+    it("关联 Session 缺失走普通 recovery 错误出口，不调用 Session Not Found 回调", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const onSessionNotFound = vi.fn(async () => undefined);
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => {
+                    throw sessionDependencyNotFoundHttpError();
+                }),
+                subscribeSessionEvents: vi.fn(async () => never()),
+            },
+            onSessionNotFound,
+            onError,
+        });
+
+        await expect(stream.syncRecovery("snapshot_required")).resolves.toBe(false);
+        expect(onSessionNotFound).not.toHaveBeenCalled();
+        expect(onError).toHaveBeenCalledOnce();
+    });
+
+    it("强制 recovery 的关联 Session 缺失保留调用方错误，不调用专用回调", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const onSessionNotFound = vi.fn(async () => undefined);
+        const onError = vi.fn();
+        const error = sessionDependencyNotFoundHttpError();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => {
+                    throw error;
+                }),
+                subscribeSessionEvents: vi.fn(async () => never()),
+            },
+            onSessionNotFound,
+            onError,
+        });
+
+        await expect(stream.refreshRecovery("manual_refresh")).rejects.toBe(error);
+        expect(onSessionNotFound).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+    });
+
     it("强制 recovery 开启新 generation，旧成功和旧错误都静默失效", async () => {
         const session = useAgentSession();
         session.applyRecovery(recovery(1, 1));
@@ -654,4 +701,8 @@ function untilAbort(signal?: AbortSignal): Promise<void> {
 
 function sessionNotFoundHttpError(): {response: {_data: {data: {code: "SESSION_NOT_FOUND"}}}} {
     return {response: {_data: {data: {code: "SESSION_NOT_FOUND"}}}};
+}
+
+function sessionDependencyNotFoundHttpError(): {response: {_data: {data: {code: "SESSION_DEPENDENCY_NOT_FOUND"}}}} {
+    return {response: {_data: {data: {code: "SESSION_DEPENDENCY_NOT_FOUND"}}}};
 }

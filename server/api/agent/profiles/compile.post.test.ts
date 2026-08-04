@@ -11,21 +11,6 @@ function parseSessionId(raw: string | undefined): number | undefined {
     return parsed;
 }
 
-async function withAgentHttpError<T>(sessionId: number | undefined, operation: () => Promise<T>): Promise<T> {
-    try {
-        return await operation();
-    } catch (error) {
-        if (error instanceof Error && error.name === "AgentSessionNotFoundError" && "sessionId" in error) {
-            const primary = sessionId !== undefined && error.sessionId === sessionId;
-            throw Object.assign(new Error(primary ? "Session 不存在或已不可用" : "关联对话不存在或已不可用"), {
-                statusCode: primary ? 404 : 409,
-                data: {code: primary ? "SESSION_NOT_FOUND" : "SESSION_DEPENDENCY_NOT_FOUND"},
-            });
-        }
-        throw error;
-    }
-}
-
 describe("POST /api/agent/profiles/compile", () => {
     beforeEach(() => {
         vi.resetModules();
@@ -42,10 +27,10 @@ describe("POST /api/agent/profiles/compile", () => {
                 sessionId: "7",
             })),
         }));
-        vi.doMock("nbook/server/agent/http", () => ({
+        vi.doMock("nbook/server/agent/http", async () => ({
+            ...await vi.importActual<typeof import("nbook/server/agent/http")>("nbook/server/agent/http"),
             useAgentHarness: vi.fn(() => ({profiles: {}})),
             requireAgentSessionIdValue: parseSessionId,
-            withAgentHttpError,
         }));
         vi.doMock("nbook/server/agent/profiles/profile-compile-worker", () => ({
             useProfileCompileWorker: vi.fn(() => ({
@@ -92,10 +77,10 @@ describe("POST /api/agent/profiles/compile", () => {
                 sessionId: "7",
             })),
         }));
-        vi.doMock("nbook/server/agent/http", () => ({
+        vi.doMock("nbook/server/agent/http", async () => ({
+            ...await vi.importActual<typeof import("nbook/server/agent/http")>("nbook/server/agent/http"),
             useAgentHarness: vi.fn(() => ({profiles: {}, runtimePaths: {}})),
             requireAgentSessionIdValue: parseSessionId,
-            withAgentHttpError,
         }));
         vi.doMock("nbook/server/agent/profiles/profile-compile-worker", () => ({
             useProfileCompileWorker: vi.fn(() => ({
@@ -141,10 +126,10 @@ describe("POST /api/agent/profiles/compile", () => {
                 sessionId,
             })),
         }));
-        vi.doMock("nbook/server/agent/http", () => ({
+        vi.doMock("nbook/server/agent/http", async () => ({
+            ...await vi.importActual<typeof import("nbook/server/agent/http")>("nbook/server/agent/http"),
             useAgentHarness: vi.fn(),
             requireAgentSessionIdValue: parseSessionId,
-            withAgentHttpError,
         }));
 
         const handler = (await import("nbook/server/api/agent/profiles/compile.post")).default;

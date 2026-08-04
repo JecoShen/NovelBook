@@ -52,6 +52,53 @@ export type MissingSessionRecoveryResult =
     | {status: "load_failed"; sessionId: number}
     | {status: "loaded"; sessionId: number};
 
+/** Session recovery 读取后提交的结果；dependency_missing 不得触发主资源 fallback。 */
+export type SessionLoadAttemptResult<TResult> =
+    | {status: "loaded"; value: TResult}
+    | {status: "primary_missing"}
+    | {status: "dependency_missing"; error: unknown}
+    | {status: "failed"; error: unknown}
+    | {status: "superseded"};
+
+/** 只在 recovery 读取成功且 owner 仍有效时提交目标 Session 状态。 */
+export async function runSessionLoadAttempt<TResult>(input: {
+    read: () => Promise<TResult>;
+    commit: (value: TResult) => Promise<void> | void;
+    accepts: () => boolean;
+    errorCode: (error: unknown) => string | null;
+}): Promise<SessionLoadAttemptResult<TResult>> {
+    let value: TResult;
+    try {
+        value = await input.read();
+    } catch (error) {
+        if (!input.accepts()) {
+            return {status: "superseded"};
+        }
+        const code = input.errorCode(error);
+        if (code === "SESSION_NOT_FOUND") {
+            return {status: "primary_missing"};
+        }
+        if (code === "SESSION_DEPENDENCY_NOT_FOUND") {
+            return {status: "dependency_missing", error};
+        }
+        return {status: "failed", error};
+    }
+    if (!input.accepts()) {
+        return {status: "superseded"};
+    }
+    try {
+        await input.commit(value);
+    } catch (error) {
+        if (!input.accepts()) {
+            return {status: "superseded"};
+        }
+        return {status: "failed", error};
+    }
+    return input.accepts()
+        ? {status: "loaded", value}
+        : {status: "superseded"};
+}
+
 /** 刷新一次并加载一次 fallback；调用方负责 UI 状态和提示。 */
 export async function recoverMissingSessionSelection(input: {
     failedSessionId: number;
