@@ -2993,6 +2993,14 @@ const selectSession = async (sessionId: number): Promise<void> => {
     }
 };
 
+/** 关联 Agent 面板只在目标 Session 成功提交后关闭，失败时保留选择上下文。 */
+const selectLinkedAgentSession = async (sessionId: number): Promise<void> => {
+    const loaded = await loadSession(sessionId);
+    if (loaded.status === "loaded") {
+        linkedAgentPanelOpen.value = false;
+    }
+};
+
 const createSessionFromDialog = async (profileKey?: string): Promise<void> => {
     if (loadingSession.value || sessionActionId.value) {
         return;
@@ -3843,7 +3851,7 @@ function saveLastSessionId(sessionId: number): void {
                 :owned-agents="linkedAgents"
                 :linked-by-agents="linkedByAgents"
                 :loading="linkedAgentsLoading"
-                @select="void loadSession($event); linkedAgentPanelOpen = false"
+                @select="void selectLinkedAgentSession($event)"
                 @refresh="void refreshLinkedAgentRelations()"
                 @close="linkedAgentPanelOpen = false"
             />
