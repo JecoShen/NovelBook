@@ -9,6 +9,7 @@ import {
     listAgentSessions,
     moveAgentSessionTree,
     mapAgentHttpError,
+    requireAgentSessionIdValue,
     runAgentSessionCommand,
     toInvokeInput,
     updateAgentSessionCurrentProject,
@@ -42,6 +43,21 @@ describe("agent session http helpers", () => {
             currentProjectRoot: "novel",
             parentSessionId: 1,
         });
+    });
+
+    it.each([
+        [undefined, undefined],
+        ["1", 1],
+        ["0007", 7],
+    ] as const)("解析可选 Session ID %s", (raw, expected) => {
+        expect(requireAgentSessionIdValue(raw)).toBe(expected);
+    });
+
+    it.each(["abc", "NaN", "0", "-1", "1.5", "9007199254740992"])("拒绝无效的可选 Session ID %s", (raw) => {
+        expect(() => requireAgentSessionIdValue(raw)).toThrowError(expect.objectContaining({
+            statusCode: 400,
+            message: "sessionId 必须是正整数",
+        }));
     });
 
     it("listAgentSessions 调用 harness.listSessionPage", async () => {

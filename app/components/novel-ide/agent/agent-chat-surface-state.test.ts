@@ -1,12 +1,13 @@
 import {effectScope, nextTick, ref} from "vue";
 import {describe, expect, it, vi} from "vitest";
-import {readFile} from "node:fs/promises";
 import {
     AgentSurfaceActivationController,
     AgentSurfaceOperationController,
     AgentSurfaceSupersededError,
+    adoptInlineEditorRequest,
     forgetRememberedSession,
     projectAgentComposerAvailability,
+    projectInlineEditorSelection,
     recoverMissingSessionSelection,
     resolveMissingSessionFallback,
     watchAgentSurfaceActivation,
@@ -134,18 +135,22 @@ describe("forgetRememberedSession", () => {
     });
 });
 
-describe("AgentChatSurface 缺失 Session 接线", () => {
-    it("Inline fallback 复用列表请求代次且不会进入自动创建入口", async () => {
-        const source = await readFile(new URL("./AgentChatSurface.vue", import.meta.url), "utf8");
-        const recoveryStart = source.indexOf("async function recoverMissingInlineEditorSession(");
-        const recoveryEnd = source.indexOf("async function loadInlineEditorSession(", recoveryStart);
-        const recoverySource = source.slice(recoveryStart, recoveryEnd);
+describe("Inline Editor 选择结果", () => {
+    it.each([
+        [{status: "current" as const}, {status: "current", value: undefined}],
+        [{status: "superseded" as const}, {status: "superseded"}],
+        [{status: "empty" as const}, {status: "empty"}],
+        [{status: "failed" as const, message: "Inline AI Session 加载失败。"}, {status: "failed", message: "Inline AI Session 加载失败。"}],
+    ])("只把 current 投影为绑定成功：%o", (result, expected) => {
+        expect(projectInlineEditorSelection(result)).toEqual(expected);
+    });
 
-        expect(recoveryStart).toBeGreaterThan(-1);
-        expect(recoveryEnd).toBeGreaterThan(recoveryStart);
-        expect(recoverySource).toContain("invalidateRefresh: false");
-        expect(recoverySource).not.toContain("ensureInlineEditorSession(");
-        expect(recoverySource).not.toContain("createInlineEditorSession(");
+    it("恢复子请求成功后父刷新接纳 successor request，旧代次不能复活", () => {
+        expect(adoptInlineEditorRequest(4, {status: "current", requestId: 5})).toEqual({status: "current", requestId: 5});
+        expect(adoptInlineEditorRequest(4, {status: "empty", requestId: 5})).toEqual({status: "current", requestId: 5});
+        expect(adoptInlineEditorRequest(4, {status: "failed", requestId: 5})).toEqual({status: "current", requestId: 5});
+        expect(adoptInlineEditorRequest(4, {status: "current", requestId: 3})).toEqual({status: "superseded"});
+        expect(adoptInlineEditorRequest(4, {status: "superseded"})).toEqual({status: "superseded"});
     });
 });
 

@@ -82,6 +82,29 @@ export function requireAgentSessionId(event: Parameters<typeof getRouterParam>[0
 }
 
 /**
+ * 解析请求体中的可选 Session ID；未提供时保留 undefined，提供但不是安全正整数时返回 400。
+ */
+export function requireAgentSessionIdValue(raw: string | undefined): number | undefined {
+    if (raw === undefined) {
+        return undefined;
+    }
+    if (!/^\d+$/u.test(raw)) {
+        throw createError({
+            statusCode: 400,
+            message: "sessionId 必须是正整数",
+        });
+    }
+    const parsed = AgentSessionIdSchema.safeParse(Number(raw));
+    if (!parsed.success || !Number.isSafeInteger(parsed.data)) {
+        throw createError({
+            statusCode: 400,
+            message: "sessionId 必须是正整数",
+        });
+    }
+    return parsed.data;
+}
+
+/**
  * 创建 Agent session。
  */
 export async function createAgentSession(body: AgentCreateSessionRequestDto, harness = useAgentHarness()) {
@@ -281,7 +304,7 @@ export function toInvokeInput(
 }
 
 /** 统一保护 Session HTTP helper，避免各路由重复识别领域错误。 */
-async function withAgentHttpError<TResult>(requestSessionId: number | undefined, operation: () => Promise<TResult>): Promise<TResult> {
+export async function withAgentHttpError<TResult>(requestSessionId: number | undefined, operation: () => Promise<TResult>): Promise<TResult> {
     try {
         return await operation();
     } catch (error) {

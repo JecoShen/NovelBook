@@ -1,5 +1,5 @@
 import {validateBody} from "nbook/server/utils/novel-chapter";
-import {useAgentHarness, withAgentSessionHttpError} from "nbook/server/agent/http";
+import {requireAgentSessionIdValue, useAgentHarness, withAgentHttpError} from "nbook/server/agent/http";
 import {previewAgentProfilePrepare} from "nbook/server/agent/profiles/profile-http-service";
 import {useProfileCompileWorker} from "nbook/server/agent/profiles/profile-compile-worker";
 import {AgentProfilePreparePreviewRequestDtoSchema} from "nbook/shared/dto/agent-profile.dto";
@@ -10,6 +10,7 @@ import {withProjectHttpError} from "nbook/server/api/projects/project-http-error
  */
 export default defineEventHandler(async (event) => {
     const body = await validateBody(event, AgentProfilePreparePreviewRequestDtoSchema);
+    const requestSessionId = requireAgentSessionIdValue(body.sessionId);
     const operation = () => withProjectHttpError(async () => {
         const harness = useAgentHarness();
         if (!body.sourceOverride) {
@@ -37,7 +38,5 @@ export default defineEventHandler(async (event) => {
             reportResultSchema: null,
         };
     });
-    return body.sessionId
-        ? withAgentSessionHttpError(Number(body.sessionId), operation)
-        : operation();
+    return withAgentHttpError(requestSessionId, operation);
 });

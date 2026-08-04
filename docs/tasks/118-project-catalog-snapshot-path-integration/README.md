@@ -8,6 +8,13 @@
 >
 > 术语收口：最终合同只称 Project / Project Workspace，不再使用 `managed Project`。下文“旧 managed session”仅指旧 `workspace/<slug>` session 的迁移来源类别。
 
+## 2026-08-04：Issue #26 / PR #47 跨 State Root 恢复补漏
+
+- 直接请求和 SSE recovery 现在共享同一 Session 生命周期合同：请求 Session 自身缺失返回 `404 / SESSION_NOT_FOUND`；只在读取关联 Session 时缺失返回 `409 / SESSION_DEPENDENCY_NOT_FOUND`。Profile Preview/Compile 的 `sessionId` 仍是字符串 DTO，但路由在进入 worker 或 Profile prepare 前拒绝 `abc`、`NaN`、零、负数和超出安全整数范围的值，统一返回 400；未提供 `sessionId` 的预览请求也不会绕过错误映射。
+- 主 Agent Surface 与 Markdown Studio Inline Editor 都只做一次列表刷新、最多一次 fallback 加载；迟到的 activation/stream owner 不得清理新选择，失效的 localStorage Session 只在仍指向该 ID 时删除。主面板空列表会先保存当前 Composer 草稿再解除 context，不隐式创建 Session；Inline 空或恢复失败只进入对应状态，不伪装成“已绑定”或调用创建入口。
+- Session SSE 的普通 recovery、强制 recovery 和新 event epoch 都在当前 owner 有效时只调用一次专用缺失回调；没有专用回调时保持原错误出口，owner 已失效时静默丢弃。History/System Prompt 等局部读取继续显示局部错误，不自动替换用户正在查看的上下文；Session 备份目录仍不参与在线枚举。
+- 本轮没有引入实例身份协议、备份恢复、lease/heartbeat 变更或数据迁移。浏览器验收未自动执行；使用隔离 State Root 的 focused 测试是本轮 Session 行为证据。验证结果：5 files / 94 tests focused 通过，根 `bun run typecheck`、`bun run docs:build` 通过；完整 Vitest 为 483 个文件通过、1 个跳过，3375 个测试通过、14 个跳过。
+
 ## 2026-07-28：Project 封面 mutation 与列表性能边界
 
 - `/api/projects` 继续只消费浅层 Lifecycle snapshot；它只投影 `project.yaml.cover` 字符串，不读取封面文件、不生成变体、不打开 File Index、History、Project SQLite、Session 或 Image Variant Module。

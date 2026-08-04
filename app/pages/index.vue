@@ -1071,6 +1071,15 @@ async function selectInlineEditorSession(sessionId: number): Promise<void> {
     try {
         const result = await owner.surface.selectInlineEditorSession(sessionId);
         if (!acceptsInlinePromptOwner(owner) || result.status === "superseded") return;
+        if (result.status === "empty") {
+            inlinePromptStatusText.value = t("ide.inlineAi.noInlineSession");
+            return;
+        }
+        if (result.status === "failed") {
+            inlinePromptStatusText.value = result.message;
+            notification.error(result.message, {title: "Inline AI"});
+            return;
+        }
         inlinePromptStatusText.value = t("ide.inlineAi.boundSession");
     } catch (error) {
         if (!acceptsInlinePromptOwner(owner)) return;

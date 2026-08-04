@@ -210,6 +210,41 @@ export type AgentSurfaceOperationResult<TResult> =
     | {status: "current"; value: TResult}
     | {status: "superseded"};
 
+/** Inline Editor 选择结果；空列表和恢复失败都不能被投影为已绑定。 */
+export type InlineEditorSelectionResult =
+    | AgentSurfaceOperationResult<void>
+    | {status: "empty"}
+    | {status: "failed"; message: string};
+
+/** 将 Inline Editor 加载结果投影给 PromptBar，只有 current 才是成功。 */
+export function projectInlineEditorSelection(
+    result: {status: "current" | "superseded" | "empty" | "failed"; message?: string},
+): InlineEditorSelectionResult {
+    switch (result.status) {
+        case "current":
+            return {status: "current", value: undefined};
+        case "superseded":
+            return {status: "superseded"};
+        case "empty":
+            return {status: "empty"};
+        case "failed":
+            return {status: "failed", message: result.message ?? "Inline AI Session 加载失败。"};
+    }
+}
+
+/** 父级 Inline 列表请求接纳恢复子请求的最新代次。 */
+export function adoptInlineEditorRequest(
+    parentRequestId: number,
+    result: {status: "current" | "superseded" | "empty" | "failed"; requestId?: number},
+): {status: "current"; requestId: number} | {status: "superseded"} {
+    if (result.status === "superseded"
+        || result.requestId === undefined
+        || result.requestId < parentRequestId) {
+        return {status: "superseded"};
+    }
+    return {status: "current", requestId: result.requestId};
+}
+
 /**
  * Surface 局部异步操作所有权。
  *
