@@ -733,7 +733,7 @@ function recovery(sessionId: number, after: number, revision: string | null = nu
     return {
         kind: "recovery",
         eventCursor: {eventEpoch: "epoch-1", after},
-        summary: {sessionId, profileKey: "leader.default", status: "idle", updatedAt: 1, archived: false},
+        summary: {sessionId, sessionIdentity: "sha256:0000000000000000000000000000000000000000000000000000000000000000", profileKey: "leader.default", status: "idle", updatedAt: 1, archived: false},
         activeLeafId: null,
         activePathRevision: revision,
         history: {entries: [], previousCursor: null},

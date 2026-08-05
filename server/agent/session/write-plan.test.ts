@@ -30,6 +30,7 @@ describe("SessionWriteExecutor", () => {
                 return {
                     summary: {
                         sessionId,
+                        sessionIdentity: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
                         profileKey: "leader.default",
                         status: "idle",
                         updatedAt: 1,
@@ -230,6 +231,7 @@ describe("SessionWriteExecutor", () => {
                 return {
                     summary: {
                         sessionId,
+                        sessionIdentity: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
                         profileKey: "leader.default",
                         status: "idle",
                         updatedAt: 1,
@@ -317,6 +319,7 @@ describe("SessionWriteExecutor", () => {
                 return {
                     summary: {
                         sessionId,
+                        sessionIdentity: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
                         profileKey: "leader.default",
                         status: "idle",
                         updatedAt: 1,

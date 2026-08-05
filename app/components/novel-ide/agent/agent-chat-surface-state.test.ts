@@ -7,11 +7,10 @@ import {
     AgentSurfaceSupersededError,
     adoptInlineEditorRequest,
     forgetRememberedSession,
+    readRememberedSession,
     projectAgentSessionLoad,
     projectAgentComposerAvailability,
     projectInlineEditorSelection,
-    recoverMissingSessionSelection,
-    resolveMissingSessionFallback,
     runSessionLoadAttempt,
     tryWriteRememberedSession,
     watchAgentSurfaceActivation,
@@ -28,104 +27,6 @@ function deferred<T>() {
     });
     return {promise, resolve, reject};
 }
-
-describe("resolveMissingSessionFallback", () => {
-    const sessions = [{sessionId: 39}, {sessionId: 40}, {sessionId: 41}];
-
-    it("优先保留列表中仍有效的原 Session", () => {
-        expect(resolveMissingSessionFallback(sessions, 3, 40)).toBe(40);
-    });
-
-    it("原 Session 不可用时选择第一个非失败 Session", () => {
-        expect(resolveMissingSessionFallback(sessions, 3, 3)).toBe(39);
-        expect(resolveMissingSessionFallback(sessions, 3, 99)).toBe(39);
-    });
-
-    it("排除失败 ID 且空列表返回 null", () => {
-        expect(resolveMissingSessionFallback([{sessionId: 3}, {sessionId: 40}], 3, null)).toBe(40);
-        expect(resolveMissingSessionFallback([{sessionId: 3}], 3, null)).toBeNull();
-        expect(resolveMissingSessionFallback([], 3, null)).toBeNull();
-    });
-});
-
-describe("recoverMissingSessionSelection", () => {
-    it("只刷新和加载一次，并优先恢复原有效 Session", async () => {
-        const refresh = vi.fn(async () => [{sessionId: 39}, {sessionId: 40}]);
-        const load = vi.fn(async () => "loaded" as const);
-
-        await expect(recoverMissingSessionSelection({
-            failedSessionId: 3,
-            previousSessionId: 40,
-            accepts: () => true,
-            refresh,
-            load,
-        })).resolves.toEqual({status: "loaded", sessionId: 40});
-        expect(refresh).toHaveBeenCalledTimes(1);
-        expect(load).toHaveBeenCalledTimes(1);
-        expect(load).toHaveBeenCalledWith(40);
-    });
-
-    it("空列表不加载，fallback 失败也不递归重试", async () => {
-        const emptyLoad = vi.fn(async () => "loaded" as const);
-        await expect(recoverMissingSessionSelection({
-            failedSessionId: 3,
-            previousSessionId: null,
-            accepts: () => true,
-            refresh: async () => [],
-            load: emptyLoad,
-        })).resolves.toEqual({status: "empty"});
-        expect(emptyLoad).not.toHaveBeenCalled();
-
-        const failedLoad = vi.fn(async () => "failed" as const);
-        await expect(recoverMissingSessionSelection({
-            failedSessionId: 3,
-            previousSessionId: null,
-            accepts: () => true,
-            refresh: async () => [{sessionId: 39}, {sessionId: 40}],
-            load: failedLoad,
-        })).resolves.toEqual({status: "load_failed", sessionId: 39, reason: "failed"});
-        expect(failedLoad).toHaveBeenCalledTimes(1);
-    });
-
-    it("刷新或加载后 ownership 失效时不发布旧结果", async () => {
-        let accepted = false;
-        const load = vi.fn(async () => "loaded" as const);
-        await expect(recoverMissingSessionSelection({
-            failedSessionId: 3,
-            previousSessionId: null,
-            accepts: () => accepted,
-            refresh: async () => [{sessionId: 39}],
-            load,
-        })).resolves.toEqual({status: "superseded"});
-        expect(load).not.toHaveBeenCalled();
-
-        accepted = true;
-        await expect(recoverMissingSessionSelection({
-            failedSessionId: 3,
-            previousSessionId: null,
-            accepts: () => accepted,
-            refresh: async () => [{sessionId: 39}],
-            load: async () => {
-                accepted = false;
-                return "loaded" as const;
-            },
-        })).resolves.toEqual({status: "superseded"});
-    });
-
-    it("Inline 恢复不借用旧选择，只加载第一个有效 Session 一次", async () => {
-        const load = vi.fn(async () => "loaded" as const);
-
-        await expect(recoverMissingSessionSelection({
-            failedSessionId: 3,
-            previousSessionId: null,
-            accepts: () => true,
-            refresh: async () => [{sessionId: 3}, {sessionId: 40}, {sessionId: 41}],
-            load,
-        })).resolves.toEqual({status: "loaded", sessionId: 40});
-        expect(load).toHaveBeenCalledOnce();
-        expect(load).toHaveBeenCalledWith(40);
-    });
-});
 
 describe("projectAgentSessionLoad", () => {
     it.each([
@@ -146,13 +47,14 @@ describe("projectAgentSessionLoad", () => {
 describe("forgetRememberedSession", () => {
     it("只删除仍指向失效 Session 的记忆", () => {
         const storage = new MemoryStorage();
-        storage.setItem("main", "3");
-        storage.setItem("inline", "40");
+        const main = {schema: 2 as const, sessionId: 3, sessionIdentity: "sha256:0000000000000000000000000000000000000000000000000000000000000000"};
+        storage.setItem("main", JSON.stringify(main));
+        storage.setItem("inline", JSON.stringify({...main, sessionId: 40}));
 
-        expect(forgetRememberedSession(storage, "main", 3)).toBe(true);
+        expect(forgetRememberedSession(storage, "main", main)).toBe(true);
         expect(storage.getItem("main")).toBeNull();
-        expect(forgetRememberedSession(storage, "inline", 3)).toBe(false);
-        expect(storage.getItem("inline")).toBe("40");
+        expect(forgetRememberedSession(storage, "inline", main)).toBe(false);
+        expect(storage.getItem("inline")).toBe(JSON.stringify({...main, sessionId: 40}));
     });
 });
 
@@ -593,20 +495,34 @@ describe("tryWriteRememberedSession", () => {
     it("写入成功返回 saved", () => {
         const storage = new MemoryStorage();
 
-        expect(tryWriteRememberedSession(storage, "session", 7)).toEqual({status: "saved"});
-        expect(storage.getItem("session")).toBe("7");
+        const value = {schema: 2 as const, sessionId: 7, sessionIdentity: "sha256:0000000000000000000000000000000000000000000000000000000000000000"};
+        expect(tryWriteRememberedSession(storage, "session", value)).toEqual({status: "saved"});
+        expect(storage.getItem("session")).toBe(JSON.stringify(value));
     });
 
     it("Storage 写入失败只返回 failed，不影响已有记忆", () => {
         const storage = new MemoryStorage();
-        storage.setItem("session", "3");
+        const old = {schema: 2 as const, sessionId: 3, sessionIdentity: "sha256:0000000000000000000000000000000000000000000000000000000000000000"};
+        storage.setItem("session", JSON.stringify(old));
         const error = new Error("quota");
         storage.setItem = () => {
             throw error;
         };
 
-        expect(tryWriteRememberedSession(storage, "session", 7)).toEqual({status: "failed", error});
-        expect(storage.getItem("session")).toBe("3");
+        const next = {...old, sessionId: 7};
+        expect(tryWriteRememberedSession(storage, "session", next)).toEqual({status: "failed", error});
+        expect(storage.getItem("session")).toBe(JSON.stringify(old));
+    });
+
+    it("旧数字值、损坏 JSON 和 identity 缺失都进入 unselected 输入", () => {
+        const storage = new MemoryStorage();
+        storage.setItem("legacy", "3");
+        storage.setItem("broken", "{");
+        storage.setItem("missing-identity", JSON.stringify({schema: 2, sessionId: 3}));
+
+        expect(readRememberedSession(storage, "legacy")).toEqual({status: "invalid"});
+        expect(readRememberedSession(storage, "broken")).toEqual({status: "invalid"});
+        expect(readRememberedSession(storage, "missing-identity")).toEqual({status: "invalid"});
     });
 });
 

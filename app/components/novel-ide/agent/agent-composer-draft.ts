@@ -52,6 +52,20 @@ export type AgentComposerDraftSwitchResult = AgentComposerDraftLoadResult & {
     active: boolean;
 };
 
+/** 当前正文无法安全持久化；切换/清理必须停在原 context。 */
+export class AgentComposerDraftBlockedError extends Error {
+    constructor(readonly result: Extract<AgentComposerDraftSaveResult, "oversize" | "unsafe">) {
+        super(result === "oversize" ? "Composer 草稿超过允许大小" : "Composer 草稿包含不安全图片地址");
+        this.name = "AgentComposerDraftBlockedError";
+    }
+}
+
+function assertDraftPersisted(result: AgentComposerDraftSaveResult): void {
+    if (result === "oversize" || result === "unsafe") {
+        throw new AgentComposerDraftBlockedError(result);
+    }
+}
+
 /** 前端只通过这个 Adapter 访问磁盘 Store；localStorage 只作为一次性迁移源。 */
 export class AgentComposerDraftClientStore {
     private initialization: Promise<void> | null = null;
@@ -138,7 +152,7 @@ export class AgentComposerDraftSession {
         const previous = this.context ? {...this.context} : null;
         const operationRevision = ++this.operationRevision;
         if (previous) {
-            await this.persist(previous);
+            assertDraftPersisted(await this.persist(previous));
         }
         const loaded = await this.prepareContext(parsedScopeKey, sessionId);
         if (operationRevision !== this.operationRevision) {
@@ -155,9 +169,18 @@ export class AgentComposerDraftSession {
         const previous = this.context ? {...this.context} : null;
         const operationRevision = ++this.operationRevision;
         if (previous) {
-            await this.persist(previous);
+            assertDraftPersisted(await this.persist(previous));
         }
         if (operationRevision !== this.operationRevision) return this.generation;
+        this.cancelTimer();
+        this.context = null;
+        this.generation += 1;
+        return this.generation;
+    }
+
+    /** 用户明确放弃当前无法保存的正文后，才允许无持久化地解除 context。 */
+    discardContext(): number {
+        this.operationRevision += 1;
         this.cancelTimer();
         this.context = null;
         this.generation += 1;

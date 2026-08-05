@@ -7310,6 +7310,34 @@ describe("NeuroAgentHarness", () => {
         ]);
     });
 
+    it("关联目标在索引建立后消失时只局部降级", async () => {
+        const parent = await harness.createAgent({
+            profileKey: "leader.default",
+            initial: {},
+        });
+        const child = await harness.createAgent({
+            profileKey: "leader.default",
+            initial: {},
+            parentSessionId: parent.sessionId,
+        });
+
+        await harness.getSessionRelations(parent.sessionId);
+        await rm(join(root, ".nbook", "agent", "sessions", `${String(child.sessionId)}.jsonl`));
+
+        await expect(harness.getSessionRelations(parent.sessionId)).resolves.toEqual({
+            sessionId: parent.sessionId,
+            linkedAgents: [],
+            linkedByAgents: [],
+            unavailableLinkedAgents: 1,
+        });
+        await expect(harness.getSessionRecovery(parent.sessionId)).resolves.toMatchObject({
+            summary: expect.objectContaining({sessionId: parent.sessionId}),
+            linkedAgents: [],
+            linkedByAgents: [],
+            unavailableLinkedAgents: 1,
+        });
+    });
+
     it("relation index rebuild 期间创建 child 不会丢失 pending link", async () => {
         const parent = await harness.createAgent({
             profileKey: "leader.default",

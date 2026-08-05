@@ -248,6 +248,14 @@ _Avoid_: linked session, child agent, visible agent
 有 session 身份和初始化历史，但运行过程中不持久化 assistant/toolResult transcript 的 Agent session。这是观察到的会话行为，不是 runtime public API enum；实现上由 runtime hooks 组合表达。
 _Avoid_: sessionless agent, no-session profile, normal transcript session
 
+**Agent Session Identity**:
+跨浏览器记忆和 Session 数字定位符比较的不可变逻辑身份。新 Session 使用 UUID；没有身份字段的旧 header 使用稳定的 `sha256:` 派生值。它不包含 State Root 路径、cwd、token 或用户正文。
+_Avoid_: sessionId, State Root instance ID, browser tab ID
+
+**Remembered Agent Session**:
+浏览器为某个 Workspace/Project scope 保存的 `{sessionId, sessionIdentity}` 版本化偏好，只用于启动时尝试恢复。它不是 Session 存在性、当前 owner 或跨 State Root 实例身份的证明。
+_Avoid_: localStorage truth, durable session fact, instance registry
+
 **Agent Summarizer ModelContext**:
 Agent Summarizer Profile 每次模型调用时使用的上下文，由 summarizer system prompt 和从源 session 当前 active path 提取的 Agent Dialogue Content 组成。
 _Avoid_: summarizer history, diagnostic transcript, incremental summary context

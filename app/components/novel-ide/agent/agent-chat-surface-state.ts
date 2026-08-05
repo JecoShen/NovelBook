@@ -8,6 +8,7 @@ import {
     type MaybeRefOrGetter,
     type Ref,
 } from "vue";
+import {AgentSessionIdentitySchema, type AgentSessionIdentity} from "nbook/shared/dto/agent-session.dto";
 
 /** Agent Surface 某次激活恢复的所有权凭据。 */
 export type AgentSurfaceActivationAttempt = Readonly<{
@@ -20,54 +21,93 @@ export type AgentSurfaceActivationState =
     | {status: "inactive"}
     | {status: "loading"; attempt: AgentSurfaceActivationAttempt}
     | {status: "ready"; attempt: AgentSurfaceActivationAttempt}
+    | {status: "unselected"; attempt: AgentSurfaceActivationAttempt}
     | {status: "empty"; attempt: AgentSurfaceActivationAttempt}
     | {status: "error"; attempt: AgentSurfaceActivationAttempt; message: string};
-
-/** 缺失目标恢复时，只从当前服务端列表选择一次有效 fallback。 */
-export function resolveMissingSessionFallback(
-    sessions: readonly {readonly sessionId: number}[],
-    failedSessionId: number,
-    previousSessionId: number | null,
-): number | null {
-    if (previousSessionId !== null
-        && previousSessionId !== failedSessionId
-        && sessions.some((session) => session.sessionId === previousSessionId)) {
-        return previousSessionId;
-    }
-    return sessions.find((session) => session.sessionId !== failedSessionId)?.sessionId ?? null;
-}
-
-/** 只删除仍指向失效 Session 的浏览器记忆，避免迟到恢复清掉用户的新选择。 */
-export function forgetRememberedSession(storage: Storage, key: string, failedSessionId: number): boolean {
-    if (storage.getItem(key) !== String(failedSessionId)) {
-        return false;
-    }
-    storage.removeItem(key);
-    return true;
-}
 
 export type RememberedSessionWriteResult =
     | {status: "saved"}
     | {status: "failed"; error: unknown};
 
-/** 安全写入一次性 Session 记忆；失败不能影响已经提交的权威状态。 */
-export function tryWriteRememberedSession(storage: Storage, key: string, sessionId: number): RememberedSessionWriteResult {
+/** 浏览器记忆的版本化值；身份必须与 recovery summary 完全一致。 */
+export type RememberedSession = Readonly<{
+    schema: 2;
+    sessionId: number;
+    sessionIdentity: AgentSessionIdentity;
+}>;
+
+export type RememberedSessionReadResult =
+    | {status: "missing"}
+    | {status: "invalid"}
+    | {status: "failed"; error: unknown}
+    | {status: "valid"; value: RememberedSession};
+
+/** 读取版本化 Session 记忆；损坏或旧数字值都视为未选择，不向调用方抛出。 */
+export function readRememberedSession(storage: Storage, key: string): RememberedSessionReadResult {
+    let raw: string | null;
     try {
-        storage.setItem(key, String(sessionId));
+        raw = storage.getItem(key);
+    } catch (error) {
+        return {status: "failed", error};
+    }
+    if (raw === null) return {status: "missing"};
+    try {
+        const parsed: unknown = JSON.parse(raw);
+        if (typeof parsed !== "object" || parsed === null) return {status: "invalid"};
+        const value = parsed as Partial<RememberedSession>;
+        if (value.schema !== 2
+            || typeof value.sessionId !== "number"
+            || !Number.isInteger(value.sessionId)
+            || value.sessionId <= 0
+            || !AgentSessionIdentitySchema.safeParse(value.sessionIdentity).success) {
+            return {status: "invalid"};
+        }
+        return {
+            status: "valid",
+            value: {
+                schema: 2,
+                sessionId: value.sessionId,
+                sessionIdentity: value.sessionIdentity as AgentSessionIdentity,
+            },
+        };
+    } catch {
+        return {status: "invalid"};
+    }
+}
+
+/** 安全写入一次性 Session 记忆；失败不能影响已经提交的权威状态。 */
+export function tryWriteRememberedSession(
+    storage: Storage,
+    key: string,
+    value: RememberedSession,
+): RememberedSessionWriteResult {
+    try {
+        storage.setItem(key, JSON.stringify(value));
         return {status: "saved"};
     } catch (error) {
         return {status: "failed", error};
     }
 }
 
-export type MissingSessionRecoveryResult =
-    | {status: "superseded"}
-    | {status: "empty"}
-    | {status: "load_failed"; sessionId: number; reason: "primary_missing" | "failed"}
-    | {status: "loaded"; sessionId: number};
-
-/** fallback 读取的最小原因集合；只有 primary_missing 才允许清理 remembered ID。 */
-export type MissingSessionFallbackLoadResult = "loaded" | "primary_missing" | "failed";
+/** 仅删除仍指向同一个 Session 身份的记忆。 */
+export function forgetRememberedSession(
+    storage: Storage,
+    key: string,
+    expected: Pick<RememberedSession, "sessionId" | "sessionIdentity">,
+): boolean {
+    const current = readRememberedSession(storage, key);
+    if (current.status !== "valid"
+        || current.value.sessionId !== expected.sessionId
+        || current.value.sessionIdentity !== expected.sessionIdentity) {
+        return false;
+    }
+    try {
+        storage.removeItem(key);
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 /** Session recovery 读取后提交的结果；dependency_missing 不得触发主资源 fallback。 */
 export type SessionLoadAttemptResult<TResult> =
@@ -305,31 +345,6 @@ export async function runSessionLoadAttempt<TResult>(input: {
         : {status: "superseded"};
 }
 
-/** 刷新一次并加载一次 fallback；调用方负责 UI 状态和提示。 */
-export async function recoverMissingSessionSelection(input: {
-    failedSessionId: number;
-    previousSessionId: number | null;
-    accepts: () => boolean;
-    refresh: () => Promise<readonly {readonly sessionId: number}[]>;
-    load: (sessionId: number) => Promise<MissingSessionFallbackLoadResult>;
-}): Promise<MissingSessionRecoveryResult> {
-    const sessions = await input.refresh();
-    if (!input.accepts()) {
-        return {status: "superseded"};
-    }
-    const fallbackSessionId = resolveMissingSessionFallback(sessions, input.failedSessionId, input.previousSessionId);
-    if (fallbackSessionId === null) {
-        return {status: "empty"};
-    }
-    const loaded = await input.load(fallbackSessionId);
-    if (!input.accepts()) {
-        return {status: "superseded"};
-    }
-    return loaded === "loaded"
-        ? {status: "loaded", sessionId: fallbackSessionId}
-        : {status: "load_failed", sessionId: fallbackSessionId, reason: loaded};
-}
-
 /** 被新 scope、激活代次或组件销毁取代的请求。调用方应静默忽略。 */
 export class AgentSurfaceSupersededError extends Error {
     constructor(readonly attempt: AgentSurfaceActivationAttempt) {
@@ -434,6 +449,13 @@ export class AgentSurfaceActivationController {
     markReady(attempt: AgentSurfaceActivationAttempt, currentScopeKey: string): boolean {
         if (!this.accepts(attempt, currentScopeKey)) return false;
         this.mutableState.value = {status: "ready", attempt};
+        return true;
+    }
+
+    /** 当前实例有可用 Session，但没有可信记忆可自动选择。 */
+    markUnselected(attempt: AgentSurfaceActivationAttempt, currentScopeKey: string): boolean {
+        if (!this.accepts(attempt, currentScopeKey)) return false;
+        this.mutableState.value = {status: "unselected", attempt};
         return true;
     }
 
@@ -636,6 +658,7 @@ type ReadonlyAvailability = {
 export type AgentComposerAvailability =
     | {status: "ready"; readonly: false; canStop: false}
     | ({status: "restoring"} & ReadonlyAvailability)
+    | ({status: "unselected"} & ReadonlyAvailability)
     | ({status: "empty"} & ReadonlyAvailability)
     | ({status: "archived"; canRestore: boolean} & ReadonlyAvailability)
     | ({status: "profile-unavailable"; message: string} & ReadonlyAvailability)
@@ -644,7 +667,7 @@ export type AgentComposerAvailability =
     | ({status: "blocked"} & ReadonlyAvailability);
 
 /** Composer 状态条允许请求的宿主动作。 */
-export type AgentComposerAvailabilityAction = "create-session" | "retry-session" | "restore-session";
+export type AgentComposerAvailabilityAction = "create-session" | "retry-session" | "restore-session" | "choose-session";
 
 export type AgentComposerAvailabilityInput = {
     activation: AgentSurfaceActivationState;
@@ -672,6 +695,10 @@ export function projectAgentComposerAvailability(input: AgentComposerAvailabilit
     }
     if (input.activation.status === "error") {
         return {status: "load-error", readonly: true, canStop, message: input.activation.message};
+    }
+
+    if (input.activation.status === "unselected") {
+        return {status: "unselected", readonly: true, canStop};
     }
     if (input.activation.status === "empty") {
         return {status: "empty", readonly: true, canStop};

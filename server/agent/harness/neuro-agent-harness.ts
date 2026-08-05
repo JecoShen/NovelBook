@@ -51,6 +51,7 @@ import {SessionWriteExecutor} from "nbook/server/agent/session/write-plan";
 import type {AppendManySessionEntryDraft, SessionWriteEntryBatch, SessionWritePlan, SessionWriteResult, SessionWriteTimingSink} from "nbook/server/agent/session/write-plan";
 import {ToolSessionWriteSink} from "nbook/server/agent/session/tool-session-write-sink";
 import {relationLedgerChange} from "nbook/server/agent/session/relation-ledger";
+import {projectRelatedSessions} from "nbook/server/agent/session/relation-projection";
 import {AGENT_FOLLOW_UP_QUEUE_STATE_KEY, AGENT_MODE_STATE_KEY, AGENT_MODE_UI_STATE_KEY, AGENT_PENDING_USER_RESOLUTION_STATE_PREFIX, SESSION_SUMMARIZER_STATE_KEY, SESSION_TITLE_OWNER_STATE_KEY, readTitleOwner, type SessionTitleOwnerState} from "nbook/server/agent/session/custom-state-keys";
 import type {InvocationErrorInfo, InvocationErrorPhase, ModelChangeEntry, NeuroSessionContext, SessionEntry, SessionEntryDraft, SessionEntryId, SessionMetadata, SessionSnapshot} from "nbook/server/agent/session/types";
 import {SessionCurrentProjectError} from "nbook/server/agent/session/current-project-error";
@@ -161,7 +162,6 @@ import type {
     AgentCommandRequestDto,
     AgentCommandResult,
     AgentFollowUpQueueStateDto,
-    AgentLinkedSessionDto,
     AgentPendingApprovalDto,
     AgentRuntimeStreamEventDto,
     AgentSessionContextUsageDto,
@@ -2622,6 +2622,7 @@ export class NeuroAgentHarness {
             tree: this.repo.tree(snapshot),
             linkedAgents: relations.linkedAgents,
             linkedByAgents: relations.linkedByAgents,
+            ...(relations.unavailableLinkedAgents ? {unavailableLinkedAgents: relations.unavailableLinkedAgents} : {}),
             pendingUserInputs: await Promise.all(projection.pendingApprovals.map((pending) => this.pendingApprovalDto(snapshot, pending, true))),
             steerQueue: projectQueuedMessages(this.steerQueues.get(sessionId) ?? []),
             followUpQueue: this.publicFollowUpQueue(followUpQueue),
@@ -2677,35 +2678,37 @@ export class NeuroAgentHarness {
     ): Promise<AgentSessionRelationsDto> {
         const index = await this.relationIndex();
         const sessionId = projection.snapshot.metadata.sessionId;
-        const linkedAgents: AgentLinkedSessionDto[] = [];
-        for (const linked of this.currentOwnedLinks(sessionId, index)) {
-            const linkedSnapshot = await measureAgentTimingStep(timing, "readSession", () => this.repo.readSession(linked.targetSessionId));
-            const linkedProjection = await this.resolveSessionRuntimeProjection(linked.targetSessionId, linkedSnapshot, timing);
-            linkedAgents.push(linkedProjection.summary);
-        }
+        const linkedSessionIds = this.currentOwnedLinks(sessionId, index).map((linked) => linked.targetSessionId);
+        const ownerSessionIds = this.currentOwnerLinks(sessionId, index).map((linked) => linked.ownerSessionId);
+        // 无关联目标时保持旧的同步空路径，避免 recovery 在 abort 收口后额外让出事件循环。
+        const linkedAgents = linkedSessionIds.length === 0
+            ? {items: [] as AgentSessionSummaryDto[], unavailable: 0}
+            : await projectRelatedSessions(
+            linkedSessionIds,
+            async (linkedSessionId) => {
+                const linkedSnapshot = await measureAgentTimingStep(timing, "readSession", () => this.repo.readSession(linkedSessionId));
+                const linkedProjection = await this.resolveSessionRuntimeProjection(linkedSessionId, linkedSnapshot, timing);
+                return linkedProjection.summary;
+            },
+        );
+        const linkedByAgents = ownerSessionIds.length === 0
+            ? {items: [] as AgentSessionSummaryDto[], unavailable: 0}
+            : await projectRelatedSessions(
+            ownerSessionIds,
+            async (ownerSessionId) => {
+                const ownerSnapshot = await measureAgentTimingStep(timing, "readSession", () => this.repo.readSession(ownerSessionId));
+                const ownerProjection = await this.resolveSessionRuntimeProjection(ownerSessionId, ownerSnapshot, timing);
+                return ownerProjection.summary;
+            },
+        );
         return {
             sessionId,
-            linkedAgents,
-            linkedByAgents: await this.linkedByAgentsFromIndex(sessionId, index, timing),
+            linkedAgents: linkedAgents.items,
+            linkedByAgents: [...linkedByAgents.items].sort((left, right) => right.updatedAt - left.updatedAt),
+            ...((linkedAgents.unavailable + linkedByAgents.unavailable) > 0
+                ? {unavailableLinkedAgents: linkedAgents.unavailable + linkedByAgents.unavailable}
+                : {}),
         };
-    }
-
-    /**
-     * 返回哪些 session 仍记录了指向目标 session 的 agent link。
-     * 索引按全局sessionId建立；关系不依赖Current Project归属。
-     */
-    private async linkedByAgentsFromIndex(
-        sessionId: number,
-        index: SessionRelationIndex,
-        timing?: AgentOperationTiming,
-    ): Promise<AgentLinkedSessionDto[]> {
-        const linkedByAgents: AgentLinkedSessionDto[] = [];
-        for (const linked of this.currentOwnerLinks(sessionId, index)) {
-            const ownerSnapshot = await measureAgentTimingStep(timing, "readSession", () => this.repo.readSession(linked.ownerSessionId));
-            const ownerProjection = await this.resolveSessionRuntimeProjection(linked.ownerSessionId, ownerSnapshot, timing);
-            linkedByAgents.push(ownerProjection.summary);
-        }
-        return linkedByAgents.sort((left, right) => right.updatedAt - left.updatedAt);
     }
 
     private async relationIndex(): Promise<SessionRelationIndex> {

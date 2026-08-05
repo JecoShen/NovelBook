@@ -1,4 +1,4 @@
-import type {AgentSessionEventDto, AgentSessionEventsQueryDto, AgentSessionRecoveryDto} from "nbook/shared/dto/agent-session.dto";
+import type {AgentSessionEventDto, AgentSessionEventsQueryDto, AgentSessionRecoveryDto, AgentSessionIdentity} from "nbook/shared/dto/agent-session.dto";
 import type {AgentRecoveryApplyResult} from "nbook/app/components/novel-ide/agent/useAgentSession";
 import type {Ref} from "vue";
 import {ref} from "vue";
@@ -42,6 +42,8 @@ export type AgentSessionStreamOptions = {
     session: AgentSessionStreamStore;
     api: AgentSessionStreamApi;
     activeSessionId: Ref<number | null>;
+    /** 可选的 Session 逻辑身份；存在时 SSE recovery 也必须匹配。 */
+    activeSessionIdentity?: Ref<AgentSessionIdentity | null>;
     applyRecoverySideEffects?: (
         recovery: AgentSessionRecoveryDto,
         result: AgentRecoveryApplyResult,
@@ -199,6 +201,11 @@ export function useAgentSessionStream(options: AgentSessionStreamOptions) {
                 }
                 if (recovery.summary.sessionId !== targetSessionId) {
                     throw new Error(`Agent session recovery 身份不匹配：期望 ${String(targetSessionId)}，收到 ${String(recovery.summary.sessionId)}`);
+                }
+                if (options.activeSessionIdentity?.value !== null
+                    && options.activeSessionIdentity?.value !== undefined
+                    && recovery.summary.sessionIdentity !== options.activeSessionIdentity.value) {
+                    throw new Error("Agent session recovery 身份与当前绑定不一致");
                 }
                 const applyResult = options.session.applyRecovery(recovery);
                 options.session.clearRecoveryRequest();

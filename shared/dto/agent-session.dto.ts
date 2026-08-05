@@ -18,6 +18,12 @@ const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() => z.union([
 ]));
 
 export const AgentSessionIdSchema = z.number().int().positive();
+/** Session 的不可变逻辑身份；UUID 用于新 Session，sha256 用于没有身份字段的现有 header。 */
+export const AgentSessionIdentitySchema = z.union([
+    z.string().uuid(),
+    z.string().regex(/^sha256:[0-9a-f]{64}$/u, "Agent Session identity 格式非法"),
+]);
+export type AgentSessionIdentity = z.infer<typeof AgentSessionIdentitySchema>;
 export const AgentClientMessageIdSchema = z.string().uuid();
 export const AgentAttachmentIdSchema = z.string()
     .regex(/^sha256:[0-9a-f]{64}$/u, "Attachment ID 格式非法")
@@ -334,6 +340,7 @@ export type AgentSessionContextUsageDto = {
 
 export type AgentSessionSummaryDto = {
     sessionId: number;
+    sessionIdentity: AgentSessionIdentity;
     profileKey: string;
     /**
      * 当前 session 引用的 profile 是否仍可用于后续运行。
@@ -439,6 +446,8 @@ export type AgentSessionRelationsDto = {
     sessionId: number;
     linkedAgents: AgentLinkedSessionDto[];
     linkedByAgents: AgentLinkedSessionDto[];
+    /** 关联目标已不存在时的局部降级数量；主对话仍然可用。 */
+    unavailableLinkedAgents?: number;
 };
 
 export type AgentPendingUserInputDto = {
@@ -790,6 +799,8 @@ export type AgentSessionRecoveryDto = {
     tree: SessionTreeNode[];
     linkedAgents: AgentLinkedSessionDto[];
     linkedByAgents: AgentLinkedSessionDto[];
+    /** 关联目标已不存在时的局部降级数量；主对话仍然可用。 */
+    unavailableLinkedAgents?: number;
     pendingUserInputs: AgentPendingUserInputDto[];
     steerQueue: AgentQueuedMessageListDto;
     followUpQueue: AgentFollowUpQueueStateDto;
