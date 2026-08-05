@@ -8,6 +8,14 @@
 >
 > 术语收口：最终合同只称 Project / Project Workspace，不再使用 `managed Project`。下文“旧 managed session”仅指旧 `workspace/<slug>` session 的迁移来源类别。
 
+## 2026-08-05：PR #47 草稿失败与前台 recovery deferred 收口
+
+- `AgentComposerDraftSession` 不再把草稿读取失败降级为空正文。目标 context 只在旧草稿保存和目标草稿读取都成功后激活；`switchContext()`、`clearContext()` 和 acceptance 的持久化失败会保留当前 context、generation 和输入正文，Surface 在解除 Session 绑定前也会先完成草稿保存。
+- Session recovery controller 新增 `started / reused / deferred` 请求结果。SSE 404 在同一界面已有 foreground owner 时记录一次 deferred recovery；前台加载成功会丢弃它，前台失败且旧 Session 仍有完整 recovery 时由 owner 收口并只 replay 一次。主面板与 Inline Editor controller 继续隔离，scope/owner 改变或销毁时会清掉 deferred。
+- `onSessionNotFound` 现在明确返回 `handled / deferred / ignored`：404 的 ignored 不再进入普通错误出口，409 继续按关联资源错误处理。已补回调结果、前台成功/失败、single-flight 和 owner 失效测试。
+- 主面板和 Inline 的 remembered Session ID 在权威状态提交及 stream 启动后才安全写入；`Storage.setItem()` 异常不会回滚已经提交的 Session，只显示一次提示，旧记忆不被误删。
+- 本轮 focused 回归为 **14 files / 170 tests passed**；`bun run nuxt:prepare`、根 `bun run typecheck`、`bun run docs:build` 和 `git diff --check` 均通过。docs build 只有既有 VitePress chunk size warning；浏览器未自动运行，完整 Vitest 和 GitHub Full tests advisory 仍不是全绿证据，Linux `C:/...` fixture、Bun worker 和工具环境失败继续归 Issue #15。
+
 ## 2026-08-05：Issue #26 / PR #47 跨 State Root 恢复竞态收口
 
 - 直接请求和 SSE recovery 现在共享同一 Session 生命周期合同：请求 Session 自身缺失返回 `404 / SESSION_NOT_FOUND`；只在读取关联 Session 时缺失返回 `409 / SESSION_DEPENDENCY_NOT_FOUND`。Profile Preview/Compile 的 `sessionId` 仍是字符串 DTO，但路由在进入 worker 或 Profile prepare 前拒绝 `abc`、`NaN`、零、负数和超出安全整数范围的值，统一返回 400；未提供 `sessionId` 的预览请求也不会绕过错误映射。

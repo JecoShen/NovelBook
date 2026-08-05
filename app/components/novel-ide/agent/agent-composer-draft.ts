@@ -102,6 +102,7 @@ export class AgentComposerDraftClientStore {
 export class AgentComposerDraftSession {
     private context: AgentComposerDraftContext | null = null;
     private generation = 0;
+    private operationRevision = 0;
     private timer: ReturnType<typeof setTimeout> | null = null;
     private queue: Promise<void> = Promise.resolve();
 
@@ -114,10 +115,7 @@ export class AgentComposerDraftSession {
     /** 只读取目标草稿，不改变当前 context；调用方可在异步加载完成后再决定是否激活。 */
     async prepareContext(scopeKey: string, sessionId: number): Promise<AgentComposerDraftPreparedContext> {
         const identity = AgentComposerDraftIdentitySchema.parse({scopeKey, sessionId});
-        const loaded = await this.enqueue(() => this.store.load(identity)).catch((error) => {
-            this.onError?.(error);
-            return {text: ""};
-        });
+        const loaded = await this.enqueue(() => this.store.load(identity));
         return {...identity, text: loaded.text};
     }
 
@@ -127,6 +125,7 @@ export class AgentComposerDraftSession {
             scopeKey: prepared.scopeKey,
             sessionId: prepared.sessionId,
         });
+        this.operationRevision += 1;
         this.cancelTimer();
         const generation = ++this.generation;
         this.context = {...identity, generation, revision: 0, text: prepared.text};
@@ -137,15 +136,16 @@ export class AgentComposerDraftSession {
     async switchContext(scopeKey: string, sessionId: number): Promise<AgentComposerDraftSwitchResult> {
         const parsedScopeKey = AgentComposerDraftScopeKeySchema.parse(scopeKey);
         const previous = this.context ? {...this.context} : null;
-        this.cancelTimer();
-        this.generation += 1;
-        const generation = this.generation;
-        this.context = null;
+        const operationRevision = ++this.operationRevision;
         if (previous) {
-            await this.persist(previous).catch((error) => this.onError?.(error));
+            await this.persist(previous);
         }
         const loaded = await this.prepareContext(parsedScopeKey, sessionId);
-        if (generation !== this.generation) return {...loaded, generation, active: false};
+        if (operationRevision !== this.operationRevision) {
+            return {...loaded, generation: this.generation, active: false};
+        }
+        this.cancelTimer();
+        const generation = ++this.generation;
         this.context = {scopeKey: parsedScopeKey, sessionId, generation, revision: 0, text: loaded.text};
         return {...loaded, generation, active: true};
     }
@@ -153,12 +153,14 @@ export class AgentComposerDraftSession {
     /** 关闭当前 context；用于 Project Workspace 切换和组件销毁。 */
     async clearContext(): Promise<number> {
         const previous = this.context ? {...this.context} : null;
-        this.cancelTimer();
-        this.generation += 1;
-        this.context = null;
+        const operationRevision = ++this.operationRevision;
         if (previous) {
-            await this.persist(previous).catch((error) => this.onError?.(error));
+            await this.persist(previous);
         }
+        if (operationRevision !== this.operationRevision) return this.generation;
+        this.cancelTimer();
+        this.context = null;
+        this.generation += 1;
         return this.generation;
     }
 
@@ -198,19 +200,21 @@ export class AgentComposerDraftSession {
                 || current.text !== submission.text) {
                 return {clearEditor: false};
             }
+            await this.enqueue(() => this.store.clear(submission));
+            if (current.generation !== submission.generation
+                || current.revision !== submission.revision
+                || current.text !== submission.text) {
+                return {clearEditor: false};
+            }
             this.cancelTimer();
             current.text = "";
             current.revision += 1;
-            await this.enqueue(() => this.store.clear(submission)).catch((error) => this.onError?.(error));
             return {clearEditor: true};
         }
 
-        const stored = await this.enqueue(() => this.store.load(submission)).catch((error) => {
-            this.onError?.(error);
-            return {text: ""};
-        });
+        const stored = await this.enqueue(() => this.store.load(submission));
         if (stored.text === submission.text) {
-            await this.enqueue(() => this.store.clear(submission)).catch((error) => this.onError?.(error));
+            await this.enqueue(() => this.store.clear(submission));
         }
         return {clearEditor: false};
     }

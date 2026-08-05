@@ -48,9 +48,15 @@ export type AgentSessionStreamOptions = {
         owner: AgentSessionStreamOwner,
     ) => void | Promise<void>;
     onEvent?: (event: AgentSessionEventDto, owner: AgentSessionStreamOwner) => void | Promise<void>;
-    onSessionNotFound?: (error: unknown, owner: AgentSessionStreamOwner) => void | Promise<void>;
+    onSessionNotFound?: (
+        error: unknown,
+        owner: AgentSessionStreamOwner,
+    ) => AgentSessionNotFoundHandling | void | Promise<AgentSessionNotFoundHandling | void>;
     onError?: (error: unknown, fallback: string) => void;
 };
+
+/** Session 缺失回调对 stream 错误出口的处理结果。 */
+export type AgentSessionNotFoundHandling = "handled" | "deferred" | "ignored";
 
 /** Session stream 回调的连接所有权；异步副作用提交前必须再次检查 isCurrent。 */
 export type AgentSessionStreamOwner = Readonly<{
@@ -225,9 +231,12 @@ export function useAgentSessionStream(options: AgentSessionStreamOptions) {
                 if (errorCode === "SESSION_NOT_FOUND") {
                     options.session.clearRecoveryRequest();
                     if (options.onSessionNotFound) {
-                        await options.onSessionNotFound(error, {sessionId: targetSessionId, isCurrent});
-                        settleRecoveryFailure(targetSessionId, isCurrent);
-                        return true;
+                        const handling = await options.onSessionNotFound(error, {sessionId: targetSessionId, isCurrent});
+                        if (handling !== "ignored") {
+                            settleRecoveryFailure(targetSessionId, isCurrent);
+                            return true;
+                        }
+                        return false;
                     }
                     settleRecoveryFailure(targetSessionId, isCurrent);
                 }

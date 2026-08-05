@@ -13,7 +13,9 @@ import {
     recoverMissingSessionSelection,
     resolveMissingSessionFallback,
     runSessionLoadAttempt,
+    tryWriteRememberedSession,
     watchAgentSurfaceActivation,
+    type AgentSessionLoadOwner,
     type AgentSurfaceActivationState,
 } from "nbook/app/components/novel-ide/agent/agent-chat-surface-state";
 
@@ -273,20 +275,22 @@ describe("AgentSessionLoadController", () => {
             await recoveryWork.promise;
             return controller.accepts(owner, "project:a") ? "recovered" : "superseded";
         });
-        expect(recovery).not.toBeNull();
+        expect(recovery.status).toBe("started");
         const foreground = controller.beginForeground("project:a");
         expect(controller.accepts(foreground, "project:a")).toBe(true);
         recoveryWork.resolve("late");
 
-        await expect(recovery).resolves.toBe("superseded");
+        await expect(recovery.promise).resolves.toBe("superseded");
         expect(controller.accepts(foreground, "project:a")).toBe(true);
     });
 
-    it("前台加载存在时不启动 recovery，同一 recovery 只复用一个 Promise", async () => {
+    it("前台加载存在时延迟 recovery，同一 recovery 只复用一个 Promise", async () => {
         const controller = new AgentSessionLoadController();
         const foreground = controller.beginForeground("project:a");
-        expect(controller.runRecovery("project:a", async () => "blocked")).toBeNull();
-        controller.finish(foreground);
+        const deferredRequest = controller.runRecovery("project:a", async () => "blocked");
+        expect(deferredRequest.status).toBe("deferred");
+        await controller.finish(foreground);
+        await expect(deferredRequest.promise).resolves.toBeUndefined();
 
         const recoveryWork = deferred<void>();
         const work = vi.fn(async () => {
@@ -295,10 +299,10 @@ describe("AgentSessionLoadController", () => {
         });
         const first = controller.runRecovery("project:a", work);
         const duplicate = controller.runRecovery("project:a", work);
-        expect(duplicate).toBe(first);
+        expect(duplicate.promise).toBe(first.promise);
         expect(work).toHaveBeenCalledOnce();
         recoveryWork.resolve();
-        await expect(first).resolves.toBe("ok");
+        await expect(first.promise).resolves.toBe("ok");
     });
 
     it("旧 recovery reject 后的 finally 不能清理新的前台 owner", async () => {
@@ -311,8 +315,38 @@ describe("AgentSessionLoadController", () => {
         const foreground = controller.beginForeground("project:a");
         recoveryWork.resolve();
 
-        await expect(recovery).rejects.toThrow("recovery failed");
+        await expect(recovery.promise).rejects.toThrow("recovery failed");
         expect(controller.accepts(foreground, "project:a")).toBe(true);
+    });
+
+    it("前台失败时只 replay 一次 deferred recovery，成功时丢弃它", async () => {
+        const controller = new AgentSessionLoadController();
+        const foreground = controller.beginForeground("project:a");
+        const recoveryWork = vi.fn(async (owner: AgentSessionLoadOwner) => {
+            expect(controller.accepts(owner, "project:a")).toBe(true);
+            return "recovered";
+        });
+        const deferredRecovery = controller.runRecovery("project:a", recoveryWork);
+        expect(deferredRecovery.status).toBe("deferred");
+        await controller.finish(foreground, true);
+        await expect(deferredRecovery.promise).resolves.toBe("recovered");
+        expect(recoveryWork).toHaveBeenCalledOnce();
+
+        const nextForeground = controller.beginForeground("project:a");
+        const discarded = controller.runRecovery("project:a", async () => "stale");
+        expect(discarded.status).toBe("deferred");
+        await controller.finish(nextForeground);
+        await expect(discarded.promise).resolves.toBeUndefined();
+    });
+
+    it("scope 改变时收口旧 deferred，不让旧 SSE 回调悬挂", async () => {
+        const controller = new AgentSessionLoadController();
+        const first = controller.beginForeground("project:a");
+        const deferredRequest = controller.runRecovery("project:a", async () => "stale");
+        controller.beginForeground("project:b");
+
+        await expect(deferredRequest.promise).resolves.toBeUndefined();
+        await controller.finish(first);
     });
 
     it("不同 Surface 的 controller 互不撤销 owner，旧 finally 不能清理新前台加载", () => {
@@ -552,6 +586,27 @@ describe("projectAgentComposerAvailability", () => {
             running: true,
             interaction: {...interaction, canResolveUserInput: false, canAbort: true},
         })).toEqual({status: "waiting-blocked", readonly: true, canStop: true});
+    });
+});
+
+describe("tryWriteRememberedSession", () => {
+    it("写入成功返回 saved", () => {
+        const storage = new MemoryStorage();
+
+        expect(tryWriteRememberedSession(storage, "session", 7)).toEqual({status: "saved"});
+        expect(storage.getItem("session")).toBe("7");
+    });
+
+    it("Storage 写入失败只返回 failed，不影响已有记忆", () => {
+        const storage = new MemoryStorage();
+        storage.setItem("session", "3");
+        const error = new Error("quota");
+        storage.setItem = () => {
+            throw error;
+        };
+
+        expect(tryWriteRememberedSession(storage, "session", 7)).toEqual({status: "failed", error});
+        expect(storage.getItem("session")).toBe("3");
     });
 });
 

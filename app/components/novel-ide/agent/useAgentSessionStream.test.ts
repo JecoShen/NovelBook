@@ -281,6 +281,52 @@ describe("useAgentSessionStream", () => {
         expect(onError).not.toHaveBeenCalled();
     });
 
+    it("404 deferred 结果跳过普通错误出口，等待前台操作收口", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const onSessionNotFound = vi.fn(async () => "deferred" as const);
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => {
+                    throw sessionNotFoundHttpError();
+                }),
+                subscribeSessionEvents: vi.fn(async () => never()),
+            },
+            onSessionNotFound,
+            onError,
+        });
+
+        await expect(stream.syncRecovery("snapshot_required")).resolves.toBe(true);
+        expect(onSessionNotFound).toHaveBeenCalledOnce();
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("404 ignored 结果不再发布普通错误", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const onSessionNotFound = vi.fn(async () => "ignored" as const);
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => {
+                    throw sessionNotFoundHttpError();
+                }),
+                subscribeSessionEvents: vi.fn(async () => never()),
+            },
+            onSessionNotFound,
+            onError,
+        });
+
+        await expect(stream.syncRecovery("snapshot_required")).resolves.toBe(false);
+        expect(onSessionNotFound).toHaveBeenCalledOnce();
+        expect(onError).not.toHaveBeenCalled();
+    });
+
     it("强制 recovery 的 Session Not Found 交给专用回调而不向调用方抛出", async () => {
         const session = useAgentSession();
         session.applyRecovery(recovery(1, 1));

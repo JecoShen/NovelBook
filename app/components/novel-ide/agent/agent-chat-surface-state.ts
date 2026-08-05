@@ -46,6 +46,20 @@ export function forgetRememberedSession(storage: Storage, key: string, failedSes
     return true;
 }
 
+export type RememberedSessionWriteResult =
+    | {status: "saved"}
+    | {status: "failed"; error: unknown};
+
+/** 安全写入一次性 Session 记忆；失败不能影响已经提交的权威状态。 */
+export function tryWriteRememberedSession(storage: Storage, key: string, sessionId: number): RememberedSessionWriteResult {
+    try {
+        storage.setItem(key, String(sessionId));
+        return {status: "saved"};
+    } catch (error) {
+        return {status: "failed", error};
+    }
+}
+
 export type MissingSessionRecoveryResult =
     | {status: "superseded"}
     | {status: "empty"}
@@ -124,6 +138,19 @@ type SessionRecoveryRequest = {
     promise: Promise<unknown>;
 };
 
+type DeferredSessionRecoveryRequest = {
+    scopeKey: string;
+    work: (owner: AgentSessionLoadOwner) => Promise<unknown>;
+    resolve: (value: unknown) => void;
+    reject: (error: unknown) => void;
+    promise: Promise<unknown>;
+};
+
+export type AgentSessionRecoveryStart<TResult> = Readonly<{
+    status: "started" | "reused" | "deferred";
+    promise: Promise<TResult>;
+}>;
+
 /**
  * 管理一个 Session Surface 内的目标加载竞争。
  *
@@ -134,30 +161,51 @@ export class AgentSessionLoadController {
     private nextRevision = 0;
     private current: AgentSessionLoadOwner | null = null;
     private recoveryRequest: SessionRecoveryRequest | null = null;
+    private deferredRecovery: DeferredSessionRecoveryRequest | null = null;
 
     /** 开始前台加载，并立即使旧 recovery 失效。 */
     beginForeground(scopeKey: string): AgentSessionLoadOwner {
+        if (this.deferredRecovery && this.deferredRecovery.scopeKey !== scopeKey) {
+            this.deferredRecovery.resolve(undefined);
+            this.deferredRecovery = null;
+        }
         const owner = Object.freeze({scopeKey, revision: ++this.nextRevision, kind: "foreground" as const});
         this.current = owner;
         return owner;
     }
 
-    /**
-     * 启动或复用当前 scope 的 recovery；前台加载存在时返回 null。
-     * recovery work 必须使用传入 owner 检查提交权限。
-     */
+    /** 启动、复用或延迟当前 scope 的 recovery；recovery work 负责检查 owner。 */
     runRecovery<TResult>(
         scopeKey: string,
         work: (owner: AgentSessionLoadOwner) => Promise<TResult>,
-    ): Promise<TResult> | null {
+    ): AgentSessionRecoveryStart<TResult> {
         if (this.current?.kind === "foreground") {
-            return null;
+            if (this.deferredRecovery && this.deferredRecovery.scopeKey === scopeKey) {
+                return {
+                    status: "deferred",
+                    promise: this.deferredRecovery.promise as Promise<TResult>,
+                };
+            }
+            let resolveDeferred!: (value: unknown) => void;
+            let rejectDeferred!: (error: unknown) => void;
+            const promise = new Promise<unknown>((resolve, reject) => {
+                resolveDeferred = resolve;
+                rejectDeferred = reject;
+            });
+            this.deferredRecovery = {
+                scopeKey,
+                work: work as (owner: AgentSessionLoadOwner) => Promise<unknown>,
+                resolve: resolveDeferred,
+                reject: rejectDeferred,
+                promise,
+            };
+            return {status: "deferred", promise: promise as Promise<TResult>};
         }
         if (this.recoveryRequest
             && this.current?.revision === this.recoveryRequest.owner.revision
             && this.current.scopeKey === scopeKey
             && this.recoveryRequest.owner.scopeKey === scopeKey) {
-            return this.recoveryRequest.promise as Promise<TResult>;
+            return {status: "reused", promise: this.recoveryRequest.promise as Promise<TResult>};
         }
 
         const owner = Object.freeze({scopeKey, revision: ++this.nextRevision, kind: "recovery" as const});
@@ -177,7 +225,7 @@ export class AgentSessionLoadController {
         })();
         request.promise = promise;
         this.recoveryRequest = request;
-        return promise;
+        return {status: "started", promise: promise as Promise<TResult>};
     }
 
     /** 判断 owner 是否仍拥有当前 scope 的 Session 提交权。 */
@@ -187,18 +235,34 @@ export class AgentSessionLoadController {
             && owner.scopeKey === scopeKey;
     }
 
-    /** 完成前台加载；recovery 的生命周期由 runRecovery 自己收口。 */
-    finish(owner: AgentSessionLoadOwner): void {
+    /** 完成前台加载；成功时丢弃 deferred，失败保留旧 Session 时 replay 一次。 */
+    async finish(owner: AgentSessionLoadOwner, replayDeferred = false): Promise<void> {
         if (!this.accepts(owner, owner.scopeKey)) return;
-        if (owner.kind === "foreground" || !this.recoveryRequest) {
-            this.current = null;
+        if (owner.kind !== "foreground") return;
+        this.current = null;
+        const deferred = this.deferredRecovery;
+        this.deferredRecovery = null;
+        if (!deferred) return;
+        if (deferred.scopeKey !== owner.scopeKey) {
+            deferred.resolve(undefined);
+            return;
         }
+        if (!replayDeferred) {
+            deferred.resolve(undefined);
+            return;
+        }
+        const recovery = this.runRecovery(deferred.scopeKey, deferred.work as (recoveryOwner: AgentSessionLoadOwner) => Promise<unknown>);
+        recovery.promise.then(deferred.resolve, deferred.reject);
+        await recovery.promise.catch(() => undefined);
     }
 
     /** 组件/Workspace 重置时立即撤销当前 owner。 */
     invalidate(): void {
         this.nextRevision += 1;
         this.current = null;
+        const deferred = this.deferredRecovery;
+        this.deferredRecovery = null;
+        deferred?.resolve(undefined);
     }
 }
 
