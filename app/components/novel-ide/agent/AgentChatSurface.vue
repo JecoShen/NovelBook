@@ -487,10 +487,9 @@ function captureSurfaceOperation(expectedOperationKey?: string): AgentSurfaceAct
     return surfaceOperations.capture(sessionScopeKey.value);
 }
 
-/** Session 操作同时校验 Project generation 与目标 Session 身份。 */
-function acceptsSurfaceOperation(owner: AgentSurfaceActivationAttempt, expectedSessionId?: number): boolean {
-    return surfaceOperations.accepts(owner, sessionScopeKey.value)
-        && (expectedSessionId === undefined || inlineEditorSessionId.value === expectedSessionId);
+/** 主面板请求只校验主面板 Project generation。 */
+function acceptsSurfaceOperation(owner: AgentSurfaceActivationAttempt): boolean {
+    return surfaceOperations.accepts(owner, sessionScopeKey.value);
 }
 
 /** 捕获 Inline PromptBar 当前 Project 代次；右侧面板隐藏时仍可用。 */
