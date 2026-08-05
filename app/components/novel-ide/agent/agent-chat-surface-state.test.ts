@@ -7,6 +7,7 @@ import {
     AgentSurfaceSupersededError,
     adoptInlineEditorRequest,
     forgetRememberedSession,
+    projectAgentSessionLoad,
     projectAgentComposerAvailability,
     projectInlineEditorSelection,
     recoverMissingSessionSelection,
@@ -121,6 +122,22 @@ describe("recoverMissingSessionSelection", () => {
         })).resolves.toEqual({status: "loaded", sessionId: 40});
         expect(load).toHaveBeenCalledOnce();
         expect(load).toHaveBeenCalledWith(40);
+    });
+});
+
+describe("projectAgentSessionLoad", () => {
+    it.each([
+        ["loaded", true, {status: "commit"}],
+        ["superseded", true, {status: "superseded"}],
+        ["primary_missing", true, {status: "preserve", reason: "primary_missing"}],
+        ["dependency_missing", true, {status: "preserve", reason: "dependency_missing"}],
+        ["failed", true, {status: "preserve", reason: "failed"}],
+        ["empty", true, {status: "clear", reason: "empty"}],
+        ["primary_missing", false, {status: "clear", reason: "primary_missing"}],
+        ["dependency_missing", false, {status: "clear", reason: "failed"}],
+        ["failed", false, {status: "clear", reason: "failed"}],
+    ] as const)("%s + stable=%s 投影为 %o", (status, stable, expected) => {
+        expect(projectAgentSessionLoad(status, stable)).toEqual(expected);
     });
 });
 

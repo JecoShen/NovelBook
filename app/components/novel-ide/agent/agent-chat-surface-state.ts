@@ -68,6 +68,46 @@ export type AgentSessionLoadResult<TResult> =
     | {status: "failed"; error: unknown}
     | {status: "superseded"};
 
+export type AgentSessionLoadStatus =
+    | "loaded"
+    | "primary_missing"
+    | "dependency_missing"
+    | "failed"
+    | "empty"
+    | "superseded";
+
+/** 将 Session 读取结果投影成 Surface 可执行的最小副作用集合。 */
+export type AgentSessionLoadProjection =
+    | {status: "commit"}
+    | {status: "preserve"; reason: "primary_missing" | "dependency_missing" | "failed"}
+    | {status: "clear"; reason: "primary_missing" | "failed" | "empty"}
+    | {status: "superseded"};
+
+/** 稳定当前 Session 时只保留旧内容；其余失败才允许清空 Surface。 */
+export function projectAgentSessionLoad(
+    status: AgentSessionLoadStatus,
+    hasStableSession: boolean,
+): AgentSessionLoadProjection {
+    if (status === "loaded") {
+        return {status: "commit"};
+    }
+    if (status === "superseded") {
+        return {status: "superseded"};
+    }
+    if ((status === "primary_missing" || status === "dependency_missing") && hasStableSession) {
+        return {status: "preserve", reason: status};
+    }
+    if (status === "failed" && hasStableSession) {
+        return {status: "preserve", reason: "failed"};
+    }
+    return {
+        status: "clear",
+        reason: status === "primary_missing" || status === "failed" || status === "empty"
+            ? status
+            : "failed",
+    };
+}
+
 /** Session 目标加载的前台/recovery 发布权；两类 owner 共享同一 scope，但互相不会误认。 */
 export type AgentSessionLoadOwner = Readonly<{
     scopeKey: string;
