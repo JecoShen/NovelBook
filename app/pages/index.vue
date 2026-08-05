@@ -211,10 +211,10 @@ type InlinePromptOwner = Readonly<{
 }>;
 let inlinePromptRequestRevision = 0;
 
-/** 捕获 Prompt Bar 调用时的 Surface 实例与 Project ready generation。 */
+/** 捕获 Prompt Bar 调用时的 Surface 实例与独立 Inline Project generation。 */
 function captureInlinePromptOwner(): InlinePromptOwner | null {
     const surface = agentSurfaceRef.value;
-    const operationKey = unref(surface?.operationScopeKey);
+    const operationKey = unref(surface?.inlineOperationScopeKey);
     if (!surface || typeof operationKey !== "string") return null;
     return {revision: ++inlinePromptRequestRevision, operationKey, surface};
 }
@@ -223,7 +223,7 @@ function captureInlinePromptOwner(): InlinePromptOwner | null {
 function acceptsInlinePromptOwner(owner: InlinePromptOwner): boolean {
     return owner.revision === inlinePromptRequestRevision
         && agentSurfaceRef.value === owner.surface
-        && unref(owner.surface.operationScopeKey) === owner.operationKey;
+        && unref(owner.surface.inlineOperationScopeKey) === owner.operationKey;
 }
 
 const studio = useMarkdownStudioController({
@@ -1113,6 +1113,7 @@ async function openInlineEditorSessionChat(): Promise<void> {
     if (!owner?.surface.openInlineEditorSession) return;
     try {
         rightPanelOpen.value = true;
+        await nextTick();
         const result = await owner.surface.openInlineEditorSession();
         if (result.status === "failed") {
             if (owner.revision === inlinePromptRequestRevision && agentSurfaceRef.value === owner.surface) {
@@ -1160,7 +1161,7 @@ watch([inlinePromptAvailable, agentSurfaceRef], ([available, surface]) => {
     }
 }, {immediate: true});
 
-watch(() => unref(agentSurfaceRef.value?.operationScopeKey), (nextScope, previousScope) => {
+watch(() => unref(agentSurfaceRef.value?.inlineOperationScopeKey), (nextScope, previousScope) => {
     if (previousScope === undefined || nextScope === previousScope) return;
     inlinePromptRequestRevision += 1;
     inlinePromptRunning.value = false;

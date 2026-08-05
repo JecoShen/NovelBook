@@ -49,7 +49,7 @@ describe("resolveMissingSessionFallback", () => {
 describe("recoverMissingSessionSelection", () => {
     it("只刷新和加载一次，并优先恢复原有效 Session", async () => {
         const refresh = vi.fn(async () => [{sessionId: 39}, {sessionId: 40}]);
-        const load = vi.fn(async () => true);
+        const load = vi.fn(async () => "loaded" as const);
 
         await expect(recoverMissingSessionSelection({
             failedSessionId: 3,
@@ -64,7 +64,7 @@ describe("recoverMissingSessionSelection", () => {
     });
 
     it("空列表不加载，fallback 失败也不递归重试", async () => {
-        const emptyLoad = vi.fn(async () => true);
+        const emptyLoad = vi.fn(async () => "loaded" as const);
         await expect(recoverMissingSessionSelection({
             failedSessionId: 3,
             previousSessionId: null,
@@ -74,20 +74,20 @@ describe("recoverMissingSessionSelection", () => {
         })).resolves.toEqual({status: "empty"});
         expect(emptyLoad).not.toHaveBeenCalled();
 
-        const failedLoad = vi.fn(async () => false);
+        const failedLoad = vi.fn(async () => "failed" as const);
         await expect(recoverMissingSessionSelection({
             failedSessionId: 3,
             previousSessionId: null,
             accepts: () => true,
             refresh: async () => [{sessionId: 39}, {sessionId: 40}],
             load: failedLoad,
-        })).resolves.toEqual({status: "load_failed", sessionId: 39});
+        })).resolves.toEqual({status: "load_failed", sessionId: 39, reason: "failed"});
         expect(failedLoad).toHaveBeenCalledTimes(1);
     });
 
     it("刷新或加载后 ownership 失效时不发布旧结果", async () => {
         let accepted = false;
-        const load = vi.fn(async () => true);
+        const load = vi.fn(async () => "loaded" as const);
         await expect(recoverMissingSessionSelection({
             failedSessionId: 3,
             previousSessionId: null,
@@ -105,13 +105,13 @@ describe("recoverMissingSessionSelection", () => {
             refresh: async () => [{sessionId: 39}],
             load: async () => {
                 accepted = false;
-                return true;
+                return "loaded" as const;
             },
         })).resolves.toEqual({status: "superseded"});
     });
 
     it("Inline 恢复不借用旧选择，只加载第一个有效 Session 一次", async () => {
-        const load = vi.fn(async () => true);
+        const load = vi.fn(async () => "loaded" as const);
 
         await expect(recoverMissingSessionSelection({
             failedSessionId: 3,

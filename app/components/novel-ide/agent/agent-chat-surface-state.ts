@@ -49,8 +49,11 @@ export function forgetRememberedSession(storage: Storage, key: string, failedSes
 export type MissingSessionRecoveryResult =
     | {status: "superseded"}
     | {status: "empty"}
-    | {status: "load_failed"; sessionId: number}
+    | {status: "load_failed"; sessionId: number; reason: "primary_missing" | "failed"}
     | {status: "loaded"; sessionId: number};
+
+/** fallback 读取的最小原因集合；只有 primary_missing 才允许清理 remembered ID。 */
+export type MissingSessionFallbackLoadResult = "loaded" | "primary_missing" | "failed";
 
 /** Session recovery 读取后提交的结果；dependency_missing 不得触发主资源 fallback。 */
 export type SessionLoadAttemptResult<TResult> =
@@ -64,6 +67,7 @@ export type SessionLoadAttemptResult<TResult> =
 export type AgentSessionLoadResult<TResult> =
     | {status: "loaded"; value: TResult}
     | {status: "empty"}
+    | {status: "primary_missing"}
     | {status: "dependency_missing"; error: unknown}
     | {status: "failed"; error: unknown}
     | {status: "superseded"};
@@ -243,7 +247,7 @@ export async function recoverMissingSessionSelection(input: {
     previousSessionId: number | null;
     accepts: () => boolean;
     refresh: () => Promise<readonly {readonly sessionId: number}[]>;
-    load: (sessionId: number) => Promise<boolean>;
+    load: (sessionId: number) => Promise<MissingSessionFallbackLoadResult>;
 }): Promise<MissingSessionRecoveryResult> {
     const sessions = await input.refresh();
     if (!input.accepts()) {
@@ -257,9 +261,9 @@ export async function recoverMissingSessionSelection(input: {
     if (!input.accepts()) {
         return {status: "superseded"};
     }
-    return loaded
+    return loaded === "loaded"
         ? {status: "loaded", sessionId: fallbackSessionId}
-        : {status: "load_failed", sessionId: fallbackSessionId};
+        : {status: "load_failed", sessionId: fallbackSessionId, reason: loaded};
 }
 
 /** 被新 scope、激活代次或组件销毁取代的请求。调用方应静默忽略。 */

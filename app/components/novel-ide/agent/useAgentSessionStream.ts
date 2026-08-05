@@ -150,6 +150,19 @@ export function useAgentSessionStream(options: AgentSessionStreamOptions) {
         }, retry.delayMs);
     };
 
+    /** 终结一次 Session 生命周期 recovery，避免 409 后永久停在 recovering。 */
+    const settleRecoveryFailure = (targetSessionId: number, isCurrent: () => boolean): void => {
+        if (!isCurrent()) {
+            return;
+        }
+        options.session.clearRecoveryRequest();
+        const liveConnection = Boolean(controller.value)
+            && sessionId.value === targetSessionId
+            && !controller.value?.signal.aborted
+            && !stopped;
+        options.session.applyConnectionStatus(liveConnection ? "connected" : "idle");
+    };
+
     const runRecovery = async (
         reason: AgentSessionStreamRecoveryReason,
         behavior: {force: boolean; reportError: boolean},
@@ -208,9 +221,18 @@ export function useAgentSessionStream(options: AgentSessionStreamOptions) {
                 if (!isCurrent()) {
                     return false;
                 }
-                if (resolveApiErrorCode(error) === "SESSION_NOT_FOUND" && options.onSessionNotFound) {
-                    await options.onSessionNotFound(error, {sessionId: targetSessionId, isCurrent});
-                    return true;
+                const errorCode = resolveApiErrorCode(error);
+                if (errorCode === "SESSION_NOT_FOUND") {
+                    options.session.clearRecoveryRequest();
+                    if (options.onSessionNotFound) {
+                        await options.onSessionNotFound(error, {sessionId: targetSessionId, isCurrent});
+                        settleRecoveryFailure(targetSessionId, isCurrent);
+                        return true;
+                    }
+                    settleRecoveryFailure(targetSessionId, isCurrent);
+                }
+                if (errorCode === "SESSION_DEPENDENCY_NOT_FOUND") {
+                    settleRecoveryFailure(targetSessionId, isCurrent);
                 }
                 if (behavior.reportError) {
                     options.onError?.(error, translate("agent.chatSurface.syncSessionFailed", "同步 Agent session 失败"));
@@ -373,6 +395,7 @@ export function useAgentSessionStream(options: AgentSessionStreamOptions) {
         ready = null;
         recoveryGeneration += 1;
         recoveryPromise = null;
+        options.session.clearRecoveryRequest();
         reconnectBackoff.reset();
         reconnectAttempt.value = 0;
         backoffSessionId = null;

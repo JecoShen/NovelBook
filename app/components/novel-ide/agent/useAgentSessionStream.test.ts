@@ -355,6 +355,7 @@ describe("useAgentSessionStream", () => {
     it("关联 Session 缺失走普通 recovery 错误出口，不调用 Session Not Found 回调", async () => {
         const session = useAgentSession();
         session.applyRecovery(recovery(1, 1));
+        session.requestRecovery("snapshot_required");
         const onSessionNotFound = vi.fn(async () => undefined);
         const onError = vi.fn();
         const stream = useAgentSessionStream({
@@ -373,11 +374,43 @@ describe("useAgentSessionStream", () => {
         await expect(stream.syncRecovery("snapshot_required")).resolves.toBe(false);
         expect(onSessionNotFound).not.toHaveBeenCalled();
         expect(onError).toHaveBeenCalledOnce();
+        expect(session.needsRecovery.value).toBe(false);
+        expect(session.connectionStatus.value).toBe("idle");
+    });
+
+    it("活动连接遇到关联 Session 缺失时清除 latch，不重复发起 recovery", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 1));
+        const getSessionRecovery = vi.fn(async () => {
+            throw sessionDependencyNotFoundHttpError();
+        });
+        const onError = vi.fn();
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery,
+                subscribeSessionEvents: vi.fn(async (_sessionId, _cursor, onEvent, signal, options) => {
+                    options?.onOpen?.();
+                    await onEvent(control(2, {type: "snapshot_required", reason: "dependency missing"}));
+                    await untilAbort(signal);
+                }),
+            },
+            onError,
+        });
+
+        await stream.start(1);
+        await vi.waitFor(() => expect(onError).toHaveBeenCalledOnce());
+        expect(getSessionRecovery).toHaveBeenCalledOnce();
+        expect(session.needsRecovery.value).toBe(false);
+        expect(session.connectionStatus.value).toBe("connected");
+        stream.stop();
     });
 
     it("强制 recovery 的关联 Session 缺失保留调用方错误，不调用专用回调", async () => {
         const session = useAgentSession();
         session.applyRecovery(recovery(1, 1));
+        session.requestRecovery("snapshot_required");
         const onSessionNotFound = vi.fn(async () => undefined);
         const onError = vi.fn();
         const error = sessionDependencyNotFoundHttpError();
@@ -397,6 +430,8 @@ describe("useAgentSessionStream", () => {
         await expect(stream.refreshRecovery("manual_refresh")).rejects.toBe(error);
         expect(onSessionNotFound).not.toHaveBeenCalled();
         expect(onError).not.toHaveBeenCalled();
+        expect(session.needsRecovery.value).toBe(false);
+        expect(session.connectionStatus.value).toBe("idle");
     });
 
     it("强制 recovery 开启新 generation，旧成功和旧错误都静默失效", async () => {
