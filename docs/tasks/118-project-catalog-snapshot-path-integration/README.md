@@ -1026,3 +1026,10 @@ Phase 4B + Phase 7 的实测规模是 **187 个生产文件 + 101 个测试文�
 - 主面板在列表为空前先持久化当前输入，再解除草稿 context、推进 Composer generation 并清空可见正文；草稿仍可从原 Session context 读取。浏览器记忆只在仍等于失效 ID 时删除，迟到恢复不能清掉用户的新选择。
 - 实施审查额外发现 Inline fallback 会错误使刚完成的列表请求失效，导致 loading 的旧 `finally` 无权收口。本轮让 fallback 复用同一列表请求代次，并把列表 request ID 纳入通知发布权；这属于既有 owner/request-ID 模型内的接线修复，没有增加第二套恢复状态机。
 - 验证只使用 mock 或隔离临时根，不访问真实 `workspace/`、Session 备份或 lease。最终聚焦回归为 12 files / 104 tests，根 `nuxt typecheck` 与 `docs:build` 通过。首轮并行回归有一个 Profile route 用例在 Windows 冷模块转换时越过默认 5 秒，但该文件隔离重跑 2/2 通过；把这个本轮 route 用例的测试预算收窄提高到 10 秒后，原 12 文件命令完整复跑 104/104。按仓库规则未自动执行浏览器验证。
+
+### 2026-08-05：PR #47 恢复生命周期最后收口
+
+- 复核确认右侧面板隐藏会停止主 Session SSE；重开时仅读取 recovery 会留下旧快照而没有实时事件。现在强制 recovery 成功后显式调用现有 `sessionStream.ensure()`；若 409 仍有完整 recovery，则保留 ready 状态并用旧 cursor 恢复 SSE，不重复 recovery。
+- 强制 recovery 的 `SESSION_DEPENDENCY_NOT_FOUND` 不再把稳定当前对话投影为 `load-error`。fallback 二次 404、列表为空或刷新失败均明确收口：旧 Session 有完整 recovery 时保留 ID、shell、stream、Composer 和草稿，否则进入 error/empty；只有明确二次 404 才删除匹配的 remembered ID。
+- 加载完成后的滚动回调改为检查 activation owner，避免 load owner 已正常 finish 后丢失本次 UI 收尾。没有引入新的状态机、Session schema、实例身份或恢复协议。
+- 本轮 focused 回归为 **14 files / 161 tests passed**；根 `bun run typecheck` 与 `bun run docs:build` 均通过，后者只有既有 VitePress chunk size warning；`git diff --check` 通过。浏览器未自动运行，GitHub Full tests 的 Linux `C:/...` fixture 失败继续归 Issue #15。

@@ -34,6 +34,36 @@ describe("useAgentSessionStream", () => {
         stream.stop();
     });
 
+    it("stop 后显式 ensure 会重新建立 Session SSE", async () => {
+        const session = useAgentSession();
+        session.applyRecovery(recovery(1, 3));
+        const subscribeSessionEvents = vi.fn(async (
+            _sessionId: number,
+            _cursor: AgentSessionEventsQueryDto,
+            _onEvent: (event: AgentSessionEventDto) => Promise<void>,
+            signal: AbortSignal,
+            options?: {onOpen?: () => void},
+        ) => {
+            options?.onOpen?.();
+            await untilAbort(signal);
+        });
+        const stream = useAgentSessionStream({
+            session,
+            activeSessionId: ref(1),
+            api: {
+                getSessionRecovery: vi.fn(async () => recovery(1, 3)),
+                subscribeSessionEvents,
+            },
+        });
+
+        await stream.start(1);
+        stream.stop();
+        await stream.ensure();
+
+        expect(subscribeSessionEvents).toHaveBeenCalledTimes(2);
+        stream.stop();
+    });
+
     it("连接 open 前 stop 会以 AbortError 结算 start", async () => {
         const session = useAgentSession();
         session.applyRecovery(recovery(1, 0));

@@ -83,7 +83,7 @@ export type AgentSessionLoadStatus =
 /** 将 Session 读取结果投影成 Surface 可执行的最小副作用集合。 */
 export type AgentSessionLoadProjection =
     | {status: "commit"}
-    | {status: "preserve"; reason: "primary_missing" | "dependency_missing" | "failed"}
+    | {status: "preserve"; reason: "primary_missing" | "dependency_missing" | "failed" | "empty"}
     | {status: "clear"; reason: "primary_missing" | "failed" | "empty"}
     | {status: "superseded"};
 
@@ -98,7 +98,7 @@ export function projectAgentSessionLoad(
     if (status === "superseded") {
         return {status: "superseded"};
     }
-    if ((status === "primary_missing" || status === "dependency_missing") && hasStableSession) {
+    if ((status === "primary_missing" || status === "dependency_missing" || status === "empty") && hasStableSession) {
         return {status: "preserve", reason: status};
     }
     if (status === "failed" && hasStableSession) {

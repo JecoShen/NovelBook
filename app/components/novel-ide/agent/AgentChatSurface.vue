@@ -1007,9 +1007,27 @@ const ensureSessionReadyInternal = async (
     }
     if (activeSessionId.value) {
         if (options.forceRecovery) {
-            const recovered = await sessionStream.refreshRecovery("manual_refresh");
+            let recovered = false;
+            try {
+                recovered = await sessionStream.refreshRecovery("manual_refresh");
+            } catch (error) {
+                const hasStableSession = session.recoveryShell.value?.summary.sessionId === activeSessionId.value;
+                if (resolveApiErrorCode(error) === "SESSION_DEPENDENCY_NOT_FOUND"
+                    && hasStableSession
+                    && acceptsActivation(attempt)) {
+                    surfaceActivation.markReady(attempt, sessionScopeKey.value);
+                    notifyAgentError(error, "关联对话不可用，当前对话未切换", "对话未切换");
+                    void sessionStream.ensure().catch(() => {});
+                    return sessions.value;
+                }
+                throw error;
+            }
             if (!recovered && acceptsActivation(attempt)) {
                 throw new Error(t("agent.chatSurface.syncSessionFailed"));
+            }
+            if (recovered && acceptsActivation(attempt) && activeSessionId.value) {
+                // 面板隐藏时 stop() 会清掉 controller；恢复快照后显式恢复实时事件流。
+                void sessionStream.ensure().catch(() => {});
             }
         }
         return sessions.value;
@@ -1349,6 +1367,21 @@ async function recoverMissingAgentSession(
         inputText.value = "";
         return true;
     };
+    const preserveStablePreviousSession = (error?: unknown): boolean => {
+        const hasStablePreviousSession = previousSessionId !== null
+            && activeSessionId.value === previousSessionId
+            && session.recoveryShell.value?.summary.sessionId === previousSessionId;
+        if (!hasStablePreviousSession || !acceptsLoad()) {
+            return false;
+        }
+        surfaceActivation.markReady(attempt, sessionScopeKey.value);
+        if (error) {
+            notifyAgentError(error, "目标对话不可用，当前对话未切换", "对话未切换");
+        } else {
+            notification.warning("目标对话不可用，当前对话未切换。", {title: "对话未切换"});
+        }
+        return true;
+    };
     if (!acceptsLoad() || (!ownsFailedSession && !ownsPreviousSession)) {
         return {status: "superseded"};
     }
@@ -1391,15 +1424,22 @@ async function recoverMissingAgentSession(
                     recovery.sessionId,
                 );
             }
-            if (!activeSessionId.value || !session.recoveryShell.value) {
-                clearActiveAgentSession();
-                if (!await clearComposerForNoSession()) {
-                    return {status: "superseded"};
-                }
+            const error = new Error("目标 Session 加载失败");
+            if (preserveStablePreviousSession(error)) {
+                return {status: "failed", error};
             }
-            return {status: "failed", error: new Error("目标 Session 加载失败")};
+            clearActiveAgentSession();
+            if (!await clearComposerForNoSession()) {
+                return {status: "superseded"};
+            }
+            const message = notifyAgentError(error, "目标 Session 加载失败");
+            surfaceActivation.markError(attempt, sessionScopeKey.value, message);
+            return {status: "failed", error};
         }
         if (recovery.status === "empty") {
+            if (preserveStablePreviousSession()) {
+                return {status: "empty"};
+            }
             clearActiveAgentSession();
             if (!await clearComposerForNoSession()) {
                 return {status: "superseded"};
@@ -1415,11 +1455,12 @@ async function recoverMissingAgentSession(
             return {status: "superseded"};
         }
         console.error("失效 Session 的列表恢复失败", refreshError);
-        if (!activeSessionId.value || !session.recoveryShell.value) {
-            clearActiveAgentSession();
-            if (!await clearComposerForNoSession()) {
-                return {status: "superseded"};
-            }
+        if (preserveStablePreviousSession(refreshError)) {
+            return {status: "failed", error: refreshError};
+        }
+        clearActiveAgentSession();
+        if (!await clearComposerForNoSession()) {
+            return {status: "superseded"};
         }
         const message = notifyAgentError(refreshError, "目标对话已失效，刷新对话列表失败");
         surfaceActivation.markError(attempt, sessionScopeKey.value, message);
@@ -1484,7 +1525,9 @@ const loadSession = async (
         });
         if (result.status === "loaded") {
             void nextTick().then(() => {
-                if (acceptsLoad() && activeSessionId.value === sessionId) {
+                if (acceptsActivation(attempt)
+                    && sessionScopeKey.value === targetScopeKey
+                    && activeSessionId.value === sessionId) {
                     scrollToBottom();
                 }
             });

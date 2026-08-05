@@ -132,7 +132,7 @@ describe("projectAgentSessionLoad", () => {
         ["primary_missing", true, {status: "preserve", reason: "primary_missing"}],
         ["dependency_missing", true, {status: "preserve", reason: "dependency_missing"}],
         ["failed", true, {status: "preserve", reason: "failed"}],
-        ["empty", true, {status: "clear", reason: "empty"}],
+        ["empty", true, {status: "preserve", reason: "empty"}],
         ["primary_missing", false, {status: "clear", reason: "primary_missing"}],
         ["dependency_missing", false, {status: "clear", reason: "failed"}],
         ["failed", false, {status: "clear", reason: "failed"}],
