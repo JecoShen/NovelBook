@@ -107,13 +107,6 @@ await measure("prune raw Product build state", async () => {
     await pruneRawServerState();
     await assertFinalRuntimeShape();
 });
-await measure("link bun package cache", async () => {
-    const outputBunCache = resolve(serverRoot, "node_modules", ".bun");
-    const repoBunCache = resolve("node_modules/.bun");
-    if (!existsSync(outputBunCache)) {
-        await symlink(repoBunCache, outputBunCache, "dir");
-    }
-});
 
 console.log(`Product commands: ${commands.commands.join(", ")} (${commands.files} files / ${commands.bytes} bytes)`);
 console.log(`Product bundle: inputs=${runtime.bundledInputs}, entry=${runtime.entryBytes} bytes`);
