@@ -20,6 +20,7 @@
 - [editor/](editor/)：Markdown Studio 富文本 / 源码模式稳定规则。
 - [theme/](theme/)：主题系统规则。
 - [harness/invoke-http.md](harness/invoke-http.md)：Agent Bridge HTTP 合同——外部 CLI 调 leader 的端点、鉴权、caller kind、并发限流、CLI sidecar。
+- [harness/ark-models.md](harness/ark-models.md)：Volcengine Ark（方舟 Coding Plan / Doubao / DeepSeek 系列）配置模板、模型名查询、developer role 兼容性与启动期 warn 入口。
 - [media/image-variants.md](media/image-variants.md)：图片原图所有权、授权 Adapter、变体参数、有界缓存和 Project 封面合同。
 
 ## Reading Order
