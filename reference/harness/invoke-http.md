@@ -143,3 +143,9 @@ dev 模式直连 `/api/workspace-files/read` 也行；bridge 文件读端点作�
 - 多会话 daemon / 远程 session 池
 - `nb-history` actor 扩展（要改 sibling 仓）
 - 远端（跨机）调用（ssh -L 隧道是用户责任）
+
+## 关联
+
+- [ark-models.md](./ark-models.md)：方舟 Coding Plan / Doubao / DeepSeek 模型的
+  `config.json` 模板、`/v3/models` 模型名查询、developer role 兼容性与启动期
+  warn。bridge 调用 ARK 之前先读这一份。
