@@ -12,6 +12,7 @@ export const PRODUCT_SHUTDOWN_PROTOCOL = "http-loopback-token/v1";
 export const PRODUCT_SHUTDOWN_PATH = "/__nbook/control/shutdown";
 export const PRODUCT_SHUTDOWN_TIMEOUT_MS = 30_000;
 export const PRODUCT_SHUTDOWN_TOKEN_ENVIRONMENT = "NEURO_BOOK_SHUTDOWN_TOKEN";
+export const PRODUCT_BRIDGE_TOKEN_ENVIRONMENT = "NEURO_BOOK_BRIDGE_TOKEN";
 export const PRODUCT_STARTUP_NONCE_ENVIRONMENT = "NEURO_BOOK_STARTUP_NONCE";
 export const PRODUCT_STARTUP_READY_PATH = "/api/app/version";
 export const PRODUCT_MANAGER_VERIFICATION_PROTOCOL = "runtime-image-receipt/v1";

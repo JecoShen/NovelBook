@@ -315,7 +315,7 @@ function parseStoredInvocationCaller(value: unknown): StoredInvocationCaller {
     const caller = objectValue(value, "Stored follow-up caller 必须是对象。");
     requireExactKeys(caller, new Set(["kind", "sessionId", "profileKey", "toolCallId"]), "Stored follow-up caller 包含未声明字段。");
     const kind = caller.kind;
-    if (kind !== "user" && kind !== "agent" && kind !== "system") {
+    if (kind !== "user" && kind !== "agent" && kind !== "system" && kind !== "external-cli") {
         corrupt("Stored follow-up caller kind 非法。");
     }
     const sessionId = caller.sessionId;

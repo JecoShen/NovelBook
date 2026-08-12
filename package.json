@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "bun scripts/cli/source-dev.ts",
     "dev:runtime": "bun run migration:check && nuxt prepare && bun run generate && bun scripts/build/prepare-system-assets.ts --sync-user-assets --force-sync-user-assets && nuxt dev --no-fork",
+    "bridge": "bun scripts/cli/bridge/index.ts",
     "dev:warmup": "bun scripts/cli/warmup-dev-server.mjs",
     "nuxt:build": "bun scripts/build/build-product-runtime-image.ts",
     "nuxt:build:raw": "bun node_modules/nuxt/bin/nuxt.mjs build --dotenv .env.product --preset node-server",
