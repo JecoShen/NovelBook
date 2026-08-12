@@ -14,6 +14,10 @@ import {
     loadWritingStylePresets as loadWritingStylePresetsHost,
     normalizeStyleHomeKey as normalizeStyleHomeKeyHost,
 } from "nbook/server/agent/profiles/writer-writing-style";
+import {
+    buildAvoidWords as buildAvoidWordsHost,
+    DEFAULT_AVOID_WORDS_PRESET as defaultAvoidWordsPresetHost,
+} from "nbook/server/agent/profiles/writer-writing-avoid-words";
 import type {
     ProfileHomeFacade,
     WritingReferenceDefinition,
@@ -24,6 +28,7 @@ import type {
 
 export const DEFAULT_WRITING_REFERENCE_PRESET: string = defaultWritingReferencePresetHost;
 export const DEFAULT_WRITING_STYLE_PRESET: string = defaultWritingStylePresetHost;
+export const DEFAULT_AVOID_WORDS_PRESET: string = defaultAvoidWordsPresetHost;
 
 /** 把旧 writing reference key 映射到 Profile Home。 */
 export function legacyReferenceKeyToHomeKey(key: string): string {
@@ -73,4 +78,9 @@ export async function loadWritingStylePresets(candidates?: readonly string[]): P
 /** 构造 writing style 提示词。 */
 export async function buildWritingStyle(input: {preset?: WritingStylePreset; home?: ProfileHomeFacade} = {}): Promise<string> {
     return buildWritingStyleHost(input);
+}
+
+/** 构造 avoid-words 提示词。 */
+export async function buildAvoidWords(input: {preset?: string; home?: ProfileHomeFacade} = {}): Promise<string> {
+    return buildAvoidWordsHost(input);
 }

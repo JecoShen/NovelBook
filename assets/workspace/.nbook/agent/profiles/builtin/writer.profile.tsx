@@ -1,21 +1,20 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
 import {isAbsolute, posix} from "node:path";
-import {Type, type Static} from "typebox";
-import {defineAgentProfile} from "nbook/server/agent/profiles/define-agent-profile";
-import {builtin, plotReadBindings, toolset} from "nbook/server/agent/profiles/profile-tools";
-import {WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema} from "nbook/server/agent/profiles/builtin-contracts";
-import {AppendingSet, FileChangeNotice, HistorySet, If, Import, Message, ProfilePrompt, System} from "nbook/server/agent/profiles/profile-dsl";
-import type {ProfilePrepareContext} from "nbook/server/agent/profiles/types";
-import {profileText} from "nbook/server/agent/profiles/profile-text";
-import {DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey} from "nbook/server/agent/profiles/writer-writing-reference";
-import {DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey} from "nbook/server/agent/profiles/writer-writing-style";
-import {DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords} from "nbook/server/agent/profiles/writer-writing-avoid-words";
-import {defineLowCodeForm, profileHomeResource} from "nbook/server/low-code-form";
-import {defineProfileHome} from "nbook/server/agent/profiles/profile-home";
-import {normalizeProjectPath} from "nbook/server/workspace-files/project-path";
-import {readProjectManifest} from "nbook/server/workspace-files/project-workspace";
-import type {AbsoluteFsPath} from "nbook/server/runtime/paths/file-path";
+import {Type, type Static} from "nbook/profile-sdk";
+import {defineAgentProfile} from "nbook/profile-sdk";
+import {builtin, plotReadBindings, toolset} from "nbook/profile-sdk";
+import {WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema} from "nbook/profile-sdk";
+import {AppendingSet, FileChangeNotice, HistorySet, If, Import, Message, ProfilePrompt, System} from "nbook/profile-sdk";
+import type {ProfilePrepareContext} from "nbook/profile-sdk";
+import {profileText} from "nbook/profile-sdk";
+import {DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey} from "nbook/profile-sdk/writing";
+import {DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey} from "nbook/profile-sdk/writing";
+import {DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords} from "nbook/profile-sdk/writing";
+import {defineLowCodeForm, profileHomeResource} from "nbook/profile-sdk";
+import {defineProfileHome} from "nbook/profile-sdk";
+import type {ReadyProjectSessionRef} from "nbook/profile-sdk";
+import type {AbsoluteFsPath} from "nbook/profile-sdk/runtime-paths";
 
 const DEFAULT_PARAGRAPH_RHYTHM = "段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段；不要为了凑短段打碎完整语义，场景描写、复杂动作和连续心理变化可以保留为较短自然段。";
 const DEFAULT_WORD_COUNT_CONTROL = "2000-2600 字";

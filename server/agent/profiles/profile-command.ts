@@ -436,7 +436,7 @@ async function runTypecheckFiles(filePaths: string[], target: Awaited<ReturnType
             kind: "profile",
             root: target.root,
             entry: filePath,
-            allowedSdkSpecifiers: ["nbook/profile-sdk", "nbook/profile-sdk/writing"],
+            allowedSdkSpecifiers: ["nbook/profile-sdk", "nbook/profile-sdk/writing", "nbook/profile-sdk/workspace", "nbook/profile-sdk/runtime-paths"],
         });
     }
     const variableTypes = await prepareVariableTypeEnvironment(target, options);

@@ -43,7 +43,8 @@ export default defineNuxtConfig({
     buildId: productBuildId,
     runtimeConfig: {
         session: {
-            password: process.env.NUXT_SESSION_PASSWORD || undefined,
+            // env 在 typecheck/dev/test 时可能缺失；nuxt session 模块会在 startup 校验非空并报错。
+            password: process.env.NUXT_SESSION_PASSWORD ?? "",
         },
     },
     alias: {

@@ -1,4 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import type {H3Event} from "h3";
 import {PRODUCT_BRIDGE_TOKEN_ENVIRONMENT} from "nbook/shared/product-runtime-contract";
 
 const mocks = vi.hoisted(() => ({
@@ -14,7 +15,7 @@ vi.mock("nbook/server/runtime/control/loopback-auth", () => ({
 const validToken = "test-bridge-token-xyz";
 const event = {node: {req: {socket: {remoteAddress: "127.0.0.1"}}}} as never;
 
-async function loadRequireBridgeAuth(): Promise<(event: unknown) => void> {
+async function loadRequireBridgeAuth(): Promise<(event: H3Event) => void> {
     const mod = await import("nbook/server/agent/bridge/bridge-auth");
     return mod.requireBridgeAuth;
 }

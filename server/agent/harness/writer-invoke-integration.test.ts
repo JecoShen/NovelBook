@@ -8,7 +8,7 @@
 import {randomUUID} from "node:crypto";
 import {rm, mkdir, writeFile} from "node:fs/promises";
 import {join, resolve} from "node:path";
-import {describe, expect, it} from "vitest";
+import {afterEach, beforeEach, describe, expect, it} from "vitest";
 import {NeuroAgentHarness} from "nbook/server/agent/harness/neuro-agent-harness";
 import type {AgentInvocationResult} from "nbook/server/agent/harness/types";
 import {JsonlSessionRepository} from "nbook/server/agent/session/session-repo";
@@ -153,8 +153,7 @@ describe("Writer Agent invoke 集成测试", () => {
         const session = await harness.createAgent({
             profileKey: "writer",
             initial: {},
-            workspaceRoot: "workspace",
-            projectPath: `workspace/${projectSlug}`,
+            currentProjectRoot: `workspace/${projectSlug}`,
         });
 
         expect(session.sessionId).toBeGreaterThan(0);
@@ -166,8 +165,7 @@ describe("Writer Agent invoke 集成测试", () => {
         const session = await harness.createAgent({
             profileKey: "writer",
             initial: {},
-            workspaceRoot: "workspace",
-            projectPath: `workspace/${projectSlug}`,
+            currentProjectRoot: `workspace/${projectSlug}`,
         });
 
         // 验证 session 创建成功
@@ -228,7 +226,7 @@ describe("Writer Agent invoke 集成测试", () => {
             label: "Bash",
             description: "Execute a bash command.",
             parameters: Type.Object({command: Type.String()}),
-            requiresApproval: false,
+            approvalRequired: false,
             async execute() {
                 return {content: [{type: "text", text: "llmlint check: 0 errors, 0 warnings"}]};
             },
@@ -242,7 +240,6 @@ describe("Writer Agent invoke 集成测试", () => {
                 result: Type.String(),
                 data: Type.Optional(Type.Object({})),
             }),
-            isTerminal: true,
             async execute(_toolCallId: string, params: unknown) {
                 return {
                     content: [{type: "text", text: "任务完成"}],
@@ -276,8 +273,7 @@ describe("Writer Agent invoke 集成测试", () => {
         const session = await harness.createAgent({
             profileKey: "writer",
             initial: {},
-            workspaceRoot: "workspace",
-            projectPath: `workspace/${projectSlug}`,
+            currentProjectRoot: `workspace/${projectSlug}`,
         });
 
         // 使用 faux models 预设 writer 的多轮响应

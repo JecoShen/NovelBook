@@ -1,9 +1,10 @@
 import {createError} from "h3";
-import {useAgentHarness, type NeuroAgentHarness} from "nbook/server/agent/harness/neuro-agent-harness";
+import {useAgentHarness} from "nbook/server/agent/http";
+import type {NeuroAgentHarness} from "nbook/server/agent/harness/neuro-agent-harness";
 import {listProjects, openProjectControl} from "nbook/server/workspace-files/project-session";
 import {projectWorkspaceRef} from "nbook/server/workspace-files/project-identity";
 import {runtimePathsFromEnv} from "nbook/server/runtime/paths/runtime-paths";
-import {resolveWorkspaceFileTarget} from "nbook/server/workspace-files/resolve-workspace-file-target";
+import {resolveWorkspaceFileTarget} from "nbook/server/workspace-files/novel-workspace";
 import {withProjectTargetOperation} from "nbook/server/workspace-files/project-open-guard";
 import {readWorkspaceTextFile, statWorkspacePath} from "nbook/server/workspace-files/workspace-files";
 import {BRIDGE_DEFAULT_PROFILE_KEY} from "nbook/shared/dto/agent-bridge.dto";
@@ -75,7 +76,7 @@ export interface ReadBridgeProjectFileInput {
 export interface ReadBridgeProjectFileResult {
     path: string;
     absolutePath: string;
-    entryType: string;
+    entryType: string | null;
     editable: boolean;
     mtimeMs: number;
     content: string;

@@ -1363,7 +1363,7 @@ async function compileProfileFile(profileRoot: string, compiledDir: string, file
         kind: "profile",
         root: profileRoot,
         entry: file.absolutePath,
-        allowedSdkSpecifiers: ["nbook/profile-sdk", "nbook/profile-sdk/writing"],
+        allowedSdkSpecifiers: ["nbook/profile-sdk", "nbook/profile-sdk/writing", "nbook/profile-sdk/workspace", "nbook/profile-sdk/runtime-paths"],
     });
     const temporaryStem = stableArtifactStem(file.fileName, /\.profile\.(tsx|ts|mjs|js)$/);
     const temporaryOutputPath = join(compiledDir, `${temporaryStem}.${randomUUID()}.building.mjs`);
