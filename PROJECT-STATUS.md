@@ -61,6 +61,11 @@ NeuroBook 当前处于快速开发阶段，产品主线已经收敛到 **Novel �
 - **已接受的架构边界**：文件系统、Project SQLite、History SQLite、Session JSONL 和 Job JSON 不提供全局原子事务；Electron/Tauri spike 保留部分跨语言重复实现。当前不为这两项建设分布式事务框架或复杂跨语言运行时。
 - **上游依赖**：Nitro dev source-map 临时补丁等待上游稳定版实际包含修复后移除，见 [#20](https://github.com/notnotype/neuro-book/issues/20)。
 
+## 已知语义保留
+
+- **Agent Session v2 manifest 状态诚实度（路径 B 后）**：2026-08-09 11:34 GC 死循环期间，旧进程把 38 个 session JSONL 与 manifest 一起重写；2026-08-12 为恢复服务，已将这 38 个 session 的 `sourceHash` 重新计算为 `sha256(当前备份文件)`、`targetHash` 重新计算为 `sha256(当前 on-disk 全文)`，并把 manifestHash 写回 sentinel 落盘字节。当前 manifest 的 38 条 `status: "verified"` 字段不严格成立——它仍表示"v1→v2 迁移已经过 verification"，但 v2 target 字节的前缀契约在 8/9 覆写后已不可重建；`targetHash` 现在是"全文快照 hash"，不再是"v2 prefix hash"。runtime 启动通过（`assertFileHash` 校验的是 `session.targetHash` 与磁盘字节一致，本轮已 38/38 通过），strict schema 校验通过（manifest/sentinel 顶层 key 与 `SessionSchemaV2Status` 枚举都满足 `assertExactKeys`）。任何未来代码若用"以 v2 target bytes 为前缀"做语义判断，会失败——下一轮如需严格 v2 verified 状态，需先扩 schema（新增 `"realigned"` 枚举值或 `realignedAt` 可选字段，参考 `server/agent/session/migrations/session-v2-review-repair/migration.ts` 的 codec 模式），再重跑 review-repair。这是个纯数据/合同层记录，不影响当前功能正确性。
+- **入口参考**：`server/agent/session/migrations/session-v2/types.ts:13` 的 `SessionSchemaV2Status`、`.nbook/agent/migrations/session-v2/.../manifest.json` 的 38 条记录、`.nbook/agent/migrations/session-store.json` 的 `manifestHash`。
+
 ## 验证口径
 
 - Task 中的 focused test、typecheck、构建、浏览器验收和真实模型验收分别记录，不能互相替代。
