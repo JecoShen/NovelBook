@@ -153,7 +153,7 @@ describe("Writer Agent invoke 集成测试", () => {
         const session = await harness.createAgent({
             profileKey: "writer",
             initial: {},
-            currentProjectRoot: `workspace/${projectSlug}`,
+            currentProjectRoot: projectSlug,
         });
 
         expect(session.sessionId).toBeGreaterThan(0);
@@ -165,7 +165,7 @@ describe("Writer Agent invoke 集成测试", () => {
         const session = await harness.createAgent({
             profileKey: "writer",
             initial: {},
-            currentProjectRoot: `workspace/${projectSlug}`,
+            currentProjectRoot: projectSlug,
         });
 
         // 验证 session 创建成功
@@ -273,7 +273,7 @@ describe("Writer Agent invoke 集成测试", () => {
         const session = await harness.createAgent({
             profileKey: "writer",
             initial: {},
-            currentProjectRoot: `workspace/${projectSlug}`,
+            currentProjectRoot: projectSlug,
         });
 
         // 使用 faux models 预设 writer 的多轮响应
