@@ -122,6 +122,55 @@ describe("Agent Session Store runtime lease", () => {
         }
     });
 
+    it("stale self-lock: owner pid 已死时自动清 lease 并接管", async () => {
+        // 历史教训：2026-08-17 旧进程 OOM 死透但 lease 没释放, proper-lockfile
+        // 的 stale=30s 对 directory lockfile 不接管, 新进程持续 ELOCKED → 全站 500。
+        // 修复：在 lock() 之前检测 owner.pid 是否还活着, 死了就 rm -f lease + rm -rf .lock。
+        const root = await nextRoot();
+        const path = agentSessionStoreLeasePath(root);
+        const deadPid = 99999999; // Linux 不存在的 pid → process.kill(deadPid, 0) 返回 ESRCH
+        const staleOwner: AgentSessionStoreLeaseOwner = {
+            schema: AGENT_SESSION_STORE_LEASE_OWNER_SCHEMA,
+            leaseId: "11111111-2222-4222-8222-222222222222",
+            kind: "runtime",
+            pid: deadPid,
+            acquiredAt: new Date(Date.now() - 60_000).toISOString(),
+            runtime: "bun",
+            runtimeVersion: "1.3.14",
+        };
+
+        await mkdir(dirname(path), {recursive: true});
+        await writeFile(path, JSON.stringify(staleOwner, null, 2), "utf8");
+        await mkdir(`${path}.lock`);
+
+        const release = await acquireAgentSessionStoreLease(root, "runtime");
+        try {
+            // 接管后 owner 应当是当前进程
+            const currentOwner = await readOwner(path);
+            expect(currentOwner.pid).toBe(process.pid);
+            expect(currentOwner.kind).toBe("runtime");
+        } finally {
+            await release();
+        }
+    });
+
+    it("live owner pid 仍存活时不清 lease, 抛 ELOCKED", async () => {
+        // 与"sync与async owner共享同一物理lease"互补, 显式覆盖另一个活进程持锁场景。
+        const root = await nextRoot();
+        const path = agentSessionStoreLeasePath(root);
+        const release = await acquireAgentSessionStoreLease(root, "runtime");
+        try {
+            // 当前进程 (process.pid) 仍活着, 第二次 acquire 必须抛 ELOCKED 而不是接管。
+            const failure = await acquireAgentSessionStoreLease(root, "migration")
+                .catch((error: unknown) => error) as AgentSessionStoreLeaseHeldError;
+            expect(failure).toBeInstanceOf(AgentSessionStoreLeaseHeldError);
+            expect(failure.code).toBe("ELOCKED");
+            expect(failure.owner).toMatchObject({kind: "runtime", pid: process.pid});
+        } finally {
+            await release();
+        }
+    });
+
     it("任务失败与lease释放失败同时发生时保留两个原始原因", async () => {
         const taskFailure = new Error("migration failed");
         const releaseFailure = new Error("lease release failed");

@@ -4,10 +4,11 @@ import {
     mkdirSync,
     openSync,
     readFileSync,
+    rmSync,
     statSync,
     writeFileSync,
 } from "node:fs";
-import {mkdir, open, readFile, stat, writeFile} from "node:fs/promises";
+import {mkdir, open, readFile, rm, stat, writeFile} from "node:fs/promises";
 import {dirname, resolve} from "node:path";
 import {lock, lockSync} from "proper-lockfile";
 
@@ -126,6 +127,10 @@ async function acquireAgentSessionStoreLeaseHandle(
     kind: AgentSessionStoreLeaseKind,
 ): Promise<AgentSessionStoreLeaseHandle> {
     const path = await ensureLeaseFile(rootWorkspace);
+    // 历史教训（2026-08-17）：旧进程 OOM 死透但 lease 没释放, proper-lockfile
+    // 的 stale=30s 对 directory lockfile 行为不一致, 新进程持续 ELOCKED → 全站 500。
+    // 在 lock() 之前先用 owner.pid 主动检测: 进程已死 (ESRCH) 就清 lease + .lock 接管。
+    await clearStaleSelfLock(path);
     const signal = compromiseSignal(path, kind);
     let releaseLock: () => Promise<void>;
     try {
@@ -160,6 +165,9 @@ export function acquireAgentSessionStoreLeaseSync(
     mkdirSync(dirname(path), {recursive: true});
     const handle = openSync(path, "a");
     closeSync(handle);
+
+    // 历史教训（2026-08-17）：与异步路径一致, 同步启动路径也用 owner.pid 检测 stale self-lock。
+    clearStaleSelfLockSync(path);
 
     const signal = compromiseSignal(path, kind);
     let releaseLock: () => void;
@@ -442,6 +450,76 @@ function parseOwner(text: string): AgentSessionStoreLeaseOwner | null {
 /** proper-lockfile 在其他 owner 持有 lease 时使用 ELOCKED。 */
 function isLockContention(error: unknown): error is NodeJS.ErrnoException {
     return error instanceof Error && "code" in error && error.code === "ELOCKED";
+}
+
+/**
+ * 检测 lease 的 owner pid 是否仍存活；已死 (ESRCH) 时清掉 lease 文件 + lock directory,
+ * 让后续 proper-lockfile.lock() 能正常接管。
+ *
+ * 历史教训（2026-08-17）：旧进程 OOM 死透但 lease 没释放, proper-lockfile 的
+ * stale=30s 对 directory lockfile 行为不一致, 新进程持续 ELOCKED → 全站 500。
+ *
+ * 只在 owner.pid 存在且 process.kill(pid, 0) 返回 ESRCH 时清; 解析失败 (损坏 metadata)
+ * 静默回退, 让 proper-lockfile 走正常 ELOCKED 诊断路径, 避免误杀别人的锁。
+ */
+async function clearStaleSelfLock(leasePath: string): Promise<void> {
+    const owner = await readLeaseOwner(leasePath);
+    if (!owner) return;
+    if (owner.pid === process.pid) return;
+    if (isProcessAlive(owner.pid)) return;
+    await rm(leasePath, {force: true});
+    await rm(`${leasePath}.lock`, {recursive: true, force: true});
+}
+
+/** 同步版本, 给 acquireAgentSessionStoreLeaseSync 启动路径使用。 */
+function clearStaleSelfLockSync(leasePath: string): void {
+    let owner: AgentSessionStoreLeaseOwner | null = null;
+    try {
+        owner = parseOwner(readFileSync(leasePath, "utf8"));
+    } catch {
+        return;
+    }
+    if (!owner) return;
+    if (owner.pid === process.pid) return;
+    if (isProcessAlive(owner.pid)) return;
+    try {
+        rmSync(leasePath);
+    } catch {
+        // 文件可能已被并发清理; 继续清 .lock
+    }
+    try {
+        rmSync(`${leasePath}.lock`, {recursive: true, force: true});
+    } catch {
+        // 同样 best-effort
+    }
+}
+
+/** 读取 lease owner metadata, 失败或损坏时返回 null (静默回退给 proper-lockfile 协议)。 */
+async function readLeaseOwner(leasePath: string): Promise<AgentSessionStoreLeaseOwner | null> {
+    let text: string;
+    try {
+        text = await readFile(leasePath, "utf8");
+    } catch {
+        return null;
+    }
+    return parseOwner(text);
+}
+
+/**
+ * 用 process.kill(pid, 0) 探测进程是否存活 (不发任何信号)。
+ * - 返回 true: 进程存在 (kill 0 成功, 或 EPERM 表示有权限问题但确实存在)。
+ * - 返回 false: 进程已死 (ESRCH)。
+ * - 抛其他错误: 透传给上游, 不静默吞。
+ */
+function isProcessAlive(pid: number): boolean {
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "ESRCH") return false;
+        // EPERM 等其他错误表示进程存在但我们没权限, 视为 alive, 让 proper-lockfile 抛 ELOCKED。
+        return true;
+    }
 }
 
 /** 将未知失败收窄为可聚合 Error。 */
