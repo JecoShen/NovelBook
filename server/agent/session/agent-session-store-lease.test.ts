@@ -1,7 +1,7 @@
 import {mkdir, mkdtemp, readFile, rm, stat, utimes, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {dirname, join} from "node:path";
-import {afterEach, describe, expect, it} from "vitest";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {
     acquireAgentSessionStoreLease,
     acquireAgentSessionStoreLeaseSync,
@@ -87,18 +87,25 @@ describe("Agent Session Store runtime lease", () => {
         ["旧空文件", ""],
         ["损坏metadata", "{not-json"],
     ])("%s竞争时owner降级为未知，但保留heartbeat", async (_name, metadata) => {
+        // mock uptime > 30s: 模拟"老进程"场景, 保护活跃 lock 不被 grace 期启发式接管。
+        // 旧 P1 行为：owner=null + fresh .lock 抛 ELOCKED (active process holds real lock)。
         const root = await nextRoot();
         const path = agentSessionStoreLeasePath(root);
         const release = await acquireAgentSessionStoreLease(root, "runtime");
         try {
             await writeFile(path, metadata, "utf8");
-            const failure = await acquireAgentSessionStoreLease(root, "migration")
-                .catch((error: unknown) => error) as AgentSessionStoreLeaseHeldError;
+            const uptimeSpy = vi.spyOn(process, "uptime").mockReturnValue(60);
+            try {
+                const failure = await acquireAgentSessionStoreLease(root, "migration")
+                    .catch((error: unknown) => error) as AgentSessionStoreLeaseHeldError;
 
-            expect(failure).toBeInstanceOf(AgentSessionStoreLeaseHeldError);
-            expect(failure.owner).toBeNull();
-            expect(failure.heartbeatAt).not.toBeNull();
-            expect(failure.message).toContain("owner：未知");
+                expect(failure).toBeInstanceOf(AgentSessionStoreLeaseHeldError);
+                expect(failure.owner).toBeNull();
+                expect(failure.heartbeatAt).not.toBeNull();
+                expect(failure.message).toContain("owner：未知");
+            } finally {
+                uptimeSpy.mockRestore();
+            }
         } finally {
             await release();
         }
@@ -195,6 +202,8 @@ describe("Agent Session Store runtime lease", () => {
 
     it("空 lease + 残留 .lock (<30s fresh) 时不动, 抛 ELOCKED", async () => {
         // 边界保护: 如果 .lock mtime 距今 < 30s, 不能贸然清, 因为可能有别的新进程正在竞争。
+        // 旧 P1 行为：仅当 mtime > 30s 才接管, fresh lock 抛 ELOCKED。
+        // 新进程 grace 期 (< 30s) 会改变这个行为 → 这里 mock uptime > 30s 模拟"老进程"场景。
         const root = await nextRoot();
         const path = agentSessionStoreLeasePath(root);
         await mkdir(dirname(path), {recursive: true});
@@ -203,9 +212,67 @@ describe("Agent Session Store runtime lease", () => {
         const freshTime = new Date(Date.now() - 5_000); // 5s ago, < 30s fresh
         await utimes(`${path}.lock`, freshTime, freshTime);
 
-        const failure = await acquireAgentSessionStoreLease(root, "runtime")
-            .catch((error: unknown) => error);
-        expect(failure).toBeInstanceOf(AgentSessionStoreLeaseHeldError);
+        // mock: 进程运行 60s, 已过 grace 期
+        const uptimeSpy = vi.spyOn(process, "uptime").mockReturnValue(60);
+        try {
+            const failure = await acquireAgentSessionStoreLease(root, "runtime")
+                .catch((error: unknown) => error);
+            expect(failure).toBeInstanceOf(AgentSessionStoreLeaseHeldError);
+        } finally {
+            uptimeSpy.mockRestore();
+        }
+    });
+
+    it("新进程 grace 期 (< 30s) + 空 lease + fresh .lock (5s) 时接管", async () => {
+        // 历史教训 (2026-08-17 第九轮): PM2 clean restart 时旧进程 OOM 死透
+        // 但 lease 残留, 新进程 startup 时 .lock mtime 才 22s, 落在 P1 30s 阈值
+        // 之外 → 新进程持续 ELOCKED → 全站 500。手动 rm 才能恢复。
+        // 修复: 新进程 grace 期 (< 30s) 启发式接管, 任何残留 .lock 都视为 stale。
+        // 安全前提: 单一 PM2 实例 + live owner 永远保护 (grace 期也保留 owner.pid alive 检查)。
+        const root = await nextRoot();
+        const path = agentSessionStoreLeasePath(root);
+        await mkdir(dirname(path), {recursive: true});
+        await writeFile(path, "", "utf8");
+        await mkdir(`${path}.lock`);
+        const freshTime = new Date(Date.now() - 5_000); // 5s old, fresh
+        await utimes(`${path}.lock`, freshTime, freshTime);
+
+        // mock: 进程运行 10s, 在 grace 期 (< 30s)
+        const uptimeSpy = vi.spyOn(process, "uptime").mockReturnValue(10);
+        try {
+            const release = await acquireAgentSessionStoreLease(root, "runtime");
+            try {
+                // 接管后 owner 应当是当前进程
+                expect(await readOwner(path)).toMatchObject({kind: "runtime", pid: process.pid});
+            } finally {
+                await release();
+            }
+        } finally {
+            uptimeSpy.mockRestore();
+        }
+    });
+
+    it("新进程 grace 期 + live owner 仍存活时不清, 抛 ELOCKED", async () => {
+        // 边界保护: 即使在 grace 期, live owner 永远不能被新进程抢锁。
+        // 防止两个新进程同时启动 (例如手动 + 自动) 互相抢锁。
+        const root = await nextRoot();
+        const path = agentSessionStoreLeasePath(root);
+        const release = await acquireAgentSessionStoreLease(root, "runtime");
+        try {
+            // 当前进程持锁, 第二次 acquire 必须抛 ELOCKED (即使 mock uptime < 30s)
+            const uptimeSpy = vi.spyOn(process, "uptime").mockReturnValue(10);
+            try {
+                const failure = await acquireAgentSessionStoreLease(root, "migration")
+                    .catch((error: unknown) => error) as AgentSessionStoreLeaseHeldError;
+                expect(failure).toBeInstanceOf(AgentSessionStoreLeaseHeldError);
+                expect(failure.code).toBe("ELOCKED");
+                expect(failure.owner).toMatchObject({kind: "runtime", pid: process.pid});
+            } finally {
+                uptimeSpy.mockRestore();
+            }
+        } finally {
+            await release();
+        }
     });
 
     it("任务失败与lease释放失败同时发生时保留两个原始原因", async () => {

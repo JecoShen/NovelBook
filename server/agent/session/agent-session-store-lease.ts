@@ -17,6 +17,7 @@ export const AGENT_SESSION_STORE_LEASE_OWNER_SCHEMA = "nbook.agent-session-store
 export const AGENT_SESSION_STORE_LEASE_STALE_MS = 30_000;
 export const AGENT_SESSION_STORE_LEASE_HEARTBEAT_MS = 15_000;
 export const AGENT_SESSION_STORE_LEASE_RESIDUAL_LOCK_MS = 30_000;
+export const AGENT_SESSION_STORE_NEW_PROCESS_GRACE_MS = 30_000;
 
 const CANONICAL_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
@@ -466,6 +467,12 @@ function isLockContention(error: unknown): error is NodeJS.ErrnoException {
  *
  * 仍然只在 owner.pid 存在且 process.kill(pid, 0) 返回 ESRCH 时清完整 lease + .lock;
  * 解析失败 (损坏 metadata) 静默回退到 mtime 检查, 避免误杀别人的锁。
+ *
+ * 新进程 grace 期 (2026-08-17 第九轮): PM2 clean restart 时 .lock mtime 才 22s
+ * (新进程自己刚创建 .lock), 落在 P1 30s 阈值外 → 持续 ELOCKED 500。新增启发式:
+ * 进程 uptime < AGENT_SESSION_STORE_NEW_PROCESS_GRACE_MS (30s) 时, 即使 .lock mtime
+ * 距今 < 30s, owner 解析失败 (null/空) 也接管。安全前提: 单一 PM2 实例 + live owner
+ * 永远保护 (此分支仅在 owner.pid 已死或解析失败时触发)。
  */
 async function clearStaleSelfLock(leasePath: string): Promise<void> {
     const owner = await readLeaseOwner(leasePath);
@@ -477,8 +484,10 @@ async function clearStaleSelfLock(leasePath: string): Promise<void> {
         await rm(`${leasePath}.lock`, {recursive: true, force: true});
         return;
     }
-    // owner 解析失败 (损坏/空) → 看 .lock mtime, 残留 >30s 视为 stale 也清
-    if (await isResidualLockStale(leasePath)) {
+    // owner 解析失败 (损坏/空):
+    // - 新进程 grace 期 (< 30s) → 任何残留 .lock 都视为 stale, 直接接管
+    // - 进程运行 > 30s → 只清 mtime > 30s 的残留 (保护活跃 lock)
+    if (isInNewProcessGracePeriod() || await isResidualLockStale(leasePath)) {
         await rm(leasePath, {force: true});
         await rm(`${leasePath}.lock`, {recursive: true, force: true});
     }
@@ -507,8 +516,8 @@ function clearStaleSelfLockSync(leasePath: string): void {
         }
         return;
     }
-    // owner 解析失败 → 看 .lock mtime
-    if (isResidualLockStaleSync(leasePath)) {
+    // owner 解析失败 → 同 async 路径, grace 期启发式接管
+    if (isInNewProcessGracePeriod() || isResidualLockStaleSync(leasePath)) {
         try {
             rmSync(leasePath);
         } catch {
@@ -569,6 +578,17 @@ function isProcessAlive(pid: number): boolean {
         // EPERM 等其他错误表示进程存在但我们没权限, 视为 alive, 让 proper-lockfile 抛 ELOCKED。
         return true;
     }
+}
+
+/**
+ * 启发式: 当前进程是新启动的 (uptime < grace 期), 在 clearStaleSelfLock 中
+ * 可信地接管残留 .lock, 即便 mtime < RESIDUAL_LOCK_MS。
+ *
+ * 安全前提: 单一 PM2 实例 + live owner 永远保护 (此函数仅在 owner 解析失败时
+ * 影响行为, 不会触发"另一个活进程"的抢锁)。
+ */
+function isInNewProcessGracePeriod(): boolean {
+    return process.uptime() * 1000 < AGENT_SESSION_STORE_NEW_PROCESS_GRACE_MS;
 }
 
 /** 将未知失败收窄为可聚合 Error。 */
