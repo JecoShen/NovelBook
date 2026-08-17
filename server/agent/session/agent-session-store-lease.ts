@@ -16,6 +16,7 @@ export const AGENT_SESSION_STORE_LEASE_RELATIVE_PATH = ".nbook/agent/migrations/
 export const AGENT_SESSION_STORE_LEASE_OWNER_SCHEMA = "nbook.agent-session-store-lease-owner/v1";
 export const AGENT_SESSION_STORE_LEASE_STALE_MS = 30_000;
 export const AGENT_SESSION_STORE_LEASE_HEARTBEAT_MS = 15_000;
+export const AGENT_SESSION_STORE_LEASE_RESIDUAL_LOCK_MS = 30_000;
 
 const CANONICAL_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
@@ -459,16 +460,28 @@ function isLockContention(error: unknown): error is NodeJS.ErrnoException {
  * 历史教训（2026-08-17）：旧进程 OOM 死透但 lease 没释放, proper-lockfile 的
  * stale=30s 对 directory lockfile 行为不一致, 新进程持续 ELOCKED → 全站 500。
  *
- * 只在 owner.pid 存在且 process.kill(pid, 0) 返回 ESRCH 时清; 解析失败 (损坏 metadata)
- * 静默回退, 让 proper-lockfile 走正常 ELOCKED 诊断路径, 避免误杀别人的锁。
+ * 边界 case (2026-08-17 第七轮): 端到端测试残留 .lock + 空 lease (损坏 metadata),
+ * proper-lockfile 看到 fresh mtime 也不接管, 全站 500。新逻辑: 即使 owner 解析失败
+ * (null/损坏), 若 .lock mtime > 30s 视为 stale, 清 .lock 让 proper-lockfile 接管。
+ *
+ * 仍然只在 owner.pid 存在且 process.kill(pid, 0) 返回 ESRCH 时清完整 lease + .lock;
+ * 解析失败 (损坏 metadata) 静默回退到 mtime 检查, 避免误杀别人的锁。
  */
 async function clearStaleSelfLock(leasePath: string): Promise<void> {
     const owner = await readLeaseOwner(leasePath);
-    if (!owner) return;
-    if (owner.pid === process.pid) return;
-    if (isProcessAlive(owner.pid)) return;
-    await rm(leasePath, {force: true});
-    await rm(`${leasePath}.lock`, {recursive: true, force: true});
+    if (owner) {
+        if (owner.pid === process.pid) return;
+        if (isProcessAlive(owner.pid)) return;
+        // owner.pid 已死 (ESRCH) → 清 lease + .lock 接管
+        await rm(leasePath, {force: true});
+        await rm(`${leasePath}.lock`, {recursive: true, force: true});
+        return;
+    }
+    // owner 解析失败 (损坏/空) → 看 .lock mtime, 残留 >30s 视为 stale 也清
+    if (await isResidualLockStale(leasePath)) {
+        await rm(leasePath, {force: true});
+        await rm(`${leasePath}.lock`, {recursive: true, force: true});
+    }
 }
 
 /** 同步版本, 给 acquireAgentSessionStoreLeaseSync 启动路径使用。 */
@@ -477,20 +490,56 @@ function clearStaleSelfLockSync(leasePath: string): void {
     try {
         owner = parseOwner(readFileSync(leasePath, "utf8"));
     } catch {
+        // ignore: fall through to mtime check
+    }
+    if (owner) {
+        if (owner.pid === process.pid) return;
+        if (isProcessAlive(owner.pid)) return;
+        try {
+            rmSync(leasePath);
+        } catch {
+            // 文件可能已被并发清理; 继续清 .lock
+        }
+        try {
+            rmSync(`${leasePath}.lock`, {recursive: true, force: true});
+        } catch {
+            // 同样 best-effort
+        }
         return;
     }
-    if (!owner) return;
-    if (owner.pid === process.pid) return;
-    if (isProcessAlive(owner.pid)) return;
-    try {
-        rmSync(leasePath);
-    } catch {
-        // 文件可能已被并发清理; 继续清 .lock
+    // owner 解析失败 → 看 .lock mtime
+    if (isResidualLockStaleSync(leasePath)) {
+        try {
+            rmSync(leasePath);
+        } catch {
+            // best-effort
+        }
+        try {
+            rmSync(`${leasePath}.lock`, {recursive: true, force: true});
+        } catch {
+            // best-effort
+        }
     }
+}
+
+/** 检测 .lock directory mtime > 30s 视为残留 stale lock。 */
+async function isResidualLockStale(leasePath: string): Promise<boolean> {
     try {
-        rmSync(`${leasePath}.lock`, {recursive: true, force: true});
+        const lockStat = await stat(`${leasePath}.lock`);
+        return Date.now() - lockStat.mtimeMs > AGENT_SESSION_STORE_LEASE_RESIDUAL_LOCK_MS;
     } catch {
-        // 同样 best-effort
+        // .lock 不存在, 不视为 stale
+        return false;
+    }
+}
+
+/** 同步版本: 检测 .lock directory mtime > 30s 视为残留 stale lock。 */
+function isResidualLockStaleSync(leasePath: string): boolean {
+    try {
+        const lockStat = statSync(`${leasePath}.lock`);
+        return Date.now() - lockStat.mtimeMs > AGENT_SESSION_STORE_LEASE_RESIDUAL_LOCK_MS;
+    } catch {
+        return false;
     }
 }
 

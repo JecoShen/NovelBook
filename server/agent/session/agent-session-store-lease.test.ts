@@ -171,6 +171,43 @@ describe("Agent Session Store runtime lease", () => {
         }
     });
 
+    it("空 lease + 残留 .lock (>30s stale) 时接管", async () => {
+        // 历史教训 (2026-08-17 第七轮)：端到端测试 setup 残留的 .lock directory
+        // (mtime 13:16:24 < 5min, clean-stale-lease.sh 不删) + lease 文件被清空。
+        // 原 clearStaleSelfLock 在 owner=null 时直接 return, 不清 .lock, 导致 PM2
+        // 启动后 proper-lockfile 看到 fresh mtime → 不接管 → 全站 500。
+        // 修复: owner 解析失败 + .lock mtime > 30s 视为 stale, 清 .lock 让 proper-lockfile 接管。
+        const root = await nextRoot();
+        const path = agentSessionStoreLeasePath(root);
+        await mkdir(dirname(path), {recursive: true});
+        await writeFile(path, "", "utf8"); // 空 lease 文件
+        await mkdir(`${path}.lock`);
+        const staleTime = new Date(Date.now() - 31_000); // 31s ago, > 30s stale 阈值
+        await utimes(`${path}.lock`, staleTime, staleTime);
+
+        const release = await acquireAgentSessionStoreLease(root, "runtime");
+        try {
+            expect(await readOwner(path)).toMatchObject({kind: "runtime", pid: process.pid});
+        } finally {
+            await release();
+        }
+    });
+
+    it("空 lease + 残留 .lock (<30s fresh) 时不动, 抛 ELOCKED", async () => {
+        // 边界保护: 如果 .lock mtime 距今 < 30s, 不能贸然清, 因为可能有别的新进程正在竞争。
+        const root = await nextRoot();
+        const path = agentSessionStoreLeasePath(root);
+        await mkdir(dirname(path), {recursive: true});
+        await writeFile(path, "", "utf8");
+        await mkdir(`${path}.lock`);
+        const freshTime = new Date(Date.now() - 5_000); // 5s ago, < 30s fresh
+        await utimes(`${path}.lock`, freshTime, freshTime);
+
+        const failure = await acquireAgentSessionStoreLease(root, "runtime")
+            .catch((error: unknown) => error);
+        expect(failure).toBeInstanceOf(AgentSessionStoreLeaseHeldError);
+    });
+
     it("任务失败与lease释放失败同时发生时保留两个原始原因", async () => {
         const taskFailure = new Error("migration failed");
         const releaseFailure = new Error("lease release failed");
