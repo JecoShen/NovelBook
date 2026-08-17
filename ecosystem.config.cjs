@@ -21,18 +21,19 @@ module.exports = {
       max_restart_time: '5m',   // 5 分钟内的重启计数窗口
       restart_delay: 5000,      // 重启前等 5s（避免立即循环）
       exp_backoff: true,        // 指数退避：10s → 20s → 40s ...（最多 60s）
-      max_memory_restart: '1024M',// 内存超 1024M 自动重启（2026-08-17 由 512M → 256M → 1024M，根因：旧 build 200MB / 新 build 700MB 基线 + 缓冲 1.5x）
+      max_memory_restart: '1536M',// 内存超 1536M 自动重启（2026-08-17 由 1024M 调高；新 build 700-800MB 基线 + 150MB 突发缓冲 = 接近 1024M 上限，加 0.5x 缓冲防峰值误触）
       kill_timeout: 5000,       // 优雅停止最多等 5s
       listen_timeout: 8000,     // listen() 最多 8s
     },
   ],
   // ── Pre-start 钩子：清 stale lease 防 500 ──
   // 历史教训：2026-08-17 旧进程 OOM 死透但 lease 没释放，PM2 auto-restart 后
-  // 新进程持续 ELOCKED → 全站 500。Pre-start 在每次 pm2 start 前清掉 mtime > 5min 的
-  // stale lease 目录，避免相同事故再发。
+  // 新进程持续 ELOCKED → 全站 500。Pre-start 在每次 pm2 deploy setup 前清掉
+  // mtime > 1min 的 stale lease。注：sub-minute 残留（< 30s）由 proper-lockfile
+  // 心跳 + clearStaleSelfLock 处理，与 clean-stale-lease.sh 30s 阈值保持一致。
   deploy: {
     production: {
-      'pre-setup': 'echo "[deploy] Pre-setup: 清 stale lease (mtime > 5min)"; find workspace/.nbook/agent/migrations -maxdepth 1 -name "*.lease" -mmin +5 -delete 2>/dev/null; find workspace/.nbook/agent/migrations -maxdepth 1 -name "*.lease.lock" -mmin +5 -exec rm -rf {} + 2>/dev/null; echo "[deploy] Pre-setup done"',
+      'pre-setup': 'echo "[deploy] Pre-setup: 清 stale lease (mtime > 1min)"; find workspace/.nbook/agent/migrations -maxdepth 1 -name "*.lease" -mmin +1 -delete 2>/dev/null; find workspace/.nbook/agent/migrations -maxdepth 1 -name "*.lease.lock" -mmin +1 -exec rm -rf {} + 2>/dev/null; echo "[deploy] Pre-setup done"',
     },
   },
   // ── Manual pre-start script（用于 pm2 start 之前手动跑）──
