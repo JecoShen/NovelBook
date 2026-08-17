@@ -58,10 +58,6 @@ defineRouteMeta({
 } as never,
 });
 
-
-
-
-
 const CreateWorkspaceFileBodySchema = z.object({
     projectRoot: ProjectRootDtoSchema.optional(),
     workspaceKind: z.literal("user-assets").optional(),

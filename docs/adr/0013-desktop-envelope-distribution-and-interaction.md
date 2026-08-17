@@ -1,9 +1,9 @@
 # ADR 0013：Desktop Envelope、发行组件与宿主交互
 
-- 状态：Accepted
+- 状态：Accepted（Spike 基础；生产首发边界由 [ADR 0014](0014-electron-desktop-productization.md) 冻结）
 - 日期：2026-08-05
 - 更新：2026-08-06（Workbench Chrome、Activity Bar 与 Desktop Bridge v2）
-- 关联任务：[Task 143](../tasks/143-desktop-envelope-installation-spike/README.md)、[Task 130](../tasks/130-desktop-application-foundation/README.md)、[Issue #66](https://github.com/notnotype/neuro-book/issues/66)
+- 关联任务：[Task 143](../tasks/143-desktop-envelope-installation-spike/README.md)、[Task 130](../tasks/130-desktop-application-foundation/README.md)、[Task 145](../tasks/145-electron-desktop-productization/README.md)、[Issue #66](https://github.com/notnotype/neuro-book/issues/66)
 - 依赖决策：[ADR 0009](0009-product-runtime-image-generation.md)、[ADR 0010](0010-desktop-storage-loopback-shutdown.md)、[ADR 0012](0012-release-candidate-activation.md)
 
 ## 背景
@@ -57,11 +57,11 @@ Electron 与 Tauri 在 Task 143 内继续并行；本 ADR 不冻结最终框架�
 
 ### Manager CLI 与 Supervisor
 
-现有程序统一称为 **NeuroBook Manager CLI**。未来图形化 NeuroBook Manager 必须复用同一合同，本任务不实现 GUI Manager。
+现有程序统一称为 **NeuroBook Manager CLI**。Task 145 新增的 Manager GUI 是它的薄向导壳，必须复用同一合同；GUI 不拥有安装或 Product 生命周期。
 
 1. 安装、更新、repair、卸载、组件下载、checksum、回滚、migration、管理员创建、Product 启停和进程树均由 Manager CLI 拥有。
 2. Envelope 只启动 Manager 的 `Desktop Supervisor Protocol v1`，通过 stdin/stdout NDJSON 接收阶段、ready、完整复核、停止和失败事件；不解析 Product Runtime Contract、不执行 migration、不持有 shutdown token。
-3. 安装/更新完成完整 Runtime Image 验证并写 Manager verification receipt。普通启动在 migration 或 Product spawn 前完成一次完整 payload 复核，并把这次验证绑定的 receipt 授权传给受管子进程，避免每个命令重复遍历；窗口 ready 只表示服务可用，不再把“ready 后才验货”作为安全边界。
+3. 安装/更新完成时由 Manager 完整验证 Runtime Image 并写入 verification receipt。普通启动在 migration 和 Product spawn 前消费该 receipt 做 Runtime 控制面 quick authorization：复核 receipt 内容摘要、receipt/manifest identity、ready marker、Runtime Contract 和合同入口存在性，不重复遍历 payload；该授权传给受管子进程，Application execution 仍在 spawn 前复做同一控制面检查。Manager 的安装、更新、Repair、doctor 和显式 `verify` 路径继续执行完整 payload 复核。安装后非控制面 payload 被篡改时，普通启动可能直到下一次 Manager 完整验证才发现；ready 只表示服务可用，不再把“ready 后才验货”作为安全边界。
 4. 每次本地启动生成 startup nonce。ready 必须同时匹配动态端口、Product 版本和 nonce；仅返回 HTTP 200 的其他进程不构成 ready。端口竞争最多重试三次，每次都终止本次候选。
 5. Supervisor 正常停止先执行认证 graceful shutdown 和 30 秒 drain，再由 Owned Process/Job Object 强制兜底并报告 `graceful` 或 `forced`。
 
@@ -79,7 +79,7 @@ Electron 与 Tauri 在 Task 143 内继续并行；本 ADR 不冻结最终框架�
 
 远端 Desktop 使用独立 `nbook.desktop-shell/v1` shell depot。该 depot 只允许 `manifest.json` 和 `desktop/`，并记录所选 Envelope 的路径、版本、SHA-256 与 WebView 类型；Manager 安装前请求服务端 `/api/app/desktop-capability`，验证 DesktopBridge v2 后才落盘，不把 Product、Bun、Manager CLI 或 Tool Pack 复制进远端安装根。其卸载注册表调用 Manager 的 `desktop uninstall --dir` 逻辑命令，默认保留 State Root。
 
-`Desktop Installation Manifest v1` 描述本机选择的 Envelope、local/remote、channel、已安装组件和 CLI PATH 决定。组件路径只能相对 Installation Root；远端只持久化规范 origin 和 HTTP 风险确认，不持久化密码或 cookie。
+Spike 阶段的 `Desktop Installation Manifest v1` 只描述本机选择的 Envelope、local/remote、channel、已安装组件和 CLI PATH 决定。生产阶段由 [ADR 0014](0014-electron-desktop-productization.md) 升级为 `Desktop Installation Manifest v3`，额外记录安装范围、用户 Root、组件 receipts、Runtime/Tool provider 和卸载策略；组件路径仍只能相对 Installation Root，远端只持久化规范 origin 和 HTTP 风险确认，不持久化密码或 cookie。旧 v2 candidate 不作为兼容输入。
 
 Canonical 组件只构建一次：Source、平台 Product、Bun、Manager CLI、Electron/Tauri Envelope、Tool Pack 与 WebView2 Runtime Pack。Tool Pack 独立安装，Manager 只把受管 Git/Bash/rg 注入 Product 私有 PATH；只有用户明确选择时才把 NeuroBook CLI 加入用户 PATH。
 

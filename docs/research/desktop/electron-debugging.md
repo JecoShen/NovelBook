@@ -14,6 +14,12 @@
 
 ## 已打包 Electron 的 CDP 诊断
 
+Task 145 的 Manager GUI 与主应用共用同一个 Electron executable。调试向导时使用
+`NeuroBook-Electron.exe --manager-gui --remote-debugging-port=<port>`；它加载
+`manager.html`，通过 `manager-preload.cjs` 调用 Manager CLI，不会加载 Product origin。
+因此 Manager GUI 的 CDP target 与主应用 target 必须分开记录，不能把向导页面的可见结果当成
+Product/Workbench 验收。
+
 CDP（Chrome DevTools Protocol）适合附加到已经运行的 Portable，不需要改业务代码。
 
 1. 在隔离的临时根启动打包后的 Electron，并只绑定 loopback 调试端口：
@@ -65,6 +71,32 @@ CDP 只证明渲染层的几何和计算样式，不证明 Windows 原生拖动�
 - Playwright Electron API（`_electron.launch()`、`firstWindow()`、locator、截图和 console 监听）用于可重复的 UI smoke。它适合验证启动页、标题栏菜单、设置页、缩放和页面交互。
 - 原始 CDP 用于附加到已经启动的真实 Portable，特别适合确认“打包后到底加载了哪份 CSS/JS”以及采集几何尺寸。
 - 两者都不能单独证明系统托盘、原生菜单、文件对话框、快捷方式、真实窗口移动/吸附或安装卸载行为。上述项目需要 Windows UI Automation 或用户授权的可见验收。
+
+原生线的可重复脚本是 `scripts/deploy/electron-native-acceptance.ts`（`bun run desktop:native-acceptance`）。它启动真实 Electron main，调用真实 `BrowserWindow.maximize()/unmaximize()`，从 Desktop 日志读取托盘图标是否为空，并通过已有封面入口检查 `input[type=file]` 与 `filechooser` 事件。`filechooser` 事件只能证明渲染器触发了文件选择请求；Windows 文件选择器的可见目录、过滤器、取消/选择结果仍要用 Windows UI automation 观察，不能把事件当成“已选文件”。
+
+## Manager GUI 与最终 Portable
+
+Task 145 起，Manager GUI 与主应用共用同一个 Electron Runtime。验证 Manager 时对最终 Portable 启动：
+
+```powershell
+<portable-root>\desktop\NeuroBook-Electron.exe --manager-gui --remote-debugging-port=9225
+```
+
+它的 target URL 应为 `file:///.../desktop/resources/app.asar/manager.html`；页面应能看到安装范围和 Provider 类型 `<select>`。Provider 离线测试允许返回 warning，但测试后 API Key 输入框必须为空，不能出现在 stdout、NDJSON 或日志中。关闭 Manager GUI 后再启动主应用使用不同 CDP 端口，避免把两个入口的窗口误判为同一个页面。
+
+最终 Portable 的检查顺序固定为：先读取 `manifest.json` 和 `product.imageId`，再用 CDP 检查标题栏/页面几何，最后关闭窗口并确认 Electron、Product、loopback 端口和 State Root 句柄均已收口。安装回归应额外检查 `%LOCALAPPDATA%/Programs/NeuroBook`、用户级 State/Cache/Desktop roots、开始菜单/桌面快捷方式和 `HKCU` 注册项；全局安装必须在提升权限环境单独执行，非提升环境只能作为 fail-closed 证据。
+
+### Machine-scope UAC 验收
+
+Manager GUI 的 machine-scope 操作由一次性 UAC Broker 转交同一个 Manager CLI。CDP 只能填写 Depot、选择安装范围并读取 Manager 的 NDJSON 阶段；UAC 同意/取消、Program Files 写入、HKLM 注册和公共快捷方式属于 Windows 原生权限边界，不能用 Renderer JavaScript 代替。
+
+验收时分别记录三条结果：
+
+- UAC 取消或提升进程未连接：GUI 必须收到 `uac-cancelled`，不应创建 `Program Files/NeuroBook`、HKLM 项、公共快捷方式或 staging；
+- UAC 允许：安装、修复和卸载阶段必须仍由 Broker 调用 Manager CLI，控制管道使用 `operationId/nonce`，密码（如启用 auth）只走独立 secret 管道后写入 CLI stdin；
+- Broker/pipe 中断：GUI 显示失败并回收临时 pipe，State Root 按卸载合同保留。
+
+不要把 UAC 提示截图或系统事件当成 Manager 成功；必须继续检查安装 manifest、receipt、注册项、State/Cache/Desktop Root 和进程树。密码不得写入 CDP trace、截图、命令行、环境变量、NDJSON 或普通日志。
 
 测试和诊断脚本都应使用隔离临时根，并清理子进程、调试端口和临时文件。不要为了让 smoke 通过而关闭 `contextIsolation`、sandbox、CSP 或 origin 校验。
 

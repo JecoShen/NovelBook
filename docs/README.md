@@ -8,9 +8,11 @@
 - `docs/adr/`：已经接受、需要长期保留的架构与协议决策。
 - `docs/migrations/`：有状态发布的自动或人工升级说明、备份位置和回滚步骤。
 - `docs/tutorials/`：面向普通作者用户的产品教程和上手路径。
+- `docs/manual-eval/`：用户视角人工评测体系：评测旅程、判定口径与报告模板。
 - `docs/research/`：第三方库、外部资料和方案调研。
 - `docs/drafts/`：未定稿草案。
 - `docs/tasks/`：重大任务的持续 walkthrough；active task 使用 `{order}-{slug}`，已归档任务放入 `docs/tasks/archived/`。
+- `docs/testing/`：测试规范——临时目录与生命周期、测试组织、平台门禁和验收脚本路径约定。
 - `docs/changelog/`：历史版本的更新说明，按发布线分文件；英文镜像在 `docs/en/changelog/`。当前版本的更新说明在根目录 `RELEASE.md`，不放这里。
 - `docs/archived/`：过期但仍有参考价值的文档。
 
@@ -22,6 +24,7 @@
 - [migrations/](migrations/)：Application State 迁移说明；直接启动源码或 Product 前先阅读。
 - [operator-bridge.md](operator-bridge.md)：交付与运维桥梁，面向用户和用户 Agent，说明部署、更新、排障和关键文档索引。
 - [tutorials/](tutorials/)：基础教程，从第一本书到前三章。
+- [manual-eval/](manual-eval/)：用户视角人工评测体系，覆盖评测旅程、判定口径与报告模板。
 - [core/](core/)：站点内核心能力说明——World Engine、Plot 剧情工坊、Markdown Studio、llmlint。
 - [agent/](agent/)：站点内 Agent 心智模型、工具、Workflow 与 Job、三种模式和 Harness 导读。
 - [profile/](profile/)：站点内 profile 说明，覆盖 leader、writer 和其他内置 profile。

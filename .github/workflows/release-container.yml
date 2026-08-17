@@ -613,8 +613,8 @@ jobs:
             $launcherPath = Join-Path $portableRoot $launcherName
             if (-not (Test-Path -LiteralPath $launcherPath)) { throw "Portable缺少Launcher：$launcherName" }
             $launcher = Get-Content -Raw -LiteralPath $launcherPath
-            if ($launcher -notmatch "neuro-book\.cmd" -or $launcher -notmatch "--root") {
-              throw "Portable Launcher未委托Manager：$launcherName"
+            if ($launcher -notmatch "(?i)\.runtime[\\/]bin[\\/]neuro-book\.cmd" -or $launcher -match "(?i)--root") {
+              throw "Portable Launcher未委托绑定Root的Manager wrapper：$launcherName"
             }
           }
           $env:NO_COLOR = "1"
@@ -647,15 +647,15 @@ jobs:
             Set-Content -LiteralPath $manager -Encoding ascii -Value @'
           @echo off
           > "%NEURO_BOOK_LAUNCHER_CAPTURE%" echo %~1
-          >> "%NEURO_BOOK_LAUNCHER_CAPTURE%" echo %~2
-          >> "%NEURO_BOOK_LAUNCHER_CAPTURE%" echo %~3
+          if not "%~2"=="" >> "%NEURO_BOOK_LAUNCHER_CAPTURE%" echo %~2
+          if not "%~3"=="" >> "%NEURO_BOOK_LAUNCHER_CAPTURE%" echo %~3
           if not "%~4"=="" >> "%NEURO_BOOK_LAUNCHER_CAPTURE%" echo %~4
           exit /b 0
           '@
             $cmdCases = @(
-              @{ Name = "Start Neuro Book.cmd"; Expected = @("--root", $portableRoot, "start") },
-              @{ Name = "Update Neuro Book.cmd"; Expected = @("--root", $portableRoot, "update") },
-              @{ Name = "Create Admin.cmd"; Expected = @("--root", $portableRoot, "admin", "create") }
+              @{ Name = "Start Neuro Book.cmd"; Expected = @("start") },
+              @{ Name = "Update Neuro Book.cmd"; Expected = @("update") },
+              @{ Name = "Create Admin.cmd"; Expected = @("admin", "create") }
             )
             foreach ($case in $cmdCases) {
               $capture = Join-Path $portableRoot ".deploy/launcher-args.txt"

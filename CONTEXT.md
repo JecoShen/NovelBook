@@ -64,9 +64,21 @@ _Avoid_: direct child process, PID tree scan, global process killer
 独立 npm 包 `@notnotype/neuro-book-manager` 提供的安装、更新、启动、诊断、Runtime 和 Tool 管理器，公开命令为 `neuro-book`。
 _Avoid_: application dependency installer
 
+**NeuroBook Manager GUI**:
+与主 Electron 共享 Chromium 载荷的独立安装向导进程。它只调用 Manager CLI/Supervisor 的结构化合同，显示安装、修复、组件检查和卸载状态，不直接执行 Product、数据库、Provider 或 shutdown 逻辑。
+_Avoid_: GUI-owned installer, second Electron runtime, Product replacement
+
 **Desktop Envelope**:
 围绕 Product Runtime 的 Electron 或 Tauri 宿主，拥有窗口、单实例、菜单、托盘、WebView profile 和设备本地状态；它通过 Manager/Supervisor 合同启动 Product，不复制业务命令。
 _Avoid_: Product replacement, browser-only shell, GUI Manager
+
+**Desktop Installation Manifest v3**:
+本机桌面安装的真相源，记录 `user`/`machine` 安装范围、程序相对根、State/Cache/Desktop/WebView 用户 locators、组件 receipts 和默认保留 State Root 的卸载策略；canonical Installed root 缺少或损坏 manifest/locator 时必须停在 Repair，不回退到 Portable 布局；不保存 API Key、cookie 或 shutdown token。
+_Avoid_: portable payload manifest, absolute installation path, user content backup
+
+**Windows Machine-scope UAC Broker**:
+Manager GUI 为 `Program Files` 安装、修复和卸载创建的一次性提升边界；控制管道使用版本化 NDJSON 与 `operationId/nonce`，管理员密码只在独立 secret 管道完成同样身份握手后写入 Manager CLI stdin。它不拥有安装事务，只转发白名单动作并回传阶段事件。
+_Avoid_: GUI-owned install, password in argv/env/log, arbitrary elevated shell
 
 **Workspace Root `.nbook`**:
 Workspace Root 的全局控制区，保存 Global Config、用户 assets、Agent 资源覆盖层和全局运行状态。
@@ -247,6 +259,22 @@ _Avoid_: session entry, consumed event, chat message
 **Agent Dialogue Content**:
 Agent session active path 中用户和 assistant 的可见正文文本，用于派生 session 展示元数据。
 _Avoid_: tool result tokens, thinking tokens, raw context tokens
+
+**Compaction Summary**:
+压缩后替代被裁掉的旧 Agent ReAct Loop 内容、供模型继续工作的纯文本连续性记录；其中的路径和符号是事实描述，不是文件读取命令或权限凭证。
+_Avoid_: executable file instruction, authorization token
+
+**Compaction Checkpoint**:
+Session 中代表一次上下文压缩边界的持久记录，至少包含摘要、保留起点和 token 统计；它可以携带不直接展示给模型的恢复 metadata。
+_Avoid_: provider response only, mutable transcript rewrite
+
+**Recovery Material**:
+压缩后为恢复当前工作而重新提供的、有界上下文内容或其引用；必须经过 Harness 的授权、存在性、内容版本和 token budget 校验。
+_Avoid_: arbitrary file injection, model-selected path
+
+**Recovery Reference**:
+指向已授权文件的稳定地址及读取时需要核对的版本信息；默认用于按需拉取，不承诺自动全文注入。
+_Avoid_: raw path string, Project identity
 
 **Agent Summarizer Profile**:
 用于维护另一个 Agent session 展示标题和摘要的后台 profile。

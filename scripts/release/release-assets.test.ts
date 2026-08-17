@@ -442,8 +442,9 @@ describe("Product Release宿主合同", () => {
             "scripts/release/release-assets.test.ts",
             "scripts/release/release-checksums.test.ts",
         ]);
-        expect(releaseAssetsVitestConfig.test).not.toHaveProperty("globalSetup");
-        expect(releaseAssetsVitestConfig.test).not.toHaveProperty("setupFiles");
+        // Release preflight 只加载受控临时根基础设施，不加载 Agent/Nuxt 全局 fixture。
+        expect(releaseAssetsVitestConfig.test.globalSetup).toEqual(["server/workspace-files/vitest-global-setup.ts"]);
+        expect(releaseAssetsVitestConfig.test.setupFiles).toEqual(["server/workspace-files/vitest-tmpdir-setup.ts"]);
         expect(workflow.jobs["build-container"].needs).toBe("preflight");
         expect(workflow.jobs["merge-container-images"].needs).toBe("build-container");
         expect(workflow.jobs.source.needs).toBe("preflight");
@@ -720,6 +721,13 @@ describe("Product Release宿主合同", () => {
         const candidateRun = workflow.jobs["verify-windows"].steps.map((step) => step.run ?? "").join("\n");
         expect(candidateRun).toContain("verify-windows-portable-restart.ts");
         expect(candidateRun).not.toContain("Start-Process -FilePath $env:ComSpec");
+        expect(candidateRun).toContain('$launcher -notmatch "(?i)\\.runtime[\\\\/]bin[\\\\/]neuro-book\\.cmd"');
+        expect(candidateRun).toContain('$launcher -match "(?i)--root"');
+        expect(candidateRun).toContain("Portable Launcher未委托绑定Root的Manager wrapper");
+        expect(candidateRun).not.toContain('$launcher -notmatch "neuro-book\\.cmd" -or $launcher -notmatch "--root"');
+        expect(candidateRun).toContain('@{ Name = "Start Neuro Book.cmd"; Expected = @("start") }');
+        expect(candidateRun).toContain('@{ Name = "Update Neuro Book.cmd"; Expected = @("update") }');
+        expect(candidateRun).toContain('@{ Name = "Create Admin.cmd"; Expected = @("admin", "create") }');
         expect(candidateRun).not.toContain("Stop-Process -Id $managerProcess.Id -Force");
         expect(workflowText).toContain("${{ runner.temp }}/neuro-book-portable-smoke/data/logs/release-browser-smoke*");
         expect(workflowText).toContain("${{ runner.temp }}/neuro-book-portable-smoke/data/logs/release-auth-smoke*");

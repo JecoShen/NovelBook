@@ -35,10 +35,10 @@ describe("chapter-write-review-revise workflow", () => {
         const agents = new MockAgentPort(sessions);
         const events: WorkflowEvent[] = [];
         let writerInvokes = 0;
-        // writer：首轮 prompt 写正文，followup 轮修订，都用 summary 回报。
+        // writer：首轮 prompt 写正文，修订轮按消息内容区分（都是 prompt），都用 summary 回报。
         agents.register("writer", (turn): {message: string; data: JsonValue} => {
             writerInvokes++;
-            if (turn.mode === "followup") {
+            if (turn.message?.includes("评审发现以下问题")) {
                 return {
                     message: "修订完成",
                     data: {summary: "按 major 意见补足了动机铺垫", outputPath: chapterPath},

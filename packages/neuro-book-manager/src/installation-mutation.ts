@@ -8,7 +8,7 @@ import {ensureDirectory, pathExists} from "#manager/files";
 import {readInstallationManifest} from "#manager/manifest-store";
 import {recoverInterruptedOperations} from "#manager/operation";
 import {installationPaths} from "#manager/paths";
-import {localAppDataRoot} from "#manager/root-locators";
+import {installationRootLocators, localAppDataRoot} from "#manager/root-locators";
 import type {InstallProfile, InstallationManifest} from "#manager/types";
 import {pendingWindowsUninstall, type WindowsUninstallIntent} from "#manager/windows-uninstall-host";
 
@@ -73,10 +73,17 @@ async function mutateExistingInstallation<T>(
         if (pendingUninstall && !allowPendingUninstall) {
             throw new Error(`Windows 卸载已安排，拒绝执行其他 Manager 操作：${installationRoot}`);
         }
-        if (!pendingUninstall) await recoverInterruptedOperations(installationRoot);
+        const manifestBeforeRecovery = await readInstallationManifest(installationPaths(installationRoot).manifest);
+        if (!manifestBeforeRecovery) {
+            throw new Error(`Installation Manifest不存在，拒绝修改未受管目录：${installationRoot}`);
+        }
+        assertInstalledRoot(installationRoot, manifestBeforeRecovery);
+        if (!pendingUninstall) {
+            await recoverInterruptedOperations(installationRoot, manifestBeforeRecovery.roots);
+        }
         const manifest = await readInstallationManifest(installationPaths(installationRoot).manifest);
         if (!manifest) {
-            throw new Error(`Installation Manifest不存在，拒绝修改未受管目录：${installationRoot}`);
+            throw new Error(`Operation recovery 后 Installation Manifest不存在：${installationRoot}`);
         }
         assertInstalledRoot(installationRoot, manifest);
         return task(Object.freeze({root: installationRoot, manifest, pendingUninstall}));
@@ -96,7 +103,7 @@ export async function mutateFreshInstallation<T>(
         if (await pendingWindowsUninstall(installationRoot)) {
             throw new Error(`Windows 卸载已安排，拒绝重新安装：${installationRoot}`);
         }
-        await recoverInterruptedOperations(installationRoot);
+        await recoverInterruptedOperations(installationRoot, installationRootLocators(profile));
         if (await readInstallationManifest(installationPaths(installationRoot).manifest)) {
             throw new Error("Installation Root 已由 NeuroBook Manager 管理，请使用 neuro-book update。");
         }
@@ -109,12 +116,15 @@ export async function installationLeasePath(root: string): Promise<string> {
     const installationRoot = resolve(root);
     const canonicalRoot = await realpath(installationRoot);
     const canonicalInstalledRoot = resolve(localAppDataRoot(), "Programs", "NeuroBook");
+    const canonicalMachineRoot = canonicalWindowsMachineRoot();
     const leaseRoot = resolve(localAppDataRoot(), "NeuroBook", "manager-leases");
     if (isSameOrWithin(installationRoot, leaseRoot)) {
         throw new Error(`Manager 用户级 lease 不能位于 Installation Root 内：${leaseRoot}`);
     }
     const identity = samePath(installationRoot, canonicalInstalledRoot)
         ? "installed-v1"
+        : samePath(installationRoot, canonicalMachineRoot)
+            ? "installed-machine-v2"
         : createHash("sha256").update(normalizedPath(canonicalRoot)).digest("hex");
     return join(leaseRoot, identity);
 }
@@ -160,27 +170,32 @@ async function withInstallationLease<T>(root: string, task: () => Promise<T>): P
     return outcome.value;
 }
 
-/** 已存在的 Installed v1 必须同时满足固定 Profile、locator 与用户级安装根。 */
+/** 已存在的 Windows Installed 必须同时满足固定 Profile、locator 与 user/machine 程序根。 */
 function assertInstalledRoot(root: string, manifest: InstallationManifest): void {
     const installed = Object.values(manifest.roots).some((locator) => locator.base === "local-app-data");
     if (!installed) return;
     if (process.platform !== "win32" || manifest.profile !== "product-bun") {
-        throw new Error("Installed v1 只支持 Windows product-bun Profile。");
+        throw new Error("Windows Installed 只支持 Windows product-bun Profile。");
     }
-    assertCanonicalInstalledRoot(root);
+    assertCanonicalWindowsRoot(root);
 }
 
-/** Windows product-bun 新安装会选择 Installed locator，因而只能写入唯一程序根。 */
+/** Windows product-bun 新安装会选择 Installed locator，因而只能写入唯一 user/machine 程序根。 */
 function assertFreshInstalledRoot(root: string, profile: InstallProfile): void {
-    if (process.platform === "win32" && profile === "product-bun") assertCanonicalInstalledRoot(root);
+    if (process.platform === "win32" && profile === "product-bun") assertCanonicalWindowsRoot(root);
 }
 
-/** 拒绝把 Installed v1 伪装成任意可移动目录，避免多 lease 与卸载所有权歧义。 */
-function assertCanonicalInstalledRoot(root: string): void {
+/** 拒绝把 Windows Installed 伪装成任意可移动目录，避免多 lease 与卸载所有权歧义。 */
+function assertCanonicalWindowsRoot(root: string): void {
     const expected = resolve(localAppDataRoot(), "Programs", "NeuroBook");
-    if (!samePath(root, expected)) {
-        throw new Error(`Windows Installed v1 只允许固定 Installation Root：${expected}`);
+    const machine = canonicalWindowsMachineRoot();
+    if (!samePath(root, expected) && !samePath(root, machine)) {
+        throw new Error(`Windows Installed 只允许固定 Installation Root：${expected} 或 ${machine}`);
     }
+}
+
+function canonicalWindowsMachineRoot(): string {
+    return resolve(process.env.ProgramFiles ?? join(process.env.SystemDrive ?? "C:", "Program Files"), "NeuroBook");
 }
 
 function samePath(left: string, right: string): boolean {

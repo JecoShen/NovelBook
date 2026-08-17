@@ -60,10 +60,6 @@ defineRouteMeta({
 } as never,
 });
 
-
-
-
-
 const RenameWorkspacePathBodySchema = z.object({
     projectRoot: ProjectRootDtoSchema.optional(),
     workspaceKind: z.literal("user-assets").optional(),

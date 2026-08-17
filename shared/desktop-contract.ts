@@ -1,11 +1,12 @@
 export const DESKTOP_BRIDGE_SCHEMA = "nbook.desktop-bridge/v2";
 export const DESKTOP_DISTRIBUTION_SCHEMA = "nbook.desktop-distribution/v1";
-export const DESKTOP_INSTALLATION_SCHEMA = "nbook.desktop-installation/v1";
+export const DESKTOP_INSTALLATION_SCHEMA = "nbook.desktop-installation/v3";
 export const DESKTOP_SETTINGS_SCHEMA = "nbook.desktop-settings/v1";
 export const DESKTOP_SUPERVISOR_SCHEMA = "nbook.desktop-supervisor/v1";
 export const DESKTOP_CAPABILITY_SCHEMA = "nbook.desktop-capability/v1";
 export const DESKTOP_USER_INSTALLATION_SCHEMA = "nbook.desktop-user-installation/v1";
 export const DESKTOP_SHELL_SCHEMA = "nbook.desktop-shell/v1";
+export const DESKTOP_PORTABLE_SCHEMA = "nbook.desktop-portable/v1";
 
 export const DESKTOP_ENVELOPES = ["electron", "tauri"] as const;
 export const DESKTOP_CHANNELS = ["stable", "canary"] as const;
@@ -15,6 +16,7 @@ export const DESKTOP_COMPONENT_IDS = [
     "bun",
     "manager-cli",
     "electron-envelope",
+    "electron-application",
     "tauri-envelope",
     "tool-pack",
     "webview2-runtime",
@@ -58,6 +60,7 @@ export type DesktopAppearance = "light" | "dark";
 export type DesktopPlatform = "windows" | "macos" | "linux";
 export type DesktopMenuPresentation = "renderer" | "native";
 export type DesktopWindowControls = "overlay" | "custom" | "traffic-lights";
+export type DesktopInstallationScope = "user" | "machine";
 
 export type DesktopComponentArchive = {
     kind: "path" | "url";
@@ -75,15 +78,70 @@ export type DesktopDistributionComponent = {
 };
 
 /** 远端 Desktop 只需要的 Envelope depot；不得携带 Product、Bun 或 Tool Pack。 */
-export type DesktopShellArchiveManifest = {
+type DesktopShellArchiveManifestBase = {
     schema: typeof DESKTOP_SHELL_SCHEMA;
-    kind: DesktopEnvelope;
     platform: "windows-x64";
     envelopePath: string;
     envelopeVersion: string;
     envelopeSha256: string;
     webview: "bundled-chromium" | "system-evergreen";
 };
+
+export type DesktopShellArchiveManifest =
+    | DesktopShellArchiveManifestBase & {
+        kind: "electron";
+        applicationPath: "desktop/resources/app.asar";
+        applicationVersion: string;
+        applicationSha256: string;
+    }
+    | DesktopShellArchiveManifestBase & {kind: "tauri"};
+
+/** 完整 Desktop Portable 的壳与 Product 身份；Electron 应用代码单独保护。 */
+type DesktopPortableArchiveManifestBase = {
+    schema: typeof DESKTOP_PORTABLE_SCHEMA;
+    platform: "windows-x64";
+    product: {
+        imagePath: ".output";
+        imageId: string;
+        sourceRevision: string;
+        sourceDigest: string;
+        dirty: boolean;
+        contractSchema: string;
+        contractSha256: string;
+    };
+    toolPack: {files: number; bytes: number; digest: string};
+    roots: {
+        application: ".";
+        state: "data";
+        cache: ".cache";
+        desktop: "data/.desktop";
+        webview: "data/.desktop/webview";
+    };
+    payload: {files: number; bytes: number; digest: string};
+};
+
+type DesktopPortableRuntimeBase = {
+    bunPath: "runtime/bun.exe";
+    bunVersion: string;
+    envelopePath: string;
+    envelopeVersion: string;
+    envelopeSha256: string;
+};
+
+export type DesktopPortableArchiveManifest =
+    | DesktopPortableArchiveManifestBase & {
+        kind: "electron";
+        runtime: DesktopPortableRuntimeBase & {
+            applicationPath: "desktop/resources/app.asar";
+            applicationSha256: string;
+        };
+        webview: {kind: "bundled-chromium"; webviewRoot: "data/.desktop/webview"};
+    }
+    | DesktopPortableArchiveManifestBase & {
+        kind: "tauri";
+        runtime: DesktopPortableRuntimeBase;
+        webview: {kind: "system-evergreen"; webviewRoot: "data/.desktop/webview"};
+    };
 
 /** 可下载组件的不可变发行声明；组件本身只允许内容寻址 archive。 */
 export type DesktopDistributionManifest = {
@@ -100,6 +158,55 @@ export type DesktopInstalledComponent = {
     version: string;
     path: string;
     sha256: string;
+};
+
+export type DesktopManagedProvider = {
+    provider: "managed";
+    version: string;
+    path: string;
+    sha256: string;
+};
+
+export type DesktopSystemProvider = {
+    provider: "system";
+    version: string;
+    executable: string;
+};
+
+export type DesktopProviderLocator = DesktopManagedProvider | DesktopSystemProvider;
+
+export type DesktopToolProviderLocator =
+    | DesktopManagedProvider & {bashPath?: string}
+    | DesktopSystemProvider & {bashExecutable?: string};
+
+export type DesktopInstallationProviders = {
+    managerRuntime: DesktopProviderLocator;
+    applicationRuntime: DesktopProviderLocator;
+    tools: {
+        rg: DesktopToolProviderLocator;
+        git: DesktopToolProviderLocator;
+    };
+};
+
+export type DesktopComponentReceipt = {
+    id: DesktopComponentId;
+    version: string;
+    path: string;
+    sha256: string;
+    source: "depot" | "network" | "managed";
+};
+
+export type DesktopUninstallPolicy = {
+    preserveStateRootByDefault: true;
+    deleteStateRootRequiresExplicit: true;
+    preserveExternalProjectWorkspace: true;
+};
+
+export type DesktopInstallationUserRoots = {
+    state: {base: "local-app-data" | "user-app-data"; path: string};
+    cache: {base: "local-app-data" | "user-cache"; path: string};
+    desktop: {base: "local-app-data" | "user-app-data"; path: string};
+    webview: {base: "local-app-data" | "user-app-data"; path: string};
 };
 
 export type DesktopConnection =
@@ -161,10 +268,16 @@ export function desktopUserInstallationContract(
 export type DesktopInstallationManifest = {
     schema: typeof DESKTOP_INSTALLATION_SCHEMA;
     installationId: string;
+    installationScope: DesktopInstallationScope;
+    programRoot: ".";
+    userRoots: DesktopInstallationUserRoots;
     envelope: DesktopEnvelope;
     channel: DesktopChannel;
     connection: DesktopConnection;
+    providers: DesktopInstallationProviders;
     components: DesktopInstalledComponent[];
+    receipts: DesktopComponentReceipt[];
+    uninstall: DesktopUninstallPolicy;
     addCliToUserPath: boolean;
     installedAt: string;
     updatedAt: string;
@@ -199,6 +312,12 @@ export type DesktopStatus = {
 
 export type DesktopSettingsPatch = Partial<Pick<DesktopSettings, "zoomFactor" | "trayEnabled" | "closeBehavior">>;
 
+/** Windows/macOS 将第二次启动、协议和未来文件关联投影为同一个有界请求。 */
+export type DesktopLaunchRequest = {
+    args: string[];
+    cwd: string;
+};
+
 /** Renderer 唯一允许看到的宿主能力；不包含 shell、fs 或 Manager 控制凭据。 */
 export interface DesktopBridge {
     readonly schema: typeof DESKTOP_BRIDGE_SCHEMA;
@@ -209,6 +328,7 @@ export interface DesktopBridge {
     window(command: DesktopWindowCommandId): Promise<void>;
     menu(command: DesktopMenuCommandId): Promise<void>;
     onMenuCommand(listener: (command: DesktopMenuCommandId) => void): () => void;
+    onLaunchRequest(listener: (request: DesktopLaunchRequest) => void): () => void;
 }
 
 export type DesktopCapability = {
@@ -225,6 +345,7 @@ export type DesktopSupervisorRequest =
     | {schema: typeof DESKTOP_SUPERVISOR_SCHEMA; requestId: string; type: "repair"};
 
 export type DesktopSupervisorStage =
+    | "quick-verify"
     | "full-verify"
     | "migration"
     | "starting-product"
@@ -258,40 +379,259 @@ export function parseDesktopDistributionManifest(value: unknown): DesktopDistrib
 /** 严格解析远端 Desktop 壳 depot manifest。 */
 export function parseDesktopShellArchiveManifest(value: unknown): DesktopShellArchiveManifest {
     const root = object(value, "Desktop Shell Archive Manifest");
-    exactKeys(root, ["schema", "kind", "platform", "envelopePath", "envelopeVersion", "envelopeSha256", "webview"], "Desktop Shell Archive Manifest");
     literal(root.schema, DESKTOP_SHELL_SCHEMA, "schema");
     const kind = member(root.kind, DESKTOP_ENVELOPES, "kind");
+    const applicationKeys = kind === "electron"
+        ? ["applicationPath", "applicationVersion", "applicationSha256"]
+        : [];
+    exactKeys(root, [
+        "schema",
+        "kind",
+        "platform",
+        "envelopePath",
+        "envelopeVersion",
+        "envelopeSha256",
+        ...applicationKeys,
+        "webview",
+    ], "Desktop Shell Archive Manifest");
     literal(root.platform, "windows-x64", "platform");
     const envelopePath = desktopRelativePath(nonEmptyString(root.envelopePath, "envelopePath"), "envelopePath");
     const expectedPath = kind === "electron" ? "desktop/NeuroBook-Electron.exe" : "desktop/NeuroBook-Tauri.exe";
     if (envelopePath !== expectedPath) throw new Error(`Envelope 路径与壳类型不一致：${envelopePath}`);
-    return {
+    const common: DesktopShellArchiveManifestBase = {
         schema: DESKTOP_SHELL_SCHEMA,
-        kind,
         platform: "windows-x64",
         envelopePath,
         envelopeVersion: nonEmptyString(root.envelopeVersion, "envelopeVersion"),
         envelopeSha256: sha256(root.envelopeSha256, "envelopeSha256"),
         webview: member(root.webview, ["bundled-chromium", "system-evergreen"] as const, "webview"),
     };
+    if (kind === "tauri") return {...common, kind};
+    const applicationPath = desktopRelativePath(nonEmptyString(root.applicationPath, "applicationPath"), "applicationPath");
+    if (applicationPath !== "desktop/resources/app.asar") {
+        throw new Error(`Electron application 路径不受支持：${applicationPath}`);
+    }
+    return {
+        ...common,
+        kind,
+        applicationPath,
+        applicationVersion: nonEmptyString(root.applicationVersion, "applicationVersion"),
+        applicationSha256: sha256(root.applicationSha256, "applicationSha256"),
+    };
+}
+
+/** 严格解析完整 Desktop Portable manifest。 */
+export function parseDesktopPortableManifest(value: unknown): DesktopPortableArchiveManifest {
+    const root = object(value, "Desktop Portable Manifest");
+    exactKeys(root, [
+        "schema",
+        "kind",
+        "platform",
+        "product",
+        "runtime",
+        "toolPack",
+        "roots",
+        "webview",
+        "payload",
+    ], "Desktop Portable Manifest");
+    literal(root.schema, DESKTOP_PORTABLE_SCHEMA, "schema");
+    const kind = member(root.kind, DESKTOP_ENVELOPES, "kind");
+    literal(root.platform, "windows-x64", "platform");
+    const product = object(root.product, "product");
+    exactKeys(product, [
+        "imagePath",
+        "imageId",
+        "sourceRevision",
+        "sourceDigest",
+        "dirty",
+        "contractSchema",
+        "contractSha256",
+    ], "product");
+    literal(product.imagePath, ".output", "product.imagePath");
+    const sourceRevision = nonEmptyString(product.sourceRevision, "product.sourceRevision");
+    if (!/^[a-f0-9]{40,64}$/u.test(sourceRevision)) {
+        throw new Error("product.sourceRevision 必须是 40–64 位小写十六进制 revision。");
+    }
+    const runtime = object(root.runtime, "runtime");
+    const applicationKeys = kind === "electron" ? ["applicationPath", "applicationSha256"] : [];
+    exactKeys(runtime, [
+        "bunPath",
+        "bunVersion",
+        "envelopePath",
+        "envelopeVersion",
+        "envelopeSha256",
+        ...applicationKeys,
+    ], "runtime");
+    literal(runtime.bunPath, "runtime/bun.exe", "runtime.bunPath");
+    const envelopePath = desktopRelativePath(nonEmptyString(runtime.envelopePath, "runtime.envelopePath"), "runtime.envelopePath");
+    const expectedEnvelopePath = kind === "electron" ? "desktop/NeuroBook-Electron.exe" : "desktop/NeuroBook-Tauri.exe";
+    if (envelopePath !== expectedEnvelopePath) {
+        throw new Error(`Portable Envelope 路径与壳类型不一致：${envelopePath}`);
+    }
+    const toolPack = object(root.toolPack, "toolPack");
+    exactKeys(toolPack, ["files", "bytes", "digest"], "toolPack");
+    const roots = object(root.roots, "roots");
+    exactKeys(roots, ["application", "state", "cache", "desktop", "webview"], "roots");
+    const webview = object(root.webview, "webview");
+    exactKeys(webview, ["kind", "webviewRoot"], "webview");
+    const payload = object(root.payload, "payload");
+    exactKeys(payload, ["files", "bytes", "digest"], "payload");
+    const common: DesktopPortableArchiveManifestBase & {runtime: DesktopPortableRuntimeBase} = {
+        schema: DESKTOP_PORTABLE_SCHEMA,
+        platform: "windows-x64",
+        product: {
+            imagePath: ".output",
+            imageId: sha256(product.imageId, "product.imageId"),
+            sourceRevision,
+            sourceDigest: sha256(product.sourceDigest, "product.sourceDigest"),
+            dirty: boolean(product.dirty, "product.dirty"),
+            contractSchema: nonEmptyString(product.contractSchema, "product.contractSchema"),
+            contractSha256: sha256(product.contractSha256, "product.contractSha256"),
+        },
+        runtime: {
+            bunPath: "runtime/bun.exe",
+            bunVersion: nonEmptyString(runtime.bunVersion, "runtime.bunVersion"),
+            envelopePath,
+            envelopeVersion: nonEmptyString(runtime.envelopeVersion, "runtime.envelopeVersion"),
+            envelopeSha256: sha256(runtime.envelopeSha256, "runtime.envelopeSha256"),
+        },
+        toolPack: {
+            files: nonNegativeInteger(toolPack.files, "toolPack.files"),
+            bytes: nonNegativeInteger(toolPack.bytes, "toolPack.bytes"),
+            digest: sha256(toolPack.digest, "toolPack.digest"),
+        },
+        roots: {
+            application: literal(roots.application, ".", "roots.application"),
+            state: literal(roots.state, "data", "roots.state"),
+            cache: literal(roots.cache, ".cache", "roots.cache"),
+            desktop: literal(roots.desktop, "data/.desktop", "roots.desktop"),
+            webview: literal(roots.webview, "data/.desktop/webview", "roots.webview"),
+        },
+        payload: {
+            files: nonNegativeInteger(payload.files, "payload.files"),
+            bytes: nonNegativeInteger(payload.bytes, "payload.bytes"),
+            digest: sha256(payload.digest, "payload.digest"),
+        },
+    };
+    const webviewRoot = literal(webview.webviewRoot, "data/.desktop/webview", "webview.webviewRoot");
+    if (kind === "tauri") {
+        return {
+            ...common,
+            kind,
+            webview: {
+                kind: literal(webview.kind, "system-evergreen", "webview.kind"),
+                webviewRoot,
+            },
+        };
+    }
+    const applicationPath = desktopRelativePath(nonEmptyString(runtime.applicationPath, "runtime.applicationPath"), "runtime.applicationPath");
+    if (applicationPath !== "desktop/resources/app.asar") {
+        throw new Error(`Portable Electron application 路径不受支持：${applicationPath}`);
+    }
+    return {
+        ...common,
+        kind,
+        runtime: {
+            ...common.runtime,
+            applicationPath,
+            applicationSha256: sha256(runtime.applicationSha256, "runtime.applicationSha256"),
+        },
+        webview: {
+            kind: literal(webview.kind, "bundled-chromium", "webview.kind"),
+            webviewRoot,
+        },
+    };
 }
 
 /** 严格解析 Desktop Installation Manifest。输入是本机磁盘上的不可信 JSON。 */
 export function parseDesktopInstallationManifest(value: unknown): DesktopInstallationManifest {
     const root = object(value, "Desktop Installation Manifest");
-    exactKeys(root, ["schema", "installationId", "envelope", "channel", "connection", "components", "addCliToUserPath", "installedAt", "updatedAt"], "Desktop Installation Manifest");
+    exactKeys(root, [
+        "schema",
+        "installationId",
+        "installationScope",
+        "programRoot",
+        "userRoots",
+        "envelope",
+        "channel",
+        "connection",
+        "providers",
+        "components",
+        "receipts",
+        "uninstall",
+        "addCliToUserPath",
+        "installedAt",
+        "updatedAt",
+    ], "Desktop Installation Manifest");
     literal(root.schema, DESKTOP_INSTALLATION_SCHEMA, "schema");
     const installationId = nonEmptyString(root.installationId, "installationId");
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(installationId)) {
+        throw new Error("installationId 必须是单段安全标识。");
+    }
+    const installationScope = member(root.installationScope, ["user", "machine"] as const, "installationScope");
+    literal(root.programRoot, ".", "programRoot");
+    const userRoots = parseDesktopInstallationUserRoots(root.userRoots);
     const envelope = member(root.envelope, DESKTOP_ENVELOPES, "envelope");
     const channel = member(root.channel, DESKTOP_CHANNELS, "channel");
     const connection = parseConnection(root.connection);
+    const providers = parseDesktopInstallationProviders(root.providers);
     if (!Array.isArray(root.components)) throw new Error("components 必须是数组。");
     const components = root.components.map((item, index) => parseInstalledComponent(item, index));
     assertUnique(components.map((item) => item.id), "Desktop Installation components");
+    assertDesktopEnvelopeComponents(envelope, components);
+    if (!Array.isArray(root.receipts)) throw new Error("receipts 必须是数组。");
+    const receipts = root.receipts.map((item, index) => parseDesktopComponentReceipt(item, index));
+    assertUnique(receipts.map((item) => item.id), "Desktop Installation receipts");
+    if (receipts.length !== components.length || receipts.some((receipt) => {
+        const component = components.find((item) => item.id === receipt.id);
+        return !component || component.version !== receipt.version || component.path !== receipt.path || component.sha256 !== receipt.sha256;
+    })) {
+        throw new Error("Desktop Installation receipts 必须与 components 逐项一致。");
+    }
+    const uninstall = parseDesktopUninstallPolicy(root.uninstall);
     const addCliToUserPath = boolean(root.addCliToUserPath, "addCliToUserPath");
     const installedAt = isoDate(root.installedAt, "installedAt");
     const updatedAt = isoDate(root.updatedAt, "updatedAt");
-    return {schema: DESKTOP_INSTALLATION_SCHEMA, installationId, envelope, channel, connection, components, addCliToUserPath, installedAt, updatedAt};
+    return {
+        schema: DESKTOP_INSTALLATION_SCHEMA,
+        installationId,
+        installationScope,
+        programRoot: ".",
+        userRoots,
+        envelope,
+        channel,
+        connection,
+        providers,
+        components,
+        receipts,
+        uninstall,
+        addCliToUserPath,
+        installedAt,
+        updatedAt,
+    };
+}
+
+/** 壳可执行文件与实际 Electron 应用代码必须同时进入安装真相源。 */
+function assertDesktopEnvelopeComponents(
+    envelope: DesktopEnvelope,
+    components: DesktopInstalledComponent[],
+): void {
+    const executableId = envelope === "electron" ? "electron-envelope" : "tauri-envelope";
+    const executablePath = envelope === "electron"
+        ? "desktop/NeuroBook-Electron.exe"
+        : "desktop/NeuroBook-Tauri.exe";
+    const executable = components.find((component) => component.id === executableId);
+    if (!executable || executable.path !== executablePath) {
+        throw new Error(`Desktop Installation Manifest 缺少固定路径的 ${executableId} component。`);
+    }
+    const application = components.find((component) => component.id === "electron-application");
+    if (envelope === "electron") {
+        if (!application || application.path !== "desktop/resources/app.asar") {
+            throw new Error("Desktop Installation Manifest 缺少固定路径的 electron-application component。");
+        }
+    } else if (application) {
+        throw new Error("Tauri Installation Manifest 不能包含 electron-application component。");
+    }
 }
 
 /** 严格解析 Desktop 设备设置，并校验缩放范围。 */
@@ -342,6 +682,26 @@ export function parseDesktopStatus(value: unknown): DesktopStatus {
     };
 }
 
+/** 严格收窄单实例转发参数，避免无限 argv/cwd 进入 Renderer。 */
+export function parseDesktopLaunchRequest(value: unknown): DesktopLaunchRequest {
+    const root = object(value, "Desktop launch request");
+    exactKeys(root, ["args", "cwd"], "Desktop launch request");
+    if (!Array.isArray(root.args)) throw new Error("Desktop launch request args 必须是数组。");
+    if (root.args.length > 32) throw new Error("Desktop launch request args 最多包含 32 项。");
+    const args = root.args.map((arg, index) => {
+        if (typeof arg !== "string" || arg.includes("\0")) {
+            throw new Error(`Desktop launch request args[${String(index)}] 必须是不含 NUL 的字符串。`);
+        }
+        if (arg.length > 4096) {
+            throw new Error(`Desktop launch request args[${String(index)}] 最多包含 4096 个字符。`);
+        }
+        return arg;
+    });
+    const cwd = nonEmptyString(root.cwd, "Desktop launch request cwd");
+    if (cwd.length > 4096) throw new Error("Desktop launch request cwd 最多包含 4096 个字符。");
+    return {args, cwd};
+}
+
 /** 严格解析远端 Product 的 Desktop capability。 */
 export function parseDesktopCapability(value: unknown): DesktopCapability {
     const root = object(value, "Desktop capability");
@@ -375,7 +735,7 @@ export function parseDesktopSupervisorEvent(value: unknown): DesktopSupervisorEv
     const type = member(root.type, ["stage", "ready", "verified", "stopped", "failure", "logs"] as const, "type");
     if (type === "stage") {
         exactKeys(root, ["schema", "requestId", "type", "stage"], "Desktop Supervisor stage event");
-        return {schema: DESKTOP_SUPERVISOR_SCHEMA, requestId, type, stage: member(root.stage, ["full-verify", "migration", "starting-product", "waiting-ready", "stopping-product", "repairing"] as const, "stage")};
+        return {schema: DESKTOP_SUPERVISOR_SCHEMA, requestId, type, stage: member(root.stage, ["quick-verify", "full-verify", "migration", "starting-product", "waiting-ready", "stopping-product", "repairing"] as const, "stage")};
     }
     if (type === "ready") {
         exactKeys(root, ["schema", "requestId", "type", "url", "origin", "version", "startupNonce"], "Desktop Supervisor ready event");
@@ -452,6 +812,146 @@ function parseInstalledComponent(value: unknown, index: number): DesktopInstalle
         version: nonEmptyString(root.version, `${label}.version`),
         path: desktopRelativePath(nonEmptyString(root.path, `${label}.path`), `${label}.path`),
         sha256: sha256(root.sha256, `${label}.sha256`),
+    };
+}
+
+function parseDesktopInstallationProviders(value: unknown): DesktopInstallationProviders {
+    const root = object(value, "providers");
+    exactKeys(root, ["managerRuntime", "applicationRuntime", "tools"], "providers");
+    const tools = object(root.tools, "providers.tools");
+    exactKeys(tools, ["rg", "git"], "providers.tools");
+    return {
+        managerRuntime: parseProviderLocator(root.managerRuntime, "providers.managerRuntime"),
+        applicationRuntime: parseProviderLocator(root.applicationRuntime, "providers.applicationRuntime"),
+        tools: {
+            rg: parseToolProviderLocator(tools.rg, "providers.tools.rg"),
+            git: parseToolProviderLocator(tools.git, "providers.tools.git"),
+        },
+    };
+}
+
+function parseProviderLocator(value: unknown, label: string): DesktopProviderLocator {
+    const root = object(value, label);
+    if (root.provider === "managed") {
+        exactKeys(root, ["provider", "version", "path", "sha256"], label);
+        return {
+            provider: "managed",
+            version: nonEmptyString(root.version, `${label}.version`),
+            path: desktopRelativePath(nonEmptyString(root.path, `${label}.path`), `${label}.path`),
+            sha256: sha256(root.sha256, `${label}.sha256`),
+        };
+    }
+    if (root.provider === "system") {
+        exactKeys(root, ["provider", "version", "executable"], label);
+        return {
+            provider: "system",
+            version: nonEmptyString(root.version, `${label}.version`),
+            executable: commandName(root.executable, `${label}.executable`),
+        };
+    }
+    throw new Error(`${label}.provider 不受支持。`);
+}
+
+function parseToolProviderLocator(value: unknown, label: string): DesktopToolProviderLocator {
+    const root = object(value, label);
+    if (root.provider === "managed") {
+        const hasBashPath = Object.prototype.hasOwnProperty.call(root, "bashPath");
+        exactKeys(root, [
+            "provider",
+            "version",
+            "path",
+            "sha256",
+            ...(hasBashPath ? ["bashPath"] : []),
+        ], label);
+        const bashPath = !hasBashPath || root.bashPath === undefined
+            ? undefined
+            : desktopRelativePath(nonEmptyString(root.bashPath, `${label}.bashPath`), `${label}.bashPath`);
+        return {
+            provider: "managed",
+            version: nonEmptyString(root.version, `${label}.version`),
+            path: desktopRelativePath(nonEmptyString(root.path, `${label}.path`), `${label}.path`),
+            sha256: sha256(root.sha256, `${label}.sha256`),
+            ...(bashPath ? {bashPath} : {}),
+        };
+    }
+    if (root.provider === "system") {
+        const hasBashExecutable = Object.prototype.hasOwnProperty.call(root, "bashExecutable");
+        exactKeys(root, [
+            "provider",
+            "version",
+            "executable",
+            ...(hasBashExecutable ? ["bashExecutable"] : []),
+        ], label);
+        const bashExecutable = !hasBashExecutable || root.bashExecutable === undefined
+            ? undefined
+            : commandName(root.bashExecutable, `${label}.bashExecutable`);
+        return {
+            provider: "system",
+            version: nonEmptyString(root.version, `${label}.version`),
+            executable: commandName(root.executable, `${label}.executable`),
+            ...(bashExecutable ? {bashExecutable} : {}),
+        };
+    }
+    throw new Error(`${label}.provider 不受支持。`);
+}
+
+function commandName(value: unknown, label: string): string {
+    const result = nonEmptyString(value, label);
+    if (result.includes("/") || result.includes("\\") || result.includes(":")) {
+        throw new Error(`${label} 必须是系统命令名，不能持久化绝对路径。`);
+    }
+    return result;
+}
+
+function parseDesktopComponentReceipt(value: unknown, index: number): DesktopComponentReceipt {
+    const label = `receipts[${String(index)}]`;
+    const root = object(value, label);
+    exactKeys(root, ["id", "version", "path", "sha256", "source"], label);
+    return {
+        id: member(root.id, DESKTOP_COMPONENT_IDS, `${label}.id`),
+        version: nonEmptyString(root.version, `${label}.version`),
+        path: desktopRelativePath(nonEmptyString(root.path, `${label}.path`), `${label}.path`),
+        sha256: sha256(root.sha256, `${label}.sha256`),
+        source: member(root.source, ["depot", "network", "managed"] as const, `${label}.source`),
+    };
+}
+
+function parseDesktopInstallationUserRoots(value: unknown): DesktopInstallationUserRoots {
+    const root = object(value, "userRoots");
+    exactKeys(root, ["state", "cache", "desktop", "webview"], "userRoots");
+    type UserBase = "local-app-data" | "user-app-data" | "user-cache";
+    const parseRoot = (
+        input: unknown,
+        label: string,
+        bases: readonly UserBase[],
+    ): {base: UserBase; path: string} => {
+        const item = object(input, label);
+        exactKeys(item, ["base", "path"], label);
+        const base = member(item.base, bases, `${label}.base`);
+        const path = nonEmptyString(item.path, `${label}.path`);
+        if (path.startsWith("/") || path.startsWith("\\") || path.includes(":") || path.split(/[\\/]/u).some((segment) => !segment || segment === "." || segment === "..")) {
+            throw new Error(`${label}.path 必须是无逃逸的用户目录相对路径。`);
+        }
+        return {base, path: path.replaceAll("\\", "/")};
+    };
+    return {
+        state: parseRoot(root.state, "userRoots.state", ["local-app-data", "user-app-data"]) as DesktopInstallationUserRoots["state"],
+        cache: parseRoot(root.cache, "userRoots.cache", ["local-app-data", "user-cache"]) as DesktopInstallationUserRoots["cache"],
+        desktop: parseRoot(root.desktop, "userRoots.desktop", ["local-app-data", "user-app-data"]) as DesktopInstallationUserRoots["desktop"],
+        webview: parseRoot(root.webview, "userRoots.webview", ["local-app-data", "user-app-data"]) as DesktopInstallationUserRoots["webview"],
+    };
+}
+
+function parseDesktopUninstallPolicy(value: unknown): DesktopUninstallPolicy {
+    const root = object(value, "uninstall");
+    exactKeys(root, ["preserveStateRootByDefault", "deleteStateRootRequiresExplicit", "preserveExternalProjectWorkspace"], "uninstall");
+    literal(root.preserveStateRootByDefault, true, "uninstall.preserveStateRootByDefault");
+    literal(root.deleteStateRootRequiresExplicit, true, "uninstall.deleteStateRootRequiresExplicit");
+    literal(root.preserveExternalProjectWorkspace, true, "uninstall.preserveExternalProjectWorkspace");
+    return {
+        preserveStateRootByDefault: true,
+        deleteStateRootRequiresExplicit: true,
+        preserveExternalProjectWorkspace: true,
     };
 }
 

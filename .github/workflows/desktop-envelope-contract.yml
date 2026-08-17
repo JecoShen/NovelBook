@@ -6,10 +6,14 @@ on:
       - ".github/workflows/desktop-envelope-contract.yml"
       - "desktop/**"
       - "packages/neuro-book-manager/**"
+      - "scripts/build/**"
+      - "scripts/install/**"
       - "scripts/install/install-desktop.ps1"
       - "scripts/release/desktop-contract-vitest.config.ts"
       - "shared/desktop-contract.ts"
       - "shared/desktop-contract.test.ts"
+      - "shared/desktop-uac-broker.ts"
+      - "shared/desktop-uac-broker.test.ts"
       - "package.json"
       - "bun.lock"
   workflow_dispatch:
@@ -50,4 +54,11 @@ jobs:
           src/desktop-installation.test.ts
           src/paths.test.ts
           src/schema.test.ts
+          src/windows-uninstall-host.test.ts
         working-directory: packages/neuro-book-manager
+      - name: Verify Windows Product build and install paths
+        if: matrix.platform == 'windows-x64'
+        run: |
+          bun run nuxt:prepare
+          bun run test scripts/build/product-runtime-bundle.test.ts scripts/build/product-build-environment.test.ts
+          bun run test:install

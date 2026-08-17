@@ -8,14 +8,16 @@ import {
     type DesktopSupervisorRequest,
 } from "nbook/shared/desktop-contract";
 import {
-    authorizeProductRuntimeReceiptFully,
+    authorizeProductRuntimeReceiptControlPlane,
     verifyProductRuntimeReceiptFully,
 } from "nbook/shared/product-runtime-receipt";
 import type {ProductRuntimeExpectedIdentity} from "nbook/shared/product-runtime-image-verifier";
 
 import {startInstallationApplication} from "#manager/migration-operation";
+import {mutateInstallation} from "#manager/installation-mutation";
 import {installationPaths} from "#manager/paths";
 import {issueInstalledProductRuntimeReceipt} from "#manager/product";
+import {repairDesktopRuntimeState} from "#manager/desktop-installation";
 import type {InstallationManifest, ProductComponent} from "#manager/types";
 
 export type DesktopSupervisorOptions = {
@@ -24,6 +26,17 @@ export type DesktopSupervisorOptions = {
     input?: NodeJS.ReadableStream;
     output?: NodeJS.WritableStream;
 };
+
+/** 供 Manager GUI/CLI 使用的受管 Runtime receipt 修复，不启动 Product。 */
+export async function repairDesktopInstallation(root: string, _manifest: InstallationManifest): Promise<void> {
+    await mutateInstallation(resolve(root), async (mutation) => {
+        const paths = installationPaths(mutation.root, mutation.manifest.roots);
+        await repairReceipt(mutation.root, mutation.manifest, paths.deploy);
+        if (process.platform === "win32") {
+            await repairDesktopRuntimeState(mutation.root, mutation.manifest);
+        }
+    });
+}
 
 type ActiveRun = {
     requestId: string;
@@ -121,13 +134,13 @@ async function startDesktop(
     fail: (requestId: string, code: string, error: unknown, recoverable?: boolean) => void,
 ): Promise<void> {
     try {
-        emit({schema: "nbook.desktop-supervisor/v1", requestId: request.requestId, type: "stage", stage: "full-verify"});
-        const productRuntimeReceipt = await authorizeProductRuntimeReceiptFully(
+        emit({schema: "nbook.desktop-supervisor/v1", requestId: request.requestId, type: "stage", stage: "quick-verify"});
+        const productRuntimeReceipt = await authorizeProductRuntimeReceiptControlPlane(
             resolve(root, nativeProductPath(manifest)),
             join(deployRoot, "product-runtime-receipt.json"),
             productRuntimeExpectedIdentity(manifest),
         );
-        emit({schema: "nbook.desktop-supervisor/v1", requestId: request.requestId, type: "verified", verification: "full"});
+        emit({schema: "nbook.desktop-supervisor/v1", requestId: request.requestId, type: "verified", verification: "quick"});
         emit({schema: "nbook.desktop-supervisor/v1", requestId: request.requestId, type: "stage", stage: "migration"});
         emit({schema: "nbook.desktop-supervisor/v1", requestId: request.requestId, type: "stage", stage: "starting-product"});
         await startInstallationApplication(root, {

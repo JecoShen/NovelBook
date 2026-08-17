@@ -30,6 +30,9 @@ describe("Product build environment", () => {
             SOURCE_DATE_EPOCH: "12345",
             NEURO_BOOK_OUTPUT_DIR: "unexpected-output",
             DATABASE_URL: "secret-runtime-value",
+            ...(process.platform === "win32" && process.arch === "x64"
+                ? {NEURO_BOOK_MSVC_RUNTIME_DIR: "C:\\msvc-runtime"}
+                : {}),
         };
 
         const environment = productBuildEnvironment(source);
@@ -51,7 +54,21 @@ describe("Product build environment", () => {
         expect(environment).not.toHaveProperty("VITE_PRIVATE_VALUE");
         expect(environment).not.toHaveProperty("NEURO_BOOK_OUTPUT_DIR");
         expect(environment).not.toHaveProperty("DATABASE_URL");
+        if (process.platform === "win32" && process.arch === "x64") {
+            expect(environment).toHaveProperty("NEURO_BOOK_MSVC_RUNTIME_DIR", "C:\\msvc-runtime");
+        } else {
+            expect(environment).not.toHaveProperty("NEURO_BOOK_MSVC_RUNTIME_DIR");
+        }
         expect(source.NUXT_DEVTOOLS).toBe("1");
+    });
+
+    it("win32-x64 无显式 MSVC Runtime 时注入仓库默认输入目录", () => {
+        const environment = productBuildEnvironment({});
+        if (process.platform === "win32" && process.arch === "x64") {
+            expect(environment.NEURO_BOOK_MSVC_RUNTIME_DIR).toMatch(/scripts[\\/]build[\\/]inputs[\\/]msvc-runtime$/u);
+        } else {
+            expect(environment).not.toHaveProperty("NEURO_BOOK_MSVC_RUNTIME_DIR");
+        }
     });
 
     it("五个平台只返回各自实测 baseline，正式 policy preflight 全部通过", () => {

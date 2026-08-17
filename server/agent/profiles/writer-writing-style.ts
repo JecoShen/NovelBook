@@ -6,7 +6,6 @@ import {parseFrontmatterDocument} from "nbook/server/utils/frontmatter-document"
 import type {ProfileHomeFacade} from "nbook/server/agent/profiles/profile-home";
 
 export const DEFAULT_WRITING_STYLE_PRESET = "styles/reborn-villain-loli-magic-girl.first-three-chapters.style.md";
-const LEGACY_DEFAULT_WRITING_STYLE_PRESET = "reborn-villain-loli-magic-girl.first-three-chapters.style";
 
 const WritingStyleFrontmatterSchema = z.object({
     key: z.string().min(1),
@@ -90,7 +89,7 @@ export function legacyStyleKeyToHomeKey(key: string): string {
 }
 
 export function homeStyleKeyToLegacyKey(key: string): string {
-    return key.replace(/^styles\//u, "").replace(/\.md$/u, "") || LEGACY_DEFAULT_WRITING_STYLE_PRESET;
+    return key.replace(/^styles\//u, "").replace(/\.md$/u, "") || "reborn-villain-loli-magic-girl.first-three-chapters.style";
 }
 
 export function normalizeStyleHomeKey(key: string): string {

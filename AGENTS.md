@@ -11,7 +11,7 @@
 - 修复和重构应解决合同或设计问题，不用 hack 绕过类型系统或制造技术债；不能兼容时说明取舍。
 - 测试范围按风险匹配：复杂、共享合同和用户流程需要验证；简单文档或局部改动不主动扩展测试。除非用户授权，不自动进行浏览器验收。
 - 单点修改使用文件编辑工具。批量替换必须先 dry run；命中不确定或出现意外结果时改为逐处编辑，并报告实际修改的文件。
-- 测试和运行产生的临时根放在 `.agent/tmp/<test-name>-<uuid>/`，不要在仓库、`.worktree/` 或快照目录创建业务临时数据。
+- 测试和运行产生的临时根放在 `.agent/tmp/<test-name>-<uuid>/`，不要在仓库、`.worktree/` 或快照目录创建业务临时数据；测试的 `os.tmpdir()` 由 Vitest setup 统一收敛到系统 Temp 的 `neuro-book-vitest/<runId>/`（详见 `docs/testing/README.md`）。
 
 ## 汇报与提问：让不读源码的人能拍板
 
@@ -46,6 +46,7 @@ GitHub Issue 承载需求与 TODO，task walkthrough 记录重大任务，独立
 
 - `PROJECT-STATUS.md`：仓库现状、模块状态和风险；TODO 与跨任务跟进记录在 GitHub Issue。
 - `docs/README.md`：文档体系入口；`docs/modules`：模块说明和研究入口；`docs/tasks/README.md`：task walkthrough 规则。
+- `docs/manual-eval/`：用户视角人工评测体系；面向用户的说明在 `docs/manual-eval/README.md`，Agent 执行流程在 `docs/manual-eval/agent-guide.md`，判定口径在 `docs/manual-eval/criteria.md`，报告模板在 `docs/manual-eval/report-template.md`，评测旅程在 `docs/manual-eval/journeys/`。
 - `reference/README.md`：稳定参考入口；涉及 World Engine 先读 `reference/world-engine/README.md`；涉及 workspace 术语先读 `reference/workspace/TERMS.md`。
 - 重大任务持续更新同一个 task walkthrough，记录目标、计划与实际出入、决策、变更、验证和实现级后续；跨任务事项开 Issue。
 - `reference/` 只放稳定契约，`docs/research/` 放调研，`docs/drafts/` 放草案，`docs/archived/` 放仍有参考价值的旧文档。移动文档时同步更新链接。
@@ -83,7 +84,7 @@ GitHub Issue 承载需求与 TODO，task walkthrough 记录重大任务，独立
 
 ## HTML/Vue
 
-- 通用组件优先复用 `app/components/common`：`NotificationViewport`、`Dialog`、`DialogWindow` 和 `form/FormColorField`。
+- 通用组件优先复用 `app/components/common`：`NotificationViewport`、`Dialog`、`DialogWindow`、`Tooltip` 和 `form/FormColorField`。
 - Novel IDE 普通界面颜色只消费 `app/utils/theme/README.md` 登记的主题变量，不新增 Tailwind 调色板或 `dark:` 变体；新增组件变量前确认现有变量无法表达，并同步登记到主题文档和 8 套内置主题。
 - 状态色使用 `warning`（草稿/待审/未保存）、`success`（完成/已同步）、`danger`（错误/删除/冲突）、`info`（运行中/引用/说明）和 `accent`（选中/当前/主操作）。内容、编辑器和 chip 分类色是例外，不按状态色重写。
 - World Engine 的 `--we-*` 只在 `app/styles/theme-vars.css` 的 `.world-engine-workbench-theme` 中映射；真实 Dialog 和 preview 使用该 class，不在局部样式反向覆盖全局变量。

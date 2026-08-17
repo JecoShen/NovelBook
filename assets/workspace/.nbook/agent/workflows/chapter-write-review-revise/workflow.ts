@@ -3,7 +3,7 @@
  *
  * 由真实 `writer` profile 按 Leader-Writer 契约把章节写进目标 index.md，
  * 三个临时评审维度（一致性 / 节奏 / 文风）每轮并发挑问题，
- * writer 按 major 问题清单 followup 修订，直到无 major 问题或到达轮数上限。
+ * writer 使用新的 prompt 按 major 问题清单修订，直到无 major 问题或到达轮数上限。
  * `Type` 由 WorkflowCatalog 求值作用域注入，源码禁止 import。
  */
 
@@ -195,14 +195,16 @@ export default {
             }
             if (!reviseEnabled || round === reviewRounds) break;
 
-            // —— revise：writer followup 按编号问题清单修订目标文件 ——
+            // —— revise：writer 使用新的 prompt 按编号问题清单修订目标文件 ——
             wf.progress({phase: "revise", done: round - 1, total: reviewRounds});
             wf.chart.node("revise", "按评审修订");
             wf.chart.move("gate", "revise", {sessionId: writer.id, label: `第 ${round} 轮修订`});
             const issueLines = allIssues.map((issue, index) =>
                 `${index + 1}. [${issue.severity}][${issue.dimension}] 问题：${issue.problem}\n   改法：${issue.revision}`);
             const reviseRun = await writer.invoke({
-                mode: "followup",
+                // 修订轮必须用 prompt：harness 要求 followup 仅在 session 有 active invocation 时合法，
+                // 此时 writer 上一轮已结束、session 空闲，用 followup 会抛 active_invocation_required。
+                mode: "prompt",
                 message: [
                     `第 ${round} 轮评审发现以下问题，请修订章节文件 ${chapterPath}，修订完成后用 report_result 返回修订摘要：`,
                     issueLines.join("\n"),

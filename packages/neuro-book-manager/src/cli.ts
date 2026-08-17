@@ -32,8 +32,16 @@ import {runManagerTui} from "#manager/tui";
 import {adoptSourceInstallation, assertAdoptionPreflight, inspectAdoptionPreflight} from "#manager/source-adoption";
 import type {InstallProfile, InstallationManifest, OfflineInspection, ReleaseChannel} from "#manager/types";
 import {resetDesktopLocalState, uninstallInstallation} from "#manager/uninstaller";
-import {runDesktopSupervisor} from "#manager/desktop-supervisor";
-import {installDesktopFromLocalDepot, readDesktopInstallationManifest, removeWindowsDesktopRegistration, uninstallRemoteDesktopInstallation} from "#manager/desktop-installation";
+import {repairDesktopInstallation, runDesktopSupervisor} from "#manager/desktop-supervisor";
+import {defaultDesktopInstallationRoot, inferWindowsDesktopInstallationScope, installDesktopFromLocalDepot, readDesktopInstallationManifest, removeWindowsDesktopRegistration, uninstallRemoteDesktopInstallation} from "#manager/desktop-installation";
+import {
+    configureDesktopProvider,
+    DESKTOP_PROVIDER_INPUT_MAX_BYTES,
+    parseDesktopProviderInput,
+    testDesktopProvider,
+} from "#manager/desktop-provider";
+import {runDesktopUacBroker} from "#manager/desktop-uac-broker";
+import {runDesktopUacClient} from "nbook/desktop/shared/src/desktop-uac-client";
 import {updateInstallation} from "#manager/updater";
 import {inspectUpdatePreflight} from "#manager/update-preflight";
 import {MANAGER_VERSION} from "#manager/version-info";
@@ -333,8 +341,9 @@ program.command("doctor")
 program.command("uninstall")
     .description("卸载当前或指定安装；默认保留 State Root 用户数据。")
     .option("--delete-data", "同时删除托管 State Root；外部 Project Workspace 永不删除。", false)
+    .option("--json", "输出单行 NDJSON 完成回执。", false)
     .option("--yes", "确认执行卸载。", false)
-    .action(async (options: {deleteData: boolean; yes: boolean}) => {
+    .action(async (options: {deleteData: boolean; json: boolean; yes: boolean}) => {
         const {root, manifest} = await currentInstallation();
         if (!options.yes) {
             if (!process.stdin.isTTY || !process.stdout.isTTY) {
@@ -352,18 +361,45 @@ program.command("uninstall")
         const desktopManifest = process.platform === "win32"
             ? await readDesktopInstallationManifest(root, manifest.roots)
             : null;
+        const legacyDesktopScope = process.platform === "win32" && desktopManifest === null
+            ? await inferWindowsDesktopInstallationScope(root)
+            : null;
         const result = await uninstallInstallation({
             installationRoot: root,
             deleteData: options.deleteData,
         });
         if (desktopManifest) await removeWindowsDesktopRegistration(root, desktopManifest);
+        else if (legacyDesktopScope) await removeWindowsDesktopRegistration(root, legacyDesktopScope);
         const config = await readManagerConfig();
         const instance = findManagerInstance(config, root);
         if (instance) await forgetManagerInstance(instance.id);
         if (result.status === "scheduled") {
+            if (options.json) {
+                printNdjson({
+                    kind: "complete",
+                    action: "uninstall",
+                    status: result.status,
+                    installationRoot: result.installationRoot,
+                    stateRoot: result.stateRoot,
+                    statePreserved: result.statePreserved,
+                    resultPath: result.resultPath,
+                });
+                return;
+            }
             p.outro(result.statePreserved
                 ? `卸载已安排；当前命令退出后删除程序，用户数据保留在：${result.stateRoot}\n结果记录：${result.resultPath}`
                 : `卸载已安排；当前命令退出后删除程序和托管用户数据。\n结果记录：${result.resultPath}`);
+            return;
+        }
+        if (options.json) {
+            printNdjson({
+                kind: "complete",
+                action: "uninstall",
+                status: result.status,
+                installationRoot: result.installationRoot,
+                stateRoot: result.stateRoot,
+                statePreserved: result.statePreserved,
+            });
             return;
         }
         p.outro(result.statePreserved
@@ -375,44 +411,70 @@ const desktop = program.command("desktop").description("管理 Desktop Local/Web
 desktop.command("install")
     .description("从本地 Product Portable 或独立 shell depot 安装 Windows 用户级 Desktop；下载与更新由 Manager 托管。")
     .option("--archive <path>", "本地模式使用的 Electron/Tauri Portable ZIP；必须来自已验证的本地 depot。")
+    .option("--depot <path>", "本地模式使用的 Electron 聚合 Depot ZIP；必须带同目录 sidecar。")
     .option("--shell-archive <path>", "远端模式使用的独立 Desktop Envelope ZIP；不得包含 Product、Bun 或 Tool Pack。")
     .option("--distribution-manifest <path>", "使用本地 Desktop Distribution Manifest；组件 ZIP 必须位于 manifest 根目录内。")
+    .option("--distribution-manifest-url <url>", "从 HTTPS 下载 Desktop Distribution Manifest；组件摘要仍由 Manager 校验。")
     .option("--envelope <envelope>", "桌面壳：electron 或 tauri。", "electron")
     .option("--channel <channel>", "发行通道：stable 或 canary。", parseChannel)
     .option("--remote <url>", "连接远端 Product；不传则使用本机 Product。")
     .option("--allow-insecure-http", "允许局域网 HTTP 远端；安装后状态仍标记为不安全。", false)
-    .option("--dir <path>", "Installation Root，默认 %LOCALAPPDATA%\\Programs\\NeuroBook。")
-    .option("--runtime-provider <provider>", "Runtime provider；当前本地 depot 只支持 managed。", "managed")
-    .option("--tool-provider <provider>", "Tool provider；当前本地 depot 只支持 managed。", "managed")
+    .option("--scope <scope>", "安装范围：user（当前用户，默认）或 machine（Program Files，需要管理员权限）。", "user")
+    .option("--dir <path>", "Installation Root；未指定时按 scope 选择默认目录。")
+    .option("--runtime-provider <provider>", "Runtime provider：managed 或 system。", "managed")
+    .option("--git-provider <provider>", "Git/Bash provider：managed 或 system。", "managed")
+    .option("--rg-provider <provider>", "ripgrep provider：managed 或 system。", "managed")
     .option("--add-cli-to-path", "把 Manager CLI 加入当前用户 PATH。", false)
+    .option("--enable-auth", "安装后启用本地 Product 鉴权，并通过密码创建管理员。", false)
     .option("--password-stdin", "从 stdin 读取本地 Product 首次管理员密码；保持原始 UTF-8 字节，不 trim。", false)
+    .option("--json", "以 NDJSON 输出阶段和完成回执，供 Manager GUI 使用。", false)
     .option("--yes", "跳过交互确认。", false)
     .action(async (options: {
         archive?: string;
+        depot?: string;
         shellArchive?: string;
         distributionManifest?: string;
+        distributionManifestUrl?: string;
         envelope: string;
         channel?: ReleaseChannel;
         remote?: string;
         allowInsecureHttp: boolean;
+        scope: string;
         dir?: string;
         runtimeProvider: string;
-        toolProvider: string;
+        gitProvider: string;
+        rgProvider: string;
         addCliToPath: boolean;
+        enableAuth: boolean;
         passwordStdin: boolean;
+        json: boolean;
         yes: boolean;
     }) => {
         if (process.platform !== "win32") throw new Error("Desktop 用户级安装当前只支持 Windows；macOS 仅完成安装合同与 CI 准备。" );
         if (options.envelope !== "electron" && options.envelope !== "tauri") throw new Error(`不支持的 Desktop envelope：${options.envelope}`);
-        if (options.runtimeProvider !== "managed" || options.toolProvider !== "managed") {
-            throw new Error("本地 Portable depot 当前只提供 managed Bun、Git/Bash 和 rg；system provider 选择将在 Manager 下载合同接入后开放。" );
+        if (!["managed", "system"].includes(options.runtimeProvider)
+            || !["managed", "system"].includes(options.gitProvider)
+            || !["managed", "system"].includes(options.rgProvider)) {
+            throw new Error("Runtime/Git/rg provider 只支持 managed 或 system。" );
+        }
+        if (options.scope !== "user" && options.scope !== "machine") {
+            throw new Error(`不支持的 Desktop 安装范围：${options.scope}`);
+        }
+        if (options.dir && resolve(options.dir) !== resolve(defaultDesktopInstallationRoot(options.scope as "user" | "machine"))) {
+            throw new Error("Windows Installed v1 使用固定 Installation Root；请省略 --dir，或传入当前 scope 对应的 canonical 路径。" );
         }
         const remoteUrl = options.remote ? new URL(options.remote) : null;
         if (remoteUrl && options.passwordStdin) throw new Error("远端 Desktop 安装不能读取本地管理员密码。" );
-        const depotArguments = [options.archive, options.shellArchive, options.distributionManifest].filter((value) => value !== undefined);
-        if (depotArguments.length !== 1) throw new Error("Desktop 安装必须且只能提供 --archive、--shell-archive 或 --distribution-manifest 之一。" );
+        if (!remoteUrl && options.passwordStdin && !options.enableAuth) {
+            throw new Error("--password-stdin 只有与 --enable-auth 一起使用时才会读取密码。");
+        }
+        const depotArguments = [options.archive, options.depot, options.shellArchive, options.distributionManifest, options.distributionManifestUrl].filter((value) => value !== undefined);
+        if (depotArguments.length !== 1) {
+            throw new Error("Desktop 安装必须且只能提供 --archive、--depot、--shell-archive、--distribution-manifest 或 --distribution-manifest-url 之一。" );
+        }
         if (remoteUrl) {
             if (options.archive) throw new Error("远端 Desktop 安装不能使用完整 --archive。" );
+            if (options.depot) throw new Error("远端 Desktop 安装不能使用本地 Product --depot。" );
             if (remoteUrl.protocol !== "https:" && !(remoteUrl.protocol === "http:" && options.allowInsecureHttp)) {
                 throw new Error("远端 Desktop 默认要求 HTTPS；局域网 HTTP 必须显式传入 --allow-insecure-http。" );
             }
@@ -428,45 +490,170 @@ desktop.command("install")
         }
         let adminPassword: string | undefined;
         // 远端 shell 没有 Product Installation Manifest，不能伪装成可执行的本地实例加入索引。
-        if (!remoteUrl) {
+        if (!remoteUrl && options.enableAuth) {
             if (options.passwordStdin) {
                 if (process.stdin.isTTY) throw new Error("--password-stdin 需要从管道读取密码，不能与交互 TTY 同时使用。" );
                 adminPassword = await readPasswordStdin();
             } else if (!options.yes && process.stdin.isTTY && process.stdout.isTTY) {
                 adminPassword = await promptResult(p.password({message: "设置 NeuroBook 管理员密码", mask: "*"}));
-            } else {
-                throw new Error("本地 Desktop 首次安装需要管理员密码；交互运行请不要传 --yes，自动化运行请传 --password-stdin。" );
+            }
+            if (adminPassword === undefined) {
+                throw new Error("--enable-auth 必须同时提供管理员密码；交互模式使用隐藏输入，自动化模式使用 --password-stdin。" );
             }
         }
+        if (options.json) printNdjson({kind: "stage", stage: "validating-input"});
         const result = await installDesktopFromLocalDepot({
             ...(options.archive ? {archivePath: options.archive} : {}),
+            ...(options.depot ? {aggregateDepotPath: options.depot} : {}),
             ...(options.shellArchive ? {shellArchivePath: options.shellArchive} : {}),
             ...(options.distributionManifest ? {distributionManifestPath: options.distributionManifest} : {}),
+            ...(options.distributionManifestUrl ? {distributionManifestUrl: options.distributionManifestUrl} : {}),
             envelope: options.envelope,
             channel: options.channel ?? "canary",
+            installationScope: options.scope as "user" | "machine",
             connection: remoteUrl
                 ? {mode: "remote", baseUrl: remoteUrl.origin, insecureHttpAccepted: remoteUrl.protocol === "http:"}
                 : {mode: "local"},
             installationRoot: options.dir,
             addCliToUserPath: options.addCliToPath,
+            runtimeProvider: options.runtimeProvider as "managed" | "system",
+            gitProvider: options.gitProvider as "managed" | "system",
+            rgProvider: options.rgProvider as "managed" | "system",
             managerExecutable,
             ...(adminPassword !== undefined ? {adminPassword} : {}),
+            ...(options.json ? {
+                onStage: (stage) => printNdjson({kind: "stage", stage}),
+            } : {}),
         });
+        let managerRegistrationWarning: string | null = null;
         if (!remoteUrl) {
-            await registerManagerInstance({
-                root: result.installationRoot,
-                name: "NeuroBook",
-                makeDefault: true,
-                preferences: {channel: result.manifest.channel, installDirectory: result.installationRoot},
-            });
+            try {
+                await registerManagerInstance({
+                    root: result.installationRoot,
+                    name: "NeuroBook",
+                    makeDefault: true,
+                    preferences: {channel: result.manifest.channel, installDirectory: result.installationRoot},
+                });
+            } catch (error) {
+                managerRegistrationWarning = error instanceof Error ? error.message : String(error);
+                if (options.json) {
+                    printNdjson({
+                        kind: "warning",
+                        code: "manager-instance-registration-failed",
+                        message: managerRegistrationWarning,
+                    });
+                } else {
+                    console.warn(`Desktop 已安装，但 Manager 实例索引未更新：${managerRegistrationWarning}`);
+                }
+            }
         }
-        p.outro(`Desktop 安装完成：${result.installationRoot}\nState Root：${result.stateRoot}\n连接：${result.manifest.connection.mode}${result.remoteProductVersion ? `\n远端 Product：${result.remoteProductVersion}` : ""}`);
+        if (options.json) {
+            printNdjson({
+                kind: "complete",
+                installationRoot: result.installationRoot,
+                stateRoot: result.stateRoot,
+                cacheRoot: result.cacheRoot,
+                desktopRoot: result.desktopRoot,
+                connection: result.manifest.connection.mode,
+                installationScope: result.manifest.installationScope,
+                remoteProductVersion: result.remoteProductVersion ?? null,
+                applicationPreparation: result.applicationPreparation ?? null,
+                managerRegistration: managerRegistrationWarning === null ? "registered" : "warning",
+            });
+        } else {
+            p.outro(`Desktop 安装完成：${result.installationRoot}\nState Root：${result.stateRoot}\n连接：${result.manifest.connection.mode}${result.remoteProductVersion ? `\n远端 Product：${result.remoteProductVersion}` : ""}`);
+        }
+    });
+desktop.command("broker")
+    .description("Manager GUI 的 machine-scope UAC Broker；只接受一次受限安装、修复或卸载请求。")
+    .requiredOption("--pipe <pipe>", "GUI 创建的一次性控制 named pipe。")
+    .requiredOption("--nonce <nonce>", "GUI 创建的一次性连接 nonce。")
+    .requiredOption("--operation-id <operationId>", "GUI 创建的一次性 operation ID。")
+    .requiredOption("--action <action>", "提升动作：desktop-install、desktop-repair 或 uninstall。")
+    .requiredOption("--installation-root <path>", "绑定本次操作的 canonical Installation Root。")
+    .option("--installation-id <id>", "绑定已有 Desktop Installation Manifest 的 installationId。")
+    .option("--manifest-sha256 <digest>", "绑定已有 Desktop Installation Manifest 的摘要。")
+    .option("--delete-data", "绑定卸载是否删除 State Root。", false)
+    .option("--secret-pipe <pipe>", "仅用于内存中的管理员密码字节，不传入控制 NDJSON。")
+    .action(async (options: {
+        pipe: string;
+        nonce: string;
+        operationId: string;
+        action: "desktop-install" | "desktop-repair" | "uninstall";
+        installationRoot: string;
+        installationId?: string;
+        manifestSha256?: string;
+        deleteData: boolean;
+        secretPipe?: string;
+    }) => {
+        if (!["desktop-install", "desktop-repair", "uninstall"].includes(options.action)) {
+            throw new Error("Desktop UAC Broker action 不受支持。");
+        }
+        await runDesktopUacBroker({
+            pipe: options.pipe,
+            nonce: options.nonce,
+            operationId: options.operationId,
+            action: options.action,
+            managerExecutable,
+            installationRoot: options.installationRoot,
+            installationId: options.installationId ?? null,
+            manifestSha256: options.manifestSha256 ?? null,
+            deleteData: options.deleteData,
+            ...(options.secretPipe ? {secretPipe: options.secretPipe} : {}),
+        });
+    });
+desktop.command("broker-client")
+    .description("Programs and Features 的一次性 machine uninstall UAC client。")
+    .requiredOption("--installation-root <path>", "绑定当前 machine Installation Root。")
+    .requiredOption("--installation-id <id>", "绑定当前 Desktop Installation Manifest installationId。")
+    .requiredOption("--manifest-sha256 <digest>", "绑定当前 Desktop Installation Manifest SHA-256。")
+    .action(async (options: {
+        installationRoot: string;
+        installationId: string;
+        manifestSha256: string;
+    }) => {
+        const installationRoot = resolve(options.installationRoot);
+        const result = await runDesktopUacClient({
+            bunPath: process.execPath,
+            managerPath: managerExecutable,
+            invocation: {
+                action: "uninstall",
+                args: ["--root", installationRoot, "uninstall", "--yes", "--json"],
+            },
+            binding: {
+                installationId: options.installationId,
+                installationRoot,
+                manifestSha256: options.manifestSha256,
+                deleteData: false,
+            },
+            onEvent: (event) => {
+                if (event.kind === "json") {
+                    printNdjson(event.value);
+                } else if (event.kind === "log" || event.kind === "failure") {
+                    printNdjson(event);
+                }
+            },
+        });
+        if (result.exitCode !== 0 || result.signal !== null) {
+            throw new Error(`Programs and Features 卸载失败：exitCode=${result.exitCode ?? "null"}, signal=${result.signal ?? "null"}`);
+        }
+        printNdjson({kind: "complete", action: "machine-uninstall", exitCode: 0});
     });
 desktop.command("supervise")
     .description("通过 stdin/stdout NDJSON 为 Desktop Envelope 编排 Product 生命周期。")
     .action(async () => {
         const {root, manifest} = await currentInstallation();
         await runDesktopSupervisor({root, manifest});
+    });
+desktop.command("repair")
+    .description("复核 Product Runtime Image 并原子重建 Manager receipt。")
+    .option("--json", "以单行 NDJSON 输出回执。", false)
+    .action(async (options: {json: boolean}) => {
+        const {root, manifest} = await currentInstallation();
+        if (options.json) printNdjson({kind: "stage", stage: "repairing"});
+        await repairDesktopInstallation(root, manifest);
+        if (options.json) printNdjson({kind: "complete", action: "repair"});
+        else p.outro("Desktop Runtime receipt 已修复。");
     });
 desktop.command("uninstall")
     .description("卸载只含远端 Envelope 的 Desktop；默认保留 State Root。")
@@ -510,6 +697,35 @@ desktop.command("reset")
             installationRoot: root,
         });
         p.outro(`桌面本地状态已重置：${desktopRoot}`);
+    });
+desktop.command("configure-provider")
+    .description("通过 stdin 写入一个自定义 Provider；API Key 不得出现在 argv 或环境变量。")
+    .requiredOption("--stdin-json", "从 stdin 读取 Provider JSON。")
+    .option("--json", "以单行 NDJSON 输出回执。", false)
+    .action(async (options: {json: boolean}) => {
+        const {root, manifest} = await currentInstallation();
+        const value = await readDesktopProviderInput();
+        const roots = installationPaths(root, manifest.roots);
+        const result = await configureDesktopProvider(roots.state, {
+            name: value.name ?? "",
+            baseURL: value.baseURL ?? "",
+            api: value.api ?? "",
+            apiKey: value.apiKey ?? "",
+            model: value.model ?? "",
+            discoverModels: value.discoverModels,
+        });
+        if (options.json) printNdjson({kind: "provider-configured", providerId: result.providerId, modelKey: result.modelKey});
+        else printJson({kind: "provider-configured", providerId: result.providerId, modelKey: result.modelKey});
+    });
+desktop.command("test-provider")
+    .description("通过 stdin 测试自定义 Provider 的可达性；失败只显示警告，不阻止保存。")
+    .requiredOption("--stdin-json", "从 stdin 读取 Provider JSON。")
+    .option("--json", "以单行 NDJSON 输出回执。", false)
+    .action(async (options: {json: boolean}) => {
+        const result = await testDesktopProvider(await readDesktopProviderInput());
+        const output = {kind: "provider-test", ...result};
+        if (options.json) printNdjson(output);
+        else printJson(output);
     });
 
 const runtime = program.command("runtime").description("管理 Bun Runtime。");
@@ -589,7 +805,15 @@ async function main(): Promise<void> {
         }
         await program.parseAsync(process.argv);
     } catch (error) {
-        p.log.error(formatCliError(error));
+        if (process.argv.includes("--json")) {
+            printNdjson({
+                kind: "failure",
+                message: formatCliError(error),
+                recoverable: true,
+            });
+        } else {
+            p.log.error(formatCliError(error));
+        }
         process.exitCode = 1;
     }
 }
@@ -784,9 +1008,38 @@ function printJson(value: object): void {
     console.log(JSON.stringify(value, null, 4));
 }
 
+/** 输出 Manager GUI 使用的单行 NDJSON；值中不得出现原始换行。 */
+function printNdjson(value: object): void {
+    const line = JSON.stringify(value);
+    if (line.includes("\n") || line.includes("\r")) throw new Error("Manager GUI NDJSON 不允许原始换行。");
+    console.log(line);
+}
+
 /** 输出适合终端快速查看的顶层键值。 */
 function printObject(value: object): void {
     for (const [key, item] of Object.entries(value)) {
         console.log(`${key}: ${typeof item === "object" ? JSON.stringify(item) : String(item)}`);
     }
+}
+
+async function readDesktopProviderInput(): Promise<{
+    name: string;
+    baseURL: string;
+    api: string;
+    apiKey: string;
+    model: string;
+    discoverModels?: boolean;
+}> {
+    if (process.stdin.isTTY) throw new Error("Provider JSON 必须通过 stdin 传入。");
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    for await (const chunk of process.stdin) {
+        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+        totalBytes += bytes.byteLength;
+        if (totalBytes > DESKTOP_PROVIDER_INPUT_MAX_BYTES) {
+            throw new Error("Provider JSON 超过 64 KiB。");
+        }
+        chunks.push(bytes);
+    }
+    return parseDesktopProviderInput(JSON.parse(Buffer.concat(chunks, totalBytes).toString("utf8")) as unknown);
 }

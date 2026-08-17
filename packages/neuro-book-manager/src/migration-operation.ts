@@ -1,4 +1,5 @@
 import {randomUUID} from "node:crypto";
+import {createServer} from "node:net";
 import {join} from "node:path";
 import {
     applyApplicationStateMigration,
@@ -32,6 +33,12 @@ import type {InstallationManifest, OperationJournal} from "#manager/types";
 export type ApplicationServiceState =
     | {kind: "native"}
     | {kind: "container"; inspection: DockerApplicationInspection};
+
+export type InstallationApplicationPreparation = {
+    port: number;
+    migration: "checked";
+    health: "ready";
+};
 
 /**
  * 在当前 installation operation 中执行 Product-owned Application State migration。
@@ -214,6 +221,7 @@ export async function migrateCurrentApplicationState(
         id,
         action: "update",
         root: paths.root,
+        roots: manifest.roots,
         containerEngine: manifest.containerEngine,
         backupRoot: join(paths.backups, id),
         previousManifest: manifest,
@@ -248,7 +256,7 @@ export async function migrateCurrentApplicationState(
         return true;
     } catch (error) {
         if (launch) await terminateFailedLaunch(launch, error);
-        await recoverFailedOperation(paths.root, error);
+        await recoverFailedOperation(paths.root, error, manifest.roots);
         throw error;
     }
 }
@@ -262,6 +270,7 @@ export async function startInstallationApplication(
     options: StartApplicationOptions = {},
 ): Promise<void> {
     const launchResult: {launch?: Awaited<ReturnType<typeof launchApplication>>} = {};
+    let readyResult: {port: number; startupNonce?: string} | undefined;
     await mutateInstallation(root, async (mutation) => {
         const paths = installationPaths(mutation.root, mutation.manifest.roots);
         const activeManifest = mutation.manifest;
@@ -288,6 +297,7 @@ export async function startInstallationApplication(
             id,
             action: "start",
             root: paths.root,
+            roots: activeManifest.roots,
             containerEngine: activeManifest.containerEngine,
             backupRoot: join(paths.backups, id),
             previousManifest: activeManifest,
@@ -316,21 +326,33 @@ export async function startInstallationApplication(
                 },
             });
             await launch.ready;
-            await options.onReady?.({
+            readyResult = {
                 port: launch.port,
                 ...(launch.startupNonce ? {startupNonce: launch.startupNonce} : {}),
-            });
+            };
             journal = await updateOperation(journal, "healthy");
             await commitOperation(journal);
             launchResult.launch = launch;
         } catch (error) {
             if (launch) await terminateFailedLaunch(launch, error);
-            await recoverFailedOperation(paths.root, error);
+            await recoverFailedOperation(paths.root, error, activeManifest.roots);
             throw error;
         }
     });
     if (!launchResult.launch) throw new Error("Application launch 未建立 completion ownership。");
     const launch = launchResult.launch;
+    // 只有在 mutateInstallation 释放 Installation lease 后才通知宿主 ready。
+    // 否则宿主一收到 ready 就可能强制收口，留下仍在 stale 窗口内的 manager lease，
+    // 使下一次启动被误判为“另一个 Manager 操作正在执行”。
+    try {
+        await options.onReady?.(readyResult ?? {
+            port: launch.port,
+            ...(launch.startupNonce ? {startupNonce: launch.startupNonce} : {}),
+        });
+    } catch (error) {
+        await terminateFailedLaunch(launch, error);
+        throw error;
+    }
     let rejectShutdown!: (error: unknown) => void;
     const shutdownFailure = new Promise<never>((_resolvePromise, rejectPromise) => {
         rejectShutdown = rejectPromise;
@@ -355,4 +377,48 @@ export async function startInstallationApplication(
         options.shutdownSignal?.removeEventListener("abort", shutdownOnHost);
     }
     assertProductExit(result, "NeuroBook 服务退出");
+}
+
+/**
+ * 安装完成回执发出前，对已提交的 Product 执行正式 migration plan 与一次健康启动。
+ *
+ * 复用前台启动的 Journal、migration、HTTP ready 和 graceful shutdown 合同；调用方
+ * 不得在 Electron/GUI 中复制这些步骤。动态端口只用于本次候选，不作为监听所有权。
+ */
+export async function prepareInstalledApplication(root: string): Promise<InstallationApplicationPreparation> {
+    const port = await selectLoopbackPort();
+    const shutdown = new AbortController();
+    let ready = false;
+    await startInstallationApplication(root, {
+        healthCheck: true,
+        openBrowser: false,
+        productStdout: "ignore",
+        port,
+        startupNonce: randomUUID(),
+        shutdownSignal: shutdown.signal,
+        onReady: async () => {
+            ready = true;
+            shutdown.abort();
+        },
+    });
+    if (!ready) throw new Error("安装健康检查未观察到 Product ready。");
+    return {port, migration: "checked", health: "ready"};
+}
+
+/** 选择一个临时可用的 IPv4 loopback 端口；Product 的 nonce/ready 仍负责拒绝串线。 */
+async function selectLoopbackPort(): Promise<number> {
+    return await new Promise<number>((resolvePromise, rejectPromise) => {
+        const probe = createServer();
+        probe.once("error", rejectPromise);
+        probe.listen({host: "127.0.0.1", port: 0}, () => {
+            const address = probe.address();
+            if (!address || typeof address === "string") {
+                probe.close();
+                rejectPromise(new Error("Manager 无法读取安装健康检查的动态 loopback 端口。"));
+                return;
+            }
+            const port = address.port;
+            probe.close((error) => error ? rejectPromise(error) : resolvePromise(port));
+        });
+    });
 }

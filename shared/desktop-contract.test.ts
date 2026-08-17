@@ -14,6 +14,7 @@ import {
     parseDesktopCapability,
     parseDesktopDistributionManifest,
     parseDesktopInstallationManifest,
+    parseDesktopLaunchRequest,
     parseDesktopStatus,
     parseDesktopShellArchiveManifest,
     parseDesktopSettings,
@@ -77,6 +78,15 @@ describe("Desktop contracts", () => {
             baseUrl: "http://192.168.1.8",
             insecureHttpAccepted: true,
         })).connection).toMatchObject({baseUrl: "http://192.168.1.8"});
+        expect(() => parseDesktopInstallationManifest({
+            ...local,
+            receipts: [{...local.receipts[0]!, sha256: digest("d")}],
+        })).toThrow("receipts 必须与 components");
+        expect(() => parseDesktopInstallationManifest({
+            ...local,
+            components: local.components.filter((component) => component.id !== "electron-application"),
+            receipts: local.receipts.filter((receipt) => receipt.id !== "electron-application"),
+        })).toThrow("electron-application component");
         expect(() => parseDesktopInstallationManifest(installation({
             mode: "remote",
             baseUrl: "http://example.com",
@@ -122,6 +132,22 @@ describe("Desktop contracts", () => {
         expect(() => parseDesktopSupervisorRequest({...start, extra: true})).toThrow("字段不匹配");
         expect(() => parseDesktopSupervisorRequest({...start, port: 80})).toThrow("1024-65535");
     });
+    it("解析 quick/full Supervisor 验证阶段并拒绝未知阶段", () => {
+        const base = {
+            schema: DESKTOP_SUPERVISOR_SCHEMA,
+            requestId: "verify-1",
+            type: "stage",
+        } as const;
+        expect(parseDesktopSupervisorEvent({...base, stage: "quick-verify"})).toEqual({...base, stage: "quick-verify"});
+        expect(parseDesktopSupervisorEvent({...base, stage: "full-verify"})).toEqual({...base, stage: "full-verify"});
+        expect(() => parseDesktopSupervisorEvent({...base, stage: "not-a-stage"})).toThrow("stage 不受支持");
+        expect(parseDesktopSupervisorEvent({
+            schema: DESKTOP_SUPERVISOR_SCHEMA,
+            requestId: "verify-1",
+            type: "verified",
+            verification: "quick",
+        })).toMatchObject({verification: "quick"});
+    });
 
     it("只接受声明 DesktopBridge v2 的远端 capability", () => {
         const capability = {
@@ -152,6 +178,19 @@ describe("Desktop contracts", () => {
         expect(() => parseDesktopStatus({...status, extra: true})).toThrow("字段不匹配");
     });
 
+    it("严格解析有界 Desktop 启动请求", () => {
+        const request = {
+            args: ["neurobook://open/task-145", "C:\\workspace\\book"],
+            cwd: "C:\\workspace",
+        };
+        expect(parseDesktopLaunchRequest(request)).toEqual(request);
+        expect(() => parseDesktopLaunchRequest({...request, extra: true})).toThrow("字段不匹配");
+        expect(() => parseDesktopLaunchRequest({...request, args: Array.from({length: 33}, () => "x")})).toThrow("最多包含 32");
+        expect(() => parseDesktopLaunchRequest({...request, args: ["x".repeat(4097)]})).toThrow("最多包含 4096");
+        expect(() => parseDesktopLaunchRequest({...request, cwd: ""})).toThrow("非空");
+        expect(() => parseDesktopLaunchRequest({...request, cwd: "x".repeat(4097)})).toThrow("最多包含 4096");
+    });
+
     it("远端 shell depot 只接受匹配的 Envelope 路径和 checksum", () => {
         const shell = {
             schema: "nbook.desktop-shell/v1",
@@ -160,6 +199,9 @@ describe("Desktop contracts", () => {
             envelopePath: "desktop/NeuroBook-Electron.exe",
             envelopeVersion: "43.2.0",
             envelopeSha256: digest("e"),
+            applicationPath: "desktop/resources/app.asar",
+            applicationVersion: "0.9.0",
+            applicationSha256: digest("a"),
             webview: "bundled-chromium",
         } as const;
         expect(parseDesktopShellArchiveManifest(shell)).toEqual(shell);
@@ -236,15 +278,81 @@ function installation(connection: {mode: "local"} | {mode: "remote"; baseUrl: st
     return {
         schema: DESKTOP_INSTALLATION_SCHEMA,
         installationId: "test-installation",
+        installationScope: "user",
+        programRoot: ".",
+        userRoots: {
+            state: {base: "local-app-data", path: "NeuroBook/data"},
+            cache: {base: "local-app-data", path: "NeuroBook/cache"},
+            desktop: {base: "local-app-data", path: "NeuroBook/desktop"},
+            webview: {base: "local-app-data", path: "NeuroBook/desktop/webview"},
+        },
         envelope: "electron" as const,
         channel: "canary" as const,
         connection,
-        components: [{
-            id: "electron-envelope" as const,
-            version: "43.2.0",
-            path: "components/electron",
-            sha256: digest("c"),
-        }],
+        providers: {
+            managerRuntime: {
+                provider: "managed" as const,
+                version: "1.3.14",
+                path: "runtime/bun.exe",
+                sha256: digest("a"),
+            },
+            applicationRuntime: {
+                provider: "managed" as const,
+                version: "1.3.14",
+                path: "runtime/bun.exe",
+                sha256: digest("b"),
+            },
+            tools: {
+                rg: {
+                    provider: "managed" as const,
+                    version: "14.1.1",
+                    path: "tools/rg.exe",
+                    sha256: digest("c"),
+                },
+                git: {
+                    provider: "managed" as const,
+                    version: "2.51.0",
+                    path: "tools/git.exe",
+                    sha256: digest("d"),
+                    bashPath: "tools/bash.exe",
+                },
+            },
+        },
+        components: [
+            {
+                id: "electron-envelope" as const,
+                version: "43.2.0",
+                path: "desktop/NeuroBook-Electron.exe",
+                sha256: digest("c"),
+            },
+            {
+                id: "electron-application" as const,
+                version: "0.9.0",
+                path: "desktop/resources/app.asar",
+                sha256: digest("e"),
+            },
+        ],
+        receipts: [
+            {
+                id: "electron-envelope" as const,
+                version: "43.2.0",
+                path: "desktop/NeuroBook-Electron.exe",
+                sha256: digest("c"),
+                source: "depot" as const,
+            },
+            {
+                id: "electron-application" as const,
+                version: "0.9.0",
+                path: "desktop/resources/app.asar",
+                sha256: digest("e"),
+                source: "depot" as const,
+            },
+        ],
+        uninstall: {
+            preserveStateRootByDefault: true as const,
+            deleteStateRootRequiresExplicit: true as const,
+            preserveExternalProjectWorkspace: true as const,
+        },
         addCliToUserPath: false,
         installedAt: "2026-08-05T00:00:00.000Z",
         updatedAt: "2026-08-05T00:00:00.000Z",
