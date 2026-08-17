@@ -190,7 +190,7 @@ const PRODUCT_RUNTIME_OWNER_BASELINES: Partial<Record<ProductPlatform, readonly 
         {name: "commands", files: 116, bytes: 10_865_638},
         {name: "authoring-kit", files: 509, bytes: 14_477_260},
         {name: "native-islands", files: 2_059, bytes: 75_260_630},
-        {name: "system-assets", files: 373, bytes: 5_274_435},
+        {name: "system-assets", files: 373, bytes: 7_594_630},
         {name: "runtime-meta", files: 3, bytes: 4_762},
     ],
     "linux-x64-glibc": [
@@ -199,7 +199,7 @@ const PRODUCT_RUNTIME_OWNER_BASELINES: Partial<Record<ProductPlatform, readonly 
         {name: "commands", files: 116, bytes: 10_866_185},
         {name: "authoring-kit", files: 509, bytes: 14_475_922},
         {name: "native-islands", files: 2_062, bytes: 75_144_692},
-        {name: "system-assets", files: 373, bytes: 5_229_844},
+        {name: "system-assets", files: 373, bytes: 7_594_630},
         {name: "runtime-meta", files: 3, bytes: 4_762},
     ],
     "linux-aarch64-glibc": [
@@ -208,7 +208,7 @@ const PRODUCT_RUNTIME_OWNER_BASELINES: Partial<Record<ProductPlatform, readonly 
         {name: "commands", files: 116, bytes: 10_866_185},
         {name: "authoring-kit", files: 509, bytes: 14_475_922},
         {name: "native-islands", files: 2_062, bytes: 72_567_998},
-        {name: "system-assets", files: 373, bytes: 5_229_844},
+        {name: "system-assets", files: 373, bytes: 7_594_630},
         {name: "runtime-meta", files: 3, bytes: 4_762},
     ],
     "darwin-x64": [
@@ -217,7 +217,7 @@ const PRODUCT_RUNTIME_OWNER_BASELINES: Partial<Record<ProductPlatform, readonly 
         {name: "commands", files: 116, bytes: 10_866_185},
         {name: "authoring-kit", files: 509, bytes: 14_475_922},
         {name: "native-islands", files: 2_062, bytes: 75_913_156},
-        {name: "system-assets", files: 373, bytes: 5_229_844},
+        {name: "system-assets", files: 373, bytes: 7_594_630},
         {name: "runtime-meta", files: 3, bytes: 4_762},
     ],
     "darwin-aarch64": [
@@ -226,7 +226,7 @@ const PRODUCT_RUNTIME_OWNER_BASELINES: Partial<Record<ProductPlatform, readonly 
         {name: "commands", files: 116, bytes: 10_866_185},
         {name: "authoring-kit", files: 509, bytes: 14_475_922},
         {name: "native-islands", files: 2_062, bytes: 71_965_408},
-        {name: "system-assets", files: 373, bytes: 5_229_844},
+        {name: "system-assets", files: 373, bytes: 7_594_630},
         {name: "runtime-meta", files: 3, bytes: 4_762},
     ],
 };
