@@ -42,7 +42,20 @@ NeuroBook — 面向长篇小说的本地优先 AI 工作台（AGPL-3.0-only）�
 
 **触发场景**：ecosystem.config.cjs 修改 / 全站 500 (`AgentSessionStoreLeaseHeldError`) / PM2 进程频繁重启 / `runtime.lease` 锁文件残留。
 
-**根因复盘**（2026-08-17）：旧进程 OOM 死透但 `runtime.lease` 没释放，PM2 auto-restart 新进程持续 ELOCKED → 全站 500。`proper-lockfile` 的 `stale: 30_000` 对 directory lockfile 不接管，单纯等 30s 无效。**必须人工清 lease**。
+**根因复盘**（2026-08-17）：旧进程 OOM 死透但 `runtime.lease` 没释放，PM2 auto-restart 新进程持续 ELOCKED → 全站 500。`proper-lockfile` 的 `stale: 30_000` 对 directory lockfile 不接管，单纯等 30s 无效。
+
+**当前自动恢复层（L1-L4 覆盖 99% case，本手册仅作最后手段）**：
+
+| 层 | 触发 | 行为 | 来源 |
+| --- | --- | --- | --- |
+| L1 proper-lockfile `stale: 30_000` | 进程内运行时持有锁 | 理论值，directory lockfile 行为不一致，常不接管 | `server/agent/session/agent-session-store-lease.ts` |
+| L2 owner.pid alive check | 每次 `acquire()` 入口 | `process.kill(pid, 0) === ESRCH` → 清 lease + .lock 接管 | R8 commit `4e652e61` |
+| L3 .lock mtime check | owner 解析失败时 | `.lock` mtime > 30s 视为 stale,清 .lock 让 proper-lockfile 接管 | R7/R8 commit `a810574a` |
+| **L4 新进程 grace 启发式** | owner 解析失败时 | 进程 uptime < 30s → **任何**残留 .lock 都接管 | **R10 commit `71ee5d48` 彻底解决 7s/22s 端到端 case** |
+| L5 `clean-stale-lease.sh` | 外部手动调用 | 30s 阈值（`--stale-seconds 30`），支持 archive | R9 commit `01d24d88` |
+| L6 pre-setup 钩子 | `pm2 deploy setup` 前 | `mmin +1` 自动清 (>1min 残留) | R9 `ecosystem.config.cjs` |
+
+> 7s 用户端到端 case：L1 不接管 + L3 mtime 太小 + L4 进程已 > 30s → 唯一路径 = L5/L6 外部清理。R10 之前只能这样。R10 之后 PM2 clean restart 场景下 L4 自动恢复。
 
 ### Clean Restart 流程（不要用 `pm2 restart`）
 
@@ -75,8 +88,8 @@ cat workspace/.nbook/agent/migrations/runtime.lease | jq .
 # lock mtime（proper-lockfile 的 heartbeat = lock mtime）
 stat workspace/.nbook/agent/migrations/runtime.lease.lock
 
-# stale 自检（mtime > 5min = 需要清）
-find workspace/.nbook/agent/migrations -maxdepth 1 -name "*.lease*" -mmin +5
+# stale 自检（mtime > 1min 需清；L4 grace 期已接管 < 30s fresh 残留）
+find workspace/.nbook/agent/migrations -maxdepth 1 -name "*.lease*" -mmin +1
 
 # 错误日志中找 lease 冲突
 grep "AgentSessionStoreLeaseHeldError" logs/server-current.jsonl | tail -5
@@ -91,7 +104,7 @@ ps -p <lease.pid>  # exit 1 = 死了
 - **`runtime.lease.lock` 是 DIRECTORY**：`rm -f` 失败 "Is a directory"，必须 `rm -rf`。
 - **proper-lockfile 的 `stale` 对 directory lockfile 行为不一致**：不要相信"30s 后自动接管"。
 - **修改 ecosystem.config.cjs 后必须 clean restart**：`pm2 reload` 同样会撞 lease。
-- **PM2 `max_memory_restart` 触发的是"提前重启"**：从 512M 调到 256M，让 OOM 之前就重启而不是临界点死锁。
+- **PM2 `max_memory_restart` 触发的是"提前重启"**：256M → 512M → 1024M → 1536M（R9 调高 50% 缓冲），让 OOM 之前就重启而不是临界点死锁。当前 1536M，新 build 700-800MB 基线 + 150MB 突发缓冲。
 - **fact-forcing gate**：单条 `rm` 命令比组合命令更易过 gate（拆开执行）。
 
 完整复盘见 `novel-frontend-display-fix-2026-08-17` memory。
