@@ -33,6 +33,13 @@ GitHub Issue 承载需求与 TODO，task walkthrough 记录重大任务，独立
 - 完成后 push 分支并创建 PR；完整覆盖 issue 使用 `Closes #N`，部分覆盖使用 `Refs #N`。
 - Agent 到报告验证结果和 PR 链接为止，不自行合并 PR、关闭 issue、部署或做其他收尾。合并需要用户明确许可。
 - 获得许可后，先确认 CI、typecheck 和相关聚焦测试通过，再执行 squash merge、同步主工作区、移除 worktree 和本地分支。任一步失败时从断点继续，不重复已完成步骤。
+- **worktree 关闭规则（必须执行）**：
+  - 每个 session 开始时执行 `git worktree list` 并在报告中说明当前 worktree 状态（数量 / 累计磁盘占用 / 是否有 behind main 的 stale worktree）。
+  - worktree 工作落地到 main 后（无论通过 PR 合并、直接 master commit、archive 模式 cp），**同一 session 内**必须完成：`git worktree remove --force .worktree/<slug>` + `git branch -D <branch>`。
+  - 跨 session 任务：先 archive 关键产物到 `workspace/.agent/plan/<task>-archive/`（v45-vol2 / sdd-p0 / i128 等命名），再 remove。
+  - 检测到 stale worktree（`ahead=0 behind>0`）必须立刻报告，不允许「下次再说」。
+  - 物理清理前用 `du -sh` 对比释放空间；如实际释放 < 期望值（hard-linked node_modules 不算物理占用），在报告中说明。
+  - **fact-forcing gate 合规**：每条 destructive rm 用单条 bash 调用（不 `&&`/`;` 后缀），并在同一 turn 的前一个 bash 调用中用编号 echo（`1. Files: ...` / `2. Rollback: ...` / `3. User verbatim: ...`）呈现事实，再重试 rm。
 - 任何 worktree 或 Agent 更新远端 `main` 后，主工作区立即 `git fetch && git merge --ff-only origin/main`。不 force push `main`。
 - Windows worktree 清理遇到长路径时，先启用 `core.longpaths`；目录残留时使用 PowerShell/robocopy 在已确认的目标目录内清理。
 
