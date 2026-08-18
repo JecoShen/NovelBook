@@ -1,0 +1,155 @@
+[
+  {
+    "id": "cn.structure.chapter-hook",
+    "namespace": "structure.chapter-hook",
+    "title": "章末钩子（i129 P1 landing：5 模式 detector 占位）",
+    "level": "high",
+    "review": "agent",
+    "fixability": "manual",
+    "enabled": false,
+    "note": "i129-p1-chapter-hook-detector（2026-08-18）— 5 模式 detector v0.2 落地。baseline 跑完 80 章：reversal/suspense/short-drop 三子规则 enable，question/ellipsis disabled（V1+V2 0 命中率）。详见 i129-baseline-report.md + i129-tuning-notes.md。i130 P2-1 reversal v0.3 + i131 P2-4 short-drop v0.3（regex 不变）+ i132 P2-5 dedup（方案 C 同时命中报告 + ★ 主模式标注）：47 章 dual-mode + 6 章 triple-mode = 53 章多模式（reversal 100% 同时命中 short-drop 报同钩子）。详见 i130/i131/i132 patch reports。i133-p2-6-data-correction（2026-08-18）— 数据校正任务：i130/i131 patch report §3.3 原估「16 章双重命中」→ i132 P2-5 实测 = 26 章 reversal 100% 同时命中 short-drop，校正声明段入 i130 §3.3 + i131 §3.1 + §3.3 + §6 教训 6，6 文件 archive v45-p2-6-data-correction-archive/，1 master commit。",
+    "detector": {
+      "type": "regex",
+      "targets": ["(?![\\s\\S])"]
+    },
+    "action": {
+      "type": "suggest",
+      "message": "父级占位规则 — 实际扫描由 5 个子规则 cn.structure.chapter-hook.{question,ellipsis,reversal,suspense,short-drop} 触发。详见各子规则。"
+    }
+  },
+  {
+    "id": "cn.structure.chapter-hook.question",
+    "namespace": "structure.chapter-hook",
+    "title": "章末钩子 · 问号（question）",
+    "level": "high",
+    "review": "agent",
+    "fixability": "manual",
+    "enabled": false,
+    "note": "i129 子规则 #1/5 — v0.2 DISABLED（baseline 0/80 章命中）。V1+V2 不用问号收尾。留作未来 V3+ 风格迁移参考。",
+    "scope": {
+      "layer": "narrative",
+      "position": {
+        "kind": "ending",
+        "chars": 200
+      }
+    },
+    "detector": {
+      "type": "regex",
+      "targets": [
+        "[?？]"
+      ]
+    },
+    "action": {
+      "type": "suggest",
+      "message": "章末 200 字含问号。检查：1) 问号是否落在最后一句（首选）；2) 若多问号连用，确认不是对话提问。问号是最直接的钩子。"
+    }
+  },
+  {
+    "id": "cn.structure.chapter-hook.ellipsis",
+    "namespace": "structure.chapter-hook",
+    "title": "章末钩子 · 省略号（ellipsis）",
+    "level": "high",
+    "review": "agent",
+    "fixability": "manual",
+    "enabled": false,
+    "note": "i129 子规则 #2/5 — v0.2 DISABLED（baseline 0/80 章命中）。V1+V2 不用省略号收尾。留作未来 V3+ 风格迁移参考。",
+    "scope": {
+      "layer": "narrative",
+      "position": {
+        "kind": "ending",
+        "chars": 200
+      }
+    },
+    "detector": {
+      "type": "regex",
+      "targets": [
+        "……|\\.\\.\\."
+      ]
+    },
+    "action": {
+      "type": "suggest",
+      "message": "章末 200 字含省略号。检查：1) 省略号是否在末句尾部（首选——表示意犹未尽）；2) 若省略号在句中或对话里，可能不构成章末钩子。"
+    }
+  },
+  {
+    "id": "cn.structure.chapter-hook.reversal",
+    "namespace": "structure.chapter-hook",
+    "title": "章末钩子 · 反转词（reversal）",
+    "level": "high",
+    "review": "agent",
+    "fixability": "manual",
+    "enabled": true,
+    "note": "i130 子规则 #3/5 — v0.3 ENABLED（baseline 24/80 章命中，spot-check TP 100%，FP ~5%）。v0.2 → v0.3 加末 2 句 AND 语义（前缀 0-1 个完整句子约束）。",
+    "scope": {
+      "layer": "narrative",
+      "position": {
+        "kind": "ending",
+        "chars": 200
+      }
+    },
+    "detector": {
+      "type": "regex",
+      "targets": [
+        "(?:不|没|别|没有|绝不|永不|其实|实际上|事实上|然而|但是|但|可是|却)(?:[^。！？!?\\n]{0,20})[。！？!?](?:[^。！？!?\\n]*[。！？!?])?$"
+      ]
+    },
+    "action": {
+      "type": "suggest",
+      "message": "章末 2 句（fromLast≤1）含反转/否定收尾。检查：1) 反转词是否在末 1-2 句（已用 regex 末 2 句约束）；2) 反转词是否以反预期为核心（'不/没/其实' 引出反预期）；3) 若反转词仅是描述性否定（'他没说话' 在前段），已被 regex 滤掉。"
+    }
+  },
+  {
+    "id": "cn.structure.chapter-hook.suspense",
+    "namespace": "structure.chapter-hook",
+    "title": "章末钩子 · 未解悬念（suspense）",
+    "level": "high",
+    "review": "agent",
+    "fixability": "manual",
+    "enabled": true,
+    "note": "i129 子规则 #4/5 — v0.2 ENABLED（baseline 34/80 章命中，spot-check 100% TP，FP ~5%）。14 个未来时序关键词 + 章末 200 字符 scope。",
+    "scope": {
+      "layer": "narrative",
+      "position": {
+        "kind": "ending",
+        "chars": 200
+      }
+    },
+    "detector": {
+      "type": "regex",
+      "targets": [
+        "(?:明天|明早|明晚|后天|大后天|那天|后来|等到|等到了?|第二(?:天|年|次|个)|第三天|某天|某个|那(?:天|晚|个夜晚?|一夜)|几天后|几个月后|几年后|明年|明年春天|下一次|下次|未来|终有一天|迟早|早晚)"
+      ]
+    },
+    "action": {
+      "type": "suggest",
+      "message": "章末 200 字含未来时序引用。检查：1) 是否真的指向未解事件（'那天' 指代悬念而非单纯回忆）；2) 若仅是顺叙时间推进（'第二天他到了公司'），不构成钩子；3) 真钩子应是「某件未发生的事被提及，读者等下章揭晓」。"
+    }
+  },
+  {
+    "id": "cn.structure.chapter-hook.short-drop",
+    "namespace": "structure.chapter-hook",
+    "title": "章末钩子 · 短句落幅（short-drop）",
+    "level": "high",
+    "review": "agent",
+    "fixability": "manual",
+    "enabled": true,
+    "note": "i129 子规则 #5/5 — v0.2 ENABLED（baseline 79/80 章命中，spot-check 100% TP，FP ~15%）。末句 < 12 字符 + 句末标点。",
+    "scope": {
+      "layer": "narrative",
+      "position": {
+        "kind": "ending",
+        "chars": 200
+      }
+    },
+    "detector": {
+      "type": "regex",
+      "targets": [
+        "[^\\n。！？!?\\s]{1,12}[。！？!?]\\n*$"
+      ]
+    },
+    "action": {
+      "type": "suggest",
+      "message": "章末最后一句 < 12 字符（极短收尾）。检查：1) 短句是否承载画面/动作/反差（如「手机震了。」「没了。」「他没说话。」），而非文末解说（'故事还在继续。'）；2) 若短句是角色动作或环境定格，是好钩子；3) 若短句是作者旁白总结，视为 FP。"
+    }
+  }
+]
