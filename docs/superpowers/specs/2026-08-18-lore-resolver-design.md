@@ -3,6 +3,7 @@
 > 设计日期：2026-08-18
 > 来源调研：`workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/research-sdd-novel-writing-2026-08-18.md` §6.3
 > 状态：设计 spec（待 user review）
+> **patch**: 2026-08-18 实施时校正 §6 文件清单 2 处路径错误 + §1 架构图 + §2.4 注释（详见 commit XXXXXXX 与 workspace/.../v45-p1-3-archive/02-patch-report.md）
 > 目标：解决长篇 lore 全量注入 LLM 上下文导致超长 prompt 与 token 浪费
 
 ---
@@ -32,13 +33,14 @@
                     └──────────┬──────────────────────────────┘
                                │ 调用
                                ▼
-   ┌──────────────────────────────────────────────────────────┐
-   │  server/agent/harness/prepare-run.ts   (改 1 处)            │
-   │    1. context-access 已注入 generated.md (existing)        │
-   │    2. ★ 解析 chapter text → 调 resolver.preloadChapter()    │
-   │    3. 合并到 writer prompt 的 <chapter_lore_context> 段     │
-   │    4. 调 recordContextAccess 记 explicitInput            │
-   └──────────────────────────────────────────────────────────┘
+   ┌──────────────────────────────────────────────────────────────────────────────┐
+   │  server/agent/harness/neuro-agent-harness.ts prepareRun (改 1 处)            │
+   │    1. context-access 已注入 generated.md (existing)                          │
+   │  // 注：注入点真实位置 = systemPrompt 拼接收尾 (line 2033), 详见 patch report│
+   │    2. ★ 解析 chapter text → 调 resolver.preloadChapter()                     │
+   │    3. 合并到 writer prompt 的 <chapter_lore_context> 段                      │
+   │    4. 调 recordContextAccess 记 explicitInput                                │
+   └──────────────────────────────────────────────────────────────────────────────┘
                                │
                                ▼
    ┌──────────────────────────────────────────────────────────┐
@@ -370,8 +372,8 @@ defineTool({
 
 | 文件 | 改动行 | 改动点 |
 |---|---|---|
-| `server/agent/harness/prepare-run.ts` | +30 | 章节级 lore 注入 + context-access 记录 |
-| `server/agent/profiles/writer.profile.tsx` | +60 | 新增 `lore_resolver_query` 工具 |
+| `server/agent/harness/neuro-agent-harness.ts:2033` | +30 | runRuntimeHooks prepareRun 阶段 + systemPrompt 拼接收尾 |
+| `assets/workspace/.nbook/agent/profiles/builtin/writer.profile.tsx` | +60 | 新增 `lore_resolver_query` 工具 |
 
 **总计**：~1080 行新代码，~90 行修改。**全 worktree 内**，主分支 0 改动。
 
@@ -426,6 +428,7 @@ defineTool({
 | `ReadyProjectSessionRef` (project-file-index) | resolver 函数签名遵守，统一入参 |
 | writer.profile 已有 `get_chapter_writer_brief` / `get_story_scene_context` | 新增 `lore_resolver_query` 与之并列 |
 | archive 模式（worktree + cp + 0 push） | 全 worktree 内做，主分支 0 改动 |
+| harness 集成点 | **实际集成点 = neuro-agent-harness.ts runRuntimeHooks prepareRun + systemPrompt 末尾拼**（spec §6 路径已校正） |
 
 ## 附录 B：参考
 
