@@ -184,8 +184,8 @@ describe("lore-resolver-cache", () => {
     });
 
     it("scans character directory and builds trigger index", async () => {
-        writeLoreCard(tmpRoot, "character", "lu-shen", {triggers: ["陆深", "男主"]});
-        writeLoreCard(tmpRoot, "character", "su-nian", {triggers: ["苏念"]});
+        writeLoreCard(tmpRoot, "character", "lu-shen", {title: "陆深", triggers: ["陆深", "男主"]});
+        writeLoreCard(tmpRoot, "character", "su-nian", {title: "苏念", triggers: ["苏念"]});
 
         const index = await buildLoreResolverIndex(project);
 
@@ -267,7 +267,7 @@ import type {ReadyProjectSessionRef} from "nbook/server/workspace-files/project-
 
 export type LoreEntryKind =
     | "character" | "location" | "faction"
-    | "event" | "item" | "world" | "system" | "spec" | "note";
+    | "event" | "item" | "world" | "system" | "spec";
 
 export interface LoreEntryMeta {
     readonly path: string;
@@ -284,7 +284,7 @@ export interface LoreResolverIndex {
 }
 
 const ALLOWED_KINDS: ReadonlySet<LoreEntryKind> = new Set([
-    "character", "location", "faction", "event", "item", "world", "system", "spec", "note",
+    "character", "location", "faction", "event", "item", "world", "system", "spec",
 ]);
 const MIN_TRIGGER_LENGTH = 2;
 
@@ -292,6 +292,16 @@ const indexCache = new Map<string, LoreResolverIndex>();
 
 function cacheKey(project: ReadyProjectSessionRef): string {
     return `${project.workspace.root}#${String(project.generation)}`;
+}
+
+/** 解析单个标量值：`[a, b]` 数组 / `true`|`false` 布尔 / 其余字符串。 */
+function parseScalarValue(value: string): unknown {
+    if (value.startsWith("[") && value.endsWith("]")) {
+        return value.slice(1, -1).split(",").map((s) => s.trim()).filter(Boolean);
+    }
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return value;
 }
 
 /** 极简 YAML frontmatter 解析——只支持 key: value 与 `key:` 嵌套一层。 */
@@ -309,7 +319,7 @@ function parseFrontmatter(raw: string): Record<string, unknown> {
             if (k && v.length) {
                 const existing = out[currentKey];
                 if (typeof existing === "object" && existing !== null) {
-                    (existing as Record<string, string>)[k.trim()] = v.join(":").trim();
+                    (existing as Record<string, string>)[k.trim()] = parseScalarValue(v.join(":").trim());
                 }
             }
             continue;
@@ -317,13 +327,10 @@ function parseFrontmatter(raw: string): Record<string, unknown> {
         const [k, ...v] = line.split(":");
         if (k && v.length) {
             const key = k.trim();
-            const value = v.join(":").trim();
+            const value = parseScalarValue(v.join(":").trim());
             if (value === "") {
                 currentKey = key;
                 out[key] = {};
-            } else if (value.startsWith("[") && value.endsWith("]")) {
-                currentKey = null;
-                out[key] = value.slice(1, -1).split(",").map((s) => s.trim()).filter(Boolean);
             } else {
                 currentKey = null;
                 out[key] = value;
