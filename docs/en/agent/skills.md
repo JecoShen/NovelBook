@@ -80,4 +80,4 @@ Do not build a workflow just to package a block of instructions. That is a Skill
 
 - [Agent Tools](/en/agent/tools)
 - [Workflows and Jobs](/en/agent/workflow)
-- [Skill Package Contract](https://github.com/notnotype/neuro-book/blob/master/reference/agent/skill-package.md)
+- [Skill Package Contract](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/skill-package.md)

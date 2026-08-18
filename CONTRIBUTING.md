@@ -150,10 +150,10 @@ Issue 负责公开问题和需求分流；Task walkthrough 负责重大实现的
 
 维护者（含开发 Agent）多线并行开发的分支命名、worktree 与 squash 合并约定见 [`AGENTS.md`](AGENTS.md) 的「Git 工作流」；本节约束外部贡献者的主题分支 PR。
 
-- 从最新 `master` 创建主题分支。不要 force push 维护者分支或重写他人的提交。
+- 从最新 `main` 创建主题分支。不要 force push 维护者分支或重写他人的提交。
 - 一个 PR 只解决一个连贯问题；不要顺手夹带其它修复、格式化、依赖升级、上游合并或无关 Task 文档。
 - 保持提交可审查。建议使用 Conventional Commit 类型：`feat`、`fix`、`docs`、`refactor`、`test`、`build`、`ci`、`chore`。
-- 不要为了更新分支把 `master` 合并提交、版本提交或生成产物带进 PR。必要时在自己的分支上 rebase，并自行解决冲突。
+- 不要为了更新分支把 `main` 合并提交、版本提交或生成产物带进 PR。必要时在自己的分支上 rebase，并自行解决冲突。
 
 示例：
 

@@ -61,11 +61,11 @@ bunx --bun @notnotype/neuro-book-manager@canary install --profile ghcr
 Canary 使用 `@canary`。没有 Bun 时，Stage 0 会把固定 Bun 放入用户 cache 并校验 SHA256，再调用同一个 Manager。Stage 0 不应把临时 Bun 写入目标 Installation Root。
 
 ```powershell
-irm https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.ps1 | iex
 ```
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh
 ```
 
 完整Release同时附带`install.ps1`、`install.cmd`和`install.sh`并纳入`SHA256SUMS`。Linux Stage 0仅支持x64 glibc，并要求`curl`、`unzip`和`sha256sum`。
@@ -220,8 +220,8 @@ Windows Portable 的 `.env` 在 `data/`；Docker Profile 默认在 Installation 
 git status --short --branch
 git remote -v
 git rev-parse HEAD
-git rev-parse origin/master
-git merge-base HEAD origin/master
+git rev-parse origin/main
+git merge-base HEAD origin/main
 ```
 
 如果 worktree dirty、HEAD 不能 fast-forward、remote 不正确或目标目录含未知文件，停止并让用户决定。不要自动修复用户 Git 状态。

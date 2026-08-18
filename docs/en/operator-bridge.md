@@ -61,11 +61,11 @@ bunx --bun @notnotype/neuro-book-manager@canary install --profile ghcr
 Canary uses `@canary`. Without Bun, Stage 0 places a pinned Bun in the user cache, verifies its SHA256, and then calls the same Manager. Stage 0 must not write that temporary Bun into the target Installation Root.
 
 ```powershell
-irm https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.ps1 | iex
 ```
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh
 ```
 
 A complete Release also ships `install.ps1`, `install.cmd` and `install.sh`, all covered by `SHA256SUMS`. Linux Stage 0 supports x64 glibc only and requires `curl`, `unzip` and `sha256sum`.
@@ -220,8 +220,8 @@ Read-only checks that are allowed:
 git status --short --branch
 git remote -v
 git rev-parse HEAD
-git rev-parse origin/master
-git merge-base HEAD origin/master
+git rev-parse origin/main
+git merge-base HEAD origin/main
 ```
 
 If the worktree is dirty, HEAD cannot fast-forward, the remote is wrong, or the target directory contains unknown files, stop and let the user decide. Do not repair the user's Git state automatically.

@@ -84,7 +84,7 @@ agent/workflows/
 
 ## 继续阅读
 
-- [Workflow Reference](https://github.com/notnotype/neuro-book/blob/master/reference/agent/workflow/README.md)：选用边界、目录覆盖、`run_workflow` 契约。
-- [Workflow 编写](https://github.com/notnotype/neuro-book/blob/master/reference/agent/workflow/authoring.md)：定义、参数、并发、返回值与确定性约束。
-- [状态图规范](https://github.com/notnotype/neuro-book/blob/master/reference/agent/workflow/chart.md)：`wf.chart` API 与构图规范。
+- [Workflow Reference](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/workflow/README.md)：选用边界、目录覆盖、`run_workflow` 契约。
+- [Workflow 编写](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/workflow/authoring.md)：定义、参数、并发、返回值与确定性约束。
+- [状态图规范](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/workflow/chart.md)：`wf.chart` API 与构图规范。
 - [Agent 工具](/agent/tools)：`run_workflow` 与 jobs 工具的位置。

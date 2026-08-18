@@ -60,17 +60,17 @@ The canary Manager uses `@canary`. With no Bun on the machine, use the platform 
 Do not use `bunx run @notnotype/neuro-book-manager`; that form makes Bun resolve the package name as a local script or path, and the Manager will not start. Until a stable Manager and a correct npm `latest` exist, the public docs keep using `@canary`.
 
 ```powershell
-irm https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.ps1 | iex
 ```
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh
 ```
 
 The POSIX Stage 0 supports Linux x64/AArch64 glibc and macOS x64/ARM64, and depends on `curl` and `unzip`. On Linux it uses `sha256sum` and verifies glibc; on macOS it uses the system `shasum -a 256`. Piped with no arguments, it tries to restore the Manager's interactive input from `/dev/tty`; with no TTY it fails before downloading anything, so automation should use:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh -s -- --profile ghcr --yes
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh -s -- --profile ghcr --yes
 ```
 
 Stage 0 downloads a pinned Bun version into the user cache, re-verifies the executable's SHA256, version and execute bit after unpacking, cleans up the temporary directory, and only then calls Manager `@canary`; it does not write `.runtime` into the Installation Root first. The Windows Stage 0 uses the native OS architecture and rejects Windows ARM64 before downloading; the cache and the first unpack go through the same executable checksum/version gate.

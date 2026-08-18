@@ -80,4 +80,4 @@ profile 可以用 `skills.include` 声明白名单。**catalog 里能看到不�
 
 - [Agent 工具](/agent/tools)
 - [Workflow 与 Job](/agent/workflow)
-- [Skill Package 合同](https://github.com/notnotype/neuro-book/blob/master/reference/agent/skill-package.md)
+- [Skill Package 合同](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/skill-package.md)

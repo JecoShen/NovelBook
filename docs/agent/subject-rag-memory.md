@@ -135,4 +135,4 @@ Subject RAG 第一版只做这些事：
 
 - [Agent Workflow 与 Job](./workflow.md)
 - [Agent 工具](./tools.md)
-- [Subject RAG Reference](https://github.com/notnotype/neuro-book/blob/master/reference/content/subject-rag-memory.md)
+- [Subject RAG Reference](https://github.com/JecoShen/NovelBook/blob/main/reference/content/subject-rag-memory.md)

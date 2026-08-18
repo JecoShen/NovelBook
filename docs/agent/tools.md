@@ -102,6 +102,6 @@ Subject RAG 的数据与专用工具仍保留：
 - [Workflow 与 Job](./workflow.md)：`run_workflow` 与后台任务。
 - [三种模式](./modes.md)：只读模式下写工具怎么被门控。
 - [World Engine](/core/world-engine)：`execute_world` 背后的模型。
-- [Leader Default Operational Protocol](https://github.com/notnotype/neuro-book/blob/master/reference/agent/leader-default.md)
-- [Project Workspace Guide](https://github.com/notnotype/neuro-book/blob/master/reference/agent/project-workspace-guide.md)
-- [Agent Profile Guide](https://github.com/notnotype/neuro-book/blob/master/reference/agent/profile-guide.md)
+- [Leader Default Operational Protocol](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/leader-default.md)
+- [Project Workspace Guide](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/project-workspace-guide.md)
+- [Agent Profile Guide](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/profile-guide.md)

@@ -60,17 +60,17 @@ Canary Manager 使用 `@canary`。没有 Bun 时，使用仓库提供的平台 S
 不要使用`bunx run @notnotype/neuro-book-manager`；该命令会让Bun把包名按本地脚本或路径解析，Manager不会启动。稳定Manager和正确npm `latest`建立前，公开文档继续使用`@canary`。
 
 ```powershell
-irm https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.ps1 | iex
 ```
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh
 ```
 
 POSIX Stage 0支持Linux x64/AArch64 glibc和macOS x64/ARM64，并依赖`curl`与`unzip`。Linux使用`sha256sum`并验证glibc，macOS使用系统`shasum -a 256`。无参数管道执行会尝试从`/dev/tty`恢复Manager交互输入；没有TTY时在下载前失败，自动化应使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh -s -- --profile ghcr --yes
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh -s -- --profile ghcr --yes
 ```
 
 Stage 0把固定版本Bun下载到用户cache，解压后再次校验executable SHA256、版本和执行位，清理临时目录后才调用Manager `@canary`；它不会先向Installation Root写`.runtime`。Windows Stage 0使用原生OS架构，Windows ARM64在下载前拒绝；缓存与首次解压使用同一executable checksum/version门禁。

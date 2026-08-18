@@ -148,10 +148,10 @@ The five issue forms automatically add one `type:*` label and `status: needs-tri
 
 ## Git and Commits
 
-- Create a topic branch from the latest `master`. Do not force-push maintainer branches or rewrite another contributor's commits.
+- Create a topic branch from the latest `main`. Do not force-push maintainer branches or rewrite another contributor's commits.
 - Keep one coherent problem per PR. Do not include opportunistic fixes, repository-wide formatting, dependency upgrades, upstream merges, or unrelated task documentation.
 - Keep commits reviewable. Recommended Conventional Commit types are `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `ci`, and `chore`.
-- Do not bring merge commits from `master`, release commits, or generated artifacts into the PR when updating your branch. Rebase your own branch when necessary and resolve its conflicts yourself.
+- Do not bring merge commits from `main`, release commits, or generated artifacts into the PR when updating your branch. Rebase your own branch when necessary and resolve its conflicts yourself.
 
 Examples:
 

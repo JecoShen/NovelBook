@@ -5,11 +5,11 @@ NeuroBook 的安装、更新、实例、Runtime 与工具链管理器。
 没有安装Bun时，可以先通过平台Stage 0进入同一个安装向导：
 
 ```powershell
-irm https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.ps1 | iex
 ```
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh
 ```
 
 POSIX Stage 0支持Linux x64/AArch64 glibc与macOS x64/ARM64：Linux依赖`sha256sum`并验证glibc，macOS使用系统`shasum -a 256`；两者都依赖`curl`和`unzip`。Windows普通用户也可以直接从GitHub Release下载`neuro-book-windows-x64.zip`解压使用。

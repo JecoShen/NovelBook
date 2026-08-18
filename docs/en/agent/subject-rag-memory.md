@@ -135,4 +135,4 @@ For now it does not do:
 
 - [Agent Workflows and Jobs](./workflow.md)
 - [Agent Tools](./tools.md)
-- [Subject RAG Reference](https://github.com/notnotype/neuro-book/blob/master/reference/content/subject-rag-memory.md)
+- [Subject RAG Reference](https://github.com/JecoShen/NovelBook/blob/main/reference/content/subject-rag-memory.md)

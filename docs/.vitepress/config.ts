@@ -14,7 +14,7 @@ const zhNav = [
   { text: '理念', link: '/blog-agent-rp-harness' },
   { text: 'Agent', link: '/agent/' },
   { text: 'Profile', link: '/profile/' },
-  { text: 'Reference', link: 'https://github.com/notnotype/neuro-book/blob/master/reference/README.md' },
+  { text: 'Reference', link: 'https://github.com/JecoShen/NovelBook/blob/main/reference/README.md' },
   { text: 'GitHub', link: 'https://github.com/notnotype/neuro-book' }
 ]
 
@@ -123,7 +123,7 @@ const enNav = [
   { text: 'Concepts', link: '/en/blog-agent-rp-harness' },
   { text: 'Agent', link: '/en/agent/' },
   { text: 'Profile', link: '/en/profile/' },
-  { text: 'Reference', link: 'https://github.com/notnotype/neuro-book/blob/master/reference/README.md' },
+  { text: 'Reference', link: 'https://github.com/JecoShen/NovelBook/blob/main/reference/README.md' },
   { text: 'GitHub', link: 'https://github.com/notnotype/neuro-book' }
 ]
 

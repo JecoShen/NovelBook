@@ -102,6 +102,6 @@ That keeps a Skill a readable workflow rather than an invisible black-box script
 - [Workflows and Jobs](./workflow.md): `run_workflow` and background jobs.
 - [Three Modes](./modes.md): how write tools are gated in read-only mode.
 - [World Engine](/en/core/world-engine): the model behind `execute_world`.
-- [Leader Default Operational Protocol](https://github.com/notnotype/neuro-book/blob/master/reference/agent/leader-default.md)
-- [Project Workspace Guide](https://github.com/notnotype/neuro-book/blob/master/reference/agent/project-workspace-guide.md)
-- [Agent Profile Guide](https://github.com/notnotype/neuro-book/blob/master/reference/agent/profile-guide.md)
+- [Leader Default Operational Protocol](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/leader-default.md)
+- [Project Workspace Guide](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/project-workspace-guide.md)
+- [Agent Profile Guide](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/profile-guide.md)

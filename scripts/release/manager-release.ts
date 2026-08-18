@@ -63,7 +63,7 @@ async function releaseManager(channel: "stable" | "canary", options: ReleaseOpti
     await run("git", ["add", "packages/neuro-book-manager/package.json", "bun.lock"], {cwd: ROOT});
     await run("git", ["commit", "-m", `chore(manager): release v${version}`], {cwd: ROOT});
     await run("git", ["tag", tag], {cwd: ROOT});
-    await run("git", ["push", "origin", "HEAD:master"], {cwd: ROOT});
+    await run("git", ["push", "origin", "HEAD:main"], {cwd: ROOT});
     await run("git", ["push", "origin", tag], {cwd: ROOT});
     console.log(`Manager release tag pushed: ${tag}`);
 }

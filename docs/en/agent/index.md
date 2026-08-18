@@ -62,7 +62,7 @@ An ordinary novel project starts from `leader.default`. It works out what you wa
 
 `director` (the story director) is kept as an advanced manual profile, not a required stop for ordinary writing — leader.default already holds the full set of plot read and write tools.
 
-When you pick the wrong entry point, the entry leader should tell you which profile fits the task better and suggest creating or switching to that agent. The stable routing table is in [Profile Routing](https://github.com/notnotype/neuro-book/blob/master/reference/agent/profile-routing.md).
+When you pick the wrong entry point, the entry leader should tell you which profile fits the task better and suggest creating or switching to that agent. The stable routing table is in [Profile Routing](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/profile-routing.md).
 
 ::: warning RP profile entry points are currently offline
 `rp.leader`, `rp.writer`, `simulator.leader` and `simulator.actor` are still in the codebase, but they are **hidden from the New Agent menu** while they are redesigned to the standard set by writing mode. Profile names on historical sessions and the old profile files are preserved.
@@ -93,4 +93,4 @@ The test is one question: does this change as the story moves? If it changes, it
 - [Agent Workflows and Jobs](./workflow.md): how to orchestrate several sessions with a replayable script and run long tasks as background jobs.
 - [Subject RAG Memory](./subject-rag-memory.md): the data, index and tool contracts that are preserved, and the gap in automatic integration today.
 - [Agent Harness](./advanced.md): sessions, runtime hooks, SSE, queues and black-box behavior contracts.
-- [Agent Reference](https://github.com/notnotype/neuro-book/blob/master/reference/agent/README.md): the entry point to the stable implementation reference.
+- [Agent Reference](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/README.md): the entry point to the stable implementation reference.

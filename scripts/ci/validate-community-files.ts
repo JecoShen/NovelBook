@@ -404,7 +404,7 @@ async function validateWorkflows(): Promise<void> {
     ensure(Object.keys(community.permissions).length === 1, "Community workflow 不得获得写权限");
     const communityPush = community.on.push;
     const communityPullRequest = community.on.pull_request;
-    ensure(communityPush?.branches?.includes("master") === true, "Community workflow 必须监听 master push");
+    ensure(communityPush?.branches?.includes("main") === true, "Community workflow 必须监听 main push");
     const communityPushPaths = communityPush?.paths ?? [];
     const communityPullRequestPaths = communityPullRequest?.paths ?? [];
     ensure(haveSamePaths(communityPushPaths, communityPullRequestPaths), "Community workflow 的 push 与 PR paths 必须完全一致");
@@ -426,7 +426,7 @@ async function validateWorkflows(): Promise<void> {
     ensure(deployDocs.permissions.contents === "read", "Deploy Docs 必须保持 contents: read");
     ensure(deployDocs.permissions.pages === "write", "Deploy Docs 必须声明 pages: write");
     ensure(deployDocs.permissions["id-token"] === "write", "Deploy Docs 必须声明 id-token: write");
-    ensure(deployDocs.on.push?.branches?.includes("master") === true, "Deploy Docs 必须监听 master push");
+    ensure(deployDocs.on.push?.branches?.includes("main") === true, "Deploy Docs 必须监听 main push");
     const deployPaths = deployDocs.on.push?.paths ?? [];
     for (const path of docsRuntimePaths) {
         ensure(deployPaths.includes(path), `Deploy Docs 缺少运行时 path: ${path}`);

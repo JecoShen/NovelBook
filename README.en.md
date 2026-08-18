@@ -49,13 +49,13 @@ NeuroBook treats these as engineering problems — lore, plot, prose, and world 
 For multiple instances, Docker, or building from source, use NeuroBook Manager instead:
 
 ```powershell
-irm https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.ps1 | iex
 ```
 
 **Linux / macOS**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh
 ```
 
 **If you already have Bun (any platform)**:

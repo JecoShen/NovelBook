@@ -15,7 +15,7 @@ import {
 
 const request: ReleaseCandidateRequest = {
     createArgs: ["release", "create", "v0.9.0-canary.1", "--draft"],
-    dispatchRef: "master",
+    dispatchRef: "main",
     prerelease: true,
     repo: "notnotype/neuro-book",
     revision: "a".repeat(40),

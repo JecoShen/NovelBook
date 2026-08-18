@@ -62,7 +62,7 @@ flowchart TD
 
 `director`（剧情导演）保留为高级手动 profile，不是普通写作的必经节点——leader.default 自己就持有全套剧情读写工具。
 
-当用户选错入口时，入口 leader 应说明任务更适合哪个 profile，并建议新建或切换到对应 agent。稳定路由表见 [Profile Routing](https://github.com/notnotype/neuro-book/blob/master/reference/agent/profile-routing.md)。
+当用户选错入口时，入口 leader 应说明任务更适合哪个 profile，并建议新建或切换到对应 agent。稳定路由表见 [Profile Routing](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/profile-routing.md)。
 
 ::: warning RP 相关 profile 当前已下线入口
 `rp.leader`、`rp.writer`、`simulator.leader`、`simulator.actor` 仍在代码库中，但**已从新建 Agent 菜单隐藏**，正在按写作模式的标准重新设计。历史会话的 profile 名称和旧 profile 文件保留。
@@ -93,4 +93,4 @@ world-engine/schema/index.ts
 - [Agent Workflow 与 Job](./workflow.md)：如何用可重放脚本编排多个 session，并通过后台 Job 运行长任务。
 - [Subject RAG 记忆](./subject-rag-memory.md)：保留的数据、索引和工具合同，以及当前自动集成缺口。
 - [Agent Harness](./advanced.md)：session、runtime hooks、SSE、队列和黑盒行为合同。
-- [Agent Reference](https://github.com/notnotype/neuro-book/blob/master/reference/agent/README.md)：稳定实现参考入口。
+- [Agent Reference](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/README.md)：稳定实现参考入口。

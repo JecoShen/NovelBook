@@ -272,8 +272,8 @@ Code agent 展示了另一个方向：模型可以先检索、再行动，可以
 
 ## 继续阅读
 
-- [Agent Runtime Hooks](https://github.com/notnotype/neuro-book/blob/master/reference/agent/runtime-hooks.md)
-- [Subject RAG Memory](https://github.com/notnotype/neuro-book/blob/master/reference/content/subject-rag-memory.md)
-- [Novel Writing Workflow](https://github.com/notnotype/neuro-book/blob/master/reference/agent/novel-writing-workflow.md)
-- [Content Reference](https://github.com/notnotype/neuro-book/blob/master/reference/content/README.md)
-- [Agent RP Mode Task](https://github.com/notnotype/neuro-book/blob/master/docs/tasks/01-agent-roleplay-mode/README.md)
+- [Agent Runtime Hooks](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/runtime-hooks.md)
+- [Subject RAG Memory](https://github.com/JecoShen/NovelBook/blob/main/reference/content/subject-rag-memory.md)
+- [Novel Writing Workflow](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/novel-writing-workflow.md)
+- [Content Reference](https://github.com/JecoShen/NovelBook/blob/main/reference/content/README.md)
+- [Agent RP Mode Task](https://github.com/JecoShen/NovelBook/blob/main/docs/tasks/01-agent-roleplay-mode/README.md)

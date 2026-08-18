@@ -84,7 +84,7 @@ A workflow that users run must provide a `wf.chart` state chart, so the run can 
 
 ## Keep Reading
 
-- [Workflow Reference](https://github.com/notnotype/neuro-book/blob/master/reference/agent/workflow/README.md): when to use one, directory overrides, the `run_workflow` contract.
-- [Writing Workflows](https://github.com/notnotype/neuro-book/blob/master/reference/agent/workflow/authoring.md): definitions, parameters, concurrency, return values and determinism constraints.
-- [State Chart Spec](https://github.com/notnotype/neuro-book/blob/master/reference/agent/workflow/chart.md): the `wf.chart` API and charting conventions.
+- [Workflow Reference](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/workflow/README.md): when to use one, directory overrides, the `run_workflow` contract.
+- [Writing Workflows](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/workflow/authoring.md): definitions, parameters, concurrency, return values and determinism constraints.
+- [State Chart Spec](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/workflow/chart.md): the `wf.chart` API and charting conventions.
 - [Agent Tools](/en/agent/tools): where `run_workflow` and the job tools sit.

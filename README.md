@@ -54,13 +54,13 @@ NeuroBook 把这些当作工程问题来解决——设定、剧情、正文、�
 想要多实例、Docker 或从源码构建，改用 NeuroBook Manager：
 
 ```powershell
-irm https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.ps1 | iex
 ```
 
 **Linux / macOS**：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh
 ```
 
 **已经装了 Bun（任意平台）**：

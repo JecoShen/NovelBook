@@ -29,7 +29,7 @@ Agent session 使用 JSONL append-only 存储，前端通过 snapshot + SSE even
 
 ## 继续阅读
 
-- [Runtime Hooks](https://github.com/notnotype/neuro-book/blob/master/reference/agent/runtime-hooks.md)：五个生命周期阶段的实现参考。
-- [Agent SSE](https://github.com/notnotype/neuro-book/blob/master/reference/agent/sse.md)：前端同步事件合同。
-- [Harness Black-Box Contract](https://github.com/notnotype/neuro-book/blob/master/docs/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md)：prompt / continue / steer / followup 的外部行为合同。
-- [Agent 上下文构成](https://github.com/notnotype/neuro-book/blob/master/reference/agent/context.md)：一次 invocation 的上下文如何拼装。
+- [Runtime Hooks](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/runtime-hooks.md)：五个生命周期阶段的实现参考。
+- [Agent SSE](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/sse.md)：前端同步事件合同。
+- [Harness Black-Box Contract](https://github.com/JecoShen/NovelBook/blob/main/docs/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md)：prompt / continue / steer / followup 的外部行为合同。
+- [Agent 上下文构成](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/context.md)：一次 invocation 的上下文如何拼装。
