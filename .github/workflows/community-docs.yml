@@ -2,7 +2,7 @@ name: Community and Docs Checks
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "CONTRIBUTING.md"
       - "CONTRIBUTING.en.md"

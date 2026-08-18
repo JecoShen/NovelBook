@@ -1006,7 +1006,7 @@ function dockerManifest(root: string, image = "neuro-book-source:test"): Install
         sourceRevision: revision,
         roots: INSTALLATION_SCOPED_ROOT_LOCATORS,
         components: {
-            source: {provider: "git", version: "1.0.0", revision, path: ".", repository: "https://github.com/notnotype/neuro-book.git", branch: "master"},
+            source: {provider: "git", version: "1.0.0", revision, path: ".", repository: "https://github.com/JecoShen/NovelBook.git", branch: "main"},
             product: {provider: "container", version: "1.0.0", revision, image, containerImageId: CONTAINER_IMAGE_ID},
             manager: {provider: "managed", version: "0.1.0", path: ".runtime/manager/0.1.0/neuro-book.mjs", bundleSha256: "a".repeat(64)},
             managerRuntime: {provider: "system", version: "1.3.0", executable: "bun"},

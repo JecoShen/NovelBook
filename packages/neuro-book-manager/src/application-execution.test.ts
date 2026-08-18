@@ -211,7 +211,7 @@ function installationManifest(product: InstallationManifest["components"]["produ
                 revision: REVISION,
                 path: ".",
                 repository: "https://example.com/neuro-book.git",
-                branch: "master",
+                branch: "main",
             },
             product,
             manager: {provider: "managed", version: "0.1.0", path: ".runtime/manager/manager.mjs", bundleSha256: "c".repeat(64)},

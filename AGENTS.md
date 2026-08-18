@@ -23,17 +23,17 @@
 
 ## Git 工作流
 
-GitHub Issue 承载需求与 TODO，task walkthrough 记录重大任务，独立 worktree 承载代码，squash PR 合并进 `master`。
+GitHub Issue 承载需求与 TODO，task walkthrough 记录重大任务，独立 worktree 承载代码，squash PR 合并进 `main`。
 
 ### 分支与开发
 
 - 分支格式为 `{type}/{refs}-{slug}`：`type` 使用 `feat`、`fix`、`docs`、`refactor`、`test` 或 `chore`；`refs` 使用 `t<task号>` 或 `i<issue号>`，slug 使用不超过 5 个单词的英文 kebab-case。分支必须能追溯到 issue 或 task，不使用 `codex/*`。
-- 开工前执行 `git fetch origin`，再从 `origin/master` 创建 `.worktree/<slug>` 和对应分支；新 worktree 首次使用前执行 `bun install`。
+- 开工前执行 `git fetch origin`，再从 `origin/main` 创建 `.worktree/<slug>` 和对应分支；新 worktree 首次使用前执行 `bun install`。
 - 代码改动在 worktree 中完成。提交前只暂存任务范围内的文件；用户明确要求全部改动时才使用 `git add -A`。
 - 完成后 push 分支并创建 PR；完整覆盖 issue 使用 `Closes #N`，部分覆盖使用 `Refs #N`。
 - Agent 到报告验证结果和 PR 链接为止，不自行合并 PR、关闭 issue、部署或做其他收尾。合并需要用户明确许可。
 - 获得许可后，先确认 CI、typecheck 和相关聚焦测试通过，再执行 squash merge、同步主工作区、移除 worktree 和本地分支。任一步失败时从断点继续，不重复已完成步骤。
-- 任何 worktree 或 Agent 更新远端 `master` 后，主工作区立即 `git fetch && git merge --ff-only origin/master`。不 force push `master`。
+- 任何 worktree 或 Agent 更新远端 `main` 后，主工作区立即 `git fetch && git merge --ff-only origin/main`。不 force push `main`。
 - Windows worktree 清理遇到长路径时，先启用 `core.longpaths`；目录残留时使用 PowerShell/robocopy 在已确认的目标目录内清理。
 
 ### Agent 创建 Issue
@@ -101,7 +101,7 @@ GitHub Issue 承载需求与 TODO，task walkthrough 记录重大任务，独立
 
 ## 发布流程
 
-- 发布前用 `git log <上一个应用发布 tag>..origin/master --oneline` 枚举本轮合并的 PR，把 `RELEASE.md` 更新到本次版本号、日期并覆盖全部 PR。正文与上一版本相同即视为未更新，不得发布。基线 tag 用 `v*` 应用 tag，勿混用 `manager-v*` 等其他 tag 线。
+- 发布前用 `git log <上一个应用发布 tag>..origin/main --oneline` 枚举本轮合并的 PR，把 `RELEASE.md` 更新到本次版本号、日期并覆盖全部 PR。正文与上一版本相同即视为未更新，不得发布。基线 tag 用 `v*` 应用 tag，勿混用 `manager-v*` 等其他 tag 线。
 - 发布前阅读 `PROJECT-STATUS.md` 和相关 task walkthrough，确认验证记录与已知问题口径。
 - canary patch 使用 `bun run release -- canary --next patch --push --yes --no-watch`；canary minor 使用 `bun run release -- canary --next minor --push --yes --no-watch`。
 - 发布命令会更新版本、提交、push 并创建 GitHub prerelease；不要等待 Actions，报告 tag 和 Release URL 即可。

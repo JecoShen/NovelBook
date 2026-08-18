@@ -19,7 +19,7 @@ describe("Git repository materialize", () => {
         const fixture = await mkdtemp(join(tmpdir(), "nbook-manager-git-source-"));
         const target = await mkdtemp(join(tmpdir(), "nbook-manager-git-target-"));
         roots.push(fixture, target);
-        await run("git", ["init", "-b", "master"], {cwd: fixture});
+        await run("git", ["init", "-b", "main"], {cwd: fixture});
         await run("git", ["config", "user.email", "manager-test@example.com"], {cwd: fixture});
         await run("git", ["config", "user.name", "Manager Test"], {cwd: fixture});
         await writeFile(join(fixture, "package.json"), "{\"name\":\"neuro-book\"}\n", "utf8");
@@ -27,7 +27,7 @@ describe("Git repository materialize", () => {
         await run("git", ["commit", "-m", "fixture"], {cwd: fixture});
         await mkdir(join(target, ".runtime"), {recursive: true});
 
-        await materializeRepository(target, fixture, "master");
+        await materializeRepository(target, fixture, "main");
 
         expect(await readFile(join(target, "package.json"), "utf8")).toContain("neuro-book");
         expect(await repositoryRevision(target)).toMatch(/^[a-f0-9]{40}$/u);
@@ -36,7 +36,7 @@ describe("Git repository materialize", () => {
     it("dirty worktree 明确停止", async () => {
         const fixture = await mkdtemp(join(tmpdir(), "nbook-manager-git-dirty-"));
         roots.push(fixture);
-        await run("git", ["init", "-b", "master"], {cwd: fixture});
+        await run("git", ["init", "-b", "main"], {cwd: fixture});
         await writeFile(join(fixture, "untracked.txt"), "dirty", "utf8");
         await expect(assertCleanWorktree(fixture)).rejects.toThrow("不会自动 restore");
     });
@@ -45,7 +45,7 @@ describe("Git repository materialize", () => {
         const fixture = await mkdtemp(join(tmpdir(), "nbook-manager-git-source-"));
         const target = await mkdtemp(join(tmpdir(), "nbook-manager-git-target-"));
         roots.push(fixture, target);
-        await run("git", ["init", "-b", "master"], {cwd: fixture});
+        await run("git", ["init", "-b", "main"], {cwd: fixture});
         await run("git", ["config", "user.email", "manager-test@example.com"], {cwd: fixture});
         await run("git", ["config", "user.name", "Manager Test"], {cwd: fixture});
         await writeFile(join(fixture, "package.json"), "{\"name\":\"neuro-book\"}\n", "utf8");
@@ -53,7 +53,7 @@ describe("Git repository materialize", () => {
         await run("git", ["commit", "-m", "fixture"], {cwd: fixture});
         await mkdir(join(target, ".deploy"), {recursive: true});
         await writeFile(join(target, ".deploy", "operation.json"), "owned", "utf8");
-        await materializeRepository(target, fixture, "master");
+        await materializeRepository(target, fixture, "main");
 
         await removeMaterializedRepository(target);
 
@@ -66,7 +66,7 @@ describe("Git repository materialize", () => {
         const fixture = await mkdtemp(join(tmpdir(), "nbook-manager-stage-source-"));
         const staged = join(tmpdir(), `nbook-manager-stage-${Date.now()}`);
         roots.push(fixture, staged);
-        await run("git", ["init", "-b", "master"], {cwd: fixture});
+        await run("git", ["init", "-b", "main"], {cwd: fixture});
         await run("git", ["config", "user.email", "manager-test@example.com"], {cwd: fixture});
         await run("git", ["config", "user.name", "Manager Test"], {cwd: fixture});
         await writeFile(join(fixture, "package.json"), "{\"name\":\"neuro-book\"}\n", "utf8");

@@ -729,7 +729,7 @@ function dockerManifest(): InstallationManifest {
                 revision: manifest.sourceRevision,
                 path: ".",
                 repository: "https://github.com/notnotype/neuro-book.git",
-                branch: "master",
+                branch: "main",
             },
             product: {
                 provider: "container",

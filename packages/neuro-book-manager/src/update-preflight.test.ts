@@ -42,10 +42,10 @@ describe("Update Preflight", () => {
 
     it("Git dry-run执行fetch并报告真实revision", async () => {
         mocks.assertManagerUpgrade.mockResolvedValue(false);
-        mocks.fetchUpdateTarget.mockResolvedValue({previousRevision: "1".repeat(40), targetRevision: "2".repeat(40), branch: "master"});
+        mocks.fetchUpdateTarget.mockResolvedValue({previousRevision: "1".repeat(40), targetRevision: "2".repeat(40), branch: "main"});
         const manifest = manifestFixture();
         manifest.profile = "source-dev";
-        manifest.components.source = {provider: "git", version: manifest.appVersion, revision: manifest.sourceRevision, path: ".", repository: "https://github.com/notnotype/neuro-book.git", branch: "master"};
+        manifest.components.source = {provider: "git", version: manifest.appVersion, revision: manifest.sourceRevision, path: ".", repository: "https://github.com/JecoShen/NovelBook.git", branch: "main"};
         manifest.components.product = undefined;
 
         const report = await inspectUpdatePreflight({root: "C:/checkout", manifest, managerExecutable: "C:/manager/neuro-book.mjs"});

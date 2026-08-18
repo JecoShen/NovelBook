@@ -250,7 +250,7 @@ describe("Source Dev Update恢复", () => {
         git.fetchUpdateTarget.mockResolvedValue({
             previousRevision: manifest.sourceRevision,
             targetRevision,
-            branch: "master",
+            branch: "main",
         });
         git.repositoryRevision.mockResolvedValue(manifest.sourceRevision);
         git.createStagedWorktree.mockImplementation(async (_root, path) => {
@@ -305,7 +305,7 @@ describe("Source Dev Update恢复", () => {
         git.fetchUpdateTarget.mockResolvedValue({
             previousRevision: manifest.sourceRevision,
             targetRevision,
-            branch: "master",
+            branch: "main",
         });
         git.repositoryRevision.mockResolvedValue(manifest.sourceRevision);
         git.createStagedWorktree.mockImplementation(async (_root, path) => {
@@ -443,7 +443,7 @@ function gitManifest(profile: "source-dev" | "source-product"): InstallationMani
                 revision: manifest.sourceRevision,
                 path: ".",
                 repository: "https://github.com/notnotype/neuro-book.git",
-                branch: "master",
+                branch: "main",
             },
             product: profile === "source-dev" ? undefined : {
                 ...TEST_RUNTIME_IMAGE_IDENTITY,

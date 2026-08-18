@@ -297,8 +297,8 @@ async function prepareInstallation(
             version: appVersion,
             revision: sourceRevision,
             path: ".",
-            repository: "https://github.com/notnotype/neuro-book.git",
-            branch: "master",
+            repository: "https://github.com/JecoShen/NovelBook.git",
+            branch: "main",
         };
         if (mode === "adopt") {
             stagedWorktree = join(staging, "source-worktree");

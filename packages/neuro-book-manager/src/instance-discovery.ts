@@ -139,9 +139,9 @@ async function inspectNeuroBookGit(root: string, blockers: InspectionIssue[], al
     const repository = await runCapture("git", ["remote", "get-url", "origin"], {cwd: root}).then((value) => value.trim()).catch(() => "");
     if (normalizeRepository(repository) !== normalizeRepository(DEFAULT_REPOSITORY)) return undefined;
     const branch = (await runCapture("git", ["branch", "--show-current"], {cwd: root})).trim();
-    if (branch !== "master") blockers.push({code: "git.branch", message: `Git branch必须是master，当前为${branch || "detached HEAD"}`});
+    if (branch !== "main") blockers.push({code: "git.branch", message: `Git branch必须是main，当前为${branch || "detached HEAD"}`});
     const upstream = await runCapture("git", ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"], {cwd: root}).then((value) => value.trim()).catch(() => undefined);
-    if (upstream !== "origin/master") blockers.push({code: "git.upstream", message: `Git upstream必须是origin/master，当前为${upstream ?? "<missing>"}`});
+    if (upstream !== "origin/main") blockers.push({code: "git.upstream", message: `Git upstream必须是origin/main，当前为${upstream ?? "<missing>"}`});
     const revision = (await runCapture("git", ["rev-parse", "HEAD"], {cwd: root})).trim();
     const status = (await runCapture("git", ["status", "--porcelain"], {cwd: root})).split(/\r?\n/u).filter(Boolean);
     const dirty = status.some((line) => {

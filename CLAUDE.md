@@ -24,8 +24,8 @@ NeuroBook — 面向长篇小说的本地优先 AI 工作台（AGPL-3.0-only）�
 
 ## 工作区（CLAUDE.md 独有）
 
-- 主工作区 = 仓库根 `/www/wwwroot/book.neoshen.dpdns.org`，分支 `master`。
-- 远端 `master` 更新后建议 `git fetch`；**允许**普通 `git push`（`git push origin master`），**禁止** `force push` 与 `force-with-lease`（强推会改写 commit 哈希、破坏协作历史）。
+- 主工作区 = 仓库根 `/www/wwwroot/book.neoshen.dpdns.org`，分支 `main`。
+- 远端 `main` 更新后建议 `git fetch`；**允许**普通 `git push`（`git push origin main`），**禁止** `force push` 与 `force-with-lease`（强推会改写 commit 哈希、破坏协作历史）。
 - 测试 / 临时数据：放在 `.agent/tmp/<test-name>-<uuid>/`，不要写在仓库、`.worktree/` 或快照目录。
 - 依赖：统一用 Bun；新增前先确认现有依赖是否能解决；`patches/` 目录有 nitropack 等上游未合补丁，**不要**绕过 `bunfig.toml` 的 patch 机制。
 - Agent 不自行合并 PR、关闭 Issue、跑 `release`、改版本号——这些动作需要用户明确许可。

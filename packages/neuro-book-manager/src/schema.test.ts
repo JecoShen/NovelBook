@@ -261,7 +261,7 @@ function dockerManifest() {
         containerEngine: "podman" as const,
         components: {
             ...manifest.components,
-            source: {provider: "git" as const, version: "0.8.0", revision: REVISION, path: "." as const, repository: "https://github.com/notnotype/neuro-book.git", branch: "master"},
+            source: {provider: "git" as const, version: "0.8.0", revision: REVISION, path: "." as const, repository: "https://github.com/JecoShen/NovelBook.git", branch: "main"},
             product: {
                 provider: "container" as const,
                 version: "0.8.0",

@@ -20,7 +20,7 @@ describe("Source Adoption Preflight", () => {
         mocks.inspectInstance.mockResolvedValue({
             root: "C:/checkout",
             kind: "neuro-book-checkout",
-            git: {repository: "https://github.com/notnotype/neuro-book.git", branch: "master", upstream: "origin/master", revision: "a".repeat(40), dirty: false},
+            git: {repository: "https://github.com/JecoShen/NovelBook.git", branch: "main", upstream: "origin/main", revision: "a".repeat(40), dirty: false},
             product: {exists: false, trusted: false},
             state: {root: ".", configExists: false, workspaceExists: false, databaseExists: false},
             blockers: [{code: "git.dirty", message: "Git worktree不干净"}],
@@ -45,7 +45,7 @@ describe("Source Adoption Preflight", () => {
         mocks.inspectInstance.mockResolvedValue({
             root: "/checkout",
             kind: "neuro-book-checkout",
-            git: {repository: "https://github.com/notnotype/neuro-book.git", branch: "master", upstream: "origin/master", revision: "a".repeat(40), dirty: false},
+            git: {repository: "https://github.com/JecoShen/NovelBook.git", branch: "main", upstream: "origin/main", revision: "a".repeat(40), dirty: false},
             product: {exists: false, trusted: false},
             state: {root: ".", configExists: false, workspaceExists: false, databaseExists: false},
             blockers: [],

@@ -209,7 +209,7 @@ function componentSources(
     return [
         {component: "manager", source: "current-manager", detail: `@notnotype/neuro-book-manager ${MANAGER_VERSION}`},
         {component: "manager-runtime", source: stage0 ? "stage0" : definition.applicationRuntime === "managed" ? "managed" : "system", detail: stage0 ? "Stage 0 Bun复制到版本目录" : definition.applicationRuntime === "managed" ? "Bun官方Release" : process.execPath},
-        {component: "source", source: definition.source, detail: release ? `${release.version} / ${release.sourceRevision}` : "notnotype/neuro-book master"},
+        {component: "source", source: definition.source, detail: release ? `${release.version} / ${release.sourceRevision}` : "JecoShen/NovelBook main"},
         {component: "product", source: definition.product === "none" ? "git" : definition.product, detail: definition.product === "none" ? "Source Dev不使用预构建Product" : definition.product === "release" ? environment.host.productPlatform : String(definition.product)},
         {component: "tools", source: definition.tools, detail: definition.tools === "managed" ? "Bun/ripgrep/PortableGit不可变版本目录" : definition.tools === "container" ? "由容器镜像提供" : "优先使用系统工具"},
     ];

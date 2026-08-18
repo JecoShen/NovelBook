@@ -5,8 +5,8 @@ import {ensureDirectory, pathExists, removePath, safeTarget} from "#manager/file
 import {extractZip} from "#manager/download";
 import {run, runCapture} from "#manager/process";
 
-export const DEFAULT_REPOSITORY = "https://github.com/notnotype/neuro-book.git";
-export const DEFAULT_BRANCH = "master";
+export const DEFAULT_REPOSITORY = "https://github.com/JecoShen/NovelBook.git";
+export const DEFAULT_BRANCH = "main";
 const MANAGER_OWNED_ENTRIES = new Set([".deploy", ".runtime", "data"]);
 
 export type GitUpdateTarget = {previousRevision: string; targetRevision: string; branch: string};

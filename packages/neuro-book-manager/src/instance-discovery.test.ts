@@ -61,7 +61,7 @@ describe("实例检测与有限发现", () => {
         const unrelated = join(search, "other");
         await mkdir(unrelated, {recursive: true});
         await writeFile(join(unrelated, "package.json"), JSON.stringify({name: "other-app"}), "utf8");
-        await run("git", ["init", "-b", "master"], {cwd: unrelated, stdio: "ignore"});
+        await run("git", ["init", "-b", "main"], {cwd: unrelated, stdio: "ignore"});
         expect((await inspectInstance(unrelated)).kind).toBe("unrelated");
         expect((await discoverInstances([search])).candidates).toEqual([]);
         expect(await discoverInstances([])).toEqual({candidates: [], warnings: []});
@@ -93,15 +93,15 @@ async function gitFixture(): Promise<string> {
 async function createGitFixture(root: string): Promise<void> {
     await mkdir(root, {recursive: true});
     await writeFile(join(root, "package.json"), JSON.stringify({name: "neuro-book", version: "1.0.0"}), "utf8");
-    await run("git", ["init", "-b", "master"], {cwd: root, stdio: "ignore"});
+    await run("git", ["init", "-b", "main"], {cwd: root, stdio: "ignore"});
     await run("git", ["config", "user.email", "test@example.com"], {cwd: root, stdio: "ignore"});
     await run("git", ["config", "user.name", "Test"], {cwd: root, stdio: "ignore"});
     await run("git", ["add", "."], {cwd: root, stdio: "ignore"});
     await run("git", ["commit", "-m", "fixture"], {cwd: root, stdio: "ignore"});
-    await run("git", ["remote", "add", "origin", "https://github.com/notnotype/neuro-book.git"], {cwd: root, stdio: "ignore"});
-    await run("git", ["branch", "--set-upstream-to", "master"], {cwd: root, stdio: "ignore"}).catch(() => undefined);
-    await run("git", ["config", "branch.master.remote", "origin"], {cwd: root, stdio: "ignore"});
-    await run("git", ["config", "branch.master.merge", "refs/heads/master"], {cwd: root, stdio: "ignore"});
+    await run("git", ["remote", "add", "origin", "https://github.com/JecoShen/NovelBook.git"], {cwd: root, stdio: "ignore"});
+    await run("git", ["branch", "--set-upstream-to", "main"], {cwd: root, stdio: "ignore"}).catch(() => undefined);
+    await run("git", ["config", "branch.main.remote", "origin"], {cwd: root, stdio: "ignore"});
+    await run("git", ["config", "branch.main.merge", "refs/heads/main"], {cwd: root, stdio: "ignore"});
 }
 
 async function temporaryRoot(prefix: string): Promise<string> {
