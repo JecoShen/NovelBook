@@ -247,6 +247,8 @@ async function prepareWriterContext(input) {
 }
 ```
 
+**注**: extractChapterText MVP 边界 — payload contract 暂无 `chapterText` 字段（真实 `WriterPayloadSchema` 为 `{path, chapterId?, context?}` + `additionalProperties: false`），真实 production 流程 auto-injection 不触发，降级为 `console.warn` 提示（非静默 no-op）。显式 follow-up: 加 chapter-read path 或扩 payload schema。
+
 ### 2.5 writer 工具（`writer.profile.tsx` 新增 1 工具）
 
 ```typescript
@@ -395,7 +397,7 @@ defineTool({
 
 ## §8 验收标准
 
-1. **功能**：写 ch-007（含陆深/老王/飞鸟站）时，writer prompt 的 `<chapter_lore_context>` 段自动包含陆深（character）、老王（character）、飞鸟站（location）三张卡片的「基本身份」+「性格」前 3 行
+1. **功能**：写 ch-007（含陆深/老王/飞鸟站）时，writer prompt 的 `<chapter_lore_context>` 段自动包含陆深（character）、老王（character）、飞鸟站（location）三张卡片的「基本身份」+「性格」前 3 行。**MVP-mock-verified**: harness auto-injection proven only against a mock profile with `payloadSchema: {chapterText: string}`; real `WriterPayloadSchema` has no `chapterText` (additionalProperties: false). Production wiring requires a chapter-read path or payload contract change. Explicitly deferred; harness emits a `console.warn` when chapterText absent for observability.
 2. **性能**：buildIndex < 100ms，resolveForChapter < 20ms（30k 字章节），renderInjectedMarkdown < 50ms
 3. **边界**：`note/ / instruction/ / story-spec/` 内容 0 出现在 prompt
 4. **可降级**：lorebook 目录不存在时，harness 流程不报错
