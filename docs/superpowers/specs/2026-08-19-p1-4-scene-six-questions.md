@@ -179,7 +179,7 @@ Task 5 实施后修复 latent defect 时实证发现: JS regex `\b` 只识别 `[
 | # | 维度 | 验收标准 |
 |---|---|---|
 | 1 | 模板存在 | `reference/scene-six-questions.md` 文件存在 + 6 问子标题完整 + 至少 1 个填写示例 + 5 诫命映射表 + 与 i128 beat 关系说明 |
-| 2 | 规则 JSON 合法 | `scene-six-questions.json` 通过 `JSON.parse` + 11 字段齐全 (id/namespace/title/level/review/fixability/enabled/note/detector/action) + level="low" 验证 |
+| 2 | 规则 JSON 合法 | `scene-six-questions.json` 通过 `JSON.parse` + 10 字段齐全 (id/namespace/title/level/review/fixability/enabled/note/detector/action) + level="low" 验证 |
 | 3 | ruleset 实际触发 | 写 1 个测试章 (无 `## 场景` 段) 跑 llmlint pipeline, 验证 low 提示出现 + 引用 reference 路径 |
 | 4 | ruleset 不阻塞 | 缺 `## 场景` 段时 exit code 0, 不影响其他规则 (chapter-hook 仍正常) |
 | 5 | baseline 脚本可跑 | `node scripts/baseline-scan-scene-six-questions.cjs` 退出码 0 + 报告生成 |

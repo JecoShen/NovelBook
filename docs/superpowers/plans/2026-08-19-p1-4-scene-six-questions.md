@@ -4,7 +4,7 @@
 
 **Goal:** 把 Story Grid 6 问软提示落到 NeuroBook `reference/scene-six-questions.md` 模板 + llmlint `cn.structure.scene-six-questions` ruleset (level: low) + V1+V2 80 章 baseline 报告,零侵入现有 writer / harness / lore 流程。调研报告 P0-P2 进度从 3/6 (50%) 推到 4/6 (67%)。
 
-**Architecture:** 全新增 4 文件,0 改动现有文件。ruleset JSON 复用 chapter-hook 11 字段模式,level=low 严格遵守 spec §7.4 抗过度 spec 化。baseline-scan.cjs 派生 i129 `scripts/baseline-scan.cjs` 90% 代码,改 scope 为 ## 场景 段 + 6 问子标题检测,输出 markdown 报告到 `workspace/<proj>/.agent/plan/i135-p1-4-baseline-report.md`。
+**Architecture:** 全新增 4 文件,0 改动现有文件。ruleset JSON 复用 chapter-hook 10 字段模式,level=low 严格遵守 spec §7.4 抗过度 spec 化。baseline-scan.cjs 派生 i129 `scripts/baseline-scan.cjs` 90% 代码,改 scope 为 ## 场景 段 + 6 问子标题检测,输出 markdown 报告到 `workspace/<proj>/.agent/plan/i135-p1-4-baseline-report.md`。
 
 **Tech Stack:** TypeScript 严格模式 (ruleset JSON 验证) / Node.js CommonJS (baseline-scan.cjs 派生模式) / Markdown (模板) / Bun test / vitest (ruleset 集成测试,沿用 `server/agent/skills/llmlint.test.ts`)
 
@@ -222,7 +222,7 @@ bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -20
 - Create: `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` (~30 行)
 
 **Interfaces:**
-- 消费: 现有 chapter-hook.json 11 字段模式
+- 消费: 现有 chapter-hook.json 10 字段模式
 - 产出: ruleset JSON, level: low, scope = 章节内 H2 "## 场景"
 
 - [ ] **Step 1: 写 scene-six-questions.json (沿用 chapter-hook 格式, 简化为 1 条)**
@@ -288,7 +288,7 @@ git add assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/ru
 git commit -m "feat(llmlint): cn.structure.scene-six-questions ruleset (level: low)
 
 P1-4 落位 (调研报告 §2.3):
-- ruleset JSON 沿用 chapter-hook 11 字段格式
+- ruleset JSON 沿用 chapter-hook 10 字段格式
 - level: low 永不变 medium/high (抗 §7.4 过度 spec 化, 0 阻塞)
 - enabled: true (V3+ 启用)
 - detector 真实匹配 \"## 场景\" (非锚定, 加 scanText trigger 测试; 缺 ## 场景 段的章也触发软提示)
@@ -728,7 +728,7 @@ mkdir -p /www/wwwroot/book.neoshen.dpdns.org/workspace/qi-shou-fan-shen-cheng-di
 
 1. **派生 90% 复用**: i129 baseline-scan.cjs 改 scope 比从零写省 ~80% 工作量
 2. **level=low 软提示设计**: 抗调研报告 §7.4 过度 spec 化, 0 阻塞 V3 写作
-3. **JSON ruleset 11 字段模式**: 沿用 chapter-hook 兼容现有 llmlint pipeline
+3. **JSON ruleset 10 字段模式**: 沿用 chapter-hook 兼容现有 llmlint pipeline
 4. **archive cp 模式**: 主工作区同步 4 文件 + 0 push/0 merge, 沿用 i128-i134 6 批次先例
 5. **forward-only 决策**: V1+V2 0 文件改动, baseline 报告只读不写, 减少对作者干扰
 ```
