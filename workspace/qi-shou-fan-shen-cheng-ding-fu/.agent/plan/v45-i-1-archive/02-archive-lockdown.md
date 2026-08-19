@@ -20,7 +20,7 @@
 
 - 分支: `feat-i-1-production-wiring` (本地, **未推 origin**)
 - HEAD: `2a00852` (5 实施 commits: dc32b1d4 / 8fe0f19 / c07281f / e962317 / 2a00852)
-- 路径: ~~`.worktree/feat-i-1-production-wiring/`~~ **已 `git worktree remove` 删除**
+- 路径: ~~`.worktree/feat-i-1-production-wiring/`~~ **已 `git worktree remove` 删除 (2026-08-19 用户选 1)**
 - branch 保留: `git branch` 仍可见 `feat-i-1-production-wiring`, 可随时 `git worktree add` 恢复
 - 实施代码: 5 commits 留在 git object store, 文本快照已 cp 到本 archive (3 文件)
 - 磁盘释放: ~1.4 GB
