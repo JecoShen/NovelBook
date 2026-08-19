@@ -1,6 +1,8 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import {isAbsolute, posix} from "node:path";
+import {existsSync} from "node:fs";
+import {readFile} from "node:fs/promises";
+import {isAbsolute, join, posix} from "node:path";
 import {Type, type Static} from "nbook/profile-sdk";
 import {defineAgentProfile} from "nbook/profile-sdk";
 import {builtin, plotReadBindings, pluginTool, toolset} from "nbook/profile-sdk";
@@ -15,6 +17,10 @@ import {defineLowCodeForm, profileHomeResource} from "nbook/profile-sdk";
 import {defineProfileHome} from "nbook/profile-sdk";
 import type {ReadyProjectSessionRef} from "nbook/profile-sdk";
 import type {AbsoluteFsPath} from "nbook/profile-sdk/runtime-paths";
+import {resolveForChapter} from "nbook/server/agent/lore/lore-resolver";
+import {renderInjectedMarkdown} from "nbook/server/agent/lore/lore-context-injector";
+import {invalidateLoreResolverIndex} from "nbook/server/agent/lore/lore-resolver-cache";
+import type {ReadyProjectSessionRef as ServerReadyProjectSessionRef} from "nbook/server/workspace-files/project-session-types";
 
 const DEFAULT_PARAGRAPH_RHYTHM = "段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段；不要为了凑短段打碎完整语义，场景描写、复杂动作和连续心理变化可以保留为较短自然段。";
 const DEFAULT_WORD_COUNT_CONTROL = "2000-2600 字";
@@ -613,4 +619,69 @@ function normalizePayloadPath(rawPath: string, label: string, options: {preserve
         throw new Error(`${label} 不能包含空路径段、. 或 ..：${rawPath}`);
     }
     return options.preserveTrailingSlash && hadTrailingSlash ? `${normalized}/` : normalized;
+}
+
+/**
+ * 读 chapter 现有 index.md, 拿正文作为 chapterText 用于 lore 注入。
+ * - file 不存在 (新章起笔) → return ""
+ * - 读失败 (IO 错误) → throw (caller 负责 catch)
+ * - 自动去 frontmatter, 只留正文
+ */
+async function readFileSafely(
+    relativePath: string,
+    project: ServerReadyProjectSessionRef,
+): Promise<string> {
+    const absPath = join(project.workspace.ref.projectRoot, relativePath);
+    if (!existsSync(absPath)) {
+        return "";  // 新章起笔, 合理退化
+    }
+    const content = await readFile(absPath, "utf8");
+    // 去掉 frontmatter 部分, 只留正文
+    return content.replace(/^---\n[\s\S]*?\n---\n?/, "").trim();
+}
+
+/**
+ * 渲染 chapter-level lore 上下文 markdown, 供 writer prompt 注入。
+ * - payload 缺失 / project 缺失 / file 不存在 / < 100 chars → return ""
+ * - resolveForChapter 失败 / 0 命中 → return ""
+ * - renderInjectedMarkdown 失败 → return ""
+ * - 任何失败 → console.warn + return "" (per spec §4 降级)
+ */
+async function renderChapterLoreContext(
+    ctx: ProfilePrepareContext<Initial, Payload, Settings>,
+): Promise<string> {
+    const payload = ctx.invocation?.payload;
+    if (!payload?.path) {
+        return "";
+    }
+    const project = ctx.session.currentProject;
+    if (!project) {
+        return "";
+    }
+    try {
+        const chapterText = await readFileSafely(payload.path, project as ServerReadyProjectSessionRef);
+        if (chapterText.length < 100) {
+            return "";
+        }
+        const resolved = await resolveForChapter({
+            project: project as ServerReadyProjectSessionRef,
+            chapterText,
+            maxPaths: 8,
+        });
+        if (resolved.paths.length === 0) {
+            return "";
+        }
+        const injected = await renderInjectedMarkdown({
+            project: project as ServerReadyProjectSessionRef,
+            paths: resolved.paths,
+            maxChars: 8000,
+        });
+        return injected.markdown;
+    } catch (e: unknown) {
+        console.warn(
+            "[writer.lore-injection] skipped:",
+            e instanceof Error ? e.message : String(e),
+        );
+        return "";
+    }
 }

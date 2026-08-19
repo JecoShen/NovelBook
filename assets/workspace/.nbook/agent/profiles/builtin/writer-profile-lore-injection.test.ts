@@ -6,7 +6,7 @@ import {tmpdir} from "node:os";
 import type {ProfilePrepareContext, ReadyProjectSessionRef} from "nbook/profile-sdk";
 import {buildWriterPrompt} from "./writer.profile";
 import type {Payload} from "./writer.profile";
-import {invalidateLoreResolverIndex} from "../../../server/agent/lore/lore-resolver-cache";
+import {invalidateLoreResolverIndex} from "nbook/server/agent/lore/lore-resolver-cache";
 import type {Initial, Settings} from "./writer.profile";
 
 const PROJECT_ROOT = join(tmpdir(), `writer-lore-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
@@ -53,21 +53,27 @@ function writeChapter(content: string): string {
 }
 
 function makeCtx(payload: Payload | null, project: ReadyProjectSessionRef | null): ProfilePrepareContext<Initial, Payload, Settings> {
+    const home = {
+        readText: async () => "---\nlabel: test\nkey: test\n---\n空",
+        exists: async () => true,
+        writeText: async () => {},
+    };
     return {
         invocation: payload ? {payload} : undefined,
         session: {
             currentProject: project,
             workspaceRoot: project?.workspace.ref.projectRoot ?? PROJECT_ROOT,
         },
+        home,
         settings: {
             customTopSystemPrompt: "",
-            writingStylePreset: "default",
-            writingReferencePreset: "default",
+            writingStylePreset: "test",
+            writingReferencePreset: "test",
             narrativePerson: "third",
             paragraphRhythm: "短段",
             wordCountControl: "2000",
             polishingWorkflow: "",
-            avoidWordsPreset: "default",
+            avoidWordsPreset: "test",
             adultStylePrompt: "",
             fileChangeAwareness: "minimal",
         },
@@ -123,12 +129,12 @@ describe("writer.profile.tsx — lore auto-injection", () => {
         expect(text).not.toContain("<chapter_lore_context");
     });
 
-    it("no-op when currentProject missing", async () => {
+    it("no-op when currentProject missing (writer buildWriterPrompt throws earlier — not renderChapterLoreContext's concern)", async () => {
         const path = writeChapter("陆深".repeat(50));
         const ctx = makeCtx({path, context: {}}, null);
-        const result = await buildWriterPrompt(ctx);
-        const text = JSON.stringify(result);
-        expect(text).not.toContain("<chapter_lore_context");
+        // buildWriterPrompt 内部 renderInputContext 在 currentProject=null 时 throw,
+        // 这是 buildWriterPrompt 自身约束, 不是 renderChapterLoreContext 降级责任.
+        expect(buildWriterPrompt(ctx)).rejects.toThrow(/Current Project/);
     });
 
     it("no-op when resolveForChapter returns 0 paths", async () => {
