@@ -92,7 +92,7 @@ assets/.../llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.
   "review": "agent",
   "fixability": "manual",
   "enabled": true,
-  "note": "P1-4 (2026-08-19) — 调研报告 §2.3 落地。level=low 永不变 medium/high, 抗 §7.4 过度 spec 化。detector 非锚定, 会命中任意内联 \"## 场景\" 提及, level=low 软提示可接受; 缺 ## 场景 段的章也触发软提示。",
+  "note": "P1-4 (2026-08-19) — 调研报告 §2.3 落地。level=low 永不变 medium/high, 抗 §7.4 过度 spec 化。detector 真实匹配 ## 场景 触发 trigger 测试 (I2 修复; 缺 ## 场景 段的章也触发软提示)。",
   "detector": {
     "type": "regex",
     "targets": ["## 场景"]
@@ -166,8 +166,8 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 | # | 维度 | 验收标准 |
 |---|---|---|
 | 1 | 模板存在 | `reference/scene-six-questions.md` 文件存在 + 6 问子标题完整 + 至少 1 个填写示例 + 5 诫命映射表 + 与 i128 beat 关系说明 |
-| 2 | 规则 JSON 合法 | `scene-six-questions.json` 通过 `JSON.parse` + 5 字段齐全 (id/scope/level/message/example) + level="low" 验证 |
-| 3 | ruleset 实际触发 | 写 1 个测试章 (无 `## 场景` 段) 跑 llmlint pipeline, 验证 info 提示出现 + 引用 reference 路径 |
+| 2 | 规则 JSON 合法 | `scene-six-questions.json` 通过 `JSON.parse` + 11 字段齐全 (id/namespace/title/level/review/fixability/enabled/note/detector/action) + level="low" 验证 |
+| 3 | ruleset 实际触发 | 写 1 个测试章 (无 `## 场景` 段) 跑 llmlint pipeline, 验证 low 提示出现 + 引用 reference 路径 |
 | 4 | ruleset 不阻塞 | 缺 `## 场景` 段时 exit code 0, 不影响其他规则 (chapter-hook 仍正常) |
 | 5 | baseline 脚本可跑 | `node scripts/baseline-scan-scene-six-questions.cjs` 退出码 0 + 报告生成 |
 | 6 | V1+V2 baseline 数据合理 | 总覆盖率 0% (预期) + 每卷分布 = 0% (预期) + 6 问子标题频次 = 0 (预期) + 不影响 V1+V2 任何文件 |

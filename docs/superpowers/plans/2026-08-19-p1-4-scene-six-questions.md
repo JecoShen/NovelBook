@@ -169,7 +169,7 @@ describe("cn.structure.scene-six-questions ruleset (P1-4)", () => {
         );
 
         expect(scene6q).toBeDefined();
-        expect(scene6q?.level).toBe("info");
+        expect(scene6q?.level).toBe("low");
         expect(scene6q?.ruleset).toBe("builtin/default");
     });
 
@@ -181,7 +181,8 @@ describe("cn.structure.scene-six-questions ruleset (P1-4)", () => {
             (rule) => rule.id === "cn.structure.scene-six-questions"
         );
 
-        expect(scene6q?.level).not.toBe("warn");
+        expect(scene6q).toBeDefined(); // guard 防 vacuous pass (RED 严格性)
+        expect(scene6q?.level).not.toBe("medium");
         expect(scene6q?.level).not.toBe("high");
     });
 
@@ -193,6 +194,7 @@ describe("cn.structure.scene-six-questions ruleset (P1-4)", () => {
             (rule) => rule.id === "cn.structure.scene-six-questions"
         );
 
+        expect(scene6q).toBeDefined();
         expect(scene6q?.action.type).toBe("suggest");
         expect(scene6q?.action.message).toContain("reference/scene-six-questions.md");
     });
@@ -237,7 +239,7 @@ bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -20
     "review": "agent",
     "fixability": "manual",
     "enabled": true,
-    "note": "P1-4 (2026-08-19) — 调研报告 research-sdd-novel-writing-2026-08-18.md §2.3 落地。level=low 永不变 medium/high, 抗 §7.4 过度 spec 化。detector 非锚定, 会命中任意内联 \"## 场景\" 提及, level=low 软提示可接受; 缺 ## 场景 段的章也触发软提示。",
+    "note": "P1-4 (2026-08-19) — 调研报告 §2.3 落地。level=low 永不变 medium/high, 抗 §7.4 过度 spec 化。detector 真实匹配 ## 场景 触发 trigger 测试 (I2 修复; 缺 ## 场景 段的章也触发软提示)。",
     "detector": {
       "type": "regex",
       "targets": ["## 场景"]
