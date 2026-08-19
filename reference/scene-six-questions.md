@@ -2,7 +2,7 @@
 
 > 来源: 调研报告 `research-sdd-novel-writing-2026-08-18.md` §2.3 Story Grid 5 诫命 + 6 问
 > 用途: 写新章时手填 `## 场景` 段, llmlint ruleset `cn.structure.scene-six-questions` 软提示
-> 状态: P1-4 落位 (2026-08-19), level: info 永不变 warn / high
+> 状态: P1-4 落位 (2026-08-19), level: low 永不变 warn / high
 
 ---
 
@@ -84,11 +84,11 @@
 
 ## llmlint 触发说明
 
-`cn.structure.scene-six-questions` ruleset (level: info):
+`cn.structure.scene-six-questions` ruleset (level: low):
 - scope: 章节内 H2 标题 = `## 场景`
 - 触发: 缺 `## 场景` 段时提示
 - 软提示: "建议为本章添加 ## 场景 段并填 6 问, 参考 reference/scene-six-questions.md"
-- 不阻塞: level: info 永不变 warn / high
+- 不阻塞: level: low 永不变 warn / high
 - 不强制: 6 问子标题顺序 / 内容空 / 编号连续性均不检测
 
 ---
