@@ -63,6 +63,7 @@ import {WorkflowCatalog} from "nbook/server/agent/workflow/workflow-catalog";
 import {AgentJobManager} from "nbook/server/agent/jobs/agent-job-manager";
 import {resolveForChapter} from "nbook/server/agent/lore/lore-resolver";
 import {renderInjectedMarkdown} from "nbook/server/agent/lore/lore-context-injector";
+import {recordLoreInjection, readRecentLoreInjections} from "nbook/server/agent/lore/lore-carryover-store";
 import {recordExplicitContextEntries} from "nbook/server/agent/context-access/profile-context-access";
 import {findPendingApprovalCall, findPendingApprovalCalls, resolutionToToolResult} from "nbook/server/agent/tools/approval";
 import {assertPublicToolCallId} from "nbook/shared/agent/public-tool-identity";
@@ -2038,9 +2039,14 @@ export class NeuroAgentHarness {
                 const project = this.projectForInvocation(input.invocationId);
                 if (project) {
                     try {
+                        // M-11: 读前 3 章 commit 时的注入 paths union 去重
+                        const carryOverPaths = await readRecentLoreInjections(project, {
+                            limit: 3,
+                        });
                         const resolved = await resolveForChapter({
                             project,
                             chapterText,
+                            carryOverPaths,
                             maxPaths: 8,
                         });
                         if (resolved.paths.length > 0) {
@@ -2067,6 +2073,12 @@ export class NeuroAgentHarness {
                                         error: recordError instanceof Error ? recordError.message : String(recordError),
                                     });
                                 }
+                                // M-11: 追加本章注入到 JSONL (供下章 carryOver)
+                                await recordLoreInjection(project, {
+                                    chapterId: input.invocationId,
+                                    paths: rendered.includedPaths,
+                                    ts: new Date().toISOString(),
+                                });
                             }
                         }
                     } catch (error) {
