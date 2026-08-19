@@ -7,6 +7,7 @@ import {createWebTools} from "nbook/server/agent/tools/web-tools";
 import {createWorldEngineTools} from "nbook/server/agent/tools/world-engine-tools";
 import {createWorkflowTools} from "nbook/server/agent/tools/workflow-tools";
 import {createJobTools} from "nbook/server/agent/tools/job-tools";
+import {createLoreResolverTools} from "nbook/server/agent/tools/lore-resolver-tools";
 import {agentCollaborationTools} from "nbook/server/agent/tools/agent-collaboration-tools";
 import {controlTools} from "nbook/server/agent/tools/control-tools";
 import {createVariableTools} from "nbook/server/agent/variables/tools";
@@ -24,6 +25,7 @@ function buildAgentTools() {
     const webTools = definitionsByKey(createWebTools());
     const worldEngineTools = definitionsByKey(createWorldEngineTools());
     const subjectMemoryTools = definitionsByKey(createSubjectMemoryTools());
+    const loreResolverTools = definitionsByKey(createLoreResolverTools());
     const sqlTool = defineAgentToolFromRuntime(createSqlTool());
     const workflowTools = createWorkflowTools();
     const jobTools = createJobTools();
@@ -43,6 +45,7 @@ function buildAgentTools() {
         getChapterWriterBrief: requireDefinition(plotTools, "get_chapter_writer_brief"),
         getStoryPromise: requireDefinition(plotTools, "get_story_promise"),
         getStoryDecision: requireDefinition(plotTools, "get_story_decision"),
+        loreResolverQuery: requireDefinition(loreResolverTools, "lore_resolver_query"),
         saveStoryAct: requireDefinition(plotTools, "save_story_act"),
         saveStoryChapter: requireDefinition(plotTools, "save_story_chapter"),
         saveStoryThread: requireDefinition(plotTools, "save_story_thread"),

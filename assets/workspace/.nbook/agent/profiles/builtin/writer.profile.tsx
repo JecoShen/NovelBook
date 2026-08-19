@@ -3,7 +3,7 @@
 import {isAbsolute, posix} from "node:path";
 import {Type, type Static} from "nbook/profile-sdk";
 import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, plotReadBindings, toolset} from "nbook/profile-sdk";
+import {builtin, plotReadBindings, pluginTool, toolset} from "nbook/profile-sdk";
 import {WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema} from "nbook/profile-sdk";
 import {AppendingSet, FileChangeNotice, HistorySet, If, Import, Message, ProfilePrompt, System} from "nbook/profile-sdk";
 import type {ProfilePrepareContext} from "nbook/profile-sdk";
@@ -272,6 +272,8 @@ export default defineAgentProfile({
         builtin.world.execute("readonly"),
         // autonomous 模式:writer 只 spread Plot 读 bundle(Task 97 D7),可自取章节 brief 与场景/世界上下文;不含 save_* 写工具。
         ...plotReadBindings,
+        // 按额外实体名追加检索 lore 卡片(Task 6,spec §2.5);实现注册在 server/agent/tools/lore-resolver-tools.ts。
+        pluginTool("lore_resolver_query"),
         builtin.result.main(),
     ),
     async context(ctx) {
@@ -348,6 +350,7 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                         - **bash**：执行 CLI 工具（如 llmlint）
                         - **execute_world**：World Engine 只读查询（CodeAct 沙盒）
                         - **get_chapter_writer_brief / get_story_chapter / get_story_scene_context / get_scene_world_context / get_story_tree / get_story_thread / get_story_promise / get_story_decision**：Plot 只读。brief 已含本章 Promise 任务与未决决策警告；需要核对某条线的 payoffExpectation 或某条决策（D-x）的详情时，再用 get_story_promise / get_story_decision 按需查询
+                        - **lore_resolver_query**：按额外实体名（trigger）追加检索 lore 卡片，返回可直接复制到上下文的 Markdown 片段；写场景中如需补充设定可调用
                         - **report_result**：提交最终结果
 
                         核心约束：
