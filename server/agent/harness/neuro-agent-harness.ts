@@ -61,6 +61,10 @@ import type {AgentRuntimeHook, AgentRuntimeHookResult, RuntimeSessionFacade} fro
 import {SkillCatalog} from "nbook/server/agent/skills/skill-catalog";
 import {WorkflowCatalog} from "nbook/server/agent/workflow/workflow-catalog";
 import {AgentJobManager} from "nbook/server/agent/jobs/agent-job-manager";
+import {resolveForChapter} from "nbook/server/agent/lore/lore-resolver";
+import {renderInjectedMarkdown} from "nbook/server/agent/lore/lore-context-injector";
+import {recordLoreInjection, readRecentLoreInjections} from "nbook/server/agent/lore/lore-carryover-store";
+import {recordExplicitContextEntries} from "nbook/server/agent/context-access/profile-context-access";
 import {findPendingApprovalCall, findPendingApprovalCalls, resolutionToToolResult} from "nbook/server/agent/tools/approval";
 import {assertPublicToolCallId} from "nbook/shared/agent/public-tool-identity";
 import {
@@ -2027,7 +2031,75 @@ export class NeuroAgentHarness {
         const toolKeys = [...runProfile.rootToolKeys];
         const executionToolKeys = runProfile.toolKeys ? [...runProfile.toolKeys] : undefined;
         const thinkingLevel = this.resolveThinkingLevel(context, config, model);
-        const systemPrompt = prepareRunHooks.profilePrompt ? prepared.plan.systemPrompt ?? context.systemPrompt : context.systemPrompt;
+        let systemPrompt = prepareRunHooks.profilePrompt ? prepared.plan.systemPrompt ?? context.systemPrompt : context.systemPrompt;
+        // ★ Task 5：writer profile 章节级 lore 注入（只注入首轮 systemPrompt，不进 modelContextMessages / session）
+        if (context.profileKey === "writer") {
+            const chapterText = extractChapterText(input);
+            if (chapterText.length > 100) {
+                const project = this.projectForInvocation(input.invocationId);
+                if (project) {
+                    try {
+                        // M-11: 读前 3 章 commit 时的注入 paths union 去重
+                        const carryOverPaths = await readRecentLoreInjections(project, {
+                            limit: 3,
+                        });
+                        const resolved = await resolveForChapter({
+                            project,
+                            chapterText,
+                            carryOverPaths,
+                            maxPaths: 8,
+                        });
+                        if (resolved.paths.length > 0) {
+                            const rendered = await renderInjectedMarkdown({
+                                project,
+                                paths: resolved.paths,
+                                maxChars: 8000,
+                            });
+                            if (rendered.includedPaths.length > 0) {
+                                systemPrompt = `${systemPrompt}\n\n${rendered.markdown}`;
+                                // M-9: record 失败与 inject 失败分开 catch — 避免 record 失败误报为 inject 失败
+                                try {
+                                    await recordExplicitContextEntries({
+                                        project,
+                                        profileKey: context.profileKey,
+                                        sessionId: String(input.sessionId),
+                                        entries: rendered.includedPaths.map((p) => ({path: `lorebook/${p}/index.md`})),
+                                    });
+                                } catch (recordError) {
+                                    // 降级:record 失败不阻断流程,inject 已成功
+                                    void appLogger.warn("agent.lore.record.failed", {
+                                        sessionId: input.sessionId,
+                                        invocationId: input.invocationId,
+                                        error: recordError instanceof Error ? recordError.message : String(recordError),
+                                    });
+                                }
+                                // M-11: 追加本章注入到 JSONL (供下章 carryOver)
+                                await recordLoreInjection(project, {
+                                    chapterId: input.invocationId,
+                                    paths: rendered.includedPaths,
+                                    ts: new Date().toISOString(),
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        // 降级：绝不让 resolver 失败导致 harness 抛错，无 lore 注入继续流程。
+                        void appLogger.warn("agent.lore.inject.failed", {
+                            sessionId: input.sessionId,
+                            invocationId: input.invocationId,
+                            error: error instanceof Error ? error.message : String(error),
+                        });
+                    }
+                }
+            } else {
+                // I-1 (final review): 真实 WriterPayloadSchema 无 chapterText（additionalProperties: false），
+                // production 下自动注入不触发 → 显式降级 + console.warn 保证可观测，避免静默 no-op。
+                // 显式 follow-up：加 chapter-read path 或扩 payload schema 后接入（spec §2.4/§8.1）。
+                console.warn(
+                    `[agent.lore] writer auto-injection deferred: payload.chapterText absent (len=${chapterText.length}); ` +
+                        "MVP-mock-verified only — production wiring pending payload contract",
+                );
+            }
+        }
         const preparedModelContextMessages = prepareRunHooks.sessionContext === true ? prepared.plan.modelContextMessages ?? [] : [];
         const appendingCount = prepareRunHooks.sessionContext === true
             ? (prepared.plan.modelContextAppendingMessages?.length ?? 0) + (prepared.plan.appendingMessages?.length ?? 0)
@@ -8210,4 +8282,24 @@ function isJsonValue(value: unknown): value is JsonValue {
         return Object.values(value).every(isJsonValue);
     }
     return false;
+}
+
+/**
+ * 抽取当前章节正文用于 lore 解析。
+ *
+ * MVP 取值策略：只取 `pendingPayload.chapterText`（string）；`chapterId` 不取（MVP 边界，
+ * 需要外部按 id 读正文）；拿不到则返回空串走降级（不注入）。
+ */
+function extractChapterText(input: {
+    pendingPayload: JsonValue | undefined;
+}): string {
+    const payload = input.pendingPayload;
+    if (typeof payload === "object" && payload !== null && !Array.isArray(payload)) {
+        const record = payload as Record<string, JsonValue>;
+        if (typeof record.chapterText === "string") {
+            return record.chapterText;
+        }
+        // chapterId 不取（MVP 边界）→ 降级为空。
+    }
+    return "";
 }

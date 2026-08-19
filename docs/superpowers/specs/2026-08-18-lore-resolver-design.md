@@ -4,6 +4,7 @@
 > 来源调研：`workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/research-sdd-novel-writing-2026-08-18.md` §6.3
 > 状态：设计 spec（待 user review）
 > **patch**: 2026-08-18 实施时校正 §6 文件清单 2 处路径错误 + §1 架构图 + §2.4 注释（详见 commit XXXXXXX 与 workspace/.../v45-p1-3-archive/02-patch-report.md）
+> **patch v4.7**: 2026-08-19 M-11 落地 + §2.2/§2.4/§2.6 校正 + §3/§4/§5 同步（详见 commit 待定 + workspace/.../v45-p1-3-archive/06-m-11-carryover-lockdown.md）
 > 目标：解决长篇 lore 全量注入 LLM 上下文导致超长 prompt 与 token 浪费
 
 ---
@@ -63,9 +64,11 @@
 ### 2.1 `lore-resolver-cache.ts`
 
 ```typescript
+// 8 kinds — note 在 §3 invariant 显式排除 (作者笔记不可被 LLM 当 lore 读取),
+// spec 类可注入 (story-spec/index.md 是符合 lore 形态的元数据, 但走不同 prefix)
 export type LoreEntryKind =
   | "character" | "location" | "faction"
-  | "event" | "item" | "world" | "system" | "spec" | "note";
+  | "event" | "item" | "world" | "system" | "spec";
 
 export interface LoreEntryMeta {
   /** workspace-relative path，如 "lorebook/character/lu-shen" */
@@ -99,7 +102,7 @@ export function invalidateLoreResolverIndex(
 
 **构建过程**：
 1. 调 `project.workspace.ref.projectRoot` 拿到根
-2. 用 `fs.readdir` 遍历 `lorebook/{character,location,faction,event,item,world,system}/`（**不**遍历 `note/`、`story-spec/`、`instruction/`）
+2. 用 `fs.readdir` 遍历 `lorebook/{character,location,faction,event,item,world,system,spec}/`（**不**遍历 `note/`、`story-spec/`、`instruction/`）
 3. 每个 entry 读 `index.md` 的 frontmatter，提取 `path/kind/title/triggers/enabled`
 4. `enabled === false` 跳过
 5. 触发器去重 + 长度过滤（< 2 字符的 trigger 跳过，避免误伤"我"/"他"等）
@@ -111,7 +114,11 @@ export function invalidateLoreResolverIndex(
 export interface ResolveForChapterInput {
   readonly project: ReadyProjectSessionRef;
   readonly chapterText: string;
-  /** 来自前章的「强相关」列表，优先保留 */
+  /**
+   * 来自前 3 章 commit 时的注入 paths union 去重列表, 无条件优先保留 (即使本章未命中)。
+   * 由 `readRecentLoreInjections({ project, limit: 3 })` 提供, 见 §2.6。
+   * 末条 (最新 commit) 的 paths 排最前 (per existing carrySet 优先级)。
+   */
   readonly carryOverPaths?: readonly string[];
   /** 注入上限，默认 8 */
   readonly maxPaths?: number;
@@ -178,7 +185,7 @@ export async function renderInjectedMarkdown(
   - frontmatter（去 `retrieval/governance/ext`，保留 `title/type/aliases/tags/summary`）
   - `## 基本信息` 段（**或** frontmatter `summary` 如果该段缺失）
   - `## 性格` 段**前 3 行**
-- 顺序：`character` → `location` → `faction` → `event` → `item` → `world` → `system`
+- 顺序：`character` → `location` → `faction` → `event` → `item` → `world` → `system` → `spec` (8 kinds, 见 §2.1)
 - 同类型按 hits 数降序
 - 累计字符数超 `maxChars` → 截断后剩余
 
@@ -215,10 +222,15 @@ async function prepareWriterContext(input) {
   // ★ 新增：章节级 lore 注入
   const chapterText = input.chapter?.text ?? "";
   if (chapterText.length > 100) {
+    // M-11: 从 JSONL 读前 3 章 commit 时的注入 paths union 去重
+    const carryOverPaths = await readRecentLoreInjections({
+      project: input.project,
+      limit: 3,
+    });
     const resolved = await resolveForChapter({
       project: input.project,
       chapterText,
-      carryOverPaths: input.previousChapter?.injectedPaths,
+      carryOverPaths,
       maxPaths: 8,
     });
 
@@ -240,6 +252,16 @@ async function prepareWriterContext(input) {
       profileKey: "writer",
       sessionId: input.sessionId,
       entries: injected.includedPaths.map((p) => ({ path: `lorebook/${p}/index.md` })),
+    });
+
+    // M-11: 追加本章注入到 JSONL (供下章 carryOver)
+    await recordLoreInjection({
+      project: input.project,
+      record: {
+        chapterId: input.chapter?.id ?? input.sessionId,
+        paths: injected.includedPaths,
+        ts: new Date().toISOString(),
+      },
     });
   }
 
@@ -274,6 +296,47 @@ defineTool({
 });
 ```
 
+### 2.6 `lore-carryover-store.ts` (M-11)
+
+持久化章节级 lore 注入记录，供下章 `resolveForChapter` 的 `carryOverPaths` 使用。
+
+```typescript
+export interface LoreInjectionRecord {
+  readonly chapterId: string;
+  readonly paths: readonly string[];
+  readonly ts: string; // ISO 8601
+}
+
+export interface ReadOptions {
+  readonly limit: number; // 默认 3
+}
+
+export async function recordLoreInjection(
+  project: ReadyProjectSessionRef,
+  record: LoreInjectionRecord,
+): Promise<void>;
+
+export async function readRecentLoreInjections(
+  project: ReadyProjectSessionRef,
+  options: ReadOptions,
+): Promise<readonly string[]>;
+// ↑ 返回末 N 条 (按 JSONL 出现顺序) 的 paths union 去重, 末条排最前
+```
+
+**存储位置**：`workspace/.nbook/state/lore-carryover.jsonl`（gitignored, 与 `runtime.lease` 同级目录但不同子目录）。
+
+**行为契约**：
+- **append**：`fs.appendFile` 追加一行 JSON + `\n`，原子性足够（PM2 单进程顺序写）。
+- **read**：tail 末 N 条 → 按出现顺序逆序遍历 → Set 去重 path → 返回 `[...result]`（末条 first）。
+- **章去重**：同一 `chapterId` 多次 record 在 read 时不去重 (按 record 时间保留多版本, 但 path 用 Set 屏蔽)。
+- **文件不存在** → `readRecent` 返回 `[]` (静默降级, 与 §4 错误处理一致)。
+- **单行 malformed JSON** → 跳过该行 + warn log，不 throw（与 §4 容错一致）。
+
+**为何用 JSONL 而非 JSON**：
+- append-only 写不需 read-modify-write，并发安全。
+- 损坏一行不影响其它行（每行独立 JSON 解析）。
+- 顺序读 tail 末 N 条 = O(1) 内存。
+
 ---
 
 ## §3 数据流
@@ -290,7 +353,8 @@ defineTool({
 
 写章节:
   harness.prepareWriterContext(chapter)
-    → resolveForChapter(chapter.text)
+    → readRecentLoreInjections({ project, limit: 3 })  ← JSONL 末 3 章 union 去重 (M-11)
+    → resolveForChapter({ chapterText, carryOverPaths, ... })
         O(50段 × 200trigger × string.includes)  <10ms
     → renderInjectedMarkdown(paths)
         O(8 张卡片 × 6-8KB)  <50ms
@@ -301,16 +365,19 @@ defineTool({
     → resolveForChapter({ chapterText: "顾霁 临江嘴" })
     → renderInjectedMarkdown({ maxChars: 4000 })
 
-提交:
-  agent.commit
+注入完成 (M-11 调点):
+  harness 注入后 (与 recordExplicitContextEntries 同点)
+    → recordLoreInjection({ chapterId, paths: includedPaths, ts })  ← append JSONL
     → recordExplicitContextEntries(8 paths)  ← 进入 profile-context-access
     → 下次同项目同 profile 开新章，context-access 排序把这 8 张推为「strong」
+    → 下次 prepareRun 读 JSONL 末 3 章 union 去重 = M-11 carryOver 来源
 ```
 
 **关键不变量**：
 - cache 失效只在 `invalidateLoreResolverIndex(project)` 显式调用
 - `note/ / story-spec/ / instruction/` **不**进索引（避免 LLM 看到「作者笔记」误读为 lore）
 - 输出 Markdown **总字符数**硬上限 8000（writer prompt 配额管理）
+- **M-11**：JSONL 文件在 `workspace/.nbook/state/lore-carryover.jsonl`（gitignored），append-only，tail 读末 N 条
 
 ---
 
@@ -324,6 +391,9 @@ defineTool({
 | 章节文本 < 100 字符（如新章起笔） | 跳过整个 lore 解析 | **短路** |
 | cache 构建超时（> 5s） | 强制返回空索引，记 error | **降级** |
 | agent 调 `lore_resolver_query` 时 cache 未构建 | 同步触发 buildIndex（兜底） | **同步兜底** |
+| **M-11** `lore-carryover.jsonl` 不存在 | `readRecent` 返回 `[]`, 走原 carryOver=[] 路径 | **静默降级** |
+| **M-11** JSONL 单行 malformed | 跳过该行 + warn log, 其它行正常 | **跳过错误行** |
+| **M-11** `recordLoreInjection` 写失败 | warn log, 不 throw (carryOver 仍有, 不影响下章读取) | **降级** |
 
 **绝不让 resolver 失败导致 harness 抛错**——所有错误都是"降级到无 lore 注入"，harness 流程继续。
 
@@ -337,8 +407,9 @@ defineTool({
 |---|---|
 | `lore-resolver-cache.test.ts` | (1) 扫 21 张 character 构建索引 (2) `enabled: false` 跳过 (3) 路径中含特殊字符（中文/空格） (4) frontmatter 缺字段时 defaults (5) `note/` 不进索引 |
 | `lore-resolver.test.ts` | (1) 单 trigger 命中 (2) 多 trigger 命中 (3) 同一 path 多 trigger 累加 (4) 排序：命中数 DESC (5) carryOver 优先 (6) `maxPaths` 截取 (7) 空文本返回空 paths (8) 文本中 trigger 跨段不误命中 |
-| `lore-context-injector.test.ts` | (1) 渲染 character/location/faction 顺序 (2) `## 基本信息` 段提取 (3) `## 性格` 段只取 3 行 (4) `maxChars` 截断 + truncatedPaths (5) frontmatter 清洗（去掉 retrieval/governance/ext） |
+| `lore-context-injector.test.ts` | (1) 渲染 character/location/faction/spec 顺序 (2) `## 基本信息` 段提取 (3) `## 性格` 段只取 3 行 (4) `maxChars` 截断 + truncatedPaths (5) frontmatter 清洗（去掉 retrieval/governance/ext） |
 | `lore-resolver-integration.test.ts` | (1) build → resolve → render 全链路 (2) harness 调用注入点 mock (3) 调 `lore_resolver_query` 工具 |
+| **`lore-carryover-store.test.ts` (M-11)** | (1) record 1 章 → read 1 返回该章 paths (2) record 5 章, read limit=3 返回末 3 章 union (3) 同一 chapterId 多次 record → read 保留多版本 + path 去重 (4) 文件不存在 → read 返回 `[]` (5) 末行 malformed → skip + 前面行正常返回 + 顺序保留 |
 
 **TDD 顺序**（per ECC `development-workflow.md`）：
 1. **RED**：先写 `lore-resolver-cache.test.ts` 5 个 case

@@ -10497,6 +10497,70 @@ describe("NeuroAgentHarness", () => {
         expect(harness.eventHub.metrics(991_001).replayCount).toBe(0);
     });
 
+    it("writer profile 触发 lore 注入到 systemPrompt（mock lorebook）", async () => {
+        const projectRoot = join(root, "lore-writer-proj");
+        await mkdir(join(projectRoot, "lorebook", "character", "lu-shen"), {recursive: true});
+        await writeFile(join(projectRoot, "project.yaml"), "kind: novel\ntitle: Lore Writer\nsummary: ''\n", "utf8");
+        await writeFile(
+            join(projectRoot, "lorebook", "character", "lu-shen", "index.md"),
+            `---\ntitle: 陆深\ntype: character\nsummary: 陆深 简述\nretrieval:\n  enabled: true\n  trigger: [陆深]\n---\n\n## 基本信息\n\n| 项目 | 设定 |\n|------|------|\n| 名称 | 陆深 |\n\n## 性格\n\n核心特质：分析型。\n- 一\n- 二\n- 三\n`,
+            "utf8",
+        );
+        await openProject(projectWorkspaceRef("lore-writer-proj"), {kind: "job", source: "test"}, harness.workspaceRoot);
+        try {
+            harness.profiles.register(defineAgentProfile({
+                manifest: {
+                    key: "writer",
+                    name: "Writer",
+                },
+                initialSchema: Type.Object({}),
+                payloadSchema: Type.Object({
+                    chapterText: Type.String(),
+                }),
+                allowedToolKeys: [],
+                prepare() {
+                    return {};
+                },
+            }), false);
+            let observedSystemPrompt: string | undefined;
+            faux.setResponses([
+                (context) => {
+                    observedSystemPrompt = context.systemPrompt;
+                    return fauxAssistantMessage("done");
+                },
+            ]);
+            const created = await harness.createAgent({
+                profileKey: "writer",
+                initial: {},
+                currentProjectRoot: "lore-writer-proj",
+            });
+
+            const result = await harness.invokeAgent({
+                sessionId: created.sessionId,
+                mode: "prompt",
+                message: {text: "写下一章"},
+                payload: {
+                    chapterText: "陆深".repeat(60), // 120 chars > 100 阈值
+                },
+            });
+
+            expect(result.status, result.error ?? result.errorInfo?.message).toBe("completed");
+            expect(observedSystemPrompt).toBeDefined();
+            expect(observedSystemPrompt).toContain("<chapter_lore_context");
+            expect(observedSystemPrompt).toContain("## 陆深 (character)");
+
+            // recordExplicitContextEntries 是 best-effort（异常降级不阻断注入）；存在则校验落盘。
+            const statePath = join(projectRoot, ".nbook", "context-access", "writer.json");
+            const stateRaw = await readFile(statePath, "utf8").catch(() => null);
+            if (stateRaw !== null) {
+                const state = JSON.parse(stateRaw) as {entries?: Array<{path: string; signals: Record<string, number>}>};
+                expect(state.entries?.some((entry) => entry.path === "lorebook/character/lu-shen/" && (entry.signals.explicitInput ?? 0) >= 1)).toBe(true);
+            }
+        } finally {
+            await closeProjectForTest("lore-writer-proj").catch(() => undefined);
+        }
+    }, 20_000);
+
 });
 
 type RelationIdentity = {
