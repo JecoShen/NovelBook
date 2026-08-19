@@ -5,6 +5,7 @@ import {join} from "node:path";
 import {
     buildLoreResolverIndex,
     invalidateLoreResolverIndex,
+    setLoreCacheOptions,
     type LoreResolverIndex,
 } from "./lore-resolver-cache";
 import type {ReadyProjectSessionRef} from "nbook/server/workspace-files/project-session-types";
@@ -110,5 +111,73 @@ describe("lore-resolver-cache", () => {
         const third = await buildLoreResolverIndex(project);
 
         expect(third).not.toBe(first);  // invalidate 后新对象
+    });
+
+    // M-7: TTL expiry — 过期后自动 rebuild
+    it("rebuilds index after TTL expiry (M-7 TTL)", async () => {
+        writeLoreCard(tmpRoot, "character", "lu-shen", {triggers: ["陆深"]});
+        setLoreCacheOptions({ttlMs: 50, maxSize: 100});
+        try {
+            const first = await buildLoreResolverIndex(project);
+            // 缓存命中,同一对象
+            const sameTime = await buildLoreResolverIndex(project);
+            expect(sameTime).toBe(first);
+
+            // 实际等待 ttl + 缓冲,缓存应失效 → 重建 (避免 setSystemTime 污染)
+            await new Promise<void>((resolve) => setTimeout(resolve, 100));
+
+            const rebuilt = await buildLoreResolverIndex(project);
+            expect(rebuilt).not.toBe(first);
+        } finally {
+            setLoreCacheOptions({ttlMs: 5 * 60 * 1000, maxSize: 100});
+        }
+    });
+
+    // M-7: LRU eviction — 超出 maxSize 时,最久未访问的先被淘汰
+    it("evicts least-recently-used entry when maxSize exceeded (M-7 LRU)", async () => {
+        writeLoreCard(tmpRoot, "character", "lu-shen", {triggers: ["陆深"]});
+        setLoreCacheOptions({ttlMs: 60_000, maxSize: 2});
+        try {
+            // 用不同 workspace root 模拟 3 个 project
+            const tmp2 = mkdtempSync(join(tmpdir(), "lore-cache-2-"));
+            const tmp3 = mkdtempSync(join(tmpdir(), "lore-cache-3-"));
+            const project2 = makeProjectRef(tmp2);
+            const project3 = makeProjectRef(tmp3);
+            writeLoreCard(tmp2, "character", "c2", {triggers: ["c2"]});
+            writeLoreCard(tmp3, "character", "c3", {triggers: ["c3"]});
+
+            try {
+                // 填满 2 槽:a1 + a2
+                const a1 = await buildLoreResolverIndex(project);
+                const a2 = await buildLoreResolverIndex(project2);
+                expect(a1).toBeDefined();
+                expect(a2).toBeDefined();
+
+                // 访问 a1 刷新其 lastAccessedAt → a2 现在是 LRU
+                const a1Again = await buildLoreResolverIndex(project);
+                expect(a1Again).toBe(a1);
+
+                // 插入第 3 个 → 触发 eviction,a2 (LRU) 被淘汰
+                const a3 = await buildLoreResolverIndex(project3);
+                expect(a3).toBeDefined();
+
+                // a1 和 a3 仍命中缓存 (a1 因 a1Again 刷新,a3 是最新)
+                const a1StillCached = await buildLoreResolverIndex(project);
+                const a3StillCached = await buildLoreResolverIndex(project3);
+                expect(a1StillCached).toBe(a1);
+                expect(a3StillCached).toBe(a3);
+
+                // a2 被淘汰,重建应得新对象
+                const a2Rebuilt = await buildLoreResolverIndex(project2);
+                expect(a2Rebuilt).not.toBe(a2);
+            } finally {
+                rmSync(tmp2, {recursive: true, force: true});
+                rmSync(tmp3, {recursive: true, force: true});
+                invalidateLoreResolverIndex(project2);
+                invalidateLoreResolverIndex(project3);
+            }
+        } finally {
+            setLoreCacheOptions({ttlMs: 5 * 60 * 1000, maxSize: 100});
+        }
     });
 });
