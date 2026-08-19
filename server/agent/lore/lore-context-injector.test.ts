@@ -123,4 +123,34 @@ describe("renderInjectedMarkdown", () => {
         const result = await renderInjectedMarkdown({project, paths: ["character/bare"]});
         expect(result.markdown).toContain("这是 bare 卡的简述");
     });
+
+    // M-2: totalChars 必须 <= maxChars (header+footer 也计入 budget)
+    it("respects totalChars <= maxChars including header+footer overhead (M-2)", async () => {
+        // 小 body (~100 chars)。maxChars=300,header+footer ~150+21=171, body budget ~129.
+        // 旧 impl 只算 body,候选 ~220 < 300 → 块入 → totalChars ~391 > 300 (FAIL).
+        // 修后 bodyBudget=129,候选 ~220 > 129 → 块不进 → totalChars ~171 ≤ 300 (PASS).
+        const body = Array.from({length: 2}, (_, j) => `| 项目${j} | ${"x".repeat(50)} |`).join("\n");
+        writeFullCard(tmpRoot, "character", "c-small", {title: "c-small", triggers: ["c-small"], basicInfo: `## 基本信息\n\n${body}\n`});
+        await buildLoreResolverIndex(project);
+
+        const result = await renderInjectedMarkdown({
+            project,
+            paths: ["character/c-small"],
+            maxChars: 300,
+        });
+        expect(result.totalChars).toBeLessThanOrEqual(300);
+    });
+
+    // M-3: 缺 ## 基本信息 + 有 summary 时,summary 不能在 frontmatter 又在 > summary 出现 2 次
+    it("does not duplicate summary in frontmatter and quote line (M-3)", async () => {
+        const dir = join(tmpRoot, "lorebook", "character", "bare-dup");
+        mkdirSync(dir, {recursive: true});
+        writeFileSync(join(dir, "index.md"),
+            "---\ntitle: bare-dup\ntype: character\nsummary: 唯一 summary 字符串\nretrieval:\n  enabled: true\n  trigger: [bare-dup]\n---\n\n## 其他段\n随便写\n");
+        await buildLoreResolverIndex(project);
+
+        const result = await renderInjectedMarkdown({project, paths: ["character/bare-dup"]});
+        const occurrences = (result.markdown.match(/唯一 summary 字符串/g) ?? []).length;
+        expect(occurrences).toBe(1);
+    });
 });

@@ -44,11 +44,12 @@ function extractPersonalityPreview(body: string): string | null {
     return lines.slice(0, 4).join("\n");
 }
 
-/** 清洗 frontmatter：去掉 retrieval/governance/ext 嵌套对象。 */
-function cleanFrontmatter(fm: Record<string, unknown>): string {
+/** 清洗 frontmatter：去掉 retrieval/governance/ext 嵌套对象,以及可选的 summary (M-3). */
+function cleanFrontmatter(fm: Record<string, unknown>, dropSummary: boolean): string {
     const keep: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(fm)) {
         if (k === "retrieval" || k === "governance" || k === "ext") continue;
+        if (dropSummary && k === "summary") continue;  // M-3: 避免 summary 在 fmBlock 和 > summary 重复
         keep[k] = v;
     }
     return Object.entries(keep).map(([k, v]) => {
@@ -76,10 +77,12 @@ async function renderEntry(
     const fm = parseFrontmatter(raw);
     const body = fmMatch[2] ?? "";
     const title = typeof fm.title === "string" ? fm.title : slug;
-    const fmBlock = cleanFrontmatter(fm);
     const basicInfo = extractSection(body, "基本信息");
     const summary = typeof fm.summary === "string" ? fm.summary : null;
     const personality = extractPersonalityPreview(body);
+
+    // M-3: 如果走 `> summary` 分支,frontmatter 里也 drop summary 避免重复
+    const fmBlock = cleanFrontmatter(fm, !basicInfo && summary !== null);
 
     const parts: string[] = [`## ${title} (${category})`];
     if (fmBlock.length > 0) parts.push(fmBlock);
@@ -113,6 +116,11 @@ export async function renderInjectedMarkdown(
     const blocks: string[] = [];
     let total = 0;
 
+    // M-2: 把 header+footer 开销从 budget 预扣,保证 final totalChars <= maxChars
+    const headerOverhead = `<chapter_lore_context generatedAt="0000-00-00T00:00:00.000Z" maxPaths="${String(input.paths.length)}" included="${String(input.paths.length)}" truncated="0">\n`.length;
+    const footerOverhead = "\n</chapter_lore_context>".length;
+    const bodyBudget = Math.max(0, maxChars - headerOverhead - footerOverhead);
+
     for (const p of sorted) {
         if (!index.pathToEntry.has(p)) {
             truncatedPaths.push(p);
@@ -123,10 +131,9 @@ export async function renderInjectedMarkdown(
             truncatedPaths.push(p);
             continue;
         }
-        // brief bug：原 `candidate > maxChars && includedPaths.length > 0` 会无条件塞入首块，
-        // 使 totalChars 超 maxChars（测试 3 失败）→ 改为严格截断。
+        // M-2: 用 bodyBudget (maxChars - header - footer) 而非 maxChars
         const candidate = total + block.length + 2; // 2 = "\n\n"
-        if (candidate > maxChars) {
+        if (candidate > bodyBudget) {
             truncatedPaths.push(p);
             continue;
         }
