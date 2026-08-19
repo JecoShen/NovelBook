@@ -34,11 +34,11 @@
 
 | 候选 | 行为 | 风险 | 评估 |
 |---|---|---|---|
-| **A. 轻量级 (level: info)** | ruleset 触发时仅 info 提示, 不报错 | 低: 写新章时建议填, 不强制 | **选定** |
-| B. 中等 (level: warn) | 缺 `## 场景` 段报 warn | 中: 阻碍快速写作 | 否决 (§7.4 警告) |
+| **A. 轻量级 (level: low)** | ruleset 触发时仅 low 提示, 不报错 | 低: 写新章时建议填, 不强制 | **选定** |
+| B. 中等 (level: medium) | 缺 `## 场景` 段报 medium | 中: 阻碍快速写作 | 否决 (§7.4 警告) |
 | C. 严格 (level: high + 5 诫命) | 全检 | 高: 永远写不到正文 | 否决 (§7.4 警告) |
 
-**决策**: 全程 level=info, 永不变 warn / high. 模板可见, 检测软提示, 0 阻塞.
+**决策**: 全程 level=low (RuleLevel 最低, 对应 llmlint types.ts `RuleLevel = "high" | "medium" | "low"`), 永不变 medium / high. 模板可见, 检测软提示, 0 阻塞. **注**: 调研报告 §2.4 + §5.2 提的"info"概念映射到 llmlint `RuleLevel` 最低的 `"low"` (2026-08-19 review 发现, llmlint types.ts 无 `"info"`).
 
 ### 2.2 作用范围 (Forward + V1+V2 baseline 报告)
 
@@ -86,10 +86,21 @@ assets/.../llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.
 ─────────────────────────────────────────
 {
   "id": "cn.structure.scene-six-questions",
-  "scope": "chapter-h2-equals-##场景",
-  "level": "info",
-  "message": "建议为本章添加 ## 场景 段并填 6 问, 参考 reference/scene-six-questions.md",
-  "example": "## 场景 1 — 顾霁决定南下..."
+  "namespace": "structure.scene-six-questions",
+  "title": "场景 6 问 (P1-4: Story Grid 6 问 软提示)",
+  "level": "low",
+  "review": "agent",
+  "fixability": "manual",
+  "enabled": true,
+  "note": "P1-4 (2026-08-19) — 调研报告 §2.3 落地。level=low 永不变 medium/high, 抗 §7.4 过度 spec 化。detector 真实匹配 `^## 场景` 触发 trigger 测试 (I2 修复)。",
+  "detector": {
+    "type": "regex",
+    "targets": ["^## 场景"]
+  },
+  "action": {
+    "type": "suggest",
+    "message": "建议为本章添加 ## 场景 段并填 6 问 (POV / 地点时间 / 想要什么 / 价值转换 / 新信息 / 下一步), 参考 reference/scene-six-questions.md"
+  }
 }
 
 
@@ -143,8 +154,8 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 | # | 维度 | 验收标准 |
 |---|---|---|
 | 1 | 模板存在 | `reference/scene-six-questions.md` 文件存在 + 6 问子标题完整 + 至少 1 个填写示例 + 5 诫命映射表 + 与 i128 beat 关系说明 |
-| 2 | 规则 JSON 合法 | `scene-six-questions.json` 通过 `JSON.parse` + 5 字段齐全 (id/scope/level/message/example) + level="info" 验证 |
-| 3 | ruleset 实际触发 | 写 1 个测试章 (无 `## 场景` 段) 跑 llmlint pipeline, 验证 info 提示出现 + 引用 reference 路径 |
+| 2 | 规则 JSON 合法 | `scene-six-questions.json` 通过 `JSON.parse` + 5 字段齐全 (id/scope/level/message/example) + level="low" 验证 (RuleLevel 最低, 不超 5 字段) |
+| 3 | ruleset 实际触发 | 写 1 个测试章 (无 `## 场景` 段) 跑 llmlint pipeline, 验证 low 提示出现 + 引用 reference 路径 (I2 修复: 用 `scanText` 测试真实 issue 生成) |
 | 4 | ruleset 不阻塞 | 缺 `## 场景` 段时 exit code 0, 不影响其他规则 (chapter-hook 仍正常) |
 | 5 | baseline 脚本可跑 | `node scripts/baseline-scan-scene-six-questions.cjs` 退出码 0 + 报告生成 |
 | 6 | V1+V2 baseline 数据合理 | 总覆盖率 0% (预期) + 每卷分布 = 0% (预期) + 6 问子标题频次 = 0 (预期) + 不影响 V1+V2 任何文件 |
@@ -177,7 +188,7 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 | 文件 | 行数估 | 用途 |
 |---|---|---|
 | `reference/scene-six-questions.md` | ~120 | 模板 + 6 问 + 示例 + 5 诫命映射 + beat 关系 |
-| `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` | ~30 | ruleset JSON (level: info) |
+| `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` | ~30 | ruleset JSON (level: low, 真实 detector) |
 | `scripts/baseline-scan-scene-six-questions.cjs` | ~150 | baseline 扫描脚本 (派生 i129) |
 | `workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/i135-p1-4-baseline-report.md` | auto | V1+V2 baseline 报告 |
 
@@ -211,7 +222,7 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 | `reference/` 目录 | 与现有 reference/scene-six-questions.md 共存 |
 | i128 beat 字段 | 互补不冲突: beat = 章级 (Save the Cat 15), scene-six-questions = 场景级 (Story Grid 6 问) |
 | i129 chapter-hook ruleset | 并行独立: chapter-hook scope=ending 200 chars, scene-six-questions scope=chapter-h2 全文 |
-| 调研报告 §7.4 抗反模式 | level=info 严格遵守, 0 强制 |
+| 调研报告 §7.4 抗反模式 | level=low 严格遵守 (RuleLevel 最低), 0 强制 |
 | archive 模式 (5 批次先例) | 沿用 worktree + cp + 0 push + 报告入 .agent/plan/ |
 
 ---
