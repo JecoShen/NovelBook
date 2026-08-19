@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 把 Story Grid 6 问软提示落到 NeuroBook `reference/scene-six-questions.md` 模板 + llmlint `cn.structure.scene-six-questions` ruleset (level: info) + V1+V2 80 章 baseline 报告,零侵入现有 writer / harness / lore 流程。调研报告 P0-P2 进度从 3/6 (50%) 推到 4/6 (67%)。
+**Goal:** 把 Story Grid 6 问软提示落到 NeuroBook `reference/scene-six-questions.md` 模板 + llmlint `cn.structure.scene-six-questions` ruleset (level: low) + V1+V2 80 章 baseline 报告,零侵入现有 writer / harness / lore 流程。调研报告 P0-P2 进度从 3/6 (50%) 推到 4/6 (67%)。
 
-**Architecture:** 全新增 4 文件,0 改动现有文件。ruleset JSON 复用 chapter-hook 11 字段模式,level=info 严格遵守 spec §7.4 抗过度 spec 化。baseline-scan.cjs 派生 i129 `scripts/baseline-scan.cjs` 90% 代码,改 scope 为 ## 场景 段 + 6 问子标题检测,输出 markdown 报告到 `workspace/<proj>/.agent/plan/i135-p1-4-baseline-report.md`。
+**Architecture:** 全新增 4 文件,0 改动现有文件。ruleset JSON 复用 chapter-hook 11 字段模式,level=low 严格遵守 spec §7.4 抗过度 spec 化。baseline-scan.cjs 派生 i129 `scripts/baseline-scan.cjs` 90% 代码,改 scope 为 ## 场景 段 + 6 问子标题检测,输出 markdown 报告到 `workspace/<proj>/.agent/plan/i135-p1-4-baseline-report.md`。
 
 **Tech Stack:** TypeScript 严格模式 (ruleset JSON 验证) / Node.js CommonJS (baseline-scan.cjs 派生模式) / Markdown (模板) / Bun test / vitest (ruleset 集成测试,沿用 `server/agent/skills/llmlint.test.ts`)
 
@@ -33,7 +33,7 @@ from spec §2 §4 §6 §8 — 每个 task 隐式遵守:
 | 文件 | 角色 | 行数估 |
 |---|---|---|
 | `reference/scene-six-questions.md` | 新: 6 问模板 + 示例 + 5 诫命映射 + beat 关系 | ~120 |
-| `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` | 新: ruleset JSON (level: info) | ~30 |
+| `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` | 新: ruleset JSON (level: low) | ~30 |
 | `scripts/baseline-scan-scene-six-questions.cjs` | 新: baseline 扫描脚本 (派生 i129) | ~150 |
 | `workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/i135-p1-4-baseline-report.md` | 新: V1+V2 baseline 报告 (auto) | ~80 |
 
@@ -135,13 +135,13 @@ git commit -m "feat(reference): scene-six-questions template — Story Grid 6 �
 - V3 主角章填写示例
 - Story Grid 5 诫命映射表
 - 与 i128 beat 字段关系
-- llmlint 触发说明 (level: info)
+- llmlint 触发说明 (level: low)
 - V1+V2 baseline 报告引用"
 ```
 
 ---
 
-## Task 3: RED — Write ruleset JSON load + level=info validation test
+## Task 3: RED — Write ruleset JSON load + level=low validation test
 
 **Files:**
 - Create: `server/agent/skills/llmlint-scene-six-questions.test.ts` (~80 行, RED)
@@ -160,7 +160,7 @@ import {loadConfig} from "nbook/assets/workspace/.nbook/agent/skills/llmlint/src
 import {loadRules} from "nbook/assets/workspace/.nbook/agent/skills/llmlint/src/rules";
 
 describe("cn.structure.scene-six-questions ruleset (P1-4)", () => {
-    it("loads scene-six-questions.json via builtin/default ruleset", async () => {
+    it("loads scene-six-questions.json via builtin/default ruleset (level=low)", async () => {
         const {config} = await loadConfig({cwd: process.cwd()});
         const loadedRules = await loadRules(config);
 
@@ -169,11 +169,11 @@ describe("cn.structure.scene-six-questions ruleset (P1-4)", () => {
         );
 
         expect(scene6q).toBeDefined();
-        expect(scene6q?.level).toBe("info");
+        expect(scene6q?.level).toBe("low");
         expect(scene6q?.ruleset).toBe("builtin/default");
     });
 
-    it("level is never warn or high (P1-4 决策: 软提示永不变强)", async () => {
+    it("level is never medium or high (P1-4 决策: 软提示永不变强)", async () => {
         const {config} = await loadConfig({cwd: process.cwd()});
         const loadedRules = await loadRules(config);
 
@@ -181,7 +181,8 @@ describe("cn.structure.scene-six-questions ruleset (P1-4)", () => {
             (rule) => rule.id === "cn.structure.scene-six-questions"
         );
 
-        expect(scene6q?.level).not.toBe("warn");
+        expect(scene6q).toBeDefined(); // guard 防 vacuous pass (RED 严格性修复)
+        expect(scene6q?.level).not.toBe("medium");
         expect(scene6q?.level).not.toBe("high");
     });
 
@@ -193,8 +194,28 @@ describe("cn.structure.scene-six-questions ruleset (P1-4)", () => {
             (rule) => rule.id === "cn.structure.scene-six-questions"
         );
 
+        expect(scene6q).toBeDefined();
         expect(scene6q?.action.type).toBe("suggest");
         expect(scene6q?.action.message).toContain("reference/scene-six-questions.md");
+    });
+
+    it("trigger: scanText 缺 ## 场景 段时生成 issue (I2 修复: 真实 issue 生成验证)", async () => {
+        const {config} = await loadConfig({cwd: process.cwd()});
+        const loadedRules = await loadRules(config);
+
+        const scene6q = loadedRules.regexRules.find(
+            (rule) => rule.id === "cn.structure.scene-six-questions"
+        );
+        expect(scene6q).toBeDefined();
+
+        // scanText 验证 detector ^## 场景 触发
+        const chapterNoScene = "# 标题\n\n正文无 ## 场景 段。";
+        const issues = scanText(chapterNoScene, [scene6q!]);
+        const scene6qIssue = issues.find(
+            (i) => i.rule.id === "cn.structure.scene-six-questions"
+        );
+        expect(scene6qIssue).toBeDefined();
+        expect(scene6qIssue?.rule.level).toBe("low");
     });
 });
 ```
@@ -221,7 +242,7 @@ bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -20
 
 **Interfaces:**
 - 消费: 现有 chapter-hook.json 11 字段模式
-- 产出: ruleset JSON, level: info, scope = 章节内 H2 "## 场景"
+- 产出: ruleset JSON, level: low, scope = 章节内 H2 "## 场景"
 
 - [ ] **Step 1: 写 scene-six-questions.json (沿用 chapter-hook 格式, 简化为 1 条)**
 
@@ -237,10 +258,10 @@ bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -20
     "review": "agent",
     "fixability": "manual",
     "enabled": true,
-    "note": "P1-4 (2026-08-19) — 调研报告 research-sdd-novel-writing-2026-08-18.md §2.3 落地。level=info 永不变 warn / high, 抗 §7.4 过度 spec 化。V1+V2 baseline 0% 覆盖率, 报告见 workspace/.../i135-p1-4-baseline-report.md。V3+ 启用为软引导, 不强制 6 问子标题顺序 / 内容空 / 编号连续性 / 5 诫命子段。",
+    "note": "P1-4 (2026-08-19) — 调研报告 research-sdd-novel-writing-2026-08-18.md §2.3 落地。level=low 永不变 warn / high, 抗 §7.4 过度 spec 化。V1+V2 baseline 0% 覆盖率, 报告见 workspace/.../i135-p1-4-baseline-report.md。V3+ 启用为软引导, 不强制 6 问子标题顺序 / 内容空 / 编号连续性 / 5 诫命子段。",
     "detector": {
       "type": "regex",
-      "targets": ["(?![\\s\\S])"]
+      "targets": ["^## 场景"]
     },
     "action": {
       "type": "suggest",
@@ -257,7 +278,7 @@ cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
 node -e "const r = JSON.parse(require('fs').readFileSync('assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json', 'utf8')); console.log('OK', r.length, 'rules'); console.log('level:', r[0].level, 'id:', r[0].id)"
 ```
 
-期望: 输出 `OK 1 rules` + `level: info` + `id: cn.structure.scene-six-questions`
+期望: 输出 `OK 1 rules` + `level: low` + `id: cn.structure.scene-six-questions`
 
 - [ ] **Step 3: 运行测试, 验证 GREEN (3/3 应 pass)**
 
@@ -283,11 +304,11 @@ bun test server/agent/skills/llmlint.test.ts 2>&1 | tail -5
 cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
 git add server/agent/skills/llmlint-scene-six-questions.test.ts
 git add assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json
-git commit -m "feat(llmlint): cn.structure.scene-six-questions ruleset (level: info)
+git commit -m "feat(llmlint): cn.structure.scene-six-questions ruleset (level: low)
 
 P1-4 落位 (调研报告 §2.3):
 - ruleset JSON 沿用 chapter-hook 11 字段格式
-- level: info 永不变 warn / high (抗 §7.4 过度 spec 化, 0 阻塞)
+- level: low 永不变 warn / high (抗 §7.4 过度 spec 化, 0 阻塞)
 - enabled: true (V3+ 启用)
 - action message 引用 reference/scene-six-questions.md 模板路径
 - 3 测试 TDD: loads + level 验证 + message 引用
@@ -463,7 +484,7 @@ function formatReport(report) {
     lines.push('## 下一步');
     lines.push('');
     lines.push('- V3 写作时按 `reference/scene-six-questions.md` 模板手填 `## 场景` 段');
-    lines.push('- llmlint ruleset `cn.structure.scene-six-questions` (level: info) 给软提示');
+    lines.push('- llmlint ruleset `cn.structure.scene-six-questions` (level: low) 给软提示');
     lines.push('- V3 完结后跑一次 V3 baseline 对比 V1+V2 0%');
     lines.push('');
     return lines.join('\n');
@@ -574,7 +595,7 @@ grep -c "^### [1-6]\." reference/scene-six-questions.md
 
 期望: `✓ 模板存在` + `6`
 
-- [ ] **Step 2: 验证 验收 #2 规则 JSON 合法 + level=info**
+- [ ] **Step 2: 验证 验收 #2 规则 JSON 合法 + level=low**
 
 ```bash
 cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
@@ -586,7 +607,7 @@ console.log('✓ 字段齐全:', Object.keys(r[0]).join(','));
 "
 ```
 
-期望: `✓ JSON 合法` + `✓ level=info` + 字段含 id/namespace/title/level/review/fixability/enabled/note/detector/action
+期望: `✓ JSON 合法` + `✓ level=low` + 字段含 id/namespace/title/level/review/fixability/enabled/note/detector/action
 
 - [ ] **Step 3: 验证 验收 #3 + #4 ruleset 实际触发 + 不阻塞**
 
@@ -684,9 +705,9 @@ mkdir -p /www/wwwroot/book.neoshen.dpdns.org/workspace/qi-shou-fan-shen-cheng-di
 ## 验收 (spec §5 8/8)
 
 - [x] #1 模板存在 + 6 问子标题完整 + 1 个示例
-- [x] #2 ruleset JSON 合法 + level=info
+- [x] #2 ruleset JSON 合法 + level=low
 - [x] #3 ruleset 实际触发 (3/3 test pass)
-- [x] #4 ruleset 不阻塞 (level=info 软提示)
+- [x] #4 ruleset 不阻塞 (level=low 软提示)
 - [x] #5 baseline 脚本可跑 (exit code 0 + 报告生成)
 - [x] #6 V1+V2 baseline 数据合理 (0% 覆盖率, 符合预期)
 - [x] #7 不污染主 workspace (0 push / 0 merge)
@@ -716,7 +737,7 @@ mkdir -p /www/wwwroot/book.neoshen.dpdns.org/workspace/qi-shou-fan-shen-cheng-di
 ## 教训 (5)
 
 1. **派生 90% 复用**: i129 baseline-scan.cjs 改 scope 比从零写省 ~80% 工作量
-2. **level=info 软提示设计**: 抗调研报告 §7.4 过度 spec 化, 0 阻塞 V3 写作
+2. **level=low 软提示设计**: 抗调研报告 §7.4 过度 spec 化, 0 阻塞 V3 写作
 3. **JSON ruleset 11 字段模式**: 沿用 chapter-hook 兼容现有 llmlint pipeline
 4. **archive cp 模式**: 主工作区同步 4 文件 + 0 push/0 merge, 沿用 i128-i134 6 批次先例
 5. **forward-only 决策**: V1+V2 0 文件改动, baseline 报告只读不写, 减少对作者干扰
@@ -798,7 +819,7 @@ du -sh .worktree/feat-p1-4-scene-six-questions
 
 ## Out of Scope (per spec §8)
 
-- ❌ 强制 `## 场景` 段 (level=info 永不变)
+- ❌ 强制 `## 场景` 段 (level=low 永不变)
 - ❌ 6 问子标题顺序检测
 - ❌ 5 诫命子段强制
 - ❌ 跨章场景编号连续性
