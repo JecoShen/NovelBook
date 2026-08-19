@@ -34,11 +34,11 @@
 
 | 候选 | 行为 | 风险 | 评估 |
 |---|---|---|---|
-| **A. 轻量级 (level: info)** | ruleset 触发时仅 info 提示, 不报错 | 低: 写新章时建议填, 不强制 | **选定** |
+| **A. 轻量级 (level: low)** | ruleset 触发时仅 info 提示, 不报错 | 低: 写新章时建议填, 不强制 | **选定** |
 | B. 中等 (level: warn) | 缺 `## 场景` 段报 warn | 中: 阻碍快速写作 | 否决 (§7.4 警告) |
 | C. 严格 (level: high + 5 诫命) | 全检 | 高: 永远写不到正文 | 否决 (§7.4 警告) |
 
-**决策**: 全程 level=info, 永不变 warn / high. 模板可见, 检测软提示, 0 阻塞.
+**决策**: 全程 level=low, 永不变 medium / high. 模板可见, 检测软提示, 0 阻塞.
 
 ### 2.2 作用范围 (Forward + V1+V2 baseline 报告)
 
@@ -152,7 +152,7 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 | 报告写入失败 | 沿用 i129 baseline 模式 (mkdir-p + try-catch) |
 
 **显式不处理** (避免 §7.4 过度 spec 化):
-- ❌ 缺 `## 场景` 段 → 不报错 (info 是单向软提示)
+- ❌ 缺 `## 场景` 段 → 不报错 (low 是单向软提示)
 - ❌ 6 问子标题顺序错乱 → 不检测
 - ❌ 6 问内容空 → 不检测
 - ❌ 跨章 `## 场景 N` 编号连续性 → 不检测
@@ -166,7 +166,7 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 | # | 维度 | 验收标准 |
 |---|---|---|
 | 1 | 模板存在 | `reference/scene-six-questions.md` 文件存在 + 6 问子标题完整 + 至少 1 个填写示例 + 5 诫命映射表 + 与 i128 beat 关系说明 |
-| 2 | 规则 JSON 合法 | `scene-six-questions.json` 通过 `JSON.parse` + 5 字段齐全 (id/scope/level/message/example) + level="info" 验证 |
+| 2 | 规则 JSON 合法 | `scene-six-questions.json` 通过 `JSON.parse` + 5 字段齐全 (id/scope/level/message/example) + level="low" 验证 |
 | 3 | ruleset 实际触发 | 写 1 个测试章 (无 `## 场景` 段) 跑 llmlint pipeline, 验证 info 提示出现 + 引用 reference 路径 |
 | 4 | ruleset 不阻塞 | 缺 `## 场景` 段时 exit code 0, 不影响其他规则 (chapter-hook 仍正常) |
 | 5 | baseline 脚本可跑 | `node scripts/baseline-scan-scene-six-questions.cjs` 退出码 0 + 报告生成 |
@@ -200,7 +200,7 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 | 文件 | 行数估 | 用途 |
 |---|---|---|
 | `reference/scene-six-questions.md` | ~120 | 模板 + 6 问 + 示例 + 5 诫命映射 + beat 关系 |
-| `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` | ~30 | ruleset JSON (level: info) |
+| `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` | ~30 | ruleset JSON (level: low) |
 | `scripts/baseline-scan-scene-six-questions.cjs` | ~150 | baseline 扫描脚本 (派生 i129) |
 | `workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/i135-p1-4-baseline-report.md` | auto | V1+V2 baseline 报告 |
 
@@ -234,7 +234,7 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 | `reference/` 目录 | 与现有 reference/scene-six-questions.md 共存 |
 | i128 beat 字段 | 互补不冲突: beat = 章级 (Save the Cat 15), scene-six-questions = 场景级 (Story Grid 6 问) |
 | i129 chapter-hook ruleset | 并行独立: chapter-hook scope=ending 200 chars, scene-six-questions scope=chapter-h2 全文 |
-| 调研报告 §7.4 抗反模式 | level=info 严格遵守, 0 强制 |
+| 调研报告 §7.4 抗反模式 | level=low 严格遵守, 0 强制 |
 | archive 模式 (5 批次先例) | 沿用 worktree + cp + 0 push + 报告入 .agent/plan/ |
 
 ---

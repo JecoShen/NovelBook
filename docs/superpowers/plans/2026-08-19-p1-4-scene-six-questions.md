@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 把 Story Grid 6 问软提示落到 NeuroBook `reference/scene-six-questions.md` 模板 + llmlint `cn.structure.scene-six-questions` ruleset (level: info) + V1+V2 80 章 baseline 报告,零侵入现有 writer / harness / lore 流程。调研报告 P0-P2 进度从 3/6 (50%) 推到 4/6 (67%)。
+**Goal:** 把 Story Grid 6 问软提示落到 NeuroBook `reference/scene-six-questions.md` 模板 + llmlint `cn.structure.scene-six-questions` ruleset (level: low) + V1+V2 80 章 baseline 报告,零侵入现有 writer / harness / lore 流程。调研报告 P0-P2 进度从 3/6 (50%) 推到 4/6 (67%)。
 
-**Architecture:** 全新增 4 文件,0 改动现有文件。ruleset JSON 复用 chapter-hook 11 字段模式,level=info 严格遵守 spec §7.4 抗过度 spec 化。baseline-scan.cjs 派生 i129 `scripts/baseline-scan.cjs` 90% 代码,改 scope 为 ## 场景 段 + 6 问子标题检测,输出 markdown 报告到 `workspace/<proj>/.agent/plan/i135-p1-4-baseline-report.md`。
+**Architecture:** 全新增 4 文件,0 改动现有文件。ruleset JSON 复用 chapter-hook 11 字段模式,level=low 严格遵守 spec §7.4 抗过度 spec 化。baseline-scan.cjs 派生 i129 `scripts/baseline-scan.cjs` 90% 代码,改 scope 为 ## 场景 段 + 6 问子标题检测,输出 markdown 报告到 `workspace/<proj>/.agent/plan/i135-p1-4-baseline-report.md`。
 
 **Tech Stack:** TypeScript 严格模式 (ruleset JSON 验证) / Node.js CommonJS (baseline-scan.cjs 派生模式) / Markdown (模板) / Bun test / vitest (ruleset 集成测试,沿用 `server/agent/skills/llmlint.test.ts`)
 
@@ -33,7 +33,7 @@ from spec §2 §4 §6 §8 — 每个 task 隐式遵守:
 | 文件 | 角色 | 行数估 |
 |---|---|---|
 | `reference/scene-six-questions.md` | 新: 6 问模板 + 示例 + 5 诫命映射 + beat 关系 | ~120 |
-| `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` | 新: ruleset JSON (level: info) | ~30 |
+| `assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json` | 新: ruleset JSON (level: low) | ~30 |
 | `scripts/baseline-scan-scene-six-questions.cjs` | 新: baseline 扫描脚本 (派生 i129) | ~150 |
 | `workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/i135-p1-4-baseline-report.md` | 新: V1+V2 baseline 报告 (auto) | ~80 |
 
@@ -135,13 +135,13 @@ git commit -m "feat(reference): scene-six-questions template — Story Grid 6 �
 - V3 主角章填写示例
 - Story Grid 5 诫命映射表
 - 与 i128 beat 字段关系
-- llmlint 触发说明 (level: info)
+- llmlint 触发说明 (level: low)
 - V1+V2 baseline 报告引用"
 ```
 
 ---
 
-## Task 3: RED — Write ruleset JSON load + level=info validation test
+## Task 3: RED — Write ruleset JSON load + level=low validation test
 
 **Files:**
 - Create: `server/agent/skills/llmlint-scene-six-questions.test.ts` (~80 行, RED)
@@ -464,7 +464,7 @@ function formatReport(report) {
     lines.push('## 下一步');
     lines.push('');
     lines.push('- V3 写作时按 `reference/scene-six-questions.md` 模板手填 `## 场景` 段');
-    lines.push('- llmlint ruleset `cn.structure.scene-six-questions` (level: info) 给软提示');
+    lines.push('- llmlint ruleset `cn.structure.scene-six-questions` (level: low) 给软提示');
     lines.push('- V3 完结后跑一次 V3 baseline 对比 V1+V2 0%');
     lines.push('');
     return lines.join('\n');
@@ -575,7 +575,7 @@ grep -c "^### [1-6]\." reference/scene-six-questions.md
 
 期望: `✓ 模板存在` + `6`
 
-- [ ] **Step 2: 验证 验收 #2 规则 JSON 合法 + level=info**
+- [ ] **Step 2: 验证 验收 #2 规则 JSON 合法 + level=low**
 
 ```bash
 cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
@@ -587,7 +587,7 @@ console.log('✓ 字段齐全:', Object.keys(r[0]).join(','));
 "
 ```
 
-期望: `✓ JSON 合法` + `✓ level=info` + 字段含 id/namespace/title/level/review/fixability/enabled/note/detector/action
+期望: `✓ JSON 合法` + `✓ level=low` + 字段含 id/namespace/title/level/review/fixability/enabled/note/detector/action
 
 - [ ] **Step 3: 验证 验收 #3 + #4 ruleset 实际触发 + 不阻塞**
 
@@ -685,9 +685,9 @@ mkdir -p /www/wwwroot/book.neoshen.dpdns.org/workspace/qi-shou-fan-shen-cheng-di
 ## 验收 (spec §5 8/8)
 
 - [x] #1 模板存在 + 6 问子标题完整 + 1 个示例
-- [x] #2 ruleset JSON 合法 + level=info
+- [x] #2 ruleset JSON 合法 + level=low
 - [x] #3 ruleset 实际触发 (3/3 test pass)
-- [x] #4 ruleset 不阻塞 (level=info 软提示)
+- [x] #4 ruleset 不阻塞 (level=low 软提示)
 - [x] #5 baseline 脚本可跑 (exit code 0 + 报告生成)
 - [x] #6 V1+V2 baseline 数据合理 (0% 覆盖率, 符合预期)
 - [x] #7 不污染主 workspace (0 push / 0 merge)
@@ -717,7 +717,7 @@ mkdir -p /www/wwwroot/book.neoshen.dpdns.org/workspace/qi-shou-fan-shen-cheng-di
 ## 教训 (5)
 
 1. **派生 90% 复用**: i129 baseline-scan.cjs 改 scope 比从零写省 ~80% 工作量
-2. **level=info 软提示设计**: 抗调研报告 §7.4 过度 spec 化, 0 阻塞 V3 写作
+2. **level=low 软提示设计**: 抗调研报告 §7.4 过度 spec 化, 0 阻塞 V3 写作
 3. **JSON ruleset 11 字段模式**: 沿用 chapter-hook 兼容现有 llmlint pipeline
 4. **archive cp 模式**: 主工作区同步 4 文件 + 0 push/0 merge, 沿用 i128-i134 6 批次先例
 5. **forward-only 决策**: V1+V2 0 文件改动, baseline 报告只读不写, 减少对作者干扰
@@ -799,7 +799,7 @@ du -sh .worktree/feat-p1-4-scene-six-questions
 
 ## Out of Scope (per spec §8)
 
-- ❌ 强制 `## 场景` 段 (level=info 永不变)
+- ❌ 强制 `## 场景` 段 (level=low 永不变)
 - ❌ 6 问子标题顺序检测
 - ❌ 5 诫命子段强制
 - ❌ 跨章场景编号连续性
