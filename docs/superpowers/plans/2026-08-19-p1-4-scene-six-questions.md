@@ -206,7 +206,7 @@ cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
 bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -20
 ```
 
-期望: 3/3 FAIL (ruleset JSON 文件不存在 → loadRules 找不到)
+期望: 4/4 FAIL (ruleset JSON 文件不存在 → loadRules 找不到)
 
 - [ ] **Step 3: 暂不提交 (RED 状态等待 Task 4 GREEN)**
 
@@ -221,7 +221,7 @@ bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -20
 
 **Interfaces:**
 - 消费: 现有 chapter-hook.json 11 字段模式
-- 产出: ruleset JSON, level: info, scope = 章节内 H2 "## 场景"
+- 产出: ruleset JSON, level: low, scope = 章节内 H2 "## 场景"
 
 - [ ] **Step 1: 写 scene-six-questions.json (沿用 chapter-hook 格式, 简化为 1 条)**
 
@@ -233,18 +233,18 @@ bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -20
     "id": "cn.structure.scene-six-questions",
     "namespace": "structure.scene-six-questions",
     "title": "场景 6 问 (P1-4: Story Grid 6 问 软提示)",
-    "level": "info",
+    "level": "low",
     "review": "agent",
     "fixability": "manual",
     "enabled": true,
-    "note": "P1-4 (2026-08-19) — 调研报告 research-sdd-novel-writing-2026-08-18.md §2.3 落地。level=info 永不变 warn / high, 抗 §7.4 过度 spec 化。V1+V2 baseline 0% 覆盖率, 报告见 workspace/.../i135-p1-4-baseline-report.md。V3+ 启用为软引导, 不强制 6 问子标题顺序 / 内容空 / 编号连续性 / 5 诫命子段。",
+    "note": "P1-4 (2026-08-19) — 调研报告 research-sdd-novel-writing-2026-08-18.md §2.3 落地。level=low 永不变 medium/high, 抗 §7.4 过度 spec 化。detector 非锚定, 会命中任意内联 \"## 场景\" 提及, level=low 软提示可接受; 缺 ## 场景 段的章也触发软提示。",
     "detector": {
       "type": "regex",
-      "targets": ["(?![\\s\\S])"]
+      "targets": ["## 场景"]
     },
     "action": {
       "type": "suggest",
-      "message": "建议为本章添加 ## 场景 段并填 6 问 (POV / 地点时间 / 想要什么 / 价值转换 / 新信息 / 下一步), 参考 reference/scene-six-questions.md。Story Grid 6 问为 V3+ 软引导, 写新章时按需填写。"
+      "message": "建议为本章添加 ## 场景 段并填 6 问 (POV / 地点时间 / 想要什么 / 价值转换 / 新信息 / 下一步), 参考 reference/scene-six-questions.md"
     }
   }
 ]
@@ -257,16 +257,16 @@ cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
 node -e "const r = JSON.parse(require('fs').readFileSync('assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json', 'utf8')); console.log('OK', r.length, 'rules'); console.log('level:', r[0].level, 'id:', r[0].id)"
 ```
 
-期望: 输出 `OK 1 rules` + `level: info` + `id: cn.structure.scene-six-questions`
+期望: 输出 `OK 1 rules` + `level: low` + `id: cn.structure.scene-six-questions`
 
-- [ ] **Step 3: 运行测试, 验证 GREEN (3/3 应 pass)**
+- [ ] **Step 3: 运行测试, 验证 GREEN (4/4 应 pass)**
 
 ```bash
 cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
 bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -10
 ```
 
-期望: 3/3 PASS
+期望: 4/4 PASS
 
 - [ ] **Step 4: 运行全量 llmlint 测试, 验证不破坏现有**
 
@@ -283,14 +283,15 @@ bun test server/agent/skills/llmlint.test.ts 2>&1 | tail -5
 cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
 git add server/agent/skills/llmlint-scene-six-questions.test.ts
 git add assets/workspace/.nbook/agent/skills/llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.json
-git commit -m "feat(llmlint): cn.structure.scene-six-questions ruleset (level: info)
+git commit -m "feat(llmlint): cn.structure.scene-six-questions ruleset (level: low)
 
 P1-4 落位 (调研报告 §2.3):
 - ruleset JSON 沿用 chapter-hook 11 字段格式
-- level: info 永不变 warn / high (抗 §7.4 过度 spec 化, 0 阻塞)
+- level: low 永不变 medium/high (抗 §7.4 过度 spec 化, 0 阻塞)
 - enabled: true (V3+ 启用)
+- detector 真实匹配 \"## 场景\" (非锚定, 加 scanText trigger 测试; 缺 ## 场景 段的章也触发软提示)
 - action message 引用 reference/scene-six-questions.md 模板路径
-- 3 测试 TDD: loads + level 验证 + message 引用
+- 4 测试 TDD: loads + level 验证 + message 引用 + scanText 触发
 
 全量 llmlint 测试不破坏, ruleset 数量 +1"
 ```
@@ -345,7 +346,7 @@ const SCENE_QUESTION_PATTERNS = [
     { id: 'next-step', label: '下一步必做', regex: /^### 下一步必做\b/gm },
 ];
 
-const SCENE_SECTION_REGEX = /^## 场景\b/gm;
+const SCENE_SECTION_REGEX = /## 场景\b/gm;
 
 function main() {
     if (!fs.existsSync(MANUSCRIPT_ROOT)) {
@@ -595,7 +596,7 @@ cd /www/wwwroot/book.neoshen.dpdns.org/.worktree/feat-p1-4-scene-six-questions
 bun test server/agent/skills/llmlint-scene-six-questions.test.ts 2>&1 | tail -5
 ```
 
-期望: 3/3 PASS
+期望: 4/4 PASS
 
 - [ ] **Step 4: 验证 验收 #5 baseline 脚本可跑**
 

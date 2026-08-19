@@ -86,10 +86,21 @@ assets/.../llmlint/rulesets/builtin/default/rules/structure/scene-six-questions.
 ─────────────────────────────────────────
 {
   "id": "cn.structure.scene-six-questions",
-  "scope": "chapter-h2-equals-##场景",
-  "level": "info",
-  "message": "建议为本章添加 ## 场景 段并填 6 问, 参考 reference/scene-six-questions.md",
-  "example": "## 场景 1 — 顾霁决定南下..."
+  "namespace": "structure.scene-six-questions",
+  "title": "场景 6 问 (P1-4: Story Grid 6 问 软提示)",
+  "level": "low",
+  "review": "agent",
+  "fixability": "manual",
+  "enabled": true,
+  "note": "P1-4 (2026-08-19) — 调研报告 §2.3 落地。level=low 永不变 medium/high, 抗 §7.4 过度 spec 化。detector 非锚定, 会命中任意内联 \"## 场景\" 提及, level=low 软提示可接受; 缺 ## 场景 段的章也触发软提示。",
+  "detector": {
+    "type": "regex",
+    "targets": ["## 场景"]
+  },
+  "action": {
+    "type": "suggest",
+    "message": "建议为本章添加 ## 场景 段并填 6 问 (POV / 地点时间 / 想要什么 / 价值转换 / 新信息 / 下一步), 参考 reference/scene-six-questions.md"
+  }
 }
 
 
@@ -97,7 +108,7 @@ scripts/baseline-scan-scene-six-questions.cjs (~150 行)
 ─────────────────────────────────────────
 - 输入: workspace/.../manuscript/<vol>/<ch>/index.md
 - 沿用 i129 baseline-scan.cjs 模式
-- 检测: 包含 `^## 场景` 的 chapter 数 / 6 问子标题出现频次
+- 检测: 包含 `## 场景` 的 chapter 数 / 6 问子标题出现频次
 - 输出: workspace/.../.agent/plan/i135-p1-4-baseline-report.md
 - 退出码: 0 (baseline 是只读, 不报错)
 
@@ -113,8 +124,20 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 **不变量**:
 - 不动 `writer.profile.tsx` / `neuro-agent-harness.ts` / `lore-resolver*`
 - 不动 V1+V2 任何 chapter 文件
-- ruleset 永不变 warn / high
+- ruleset 永不变 medium / high
 - 报告写 `.agent/plan/` 不污染 `docs/`
+
+### 3.1 detector 锚定权衡 (2026-08-19 实施实证, 用户选 C 校正)
+
+实施 Task 4 GREEN 时实证发现 llmlint scanner 约束:
+- scanner 用 `g` flag 且无 `m` flag → `^` 只锚定字符串开头, **非行首**
+- scanner 无 "缺段" 原语, 只有正向匹配 (positive-match only)
+- 因此 锚定行首的写法无法满足 test 4 (期望无 `## 场景` 段的章也触发 issue)
+
+**修正**: detector 定为**非锚定** `"## 场景"`, 与实现 `d2c0d5b3` 对齐。trade-off 接受:
+- 会命中任意内联 `"## 场景"` 提及 (如 "参见 ## 场景 模板")
+- level=low 软提示不阻塞, 仅信息性, 故可接受
+- 章完全无 `## 场景` 提及 → 无 issue (test 4 精确文本仍触发); 但提及 `## 场景` 却无真实场景段的章也会触发 — 这是设计接受的噪声
 
 ---
 
