@@ -298,6 +298,14 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
     const customTopPrompt = ctx.settings.customTopSystemPrompt.trim();
     const adultStylePrompt = ctx.settings.adultStylePrompt.trim();
     const inputContext = await renderInputContext(ctx);
+    const chapterLoreContext = await renderChapterLoreContext(ctx);  // ★ I-1: lore 注入
+    const chapterLoreBlock = chapterLoreContext.length > 0
+        ? profileText`
+<chapter_lore_context>
+${chapterLoreContext}
+</chapter_lore_context>
+`
+        : "";
     return (
         <ProfilePrompt>
             <System>
@@ -474,6 +482,9 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                 <FileChangeNotice mode={ctx.settings.fileChangeAwareness} />
                 <If condition={!ctx.invocation?.message}>
                     <Message>本轮没有收到 invoke_agent.message。不要写文件；请通过 report_result.result 要求调用方补充本轮写作任务。</Message>
+                </If>
+                <If condition={chapterLoreContext.length > 0}>
+                    <Message>{chapterLoreContext}</Message>
                 </If>
             </AppendingSet>
         </ProfilePrompt>

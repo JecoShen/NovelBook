@@ -14,6 +14,7 @@ const PROJECT_ROOT = join(tmpdir(), `writer-lore-test-${Date.now()}-${Math.rando
 function makeProjectRef(): ReadyProjectSessionRef {
     return {
         workspace: {
+            root: PROJECT_ROOT,
             ref: {
                 projectRoot: PROJECT_ROOT,
                 projectSlug: "test-proj",
@@ -23,7 +24,7 @@ function makeProjectRef(): ReadyProjectSessionRef {
 }
 
 function makeCard(dir: string, file: string, title: string, triggers: string[]): void {
-    const cardDir = join(PROJECT_ROOT, "lorebook", dir);
+    const cardDir = join(PROJECT_ROOT, "lorebook", dir, file);
     mkdirSync(cardDir, {recursive: true});
     const frontmatter = [
         "---",

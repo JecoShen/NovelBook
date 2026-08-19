@@ -14,13 +14,16 @@
  * 任何超出该子集的需求应升级到完整 YAML 库。
  */
 
-/** 解析单个标量值：`[a, b]` 数组 / `true`|`false` 布尔 / 其余字符串。 */
+/** 解析单个标量值：`[a, b]` 数组 / `true`|`false` 布尔 / `"quoted"` 字符串 / 其余裸字符串。 */
 export function parseScalarValue(value: string): unknown {
     if (value.startsWith("[") && value.endsWith("]")) {
-        return value.slice(1, -1).split(",").map((s) => s.trim()).filter(Boolean);
+        return value.slice(1, -1).split(",").map((s) => s.trim().replace(/^"(.*)"$/u, "$1")).filter(Boolean);
     }
     if (value === "true") return true;
     if (value === "false") return false;
+    // P1-3 → I-1 fix: 双引号字符串去引号 (per YAML 1.2 spec 7.3.2)
+    const quoted = value.match(/^"(.*)"$/u);
+    if (quoted) return quoted[1] ?? "";
     return value;
 }
 
