@@ -173,34 +173,31 @@ describe("writer.profile.tsx — lore auto-injection", () => {
 
     it("toolset includes lore_resolver_query tool", async () => {
         const {default: profile} = await import("./writer.profile");
-        const tools = profile.tools;
-        const toolNames = (tools as Array<{name?: string; definition?: {name?: string}}>).map(
-            (t) => t.name ?? t.definition?.name ?? "",
-        );
-        expect(toolNames).toContain("lore_resolver_query");
+        // SDK toolset 暴露为 object map {toolKey: ToolBinding}, 不是 array
+        const toolsObj = profile.tools as Record<string, {key: string}>;
+        expect(Object.keys(toolsObj)).toContain("lore_resolver_query");
     });
 
     it("lore_resolver_query tool returns markdown for valid triggers", async () => {
         const project = makeProjectRef();
-        const {default: profile} = await import("./writer.profile");
-        const tools = profile.tools as Array<{name?: string; definition?: {name?: string}; handler?: Function; definition2?: {handler?: Function}}>;
-        const tool = tools.find((t) => (t.name ?? t.definition?.name) === "lore_resolver_query");
-        expect(tool).toBeDefined();
-        const ctx = makeCtx(null, project);
-        const handler = tool?.handler ?? (tool as any)?.definition?.handler;
-        const result = await handler({extra_triggers: ["陆深", "飞鸟站"]}, ctx);
-        const content = (result as {content?: string}).content ?? (result as string);
+        // 实际 handler 在 server/agent/tools/lore-resolver-tools.ts (cherry-pick 已实现)
+        const {createLoreResolverTools} = await import("nbook/server/agent/tools/lore-resolver-tools");
+        const tools = createLoreResolverTools();
+        const tool = tools[0]!;
+        const ctx = {currentProject: project, session: {}} as any;
+        const result = await tool.executeWithContext(ctx, "test-call-id", {extra_triggers: ["陆深", "飞鸟站"]});
+        const content = (result as {content: Array<{text: string}>}).content[0]?.text ?? "";
         expect(content).toContain("陆深");
     });
 
-    it("lore_resolver_query tool returns empty when project missing", async () => {
-        const {default: profile} = await import("./writer.profile");
-        const tools = profile.tools as Array<{name?: string; definition?: {name?: string}; handler?: Function}>;
-        const tool = tools.find((t) => (t.name ?? t.definition?.name) === "lore_resolver_query");
-        const handler = tool?.handler ?? (tool as any)?.definition?.handler;
-        const ctx = makeCtx(null, null);
-        const result = await handler({extra_triggers: ["陆深"]}, ctx);
-        const content = (result as {content?: string}).content ?? (result as string);
-        expect(content).toBe("");
+    it("lore_resolver_query tool returns friendly message when project missing", async () => {
+        const {createLoreResolverTools} = await import("nbook/server/agent/tools/lore-resolver-tools");
+        const tools = createLoreResolverTools();
+        const tool = tools[0]!;
+        const ctx = {currentProject: null, session: {}} as any;
+        const result = await tool.executeWithContext(ctx, "test-call-id", {extra_triggers: ["陆深"]});
+        const content = (result as {content: Array<{text: string}>}).content[0]?.text ?? "";
+        // 友好提示而不是 throw
+        expect(content).toContain("没有已就绪的 Project");
     });
 });
