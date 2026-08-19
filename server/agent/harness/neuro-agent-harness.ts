@@ -2051,12 +2051,22 @@ export class NeuroAgentHarness {
                             });
                             if (rendered.includedPaths.length > 0) {
                                 systemPrompt = `${systemPrompt}\n\n${rendered.markdown}`;
-                                await recordExplicitContextEntries({
-                                    project,
-                                    profileKey: context.profileKey,
-                                    sessionId: String(input.sessionId),
-                                    entries: rendered.includedPaths.map((p) => ({path: `lorebook/${p}/index.md`})),
-                                });
+                                // M-9: record 失败与 inject 失败分开 catch — 避免 record 失败误报为 inject 失败
+                                try {
+                                    await recordExplicitContextEntries({
+                                        project,
+                                        profileKey: context.profileKey,
+                                        sessionId: String(input.sessionId),
+                                        entries: rendered.includedPaths.map((p) => ({path: `lorebook/${p}/index.md`})),
+                                    });
+                                } catch (recordError) {
+                                    // 降级:record 失败不阻断流程,inject 已成功
+                                    void appLogger.warn("agent.lore.record.failed", {
+                                        sessionId: input.sessionId,
+                                        invocationId: input.invocationId,
+                                        error: recordError instanceof Error ? recordError.message : String(recordError),
+                                    });
+                                }
                             }
                         }
                     } catch (error) {
