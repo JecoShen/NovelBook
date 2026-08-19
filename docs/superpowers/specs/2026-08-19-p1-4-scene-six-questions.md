@@ -139,6 +139,19 @@ workspace/.../i135-p1-4-baseline-report.md (自动生成)
 - level=low 软提示不阻塞, 仅信息性, 故可接受
 - 章完全无 `## 场景` 提及 → 无 issue (test 4 精确文本仍触发); 但提及 `## 场景` 却无真实场景段的章也会触发 — 这是设计接受的噪声
 
+### 3.2 JS regex `\b` CJK 边界教训 (2026-08-19 修复)
+
+Task 5 实施后修复 latent defect 时实证发现: JS regex `\b` 只识别 `[A-Za-z0-9_]` word 字符, **对 CJK 无效**.
+
+- `^### 地点\b` 对 `### 地点\n` / `### 地点：...` 恒不命中 (CJK 是 non-word, `\b` 永远不出现)
+- 影响: baseline-scan 6 问频次 detector 静默报 0 — V1+V2 baseline 0 不受影响, 但 V3+ 按模板填也会报 0 (latent defect)
+- **修复**: CJK 子标题用 `(?=\s|$)` lookahead 替代 `\b` (精确, 不误匹配 `### 地点备注`)
+- `## 场景` 段 regex 同病同修, 改为 `^## 场景(?=\s|$)`
+- POV 是 ASCII, `\b` 保留可用
+- 下一步必做: 模板规范标题含 `什么` 后缀, regex 用 `下一步必做(什么)?(?=\s|$)` 兼容两种写法
+
+**教训**: 未来 ruleset / detector 若用 regex 匹配 CJK 标题, 禁止用 `\b`, 改用 `(?=\s|$)` (或明确列出字面量).
+
 ---
 
 ## §4 错误处理

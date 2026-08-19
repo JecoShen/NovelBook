@@ -12,15 +12,19 @@ const WORKSPACE_ROOT = path.join(__dirname, '..', 'workspace', 'qi-shou-fan-shen
 const MANUSCRIPT_ROOT = path.join(WORKSPACE_ROOT, 'manuscript');
 const REPORT_PATH = path.join(WORKSPACE_ROOT, '.agent', 'plan', 'i135-p1-4-baseline-report.md');
 
-const SCENE_SECTION_REGEX = /^## 场景\b/gm;
+// CJK 边界说明: JS regex `\b` 只识别 [A-Za-z0-9_], 对 CJK 子标题无效
+// (如 '## 场景\b' / '### 地点\b' 永远不命中). CJK 标题用 (?=\s|$) lookahead 替代.
+// POV 是 ASCII, `\b` 可用.
+// 下一步必做: 模板规范标题为 '下一步必做什么', 用 (什么)? 兼容 '下一步必做' 两种写法.
+const SCENE_SECTION_REGEX = /^## 场景(?=\s|$)/gm;
 
 const SCENE_QUESTION_PATTERNS = [
     { id: 'pov', label: 'POV', regex: /^### POV\b/gm },
-    { id: 'location-time', label: '地点/时间', regex: /^### 地点\b/gm },
-    { id: 'wants', label: '主角想要什么', regex: /^### 主角想要什么\b/gm },
-    { id: 'value-shift', label: '价值转换', regex: /^### 价值转换\b/gm },
-    { id: 'new-info', label: '新信息/情感', regex: /^### 新信息\b/gm },
-    { id: 'next-step', label: '下一步必做', regex: /^### 下一步必做\b/gm },
+    { id: 'location-time', label: '地点/时间', regex: /^### 地点(?=\s|$)/gm },
+    { id: 'wants', label: '主角想要什么', regex: /^### 主角想要什么(?=\s|$)/gm },
+    { id: 'value-shift', label: '价值转换', regex: /^### 价值转换(?=\s|$)/gm },
+    { id: 'new-info', label: '新信息/情感', regex: /^### 新信息(?=\s|$)/gm },
+    { id: 'next-step', label: '下一步必做', regex: /^### 下一步必做(什么)?(?=\s|$)/gm },
 ];
 
 function main() {
