@@ -63,9 +63,11 @@
 ### 2.1 `lore-resolver-cache.ts`
 
 ```typescript
+// 8 kinds — note 在 §3 invariant 显式排除 (作者笔记不可被 LLM 当 lore 读取),
+// spec 类可注入 (story-spec/index.md 是符合 lore 形态的元数据, 但走不同 prefix)
 export type LoreEntryKind =
   | "character" | "location" | "faction"
-  | "event" | "item" | "world" | "system" | "spec" | "note";
+  | "event" | "item" | "world" | "system" | "spec";
 
 export interface LoreEntryMeta {
   /** workspace-relative path，如 "lorebook/character/lu-shen" */
@@ -99,7 +101,7 @@ export function invalidateLoreResolverIndex(
 
 **构建过程**：
 1. 调 `project.workspace.ref.projectRoot` 拿到根
-2. 用 `fs.readdir` 遍历 `lorebook/{character,location,faction,event,item,world,system}/`（**不**遍历 `note/`、`story-spec/`、`instruction/`）
+2. 用 `fs.readdir` 遍历 `lorebook/{character,location,faction,event,item,world,system,spec}/`（**不**遍历 `note/`、`story-spec/`、`instruction/`）
 3. 每个 entry 读 `index.md` 的 frontmatter，提取 `path/kind/title/triggers/enabled`
 4. `enabled === false` 跳过
 5. 触发器去重 + 长度过滤（< 2 字符的 trigger 跳过，避免误伤"我"/"他"等）
@@ -178,7 +180,7 @@ export async function renderInjectedMarkdown(
   - frontmatter（去 `retrieval/governance/ext`，保留 `title/type/aliases/tags/summary`）
   - `## 基本信息` 段（**或** frontmatter `summary` 如果该段缺失）
   - `## 性格` 段**前 3 行**
-- 顺序：`character` → `location` → `faction` → `event` → `item` → `world` → `system`
+- 顺序：`character` → `location` → `faction` → `event` → `item` → `world` → `system` → `spec` (8 kinds, 见 §2.1)
 - 同类型按 hits 数降序
 - 累计字符数超 `maxChars` → 截断后剩余
 
@@ -337,7 +339,7 @@ defineTool({
 |---|---|
 | `lore-resolver-cache.test.ts` | (1) 扫 21 张 character 构建索引 (2) `enabled: false` 跳过 (3) 路径中含特殊字符（中文/空格） (4) frontmatter 缺字段时 defaults (5) `note/` 不进索引 |
 | `lore-resolver.test.ts` | (1) 单 trigger 命中 (2) 多 trigger 命中 (3) 同一 path 多 trigger 累加 (4) 排序：命中数 DESC (5) carryOver 优先 (6) `maxPaths` 截取 (7) 空文本返回空 paths (8) 文本中 trigger 跨段不误命中 |
-| `lore-context-injector.test.ts` | (1) 渲染 character/location/faction 顺序 (2) `## 基本信息` 段提取 (3) `## 性格` 段只取 3 行 (4) `maxChars` 截断 + truncatedPaths (5) frontmatter 清洗（去掉 retrieval/governance/ext） |
+| `lore-context-injector.test.ts` | (1) 渲染 character/location/faction/spec 顺序 (2) `## 基本信息` 段提取 (3) `## 性格` 段只取 3 行 (4) `maxChars` 截断 + truncatedPaths (5) frontmatter 清洗（去掉 retrieval/governance/ext） |
 | `lore-resolver-integration.test.ts` | (1) build → resolve → render 全链路 (2) harness 调用注入点 mock (3) 调 `lore_resolver_query` 工具 |
 
 **TDD 顺序**（per ECC `development-workflow.md`）：
