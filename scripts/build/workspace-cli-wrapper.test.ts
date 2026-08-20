@@ -111,6 +111,8 @@ async function wrapperFixture(name: "workspace" | "workspace.cmd", withProductBu
 async function runWrapper(fixture: WrapperFixture, args: string[]): Promise<WrapperResult> {
     const env = {
         ...process.env,
+        // 防止环境残留的 NODE_ENV=development 让包装器优先选 source 入口而绕过 bundle。
+        NODE_ENV: undefined,
         BUN: process.versions.bun ? process.execPath : "bun",
         NEURO_BOOK_APPLICATION_ROOT: fixture.applicationRoot,
         NEURO_BOOK_STATE_ROOT: fixture.stateRoot,
