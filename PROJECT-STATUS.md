@@ -1,6 +1,6 @@
 # Project Status
 
-> 截至 2026-08-14。本文只记录仓库级现状，不替代 `docs/tasks/` 中的实现 walkthrough；具体 TODO 和后续安排以对应 Issue、Task 为准。
+> 截至 2026-08-20。本文只记录仓库级现状，不替代 `docs/tasks/` 中的实现 walkthrough；具体 TODO 和后续安排以对应 Issue、Task 为准。
 
 ## 一句话结论
 
@@ -27,7 +27,7 @@ NeuroBook 当前处于快速开发阶段，产品主线已经收敛到 **Novel �
 | Task 143 Desktop Envelope | Windows-first Electron/Tauri spike 已完成合同和共享 Workbench Chrome 验收；内部 Desktop 产品化证据继续由 Task 145维护 | [Task 143](docs/tasks/143-desktop-envelope-installation-spike/README.md)、[Task 145](docs/tasks/145-electron-desktop-productization/README.md) |
 | Task 145 Electron Desktop Productization | Windows x64 内部 Desktop beta 的安装、UAC、Repair、卸载和 Sandbox `--delete-data` 验收已收口；公开 Application Canary `v0.9.6-canary.20260814.024826Z.9653191d` 已发布，但不包含 Electron Desktop ZIP/Depot。原生 Snap、真实外部 Provider、公开签名、updater 和 macOS 实包仍未完成 | [Task 145](docs/tasks/145-electron-desktop-productization/README.md)、[ADR 0014](docs/adr/0014-electron-desktop-productization.md)、[ADR 0016](docs/adr/0016-windows-desktop-uac-broker.md)、[#87](https://github.com/notnotype/neuro-book/issues/87) |
 | Agent 资产安装协议 | 方案已起草并完成自审，尚未实施 | [Task 135](docs/tasks/135-agent-asset-install-protocol/README.md) |
-| llmlint | 3.0.0 已同步到 sibling、内置 vendored runtime 和 user runtime | [Task 51](docs/tasks/51-anti-ai-slop-skill/README.md) |
+| llmlint | 3.0.0 已同步到 sibling、内置 vendored runtime 和 user runtime；2026-08-18~20 增 SDD 章节质量基础 — chapter-hook 5 模式 detector (v0.3 reversal TP 100% / FP 0% / short-drop TP 100%) + scene-six-questions 软提示 (level=low, V1+V2 baseline 0/80) + lore-resolver 含 carryOverPaths (JSONL store, 3-章 sliding window) | [Task 51](docs/tasks/51-anti-ai-slop-skill/README.md)、[P1-4 spec](docs/superpowers/specs/2026-08-19-p1-4-scene-six-questions.md)、[P1-4 plan](docs/superpowers/plans/2026-08-19-p1-4-scene-six-questions.md) |
 
 ## 关键实现合同
 
@@ -40,6 +40,7 @@ NeuroBook 当前处于快速开发阶段，产品主线已经收敛到 **Novel �
 
 ## 最新收口
 
+- 2026-08-20：SDD 调研报告 4/6 (67%) 完整闭环 — 5 批次链沿用 archive 模式 (worktree + cp + 0 push / 0 merge / 0 force-push) 收口。(1) P1-3 lore-resolver MVP + M-1..M-11 minor 11/11 APPLIED + I-1 production wiring 5 commits 合并入 main (49e62466 + 8e293aae 等 14 commits)，spec v4.5 → v4.7，32/32 lore + 16/16 writer profile tests pass，tsc 0 errors，i134 perf 0.00/0.31/3.49ms 远低 100/20/50ms 阈值 (余量 10000x/64x/14x)，7/7 验收；(2) P1-4 scene-six-questions 9 commits on `feat-p1-4-scene-six-questions` (已 worktree 释放, branch 保留)，Story Grid 6 问模板 + level=low 软提示 ruleset + CJK-safe baseline 脚本，V1+V2 0/80 (0%) baseline 合理，8/8 验收 + 5 corrections 落位 (level=info→low 全局 sweep / chapter count 60→80 / 11→10 字段 / 5 处 residual drift / CJK `\b`→lookahead)；(3) A1 minor nits cleanup commit `614d1a08`，magic numbers 提 named const + 6 test files DRY (新 `lore-test-helpers.ts` 12 行), 8 files +24/-46 净 -22, 32/32 tests pass；(4) A2-a + P1-4 worktree 处置释放 1.4GB+1GB，`feat-p1-3-minor-nits` + `feat-p1-3-lore-resolver` 双 branch 删 (内容 main 已有), P1-4 worktree 释放用户选 A1, main HEAD `39359ec5` 0 改动, 9 commits 永久可查 reflog 30 天窗口；(5) main ↔ origin 仍 ahead 4 (archive 0 push 守住)。调研报告剩 P2-5 (scene-master-list) / P2-6 (story-bible 模板) 留 v4.8+。
 - [Task 139](docs/tasks/139-agent-abort-error-projection/README.md) 将主动取消与运行错误分开：取消显示中性状态，保留已生成的半截正文，并避免重复错误气泡。
 - [Task 138](docs/tasks/138-agent-conversation-branch-projection/README.md) 将对话分支切换改为基于可见对话锚点的投影，运行期记账 entry 不再制造假分支。
 - [Task 111](docs/tasks/111-workflow-agent-integration/README.md) 已补齐 Workflow 的持久身份、公开投影、Job/Run 详情、`wf.ask` 和 Composer/Preview 防重复提交；动态 `outputSchema` 的 `report_result` 合同也已补齐。
@@ -64,6 +65,7 @@ NeuroBook 当前处于快速开发阶段，产品主线已经收敛到 **Novel �
 - **未决方向**：一次性对话模型接入见 [#19](https://github.com/notnotype/neuro-book/issues/19)；整书导入见 [#22](https://github.com/notnotype/neuro-book/issues/22)；Session 摘要空闲触发见 [#23](https://github.com/notnotype/neuro-book/issues/23)。
 - **维护成本**：仓库结构优化的后续批次暂缓，先处理 Workflow、Product Runtime 和生命周期链路的集成与验收，见 [Task 123](docs/tasks/123-repo-structure-optimization/README.md)。当前 main 的结构复核另外确认：shared/Manager 有真实运行时依赖环（P1 候选）、shared/`server/agent` 有循环类型依赖（P2）、核心 Facade 单体偏大（P2），以及 OpenAPI 生成物仍写回路由源码（P2）；这些是架构债务，不是当前已复现的运行时故障，处理边界见 [ADR 0015](docs/adr/0015-architecture-boundaries-and-deferred-structure.md)。
 - **已接受的架构边界**：文件系统、Project SQLite、History SQLite、Session JSONL 和 Job JSON 不提供全局原子事务；Electron/Tauri spike 保留部分跨语言重复实现。当前不为这两项建设分布式事务框架或复杂跨语言运行时。
+- **SDD 调研报告 deferred**：2026-08-18 调研报告 P0-P2 6 条建议已落位 4/6 (P0-1 beat / P0-2 chapter-hook / P1-3 lore-resolver / P1-4 scene-six-questions)，剩 P2-5 (scene-master-list 模板) + P2-6 (story-bible 模板) 显式 deferred v4.8+；不抢 V3 写作节奏，V3+ 完结后再以真实 baseline 决定是否重启。
 - **上游依赖**：Nitro dev source-map 临时补丁等待上游稳定版实际包含修复后移除，见 [#20](https://github.com/notnotype/neuro-book/issues/20)。
 
 ## 已知语义保留
