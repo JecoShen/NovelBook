@@ -1,36 +1,36 @@
-import {mkdir, mkdtemp, rm, symlink} from "node:fs/promises";
-import {tmpdir} from "node:os";
-import path from "node:path";
-import {afterEach, describe, expect, it} from "vitest";
-import {absoluteFsPath} from "nbook/server/runtime/paths/file-path";
-import {projectWorkspaceRef} from "nbook/server/workspace-files/project-identity";
-import {ProjectRootIdentityModule} from "nbook/server/workspace-files/project-root-identity";
-import {detectWindowsProjectRootReparse} from "nbook/server/workspace-files/project-root-reparse-windows";
+import { mkdir, mkdtemp, rm, symlink } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import { absoluteFsPath } from 'nbook/server/runtime/paths/file-path'
+import { projectWorkspaceRef } from 'nbook/server/workspace-files/project-identity'
+import { ProjectRootIdentityModule } from 'nbook/server/workspace-files/project-root-identity'
+import { detectWindowsProjectRootReparse } from 'nbook/server/workspace-files/project-root-reparse-windows'
 
-const roots: string[] = [];
+const roots: string[] = []
 
 afterEach(async () => {
-    await Promise.all(roots.splice(0).map((root) => rm(root, {recursive: true, force: true})));
-});
+  await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
+})
 
-describe("Windows Project root reparse detector", () => {
-    it.runIf(process.platform === "win32" && "bun" in process.versions)(
-        "真实kernel attributes区分普通目录与junction",
-        async () => {
-            const workspaceRoot = await mkdtemp(path.join(tmpdir(), "nbook-project-reparse-"));
-            roots.push(workspaceRoot);
-            const normalRoot = path.join(workspaceRoot, "normal-root");
-            const junctionRoot = path.join(workspaceRoot, "junction-root");
-            await mkdir(normalRoot);
-            await symlink(normalRoot, junctionRoot, "junction");
+describe('Windows Project root reparse detector', () => {
+  it.runIf(process.platform === 'win32' && 'bun' in process.versions)(
+    '真实kernel attributes区分普通目录与junction',
+    async () => {
+      const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'nbook-project-reparse-'))
+      roots.push(workspaceRoot)
+      const normalRoot = path.join(workspaceRoot, 'normal-root')
+      const junctionRoot = path.join(workspaceRoot, 'junction-root')
+      await mkdir(normalRoot)
+      await symlink(normalRoot, junctionRoot, 'junction')
 
-            await expect(detectWindowsProjectRootReparse(absoluteFsPath(normalRoot))).resolves.toBe(false);
-            await expect(detectWindowsProjectRootReparse(absoluteFsPath(junctionRoot))).resolves.toBe(true);
+      await expect(detectWindowsProjectRootReparse(absoluteFsPath(normalRoot))).resolves.toBe(false)
+      await expect(detectWindowsProjectRootReparse(absoluteFsPath(junctionRoot))).resolves.toBe(true)
 
-            const identity = new ProjectRootIdentityModule(absoluteFsPath(workspaceRoot));
-            await expect(identity.resolve(projectWorkspaceRef("junction-root"))).rejects.toMatchObject({
-                code: "PROJECT_ROOT_LINK_UNSUPPORTED",
-            });
-        },
-    );
-});
+      const identity = new ProjectRootIdentityModule(absoluteFsPath(workspaceRoot))
+      await expect(identity.resolve(projectWorkspaceRef('junction-root'))).rejects.toMatchObject({
+        code: 'PROJECT_ROOT_LINK_UNSUPPORTED',
+      })
+    },
+  )
+})

@@ -1,56 +1,52 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import type {Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {ResearcherInitialSchema} from "nbook/profile-sdk";
-import {AppendingSet, HistorySet, Message, ProfilePrompt, SkillCatalog, System, WorkspaceFocusReminder} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, toolset, ResearcherInitialSchema, AppendingSet, HistorySet, Message, ProfilePrompt, SkillCatalog, System, WorkspaceFocusReminder, profileText } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "researcher",
-    name: "联网研究",
-    description: "联网研究 agent：使用 web_search 和 web_fetch 查找、核对、归纳外部信息，保留连续对话上下文，并在回答中给出来源。",
-} as const;
+  key: 'researcher',
+  name: '联网研究',
+  description: '联网研究 agent：使用 web_search 和 web_fetch 查找、核对、归纳外部信息，保留连续对话上下文，并在回答中给出来源。',
+} as const
 
-export const InitialSchema = ResearcherInitialSchema;
+export const InitialSchema = ResearcherInitialSchema
 
-export type Initial = Static<typeof InitialSchema>;
+export type Initial = Static<typeof InitialSchema>
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    tools: toolset(
-        builtin.web.search,
-        builtin.web.fetch,
-    ),
-    context(ctx) {
-        return (
-            <ProfilePrompt>
-                <System>{RESEARCHER_SYSTEM_PROMPT}</System>
-                <HistorySet>
-                    <Message><SkillCatalog /></Message>
-                </HistorySet>
-                <AppendingSet>
-                    <WorkspaceFocusReminder />
-                    <Message>{renderResearchBrief(ctx.initial)}</Message>
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  tools: toolset(
+    builtin.web.search,
+    builtin.web.fetch,
+  ),
+  context(ctx) {
+    return (
+      <ProfilePrompt>
+        <System>{RESEARCHER_SYSTEM_PROMPT}</System>
+        <HistorySet>
+          <Message><SkillCatalog /></Message>
+        </HistorySet>
+        <AppendingSet>
+          <WorkspaceFocusReminder />
+          <Message>{renderResearchBrief(ctx.initial)}</Message>
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 function renderResearchBrief(input: Initial): string {
-    return profileText`
+  return profileText`
         Research brief:
-        - topic: ${input.topic ?? "general"}
-        - goal: ${input.goal ?? "answer the caller's current research question"}
-        - allowed_domains: ${(input.allowed_domains ?? []).join(", ") || "none"}
-        - blocked_domains: ${(input.blocked_domains ?? []).join(", ") || "none"}
-        - default_recency_days: ${input.default_recency_days ?? "none"}
-        - source_policy: ${input.source_policy ?? "balanced"}
-        - output_language: ${input.output_language ?? "follow caller/user language"}
-    `;
+        - topic: ${input.topic ?? 'general'}
+        - goal: ${input.goal ?? 'answer the caller\'s current research question'}
+        - allowed_domains: ${(input.allowed_domains ?? []).join(', ') || 'none'}
+        - blocked_domains: ${(input.blocked_domains ?? []).join(', ') || 'none'}
+        - default_recency_days: ${input.default_recency_days ?? 'none'}
+        - source_policy: ${input.source_policy ?? 'balanced'}
+        - output_language: ${input.output_language ?? 'follow caller/user language'}
+    `
 }
 
 const RESEARCHER_SYSTEM_PROMPT = profileText`
@@ -113,4 +109,4 @@ const RESEARCHER_SYSTEM_PROMPT = profileText`
         - 先给结论，再列关键证据和来源。
         - 对不确定、未查到、需要 API key 或 provider 配置缺失的情况，直接说明限制，不编造来源。
         - 简短任务用短答；复杂研究用清晰小标题和紧凑列表。不要为了形式变复杂。
-    `;
+    `

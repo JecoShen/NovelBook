@@ -1,28 +1,28 @@
-import {parentPort} from "node:worker_threads";
-import {runProfileCompile, runProfileCompileAll, runProfileCompileEntry} from "./profile-compile-worker-runtime";
+import { parentPort } from 'node:worker_threads'
+import { runProfileCompile, runProfileCompileAll, runProfileCompileEntry } from './profile-compile-worker-runtime'
 import type {
-    AgentProfileCompileAllRequestDto,
-    AgentProfileCompileRequestDto,
-} from "nbook/shared/dto/agent-profile.dto";
+  AgentProfileCompileAllRequestDto,
+  AgentProfileCompileRequestDto,
+} from 'nbook/shared/dto/agent-profile.dto'
 
 type WorkerRequest = {
-    id: number;
-    mode?: "single" | "all" | "entry";
-    input: (AgentProfileCompileRequestDto | AgentProfileCompileAllRequestDto) & {userProfileRoot?: string};
-};
-
-if (!parentPort) {
-    throw new Error("profile compile worker 必须运行在 worker_threads 中。");
+  id: number
+  mode?: 'single' | 'all' | 'entry'
+  input: (AgentProfileCompileRequestDto | AgentProfileCompileAllRequestDto) & { userProfileRoot?: string }
 }
 
-parentPort.on("message", async (message: WorkerRequest) => {
-    const result = message.mode === "all"
-        ? await runProfileCompileAll(message.input)
-        : message.mode === "entry"
-            ? await runProfileCompileEntry(message.input as AgentProfileCompileRequestDto)
-            : await runProfileCompile(message.input as AgentProfileCompileRequestDto);
-    parentPort!.postMessage({
-        id: message.id,
-        result,
-    });
-});
+if (!parentPort) {
+  throw new Error('profile compile worker 必须运行在 worker_threads 中。')
+}
+
+parentPort.on('message', async (message: WorkerRequest) => {
+  const result = message.mode === 'all'
+    ? await runProfileCompileAll(message.input)
+    : message.mode === 'entry'
+      ? await runProfileCompileEntry(message.input as AgentProfileCompileRequestDto)
+      : await runProfileCompile(message.input as AgentProfileCompileRequestDto)
+  parentPort!.postMessage({
+    id: message.id,
+    result,
+  })
+})

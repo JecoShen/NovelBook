@@ -1,131 +1,134 @@
 <script setup lang="ts">
-import {loadMonacoEditor, type MonacoEditorApi} from "nbook/app/components/markdown-studio/load-monaco-editor";
-import {applyMonacoDiffTheme} from "nbook/app/components/common/diff/monaco-diff-theme";
-import type {IdeTheme} from "nbook/app/utils/theme/theme-tokens";
-import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+import { loadMonacoEditor, type MonacoEditorApi } from 'nbook/app/components/markdown-studio/load-monaco-editor'
+import { applyMonacoDiffTheme } from 'nbook/app/components/common/diff/monaco-diff-theme'
+import type { IdeTheme } from 'nbook/app/utils/theme/theme-tokens'
+import type * as Monaco from 'monaco-editor/esm/vs/editor/editor.api.js'
 
 const props = withDefaults(defineProps<{
-    originalContent: string;
-    modifiedContent: string;
-    originalLabel?: string;
-    modifiedLabel?: string;
-    language?: string;
-    theme?: IdeTheme;
-    readonly?: boolean;
-    renderSideBySide?: boolean;
-    modelKey?: string;
-    showWhitespace?: boolean;
+  originalContent: string
+  modifiedContent: string
+  originalLabel?: string
+  modifiedLabel?: string
+  language?: string
+  theme?: IdeTheme
+  readonly?: boolean
+  renderSideBySide?: boolean
+  modelKey?: string
+  showWhitespace?: boolean
 }>(), {
-    originalLabel: "Original",
-    modifiedLabel: "Modified",
-    language: "markdown",
-    theme: "sepia",
-    readonly: true,
-    renderSideBySide: true,
-    modelKey: "diff",
-    showWhitespace: false,
-});
+  originalLabel: 'Original',
+  modifiedLabel: 'Modified',
+  language: 'markdown',
+  theme: 'sepia',
+  readonly: true,
+  renderSideBySide: true,
+  modelKey: 'diff',
+  showWhitespace: false,
+})
 
 const emit = defineEmits<{
-    (e: "ready"): void;
-    (e: "layout"): void;
-}>();
+  (e: 'ready'): void
+  (e: 'layout'): void
+}>()
 
-const rootRef = ref<HTMLDivElement | null>(null);
-let monacoApi: MonacoEditorApi | null = null;
-let diffEditor: Monaco.editor.IStandaloneDiffEditor | null = null;
-let originalModel: Monaco.editor.ITextModel | null = null;
-let modifiedModel: Monaco.editor.ITextModel | null = null;
+const rootRef = ref<HTMLDivElement | null>(null)
+let monacoApi: MonacoEditorApi | null = null
+let diffEditor: Monaco.editor.IStandaloneDiffEditor | null = null
+let originalModel: Monaco.editor.ITextModel | null = null
+let modifiedModel: Monaco.editor.ITextModel | null = null
 
 function disposeModels(): void {
-    originalModel?.dispose();
-    modifiedModel?.dispose();
-    originalModel = null;
-    modifiedModel = null;
+  originalModel?.dispose()
+  modifiedModel?.dispose()
+  originalModel = null
+  modifiedModel = null
 }
 
 function updateModels(): void {
-    if (!monacoApi || !diffEditor) {
-        return;
-    }
-    disposeModels();
-    const suffix = encodeURIComponent(`${props.modelKey}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    originalModel = monacoApi.editor.createModel(props.originalContent, props.language, monacoApi.Uri.parse(`file:///diff/${suffix}/original`));
-    modifiedModel = monacoApi.editor.createModel(props.modifiedContent, props.language, monacoApi.Uri.parse(`file:///diff/${suffix}/modified`));
-    diffEditor.setModel({original: originalModel, modified: modifiedModel});
+  if (!monacoApi || !diffEditor) {
+    return
+  }
+  disposeModels()
+  const suffix = encodeURIComponent(`${props.modelKey}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  originalModel = monacoApi.editor.createModel(props.originalContent, props.language, monacoApi.Uri.parse(`file:///diff/${suffix}/original`))
+  modifiedModel = monacoApi.editor.createModel(props.modifiedContent, props.language, monacoApi.Uri.parse(`file:///diff/${suffix}/modified`))
+  diffEditor.setModel({ original: originalModel, modified: modifiedModel })
 }
 
 function updateOptions(): void {
-    diffEditor?.updateOptions({
-        readOnly: props.readonly,
-        originalEditable: false,
-        renderSideBySide: props.renderSideBySide,
-        renderWhitespace: props.showWhitespace ? "boundary" : "none",
-    });
+  diffEditor?.updateOptions({
+    readOnly: props.readonly,
+    originalEditable: false,
+    renderSideBySide: props.renderSideBySide,
+    renderWhitespace: props.showWhitespace ? 'boundary' : 'none',
+  })
 }
 
 async function ensureEditor(): Promise<void> {
-    if (!rootRef.value) {
-        return;
-    }
-    monacoApi = monacoApi ?? await loadMonacoEditor();
-    applyMonacoDiffTheme(monacoApi, props.theme, rootRef.value);
-    if (!diffEditor) {
-        diffEditor = monacoApi.editor.createDiffEditor(rootRef.value, {
-            automaticLayout: true,
-            readOnly: props.readonly,
-            originalEditable: false,
-            renderSideBySide: props.renderSideBySide,
-            minimap: {enabled: false},
-            scrollBeyondLastLine: false,
-            renderWhitespace: props.showWhitespace ? "boundary" : "none",
-        });
-        emit("ready");
-    }
-    updateOptions();
-    updateModels();
-    requestAnimationFrame(() => {
-        diffEditor?.layout();
-        emit("layout");
-    });
+  if (!rootRef.value) {
+    return
+  }
+  monacoApi = monacoApi ?? await loadMonacoEditor()
+  applyMonacoDiffTheme(monacoApi, props.theme, rootRef.value)
+  if (!diffEditor) {
+    diffEditor = monacoApi.editor.createDiffEditor(rootRef.value, {
+      automaticLayout: true,
+      readOnly: props.readonly,
+      originalEditable: false,
+      renderSideBySide: props.renderSideBySide,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      renderWhitespace: props.showWhitespace ? 'boundary' : 'none',
+    })
+    emit('ready')
+  }
+  updateOptions()
+  updateModels()
+  requestAnimationFrame(() => {
+    diffEditor?.layout()
+    emit('layout')
+  })
 }
 
 onMounted(() => {
-    void ensureEditor();
-});
+  void ensureEditor()
+})
 
 watch(() => [
-    props.originalContent,
-    props.modifiedContent,
-    props.language,
-    props.modelKey,
+  props.originalContent,
+  props.modifiedContent,
+  props.language,
+  props.modelKey,
 ], () => {
-    updateModels();
-});
+  updateModels()
+})
 
 watch(() => [props.theme, props.readonly, props.renderSideBySide, props.showWhitespace], () => {
-    if (monacoApi) {
-        applyMonacoDiffTheme(monacoApi, props.theme, rootRef.value);
-    }
-    updateOptions();
-});
+  if (monacoApi) {
+    applyMonacoDiffTheme(monacoApi, props.theme, rootRef.value)
+  }
+  updateOptions()
+})
 
 onBeforeUnmount(() => {
-    diffEditor?.dispose();
-    disposeModels();
-    diffEditor = null;
-    monacoApi = null;
-});
+  diffEditor?.dispose()
+  disposeModels()
+  diffEditor = null
+  monacoApi = null
+})
 </script>
 
 <template>
-    <div class="shared-diff-editor">
-        <div class="shared-diff-editor__labels">
-            <span>{{ originalLabel }}</span>
-            <span>{{ modifiedLabel }}</span>
-        </div>
-        <div ref="rootRef" class="shared-diff-editor__editor"></div>
+  <div class="shared-diff-editor">
+    <div class="shared-diff-editor__labels">
+      <span>{{ originalLabel }}</span>
+      <span>{{ modifiedLabel }}</span>
     </div>
+    <div
+      ref="rootRef"
+      class="shared-diff-editor__editor"
+    />
+  </div>
 </template>
 
 <style scoped>

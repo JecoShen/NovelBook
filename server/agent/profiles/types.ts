@@ -5,18 +5,18 @@
  * Interface 使用同一组类型；本 Module 不再复制或扩张作者合同。
  */
 export type {
-    AgentCatalogItem,
-    AgentCatalogSnapshot,
-    AgentProfile,
-    AgentProfileCreationMode,
-    AgentProfileDefinition,
-    AgentProfileIssue,
-    AgentProfileIssueCode,
-    AgentProfileLoadStatus,
-    AgentProfileManifest,
-    AgentProfileSourceKind,
-    ProfilePrepareContext,
-    ProfileTurnPlan,
-} from "nbook/profile-sdk/contracts";
+  AgentCatalogItem,
+  AgentCatalogSnapshot,
+  AgentProfile,
+  AgentProfileCreationMode,
+  AgentProfileDefinition,
+  AgentProfileIssue,
+  AgentProfileIssueCode,
+  AgentProfileLoadStatus,
+  AgentProfileManifest,
+  AgentProfileSourceKind,
+  ProfilePrepareContext,
+  ProfileTurnPlan,
+} from 'nbook/profile-sdk/contracts'
 
-export type {ProfileRuntimeDefaults as AgentProfileRuntimeDefaults} from "nbook/profile-sdk/contracts";
+export type { ProfileRuntimeDefaults as AgentProfileRuntimeDefaults } from 'nbook/profile-sdk/contracts'

@@ -10,14 +10,14 @@
  *
  * DSL 增删节点后如果忘了同步文档，这个测试会直接失败并指出是哪个文件的哪个名字。
  */
-import {readFileSync, readdirSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import path from "node:path";
-import {describe, expect, it} from "vitest";
-import * as dsl from "nbook/server/agent/profiles/profile-dsl";
-import {Fragment, jsx} from "nbook/server/agent/profiles/profile-dsl/jsx-runtime";
+import { readFileSync, readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
+import { describe, expect, it } from 'vitest'
+import * as dsl from 'nbook/server/agent/profiles/profile-dsl'
+import { Fragment, jsx } from 'nbook/server/agent/profiles/profile-dsl/jsx-runtime'
 
-const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
+const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 
 /**
  * 扫描范围必须同时覆盖文档站和 reference 真相源。
@@ -30,67 +30,67 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
  * 而英文读者一样会复制粘贴。
  */
 const scanDirs = [
-    path.join(repoRoot, "docs", "profile-tsx"),
-    path.join(repoRoot, "docs", "en", "profile-tsx"),
-    path.join(repoRoot, "reference", "agent"),
-];
+  path.join(repoRoot, 'docs', 'profile-tsx'),
+  path.join(repoRoot, 'docs', 'en', 'profile-tsx'),
+  path.join(repoRoot, 'reference', 'agent'),
+]
 
 /** 读取扫描范围内全部 Markdown，返回 [仓库相对路径, 正文]。 */
 function readDocPages(): Array<[string, string]> {
-    const pages: Array<[string, string]> = [];
-    for (const dir of scanDirs) {
-        for (const name of readdirSync(dir)) {
-            if (!name.endsWith(".md")) {
-                continue;
-            }
-            // 中英两份 profile-tsx 的 basename 相同，标识必须用仓库相对路径才能指认到具体文件。
-            const label = path.relative(repoRoot, path.join(dir, name)).replaceAll("\\", "/");
-            pages.push([label, readFileSync(path.join(dir, name), "utf8")]);
-        }
+  const pages: Array<[string, string]> = []
+  for (const dir of scanDirs) {
+    for (const name of readdirSync(dir)) {
+      if (!name.endsWith('.md')) {
+        continue
+      }
+      // 中英两份 profile-tsx 的 basename 相同，标识必须用仓库相对路径才能指认到具体文件。
+      const label = path.relative(repoRoot, path.join(dir, name)).replaceAll('\\', '/')
+      pages.push([label, readFileSync(path.join(dir, name), 'utf8')])
     }
-    return pages;
+  }
+  return pages
 }
 
 /** 抽出 ```tsx 代码块正文。 */
 function extractTsxBlocks(markdown: string): string[] {
-    const blocks: string[] = [];
-    const pattern = /```tsx\r?\n([\s\S]*?)```/g;
-    let match = pattern.exec(markdown);
-    while (match) {
-        blocks.push(match[1] ?? "");
-        match = pattern.exec(markdown);
-    }
-    return blocks;
+  const blocks: string[] = []
+  const pattern = /```tsx\r?\n([\s\S]*?)```/g
+  let match = pattern.exec(markdown)
+  while (match) {
+    blocks.push(match[1] ?? '')
+    match = pattern.exec(markdown)
+  }
+  return blocks
 }
 
 /** 抽出代码块里出现的 JSX 标签名（只取大写开头的组件，忽略原生小写标签）。 */
 function extractJsxTagNames(code: string): string[] {
-    const names = new Set<string>();
-    const pattern = /<([A-Z][A-Za-z0-9]*)/g;
-    let match = pattern.exec(code);
-    while (match) {
-        names.add(match[1] as string);
-        match = pattern.exec(code);
-    }
-    return [...names];
+  const names = new Set<string>()
+  const pattern = /<([A-Z][A-Za-z0-9]*)/g
+  let match = pattern.exec(code)
+  while (match) {
+    names.add(match[1] as string)
+    match = pattern.exec(code)
+  }
+  return [...names]
 }
 
 /** 抽出从 profile-dsl 具名导入的符号。 */
 function extractDslImports(code: string): string[] {
-    const names = new Set<string>();
-    // 捕获组禁止跨越 `}`，否则会从更早的 import 起始处开始贪婪匹配到本条 profile-dsl import。
-    const pattern = /import\s*\{([^}]*)\}\s*from\s*"[^"]*profile-dsl"/g;
-    let match = pattern.exec(code);
-    while (match) {
-        for (const raw of (match[1] ?? "").split(",")) {
-            const name = raw.trim().split(/\s+as\s+/)[0]?.trim();
-            if (name) {
-                names.add(name);
-            }
-        }
-        match = pattern.exec(code);
+  const names = new Set<string>()
+  // 捕获组禁止跨越 `}`，否则会从更早的 import 起始处开始贪婪匹配到本条 profile-dsl import。
+  const pattern = /import\s*\{([^}]*)\}\s*from\s*"[^"]*profile-dsl"/g
+  let match = pattern.exec(code)
+  while (match) {
+    for (const raw of (match[1] ?? '').split(',')) {
+      const name = raw.trim().split(/\s+as\s+/)[0]?.trim()
+      if (name) {
+        names.add(name)
+      }
     }
-    return [...names];
+    match = pattern.exec(code)
+  }
+  return [...names]
 }
 
 /**
@@ -98,50 +98,51 @@ function extractDslImports(code: string): string[] {
  * 这里用「渲染一次就知道认不认识」的方式探测：未知节点会抛错。
  */
 function isKnownJsxComponent(name: string): boolean {
-    try {
-        jsx(name as never, {});
-        return true;
-    } catch (error) {
-        // 未知节点抛的是「未知 Profile DSL JSX 节点」；其他错误（例如缺必填 prop）说明节点是认识的。
-        return !(error instanceof Error && error.message.includes("未知"));
-    }
+  try {
+    jsx(name as never, {})
+    return true
+  }
+  catch (error) {
+    // 未知节点抛的是「未知 Profile DSL JSX 节点」；其他错误（例如缺必填 prop）说明节点是认识的。
+    return !(error instanceof Error && error.message.includes('未知'))
+  }
 }
 
-describe("文档站 Profile TSX 示例", () => {
-    const pages = readDocPages();
+describe('文档站 Profile TSX 示例', () => {
+  const pages = readDocPages()
 
-    it("能找到文档页", () => {
-        expect(pages.length).toBeGreaterThan(0);
-    });
+  it('能找到文档页', () => {
+    expect(pages.length).toBeGreaterThan(0)
+  })
 
-    it("示例里的 JSX 节点都真实存在于 DSL 组件表", () => {
-        const unknown: string[] = [];
-        for (const [fileName, markdown] of pages) {
-            for (const block of extractTsxBlocks(markdown)) {
-                for (const tag of extractJsxTagNames(block)) {
-                    if (tag === "Fragment" || tag === (Fragment as unknown as string)) {
-                        continue;
-                    }
-                    if (!isKnownJsxComponent(tag)) {
-                        unknown.push(`${fileName}: <${tag}>`);
-                    }
-                }
-            }
+  it('示例里的 JSX 节点都真实存在于 DSL 组件表', () => {
+    const unknown: string[] = []
+    for (const [fileName, markdown] of pages) {
+      for (const block of extractTsxBlocks(markdown)) {
+        for (const tag of extractJsxTagNames(block)) {
+          if (tag === 'Fragment' || tag === (Fragment as unknown as string)) {
+            continue
+          }
+          if (!isKnownJsxComponent(tag)) {
+            unknown.push(`${fileName}: <${tag}>`)
+          }
         }
-        expect(unknown, `文档使用了不存在的 DSL 节点：${unknown.join(", ")}`).toEqual([]);
-    });
+      }
+    }
+    expect(unknown, `文档使用了不存在的 DSL 节点：${unknown.join(', ')}`).toEqual([])
+  })
 
-    it("示例里从 profile-dsl 具名导入的符号都真的被导出", () => {
-        const missing: string[] = [];
-        for (const [fileName, markdown] of pages) {
-            for (const block of extractTsxBlocks(markdown)) {
-                for (const name of extractDslImports(block)) {
-                    if (!(name in dsl)) {
-                        missing.push(`${fileName}: ${name}`);
-                    }
-                }
-            }
+  it('示例里从 profile-dsl 具名导入的符号都真的被导出', () => {
+    const missing: string[] = []
+    for (const [fileName, markdown] of pages) {
+      for (const block of extractTsxBlocks(markdown)) {
+        for (const name of extractDslImports(block)) {
+          if (!(name in dsl)) {
+            missing.push(`${fileName}: ${name}`)
+          }
         }
-        expect(missing, `文档导入了 profile-dsl 未导出的符号：${missing.join(", ")}`).toEqual([]);
-    });
-});
+      }
+    }
+    expect(missing, `文档导入了 profile-dsl 未导出的符号：${missing.join(', ')}`).toEqual([])
+  })
+})

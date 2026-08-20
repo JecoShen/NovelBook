@@ -15,8 +15,8 @@ export default {
   eraAfter: '公元',
 
   // Format 模板：默认到分钟，不带秒
-  format: '{eraName}{year}年{month}月{day}日 {hour:02}:{minute:02}'
-};
+  format: '{eraName}{year}年{month}月{day}日 {hour:02}:{minute:02}',
+}
 
 /**
  * 示例输出：

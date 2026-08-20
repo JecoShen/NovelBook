@@ -1,4 +1,4 @@
-import {createClient, type Client} from "@libsql/client";
+import { createClient, type Client } from '@libsql/client'
 
 /**
  * 建库建表(schema 由模块全权管理,宿主不直接碰表)。
@@ -50,19 +50,19 @@ CREATE TABLE IF NOT EXISTS file_acceptance (
     updated_at         TEXT    NOT NULL,
     PRIMARY KEY (user_id, path)
 );
-`;
+`
 
 /** libsql 的 file URL 要求正斜杠(Windows 反斜杠路径需转换)。 */
 function fileUrl(databasePath: string): string {
-    return `file:${databasePath.replace(/\\/g, "/")}`;
+  return `file:${databasePath.replace(/\\/g, '/')}`
 }
 
 /** 打开写连接:WAL 模式 + 建表。databasePath 用绝对路径。 */
 export async function openDatabase(databasePath: string): Promise<Client> {
-    const client = createClient({url: fileUrl(databasePath)});
-    await client.execute("PRAGMA journal_mode = WAL;");
-    await client.executeMultiple(SCHEMA_DDL);
-    return client;
+  const client = createClient({ url: fileUrl(databasePath) })
+  await client.execute('PRAGMA journal_mode = WAL;')
+  await client.executeMultiple(SCHEMA_DDL)
+  return client
 }
 
 /**
@@ -70,5 +70,5 @@ export async function openDatabase(databasePath: string): Promise<Client> {
  * 写事务在同一连接里互撞(单连接嵌套 BEGIN 会报错)。journal_mode 随库持久,无需重设。
  */
 export function openReader(databasePath: string): Client {
-    return createClient({url: fileUrl(databasePath)});
+  return createClient({ url: fileUrl(databasePath) })
 }

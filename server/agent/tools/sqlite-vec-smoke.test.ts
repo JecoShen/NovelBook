@@ -1,40 +1,40 @@
-import {spawn} from "node:child_process";
-import {resolve} from "node:path";
-import {describe, expect, it} from "vitest";
+import { spawn } from 'node:child_process'
+import { resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
 
-describe("sqlite-vec smoke", () => {
-    it("Bun runtime 能加载 sqlite-vec 并执行 vec0 查询", async () => {
-        const result = await runBunScript(resolve("scripts", "smoke", "sqlite-vec-smoke.ts"));
+describe('sqlite-vec smoke', () => {
+  it('Bun runtime 能加载 sqlite-vec 并执行 vec0 查询', async () => {
+    const result = await runBunScript(resolve('scripts', 'smoke', 'sqlite-vec-smoke.ts'))
 
-        expect(result.exitCode).toBe(0);
-        expect(result.output).toContain("sqlite-vec smoke ok");
-    }, 20_000);
+    expect(result.exitCode).toBe(0)
+    expect(result.output).toContain('sqlite-vec smoke ok')
+  }, 20_000)
 
-    it("Bun runtime 能跑通 subject RAG 索引和检索", async () => {
-        const result = await runBunScript(resolve("scripts", "smoke", "subject-rag-smoke.ts"));
+  it('Bun runtime 能跑通 subject RAG 索引和检索', async () => {
+    const result = await runBunScript(resolve('scripts', 'smoke', 'subject-rag-smoke.ts'))
 
-        expect(result.exitCode).toBe(0);
-        expect(result.output).toContain("subject-rag smoke ok");
-    }, 20_000);
-});
+    expect(result.exitCode).toBe(0)
+    expect(result.output).toContain('subject-rag smoke ok')
+  }, 20_000)
+})
 
-function runBunScript(scriptPath: string): Promise<{exitCode: number | null; output: string}> {
-    return new Promise((resolvePromise, reject) => {
-        const child = spawn("bun", [scriptPath], {
-            cwd: resolve("."),
-            stdio: ["ignore", "pipe", "pipe"],
-            windowsHide: true,
-        });
-        let output = "";
-        child.stdout.on("data", (chunk: Buffer) => {
-            output += chunk.toString("utf-8");
-        });
-        child.stderr.on("data", (chunk: Buffer) => {
-            output += chunk.toString("utf-8");
-        });
-        child.once("error", reject);
-        child.once("close", (exitCode) => {
-            resolvePromise({exitCode, output});
-        });
-    });
+function runBunScript(scriptPath: string): Promise<{ exitCode: number | null, output: string }> {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn('bun', [scriptPath], {
+      cwd: resolve('.'),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    })
+    let output = ''
+    child.stdout.on('data', (chunk: Buffer) => {
+      output += chunk.toString('utf-8')
+    })
+    child.stderr.on('data', (chunk: Buffer) => {
+      output += chunk.toString('utf-8')
+    })
+    child.once('error', reject)
+    child.once('close', (exitCode) => {
+      resolvePromise({ exitCode, output })
+    })
+  })
 }

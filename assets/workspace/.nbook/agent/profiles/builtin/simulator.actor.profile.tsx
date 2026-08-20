@@ -1,66 +1,62 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import {type Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {SubjectSimulatorInitialSchema, SubjectSimulatorOutputSchema} from "nbook/profile-sdk";
-import {AppendingSet, HistorySet, Import, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, toolset, SubjectSimulatorInitialSchema, SubjectSimulatorOutputSchema, AppendingSet, HistorySet, Import, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder, profileText } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "simulator.actor",
-    name: "角色模拟",
-    description: "通用 subject simulator：以角色第一人称消费 actor-facing packet（<gm>/<character>/<knowledge>/<directive>），结合 RAG memory 与 mind/state，通过 report_result 返回第一人称三通道反应。",
-} as const;
+  key: 'simulator.actor',
+  name: '角色模拟',
+  description: '通用 subject simulator：以角色第一人称消费 actor-facing packet（<gm>/<character>/<knowledge>/<directive>），结合 RAG memory 与 mind/state，通过 report_result 返回第一人称三通道反应。',
+} as const
 
-export const InitialSchema = SubjectSimulatorInitialSchema;
-export const OutputSchema = SubjectSimulatorOutputSchema;
+export const InitialSchema = SubjectSimulatorInitialSchema
+export const OutputSchema = SubjectSimulatorOutputSchema
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
 
 // Task 111 PLAN-E：sidecar 机制已删除。原 actor.context-load（登场前记忆检索）与
 // actor.memory-save（落幕后记忆沉淀）两个旁路暂缺，后续由 workflow/job 形态重建；
 // <actor-sidecar-context> 标签语义保留，未来外部流程仍以该标签注入记忆片段。
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    tools: toolset(
-        builtin.result.main(),
-    ),
-    context(ctx) {
-        // soul.md = 角色第一人称扮演手册（无 frontmatter），Import 进 actor 主路取代旧 actor_definition。
-        if (!ctx.session.currentProject) {
-            throw new Error("simulator.actor需要绑定Current Project才能导入soul.md。");
-        }
-        const soulPath = `workspace/${ctx.session.currentProject.workspace.ref.projectRoot}/${subjectDirectoryPath(ctx.initial)}/soul.md`;
-        return (
-            <ProfilePrompt>
-                <System>{renderSystemPrompt(ctx.initial, profileManifest.key)}</System>
-                <HistorySet>
-                    <Message><Import path="reference/content/information-control.md" /></Message>
-                    <Message><Import path="reference/content/simulation.md" /></Message>
-                    <Message><Import path="reference/content/subject-rag-memory.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/actor-facing-packet.md" /></Message>
-                    <Message><Import path={soulPath} required={true} /></Message>
-                </HistorySet>
-                <ModelContext>
-                    <Message>{renderActorBinding(ctx.initial)}</Message>
-                    <Message>{renderInvocationReminder(ctx.initial)}</Message>
-                </ModelContext>
-                <AppendingSet>
-                    <WorkspaceFocusReminder/>
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  tools: toolset(
+    builtin.result.main(),
+  ),
+  context(ctx) {
+    // soul.md = 角色第一人称扮演手册（无 frontmatter），Import 进 actor 主路取代旧 actor_definition。
+    if (!ctx.session.currentProject) {
+      throw new Error('simulator.actor需要绑定Current Project才能导入soul.md。')
+    }
+    const soulPath = `workspace/${ctx.session.currentProject.workspace.ref.projectRoot}/${subjectDirectoryPath(ctx.initial)}/soul.md`
+    return (
+      <ProfilePrompt>
+        <System>{renderSystemPrompt(ctx.initial, profileManifest.key)}</System>
+        <HistorySet>
+          <Message><Import path="reference/content/information-control.md" /></Message>
+          <Message><Import path="reference/content/simulation.md" /></Message>
+          <Message><Import path="reference/content/subject-rag-memory.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/actor-facing-packet.md" /></Message>
+          <Message><Import path={soulPath} required={true} /></Message>
+        </HistorySet>
+        <ModelContext>
+          <Message>{renderActorBinding(ctx.initial)}</Message>
+          <Message>{renderInvocationReminder(ctx.initial)}</Message>
+        </ModelContext>
+        <AppendingSet>
+          <WorkspaceFocusReminder />
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 function renderSystemPrompt(input: Initial, profileKey: string): string {
-    const actorId = actorIdFromSubjectPath(input);
-    return profileText`
+  const actorId = actorIdFromSubjectPath(input)
+  return profileText`
         <actor>
             <profile>${profileKey}</profile>
             <subject id="${actorId}" kind="${input.kind}" />
@@ -116,7 +112,7 @@ function renderSystemPrompt(input: Initial, profileKey: string): string {
             - spoken_dialogue: 我说出口的台词原文；没有填空字符串。
             - inner_response: 我没有说出口的情绪、意图、判断、误解或短期打算；没有填空字符串。
         </output_protocol>
-    `;
+    `
 }
 
 /**
@@ -124,27 +120,27 @@ function renderSystemPrompt(input: Initial, profileKey: string): string {
  * - npc：模拟器自由扮演，directive 是建议可偏离。
  * - player：用户化身，actor 不抢话、不自创关键行动，以 directive 为骨架第一人称自然化复述。
  */
-function renderKindRules(kind: Initial["kind"]): string {
-    if (kind === "player") {
-        return profileText`
+function renderKindRules(kind: Initial['kind']): string {
+  if (kind === 'player') {
+    return profileText`
         <player_rules>
             - 你扮演的是玩家化身（player）。用户输入优先级最高，高于你的任何推测。
             - 不抢话、不自创关键行动：不要替用户新增关键行动、决定、台词、情绪、目标或关系判断。
             - 以本轮 <directive> 为骨架，把它第一人称自然化复述成符合人设的反应，不要偏离 directive 的核心意图。
             - 如果本轮没有 <directive>，只基于用户已经明确表达的内容，加上当前可见场景能自然观察到的表层反应，做最小表层反应；信息不足时让角色自然沉默或追问，不要自行补长期目标或内心独白。
-        </player_rules>`;
-    }
-    return profileText`
+        </player_rules>`
+  }
+  return profileText`
         <npc_rules>
             - 你扮演的是 npc。可以按 soul.md 的性格、动机和说话方式自主反应。
             - <directive> 是上级的引导建议，可以根据角色性格、当下处境和已知信息合理偏离，不要把它当成必须照念的台词。
             - 信息不足时，让角色以符合人设的方式沉默、试探、回避或只回应自己确定的部分；不要自行补上帝视角设定或隐藏真相。
-        </npc_rules>`;
+        </npc_rules>`
 }
 
 function renderActorBinding(input: Initial): string {
-    const paths = subjectFilePaths(input);
-    return profileText`
+  const paths = subjectFilePaths(input)
+  return profileText`
         <actor_binding>
         actorId: ${actorIdFromSubjectPath(input)}
         kind: ${input.kind}
@@ -157,37 +153,37 @@ function renderActorBinding(input: Initial): string {
 
         这些路径只供外部记忆维护流程使用。我登场反应时不去读这些文件原文——我是谁来自 soul.md，我记得什么来自替我唤回的 <actor-sidecar-context>。
         </actor_binding>
-    `;
+    `
 }
 
 function subjectDirectoryPath(input: Initial): string {
-    return input.subjectPath.trim().replaceAll("\\", "/").replace(/\/+$/u, "");
+  return input.subjectPath.trim().replaceAll('\\', '/').replace(/\/+$/u, '')
 }
 
-function subjectFilePaths(input: Initial): {instructionPath: string; eventsPath: string; memoryPath: string; mindPath: string; statePath: string} {
-    const subjectPath = subjectDirectoryPath(input);
-    return {
-        instructionPath: `${subjectPath}/subject.md`,
-        eventsPath: `${subjectPath}/events.jsonl`,
-        memoryPath: `${subjectPath}/memory.jsonl`,
-        mindPath: `${subjectPath}/mind.md`,
-        statePath: `${subjectPath}/state.md`,
-    };
+function subjectFilePaths(input: Initial): { instructionPath: string, eventsPath: string, memoryPath: string, mindPath: string, statePath: string } {
+  const subjectPath = subjectDirectoryPath(input)
+  return {
+    instructionPath: `${subjectPath}/subject.md`,
+    eventsPath: `${subjectPath}/events.jsonl`,
+    memoryPath: `${subjectPath}/memory.jsonl`,
+    mindPath: `${subjectPath}/mind.md`,
+    statePath: `${subjectPath}/state.md`,
+  }
 }
 
 function actorIdFromSubjectPath(input: Initial): string {
-    const parts = subjectDirectoryPath(input).split("/").filter(Boolean);
-    return parts.at(-1) || "subject";
+  const parts = subjectDirectoryPath(input).split('/').filter(Boolean)
+  return parts.at(-1) || 'subject'
 }
 
 function renderInvocationReminder(input: Initial): string {
-    const actorId = actorIdFromSubjectPath(input);
-    return profileText`
+  const actorId = actorIdFromSubjectPath(input)
+  return profileText`
         <actor_run_reminder actorId="${actorId}">
             此刻我只回应当前 user message 发来的这一幕。
             我就站在自己的视角里，并必须调用 report_result 把反应说出来。
             不要主动读写文件；我只给出此刻的反应，记忆维护不归我此刻操心。
             如果消息里的线索不够，我只凭自己能观察到的表层去反应；可以在 spoken_dialogue 里自然地追问，但不要凭空替自己补上不该知道的设定。
         </actor_run_reminder>
-    `;
+    `
 }

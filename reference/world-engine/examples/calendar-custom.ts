@@ -16,20 +16,20 @@ export default {
    * @returns 人读时间字符串
    */
   format(instant: bigint): string {
-    const secondsPerYear = 31536000n;  // 365 天 * 86400 秒
-    const secondsPerDay = 86400n;
+    const secondsPerYear = 31536000n // 365 天 * 86400 秒
+    const secondsPerDay = 86400n
 
-    const isNegative = instant < 0n;
-    const absInstant = isNegative ? -instant : instant;
+    const isNegative = instant < 0n
+    const absInstant = isNegative ? -instant : instant
 
-    const year = absInstant / secondsPerYear + 1n;
-    const rest = absInstant % secondsPerYear;
-    const day = rest / secondsPerDay + 1n;
-    const hour = (rest % secondsPerDay) / 3600n;
-    const minute = (rest % 3600n) / 60n;
+    const year = absInstant / secondsPerYear + 1n
+    const rest = absInstant % secondsPerYear
+    const day = rest / secondsPerDay + 1n
+    const hour = (rest % secondsPerDay) / 3600n
+    const minute = (rest % 3600n) / 60n
 
-    const era = isNegative ? '前纪元' : '新纪元';
-    return `${era}${year}年第${day}日 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    const era = isNegative ? '前纪元' : '新纪元'
+    return `${era}${year}年第${day}日 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
   },
 
   /**
@@ -38,27 +38,27 @@ export default {
    * @returns instant（bigint）
    */
   parse(input: string): bigint {
-    const match = /(前纪元|新纪元)(\d+)年第(\d+)日\s+(\d+):(\d+)/.exec(input);
+    const match = /(前纪元|新纪元)(\d+)年第(\d+)日\s+(\d+):(\d+)/.exec(input)
     if (!match) {
-      throw new Error(`时间字符串格式错误：${input}`);
+      throw new Error(`时间字符串格式错误：${input}`)
     }
 
-    const [, era, yearStr, dayStr, hourStr, minuteStr] = match;
-    const year = BigInt(yearStr);
-    const day = BigInt(dayStr);
-    const hour = BigInt(hourStr);
-    const minute = BigInt(minuteStr);
+    const [, era, yearStr, dayStr, hourStr, minuteStr] = match
+    const year = BigInt(yearStr)
+    const day = BigInt(dayStr)
+    const hour = BigInt(hourStr)
+    const minute = BigInt(minuteStr)
 
-    const secondsPerYear = 31536000n;
-    const secondsPerDay = 86400n;
+    const secondsPerYear = 31536000n
+    const secondsPerDay = 86400n
 
-    let instant = (year - 1n) * secondsPerYear + (day - 1n) * secondsPerDay + hour * 3600n + minute * 60n;
+    let instant = (year - 1n) * secondsPerYear + (day - 1n) * secondsPerDay + hour * 3600n + minute * 60n
 
     if (era === '前纪元') {
-      instant = -instant;
+      instant = -instant
     }
 
-    return instant;
+    return instant
   },
 
   /**
@@ -67,10 +67,10 @@ export default {
   projection() {
     return {
       format: '{era}{year}年第{day}日 {hour:02}:{minute:02}',
-      examples: ['新纪元1年第1日 00:00', '新纪元488年第200日 14:30']
-    };
-  }
-};
+      examples: ['新纪元1年第1日 00:00', '新纪元488年第200日 14:30'],
+    }
+  },
+}
 
 /**
  * 示例输出：

@@ -1,45 +1,41 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import {type Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {MemoryCuratorInitialSchema, MemoryCuratorOutputSchema} from "nbook/profile-sdk";
-import {Message, ModelContext, ProfilePrompt, System} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, toolset, MemoryCuratorInitialSchema, MemoryCuratorOutputSchema, Message, ModelContext, ProfilePrompt, System, profileText } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "memory.curator",
-    name: "记忆整理",
-    description: "通用记忆整理器：根据 facts 和当前 memory 集合产出 JSON Patch，由工具层校验并写回。",
-} as const;
+  key: 'memory.curator',
+  name: '记忆整理',
+  description: '通用记忆整理器：根据 facts 和当前 memory 集合产出 JSON Patch，由工具层校验并写回。',
+} as const
 
-export const InitialSchema = MemoryCuratorInitialSchema;
-export const OutputSchema = MemoryCuratorOutputSchema;
+export const InitialSchema = MemoryCuratorInitialSchema
+export const OutputSchema = MemoryCuratorOutputSchema
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    tools: toolset(
-        builtin.result.main({dataSchema: OutputSchema}),
-    ),
-    context(ctx) {
-        return (
-            <ProfilePrompt>
-                <System>{renderSystemPrompt()}</System>
-                <ModelContext>
-                    <Message>{renderInput(ctx.initial)}</Message>
-                </ModelContext>
-            </ProfilePrompt>
-        );
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  tools: toolset(
+    builtin.result.main({ dataSchema: OutputSchema }),
+  ),
+  context(ctx) {
+    return (
+      <ProfilePrompt>
+        <System>{renderSystemPrompt()}</System>
+        <ModelContext>
+          <Message>{renderInput(ctx.initial)}</Message>
+        </ModelContext>
+      </ProfilePrompt>
+    )
+  },
+})
 
 function renderSystemPrompt(): string {
-    return profileText`
+  return profileText`
         你是 memory.curator。你不扮演角色，不写正文，只维护一个 subject 的当前稳定认知集合。
 
         输入包含：
@@ -70,11 +66,11 @@ function renderSystemPrompt(): string {
         - patch 是应用到 currentMemories 这个数组上的 JSON Patch。
         - 无需更新时，patch 返回空数组。
         - patch 后结果必须仍是 SubjectMemory[]，topic/view 非空，topic 不重复。
-    `;
+    `
 }
 
 function renderInput(input: Initial): string {
-    return profileText`
+  return profileText`
         <memory_curator_input>
         subjectPath: ${input.subjectPath}
 
@@ -84,9 +80,9 @@ function renderInput(input: Initial): string {
         currentMemories:
         ${JSON.stringify(input.currentMemories, null, 2)}
         </memory_curator_input>
-    `;
+    `
 }
 
 function renderFacts(facts: string[]): string {
-    return facts.map((fact, index) => `${String(index + 1)}. ${fact}`).join("\n");
+  return facts.map((fact, index) => `${String(index + 1)}. ${fact}`).join('\n')
 }

@@ -8,4 +8,4 @@
  * - 'newsprint' : 类似于 Typora 的 Newsprint 衬线阅读风格 (优雅、复古)
  * - 'notion'    : 纯粹的极简风格 (无边界，红色字码，类似 Notion 笔记)
  */
-export const MARKDOWN_THEME: 'default' | 'github' | 'newsprint' | 'notion' = 'default';
+export const MARKDOWN_THEME: 'default' | 'github' | 'newsprint' | 'notion' = 'default'

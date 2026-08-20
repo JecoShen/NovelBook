@@ -1,4 +1,4 @@
-import {Paragraph} from "@tiptap/extension-paragraph";
+import { Paragraph } from '@tiptap/extension-paragraph'
 
 /**
  * 段落扩展，priority 提到 1500（全 schema 最高的块级节点）。
@@ -13,5 +13,5 @@ import {Paragraph} from "@tiptap/extension-paragraph";
  * 内容、块容器补位）都应生成普通段落。新增块级扩展的 priority 不得超过本值。
  */
 export const MarkdownParagraph = Paragraph.extend({
-    priority: 1500,
-});
+  priority: 1500,
+})

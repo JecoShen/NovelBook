@@ -1,79 +1,75 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import type {Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {RpLeaderInitialSchema, RpLeaderOutputSchema} from "nbook/profile-sdk";
-import {AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, toolset, RpLeaderInitialSchema, RpLeaderOutputSchema, AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder, profileText } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "rp.leader",
-    name: "跑团主持",
-    description: "RP 主持与编剧层：负责开局引导、IC/OOC 审查、把世界变化交给 simulator.leader 裁决、以用户化身视角编剧 Writer Brief 并调用 rp.writer，最后组装正文链接与元场景。",
-} as const;
+  key: 'rp.leader',
+  name: '跑团主持',
+  description: 'RP 主持与编剧层：负责开局引导、IC/OOC 审查、把世界变化交给 simulator.leader 裁决、以用户化身视角编剧 Writer Brief 并调用 rp.writer，最后组装正文链接与元场景。',
+} as const
 
-export const InitialSchema = RpLeaderInitialSchema;
-export const OutputSchema = RpLeaderOutputSchema;
+export const InitialSchema = RpLeaderInitialSchema
+export const OutputSchema = RpLeaderOutputSchema
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    tools: toolset(
-        builtin.file.read,
-        builtin.file.write,
-        builtin.file.edit,
-        builtin.file.applyPatch,
-        builtin.file.bash,
-        builtin.agent.create,
-        builtin.agent.invoke,
-        builtin.agent.get,
-        builtin.agent.getProfile,
-        builtin.agent.getSession,
-        builtin.plot.getTree,
-        builtin.plot.getThread,
-        builtin.plot.getSceneContext,
-        builtin.plot.getChapter,
-        builtin.task.create,
-        builtin.task.setStatus,
-    ),
-    context(ctx) {
-        return (
-            <ProfilePrompt>
-                <System>{renderSoulPrompt() + '\n\n' + renderSystemPrompt()}</System>
-                <HistorySet>
-                    <Message><AgentCatalog /></Message>
-                    <Message><Import path="reference/agent/profile-routing.md" /></Message>
-                    <Message><Import path="AGENTS.md" /></Message>
-                    <Message><Import path="reference/content/project-structure.md" /></Message>
-                    <Message><Import path="reference/content/manual.md" /></Message>
-                    <Message><Import path="reference/content/simulation.md" /></Message>
-                    <Message><Import path="reference/agent/workspace-tool-use.md" /></Message>
-                    <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
-                    <Message><Import path="reference/content/markdown-dialect.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/README.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/writer-brief.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/rp-writer-interaction.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/adjudication-report.md" /></Message>
-                </HistorySet>
-                <ModelContext>
-                    <Message>{renderRuntimeInput(ctx.session.currentProject?.workspace.ref.projectRoot)}</Message>
-                </ModelContext>
-                <AppendingSet>
-                    <WorkspaceFocusReminder />
-                    <LinkedAgentsReminder />
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  tools: toolset(
+    builtin.file.read,
+    builtin.file.write,
+    builtin.file.edit,
+    builtin.file.applyPatch,
+    builtin.file.bash,
+    builtin.agent.create,
+    builtin.agent.invoke,
+    builtin.agent.get,
+    builtin.agent.getProfile,
+    builtin.agent.getSession,
+    builtin.plot.getTree,
+    builtin.plot.getThread,
+    builtin.plot.getSceneContext,
+    builtin.plot.getChapter,
+    builtin.task.create,
+    builtin.task.setStatus,
+  ),
+  context(ctx) {
+    return (
+      <ProfilePrompt>
+        <System>{renderSoulPrompt() + '\n\n' + renderSystemPrompt()}</System>
+        <HistorySet>
+          <Message><AgentCatalog /></Message>
+          <Message><Import path="reference/agent/profile-routing.md" /></Message>
+          <Message><Import path="AGENTS.md" /></Message>
+          <Message><Import path="reference/content/project-structure.md" /></Message>
+          <Message><Import path="reference/content/manual.md" /></Message>
+          <Message><Import path="reference/content/simulation.md" /></Message>
+          <Message><Import path="reference/agent/workspace-tool-use.md" /></Message>
+          <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
+          <Message><Import path="reference/content/markdown-dialect.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/README.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/writer-brief.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/rp-writer-interaction.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/adjudication-report.md" /></Message>
+        </HistorySet>
+        <ModelContext>
+          <Message>{renderRuntimeInput(ctx.session.currentProject?.workspace.ref.projectRoot)}</Message>
+        </ModelContext>
+        <AppendingSet>
+          <WorkspaceFocusReminder />
+          <LinkedAgentsReminder />
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 function renderSystemPrompt(): string {
-    return profileText`
+  return profileText`
         # 交互模式
 
         ## 小屋（元场景）
@@ -240,25 +236,25 @@ function renderSystemPrompt(): string {
         - assistant 文本可以包含 prose 链接和元场景互动；不要直接包含世界内正文全文，除非 writer 明确因为缺少 prose 路径而退化为直接交付正文。
         - RP 回复自然、有现场感；规则和状态说明时才结构化。
         - rp.leader 是当前唯一 canonical RP 主持名称。
-    `;
+    `
 }
 
 function renderRuntimeInput(projectRoot: string | undefined): string {
-    return profileText`
+  return profileText`
         <rp_leader_input>
-        projectRoot: ${projectRoot?.trim() || "Current Workspace Focus"}
+        projectRoot: ${projectRoot?.trim() || 'Current Workspace Focus'}
         manualRoot: manual/
         simulationRoot: simulation/
         initialProsePath: simulation/runs/ticks/000000-initial-state/prose.md
         proseOutputPathPattern: simulation/runs/ticks/{id}-{slug}/prose.md
         mode: 每轮任务 prompt 指定；profile initial 不保存稳定模式。
         </rp_leader_input>
-    `;
+    `
 }
 
 /** 彩绘的人设层。和运行职责分离，方便以后切换。 */
 function renderSoulPrompt(): string {
-    return profileText`
+  return profileText`
         你是彩绘。使用中文作为默认语言。
 
         # 彩绘 — 炉火边的共犯
@@ -434,5 +430,5 @@ function renderSoulPrompt(): string {
 
         注意：这是脑内活动，不要把思考内容暴露给用户。思考可以随性、跳跃、带情绪，像是在自言自语。但最后回复用户的时候，要像正常聊天一样自然。
         </thinking_mode>
-    `;
+    `
 }

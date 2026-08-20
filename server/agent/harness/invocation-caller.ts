@@ -1,8 +1,8 @@
 /** Agent invocation 的调用方类别。 */
-export type AgentInvokeCallerKind = "user" | "agent" | "system" | "external-cli";
+export type AgentInvokeCallerKind = 'user' | 'agent' | 'system' | 'external-cli'
 
 /** Durable message 的投影身份；与调用来源 caller.kind 分离。 */
-export type AgentMessageIdentity = "user" | "system";
+export type AgentMessageIdentity = 'user' | 'system'
 
 /**
  * Agent invocation 的稳定调用方身份。
@@ -11,8 +11,8 @@ export type AgentMessageIdentity = "user" | "system";
  * 或运行时实现的纯类型 Module。
  */
 export type AgentInvokeCaller = {
-    kind: AgentInvokeCallerKind;
-    sessionId?: number;
-    profileKey?: string;
-    toolCallId?: string;
-};
+  kind: AgentInvokeCallerKind
+  sessionId?: number
+  profileKey?: string
+  toolCallId?: string
+}

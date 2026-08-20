@@ -16,49 +16,50 @@
 
 /** 解析单个标量值：`[a, b]` 数组 / `true`|`false` 布尔 / `"quoted"` 字符串 / 其余裸字符串。 */
 export function parseScalarValue(value: string): unknown {
-    if (value.startsWith("[") && value.endsWith("]")) {
-        return value.slice(1, -1).split(",").map((s) => s.trim().replace(/^"(.*)"$/u, "$1")).filter(Boolean);
-    }
-    if (value === "true") return true;
-    if (value === "false") return false;
-    // P1-3 → I-1 fix: 双引号字符串去引号 (per YAML 1.2 spec 7.3.2)
-    const quoted = value.match(/^"(.*)"$/u);
-    if (quoted) return quoted[1] ?? "";
-    return value;
+  if (value.startsWith('[') && value.endsWith(']')) {
+    return value.slice(1, -1).split(',').map(s => s.trim().replace(/^"(.*)"$/u, '$1')).filter(Boolean)
+  }
+  if (value === 'true') return true
+  if (value === 'false') return false
+  // P1-3 → I-1 fix: 双引号字符串去引号 (per YAML 1.2 spec 7.3.2)
+  const quoted = value.match(/^"(.*)"$/u)
+  if (quoted) return quoted[1] ?? ''
+  return value
 }
 
 /** 极简 YAML frontmatter 解析——只支持 key: value 与 `key:` 嵌套一层。 */
 export function parseFrontmatter(raw: string): Record<string, unknown> {
-    const match = raw.match(/^---\n([\s\S]*?)\n---/);
-    if (!match) return {};
-    const block = match[1] ?? "";
-    const out: Record<string, unknown> = {};
-    const lines = block.split("\n");
-    let currentKey: string | null = null;
-    for (const line of lines) {
-        if (line.startsWith("  ") && currentKey) {
-            const child = line.trim();
-            const [k, ...v] = child.split(":");
-            if (k && v.length) {
-                const existing = out[currentKey];
-                if (typeof existing === "object" && existing !== null) {
-                    (existing as Record<string, unknown>)[k.trim()] = parseScalarValue(v.join(":").trim());
-                }
-            }
-            continue;
+  const match = raw.match(/^---\n([\s\S]*?)\n---/)
+  if (!match) return {}
+  const block = match[1] ?? ''
+  const out: Record<string, unknown> = {}
+  const lines = block.split('\n')
+  let currentKey: string | null = null
+  for (const line of lines) {
+    if (line.startsWith('  ') && currentKey) {
+      const child = line.trim()
+      const [k, ...v] = child.split(':')
+      if (k && v.length) {
+        const existing = out[currentKey]
+        if (typeof existing === 'object' && existing !== null) {
+          (existing as Record<string, unknown>)[k.trim()] = parseScalarValue(v.join(':').trim())
         }
-        const [k, ...v] = line.split(":");
-        if (k && v.length) {
-            const key = k.trim();
-            const value = v.join(":").trim();
-            if (value === "") {
-                currentKey = key;
-                out[key] = {};
-            } else {
-                currentKey = null;
-                out[key] = parseScalarValue(value);
-            }
-        }
+      }
+      continue
     }
-    return out;
+    const [k, ...v] = line.split(':')
+    if (k && v.length) {
+      const key = k.trim()
+      const value = v.join(':').trim()
+      if (value === '') {
+        currentKey = key
+        out[key] = {}
+      }
+      else {
+        currentKey = null
+        out[key] = parseScalarValue(value)
+      }
+    }
+  }
+  return out
 }

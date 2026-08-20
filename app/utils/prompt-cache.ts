@@ -7,10 +7,10 @@
 
 /** 命中率计算只需要 usage 的三个输入侧字段。 */
 export type PromptCacheUsage = {
-    input: number;
-    cacheRead: number;
-    cacheWrite: number;
-};
+  input: number
+  cacheRead: number
+  cacheWrite: number
+}
 
 /**
  * 本次请求的 prompt token 总量。
@@ -22,7 +22,7 @@ export type PromptCacheUsage = {
  * 映射成 `{input, cacheRead}` 时已经拆开，到这里口径是一致的。
  */
 export function promptCacheTotalTokens(usage: PromptCacheUsage): number {
-    return usage.input + usage.cacheRead + usage.cacheWrite;
+  return usage.input + usage.cacheRead + usage.cacheWrite
 }
 
 /**
@@ -33,6 +33,6 @@ export function promptCacheTotalTokens(usage: PromptCacheUsage): number {
  * 逐请求命中率。
  */
 export function promptCacheHitRate(usage: PromptCacheUsage): number | null {
-    const total = promptCacheTotalTokens(usage);
-    return total > 0 ? usage.cacheRead / total * 100 : null;
+  const total = promptCacheTotalTokens(usage)
+  return total > 0 ? usage.cacheRead / total * 100 : null
 }

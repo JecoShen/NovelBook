@@ -1,38 +1,38 @@
-import {validateBody} from "nbook/server/utils/novel-chapter";
-import {useAgentHarness} from "nbook/server/agent/http";
-import {previewAgentProfilePrepare} from "nbook/server/agent/profiles/profile-http-service";
-import {useProfileCompileWorker} from "nbook/server/agent/profiles/profile-compile-worker";
-import {AgentProfilePreparePreviewRequestDtoSchema} from "nbook/shared/dto/agent-profile.dto";
-import {withProjectHttpError} from "nbook/server/api/projects/project-http-error";
+import { validateBody } from 'nbook/server/utils/novel-chapter'
+import { useAgentHarness } from 'nbook/server/agent/http'
+import { previewAgentProfilePrepare } from 'nbook/server/agent/profiles/profile-http-service'
+import { useProfileCompileWorker } from 'nbook/server/agent/profiles/profile-compile-worker'
+import { AgentProfilePreparePreviewRequestDtoSchema } from 'nbook/shared/dto/agent-profile.dto'
+import { withProjectHttpError } from 'nbook/server/api/projects/project-http-error'
 
 /**
  * 调用真实 profile.prepare 生成 TSX Profile 预览。
  */
-export default defineEventHandler((event) => withProjectHttpError(async () => {
-    const body = await validateBody(event, AgentProfilePreparePreviewRequestDtoSchema);
-    const harness = useAgentHarness();
-    if (!body.sourceOverride) {
-        return previewAgentProfilePrepare(harness, body);
-    }
-    const result = await useProfileCompileWorker().compile({
-        fileName: body.sourceOverride.fileName,
-        source: body.sourceOverride.source,
-        dryRun: true,
-        preview: true,
-        sessionId: body.sessionId,
-        initial: body.initial,
-        initialOverrides: body.initialOverrides,
-    });
-    if (result.preview) {
-        return result.preview;
-    }
-    return {
-        profileKey: body.profileKey,
-        ok: false,
-        issues: result.issues,
-        messages: [],
-        persistedMessageCount: 0,
-        variables: [],
-        reportResultSchema: null,
-    };
-}));
+export default defineEventHandler(event => withProjectHttpError(async () => {
+  const body = await validateBody(event, AgentProfilePreparePreviewRequestDtoSchema)
+  const harness = useAgentHarness()
+  if (!body.sourceOverride) {
+    return previewAgentProfilePrepare(harness, body)
+  }
+  const result = await useProfileCompileWorker().compile({
+    fileName: body.sourceOverride.fileName,
+    source: body.sourceOverride.source,
+    dryRun: true,
+    preview: true,
+    sessionId: body.sessionId,
+    initial: body.initial,
+    initialOverrides: body.initialOverrides,
+  })
+  if (result.preview) {
+    return result.preview
+  }
+  return {
+    profileKey: body.profileKey,
+    ok: false,
+    issues: result.issues,
+    messages: [],
+    persistedMessageCount: 0,
+    variables: [],
+    reportResultSchema: null,
+  }
+}))

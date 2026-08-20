@@ -1,10 +1,10 @@
-import {profileText} from "nbook/server/agent/profiles/profile-text";
-import type {ExecuteWorldMode} from "nbook/server/world-engine/world-engine.facade";
+import { profileText } from 'nbook/server/agent/profiles/profile-text'
+import type { ExecuteWorldMode } from 'nbook/server/world-engine/world-engine.facade'
 
 /** 构造 execute_world 在不同 profile 权限下暴露给模型的工具说明。 */
 export function buildExecuteWorldDescription(mode: ExecuteWorldMode): string {
-    const writeApi = mode === "readwrite"
-        ? profileText`
+  const writeApi = mode === 'readwrite'
+    ? profileText`
             Write API is also available:
 
             \`\`\`typescript
@@ -50,11 +50,11 @@ export function buildExecuteWorldDescription(mode: ExecuteWorldMode): string {
             - To fix a wrong patch in an existing slice, read patchId via world.slice.get(sliceId) or world.slice.list({withPatches:true}), then use world.slice.editPatches. Do not delete and rewrite a whole slice just to fix one patch.
             - For EmbeddingText fields, write only {text:"..."}. vector/model are maintained by the system.
         `
-        : profileText`
+    : profileText`
             This profile has readonly World Engine access. world.slice.write, world.slice.editPatches, and world.slice.delete are not available.
-        `;
+        `
 
-    return profileText`
+  return profileText`
         Execute JavaScript code against the current Project Workspace World Engine. For an explicit cross-Project call, provide the optional projectRoot argument.
 
         The tool always returns:
@@ -101,5 +101,5 @@ export function buildExecuteWorldDescription(mode: ExecuteWorldMode): string {
         - Use await for async world.subject.* / world.search.* / world.slice.* methods.
         - Result data is limited to 10KB; return a human-readable string summary or selected fields, not full world dumps.
         - BigInt values are serialized as strings in the final tool details.
-    `;
+    `
 }

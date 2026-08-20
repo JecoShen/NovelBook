@@ -1,135 +1,129 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import {Type, type Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {LeaderDefaultInitialSchema, LeaderDefaultOutputSchema} from "nbook/profile-sdk";
-import {
-    AgentCatalog,
-    AppendingSet,
-    HistorySet,
-    Import,
-    LinkedAgentsReminder,
-    Message,
-    MentionedSkillsReminder,
-    ModeAvailabilityReminder,
-    ModeReminder,
-    ProfilePrompt,
-    SkillCatalog,
-    System,
-} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
-import {defineLowCodeForm} from "nbook/profile-sdk";
+import { Type, type Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, toolset, LeaderDefaultInitialSchema, LeaderDefaultOutputSchema,
+  AgentCatalog,
+  AppendingSet,
+  HistorySet,
+  Import,
+  LinkedAgentsReminder,
+  Message,
+  MentionedSkillsReminder,
+  ModeAvailabilityReminder,
+  ModeReminder,
+  ProfilePrompt,
+  SkillCatalog,
+  System, profileText, defineLowCodeForm } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "leader.assets",
-    name: "用户资产助手",
-    description: "用户资产助手：介绍 Workspace Root .nbook 用户资产体系，协助创建、修改、管理 Agent profiles、skills、模板与 profile home 资源，并指路设置表单等 UI 入口；不负责小说正文调度。",
-} as const;
+  key: 'leader.assets',
+  name: '用户资产助手',
+  description: '用户资产助手：介绍 Workspace Root .nbook 用户资产体系，协助创建、修改、管理 Agent profiles、skills、模板与 profile home 资源，并指路设置表单等 UI 入口；不负责小说正文调度。',
+} as const
 
-export const InitialSchema = LeaderDefaultInitialSchema;
+export const InitialSchema = LeaderDefaultInitialSchema
 
-export const OutputSchema = LeaderDefaultOutputSchema;
+export const OutputSchema = LeaderDefaultOutputSchema
 
 export const SettingsSchema = Type.Object({
-    customTopSystemPrompt: Type.String(),
-}, {additionalProperties: false});
+  customTopSystemPrompt: Type.String(),
+}, { additionalProperties: false })
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
-export type Settings = Static<typeof SettingsSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
+export type Settings = Static<typeof SettingsSchema>
 
 export const LeaderAssetsSettingsForm = defineLowCodeForm({
-    schema: SettingsSchema,
-    defaults: {
-        customTopSystemPrompt: "",
+  schema: SettingsSchema,
+  defaults: {
+    customTopSystemPrompt: '',
+  },
+  fields: [
+    {
+      path: 'customTopSystemPrompt',
+      component: 'textarea',
+      label: '最高优先级置顶提示词',
+      description: '插入在用户资产助手系统提示词的最前面，是优先级最高的自定义规则。',
+      placeholder: '写入需要长期置顶的自定义规则，例如对资产编辑风格的全局要求。',
+      rows: 6,
     },
-    fields: [
-        {
-            path: "customTopSystemPrompt",
-            component: "textarea",
-            label: "最高优先级置顶提示词",
-            description: "插入在用户资产助手系统提示词的最前面，是优先级最高的自定义规则。",
-            placeholder: "写入需要长期置顶的自定义规则，例如对资产编辑风格的全局要求。",
-            rows: 6,
-        },
-    ],
-});
+  ],
+})
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    settingsForm: LeaderAssetsSettingsForm,
-    // Skill 可见性白名单：本 agent 只聚焦资产编辑相关 skill，novel-setup / novel-writing 等写作流程 skill 不进 catalog。
-    skills: {include: ["profile-system-guide", "tsx-profile-editing", "skill-creator", "skill-creator-zh"]},
-    tools: toolset(
-        builtin.file.read,
-        builtin.file.write,
-        builtin.file.edit,
-        builtin.file.applyPatch,
-        builtin.file.bash,
-        builtin.agent.create,
-        builtin.agent.invoke,
-        builtin.agent.get,
-        builtin.agent.getProfile,
-        builtin.agent.getSession,
-        builtin.agent.detach,
-        builtin.control.requestUserInput,
-        builtin.control.switchMode,
-    ),
-    runtimeDefaults: {
-        summarizer: {
-            enabled: true,
-            profileKey: "summarizer",
-            trigger: "afterInvocation",
-            interval: {
-                kind: "sourceInvocation",
-                value: 16,
-            },
-            maxDialogueContentTokens: 80_000,
-        },
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  settingsForm: LeaderAssetsSettingsForm,
+  // Skill 可见性白名单：本 agent 只聚焦资产编辑相关 skill，novel-setup / novel-writing 等写作流程 skill 不进 catalog。
+  skills: { include: ['profile-system-guide', 'tsx-profile-editing', 'skill-creator', 'skill-creator-zh'] },
+  tools: toolset(
+    builtin.file.read,
+    builtin.file.write,
+    builtin.file.edit,
+    builtin.file.applyPatch,
+    builtin.file.bash,
+    builtin.agent.create,
+    builtin.agent.invoke,
+    builtin.agent.get,
+    builtin.agent.getProfile,
+    builtin.agent.getSession,
+    builtin.agent.detach,
+    builtin.control.requestUserInput,
+    builtin.control.switchMode,
+  ),
+  runtimeDefaults: {
+    summarizer: {
+      enabled: true,
+      profileKey: 'summarizer',
+      trigger: 'afterInvocation',
+      interval: {
+        kind: 'sourceInvocation',
+        value: 16,
+      },
+      maxDialogueContentTokens: 80_000,
     },
-    context(ctx) {
-        const customTopPrompt = (ctx.settings.customTopSystemPrompt ?? "").trim();
-        return (
-            <ProfilePrompt>
-                <System>
-                    {[
-                        customTopPrompt && profileText`
+  },
+  context(ctx) {
+    const customTopPrompt = (ctx.settings.customTopSystemPrompt ?? '').trim()
+    return (
+      <ProfilePrompt>
+        <System>
+          {[
+            customTopPrompt && profileText`
                             <custom_top_system_prompt>
                               ${customTopPrompt}
                             </custom_top_system_prompt>
                         `,
-                        LEADER_ASSETS_SYSTEM_PROMPT,
-                    ].filter(Boolean).join("\n\n")}
-                </System>
-                <HistorySet>
-                    <Message>
-                        <AgentCatalog />
-                    </Message>
-                    <Message>
-                        <Import path="reference/agent/profile-routing.md" />
-                    </Message>
-                    <Message>
-                        <SkillCatalog mode="userAssets" />
-                    </Message>
-                    <Message>
-                        <Import path="AGENTS.md" />
-                    </Message>
-                </HistorySet>
-                <AppendingSet>
-                    <ModeAvailabilityReminder />
-                    <LinkedAgentsReminder />
-                    <ModeReminder />
-                    <Message>
-                        <MentionedSkillsReminder />
-                    </Message>
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+            LEADER_ASSETS_SYSTEM_PROMPT,
+          ].filter(Boolean).join('\n\n')}
+        </System>
+        <HistorySet>
+          <Message>
+            <AgentCatalog />
+          </Message>
+          <Message>
+            <Import path="reference/agent/profile-routing.md" />
+          </Message>
+          <Message>
+            <SkillCatalog mode="userAssets" />
+          </Message>
+          <Message>
+            <Import path="AGENTS.md" />
+          </Message>
+        </HistorySet>
+        <AppendingSet>
+          <ModeAvailabilityReminder />
+          <LinkedAgentsReminder />
+          <ModeReminder />
+          <Message>
+            <MentionedSkillsReminder />
+          </Message>
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 // 工具使用一节的上游共享纪律见 reference/agent/workspace-tool-use.md。该文档的 Workspace CLI 与 Bash 段按
 // Project Workspace cwd 书写，对本 agent 的 user-assets cwd（workspace/.nbook）是错误指引，因此这里保持
@@ -238,4 +232,4 @@ const LEADER_ASSETS_SYSTEM_PROMPT = profileText`
         - 对清楚的小任务，直接做最简单的正确动作。
         - 对开放或含糊任务，给简短分析和下一步选项，然后等用户方向。
         保持简洁直接。对资产编辑任务，说明改了哪些文件、为什么这样改、如何验证。对危险或范围不清的修改，先指出风险和需要确认的边界。
-    `;
+    `

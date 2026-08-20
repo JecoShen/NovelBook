@@ -1,34 +1,58 @@
 <script setup lang="ts">
-import type {PreviewVariableGroup} from "nbook/app/components/profile-template-editor/profile-template-editor-ui";
+import type { PreviewVariableGroup } from 'nbook/app/components/profile-template-editor/profile-template-editor-ui'
 
 const props = defineProps<{
-    groups: PreviewVariableGroup[];
-    compact?: boolean;
-    isCollapsed: (group: string) => boolean;
-    formatValue: (value: unknown) => string;
-}>();
+  groups: PreviewVariableGroup[]
+  compact?: boolean
+  isCollapsed: (group: string) => boolean
+  formatValue: (value: unknown) => string
+}>()
 
 const emit = defineEmits<{
-    (e: "toggle-group", group: string): void;
-}>();
+  (e: 'toggle-group', group: string): void
+}>()
 </script>
 
 <template>
-    <!-- 变量分组：用于属性侧栏的变量和运行时变量页签 -->
-    <section v-for="group in props.groups" :key="group.group" class="variable-group-section">
-        <button class="variable-group-header" @click="emit('toggle-group', group.group)">
-            <span :class="props.isCollapsed(group.group) ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'" class="h-3.5 w-3.5"></span>
-            <span v-if="props.compact" class="i-lucide-braces h-3.5 w-3.5"></span>
-            <span>{{ group.group }}</span>
-            <span class="ml-auto text-[10px] text-[var(--text-muted)]">{{ group.items.length }}</span>
-        </button>
-        <div v-if="!props.isCollapsed(group.group)" class="mt-2 flex flex-wrap gap-2">
-            <div v-for="item in group.items" :key="item.path" class="variable-chip" :title="item.description ?? item.path">
-                <span>{{ item.path }}</span>
-                <span v-if="!props.compact" class="variable-chip-value">{{ props.formatValue(item.currentValue) }}</span>
-            </div>
-        </div>
-    </section>
+  <!-- 变量分组：用于属性侧栏的变量和运行时变量页签 -->
+  <section
+    v-for="group in props.groups"
+    :key="group.group"
+    class="variable-group-section"
+  >
+    <button
+      class="variable-group-header"
+      @click="emit('toggle-group', group.group)"
+    >
+      <span
+        :class="props.isCollapsed(group.group) ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
+        class="h-3.5 w-3.5"
+      />
+      <span
+        v-if="props.compact"
+        class="i-lucide-braces h-3.5 w-3.5"
+      />
+      <span>{{ group.group }}</span>
+      <span class="ml-auto text-[10px] text-[var(--text-muted)]">{{ group.items.length }}</span>
+    </button>
+    <div
+      v-if="!props.isCollapsed(group.group)"
+      class="mt-2 flex flex-wrap gap-2"
+    >
+      <div
+        v-for="item in group.items"
+        :key="item.path"
+        class="variable-chip"
+        :title="item.description ?? item.path"
+      >
+        <span>{{ item.path }}</span>
+        <span
+          v-if="!props.compact"
+          class="variable-chip-value"
+        >{{ props.formatValue(item.currentValue) }}</span>
+      </div>
+    </div>
+  </section>
 </template>
 
 <style scoped>

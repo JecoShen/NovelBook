@@ -1,487 +1,487 @@
-import {readdir, readFile} from "node:fs/promises";
-import {basename, resolve} from "node:path";
-import {parse} from "yaml";
+import { readdir, readFile } from 'node:fs/promises'
+import { basename, resolve } from 'node:path'
+import { parse } from 'yaml'
 
-import {readLabelManifest} from "nbook/scripts/ci/community-labels";
+import { readLabelManifest } from 'nbook/scripts/ci/community-labels'
 
 interface FormOption {
-    label: string;
-    required?: boolean;
+  label: string
+  required?: boolean
 }
 
 interface FormField {
-    type: string;
-    id?: string;
-    attributes?: {
-        label?: string;
-        options?: FormOption[];
-    };
-    validations?: {
-        required?: boolean;
-    };
+  type: string
+  id?: string
+  attributes?: {
+    label?: string
+    options?: FormOption[]
+  }
+  validations?: {
+    required?: boolean
+  }
 }
 
 interface IssueForm {
-    name: string;
-    description: string;
-    labels: string[];
-    body: FormField[];
+  name: string
+  description: string
+  labels: string[]
+  body: FormField[]
 }
 
 interface IssueTemplateConfig {
-    blank_issues_enabled: boolean;
-    contact_links?: Array<{
-        name: string;
-        url: string;
-        about: string;
-    }>;
+  blank_issues_enabled: boolean
+  contact_links?: Array<{
+    name: string
+    url: string
+    about: string
+  }>
 }
 
 interface FormContract {
-    path: string;
-    typeLabel: string;
-    requiredLabels?: string[];
-    requiredIds: string[];
+  path: string
+  typeLabel: string
+  requiredLabels?: string[]
+  requiredIds: string[]
 }
 
 interface WorkflowStep {
-    name?: string;
-    run?: string;
-    uses?: string;
-    with?: {
-        "node-version"?: string | number;
-    };
+  name?: string
+  run?: string
+  uses?: string
+  with?: {
+    'node-version'?: string | number
+  }
 }
 
 interface WorkflowJob {
-    name?: string;
-    "timeout-minutes"?: number;
-    steps?: WorkflowStep[];
+  'name'?: string
+  'timeout-minutes'?: number
+  'steps'?: WorkflowStep[]
 }
 
 interface WorkflowConfig {
-    name: string;
-    on: {
-        push?: {
-            branches?: string[];
-            paths?: string[];
-        };
-        pull_request?: {
-            paths?: string[];
-        };
-    };
-    permissions: Record<string, string>;
-    jobs: Record<string, WorkflowJob>;
+  name: string
+  on: {
+    push?: {
+      branches?: string[]
+      paths?: string[]
+    }
+    pull_request?: {
+      paths?: string[]
+    }
+  }
+  permissions: Record<string, string>
+  jobs: Record<string, WorkflowJob>
 }
 
-const root = resolve(import.meta.dir, "../..");
+const root = resolve(import.meta.dir, '../..')
 
 const formContracts: FormContract[] = [
-    {
-        path: ".github/ISSUE_TEMPLATE/01-bug-report.yml",
-        typeLabel: "type: bug",
-        requiredIds: [
-            "version",
-            "installation",
-            "operating-system",
-            "architecture",
-            "reproducibility",
-            "steps",
-            "actual-result",
-            "expected-result",
-            "privacy-confirmation",
-            "duplicate-check",
-        ],
-    },
-    {
-        path: ".github/ISSUE_TEMPLATE/02-feature-request.yml",
-        typeLabel: "type: feature",
-        requiredIds: [
-            "problem",
-            "desired-outcome",
-            "current-workaround",
-            "target-users",
-            "privacy-confirmation",
-            "duplicate-check",
-        ],
-    },
-    {
-        path: ".github/ISSUE_TEMPLATE/03-prompt-contribution.yml",
-        typeLabel: "type: feature",
-        requiredLabels: ["area: agent"],
-        requiredIds: [
-            "contribution-kind",
-            "asset-kind",
-            "target",
-            "use-case",
-            "desired-behavior",
-            "content-authorization",
-            "privacy-confirmation",
-            "duplicate-check",
-        ],
-    },
-    {
-        path: ".github/ISSUE_TEMPLATE/04-support-request.yml",
-        typeLabel: "type: support",
-        requiredIds: [
-            "question",
-            "version",
-            "installation",
-            "environment",
-            "attempted",
-            "current-result",
-            "privacy-confirmation",
-            "duplicate-check",
-        ],
-    },
-    {
-        path: ".github/ISSUE_TEMPLATE/99-other-request.yml",
-        typeLabel: "type: other",
-        requiredIds: [
-            "topic",
-            "why-other",
-            "details",
-            "privacy-confirmation",
-            "duplicate-check",
-        ],
-    },
-];
+  {
+    path: '.github/ISSUE_TEMPLATE/01-bug-report.yml',
+    typeLabel: 'type: bug',
+    requiredIds: [
+      'version',
+      'installation',
+      'operating-system',
+      'architecture',
+      'reproducibility',
+      'steps',
+      'actual-result',
+      'expected-result',
+      'privacy-confirmation',
+      'duplicate-check',
+    ],
+  },
+  {
+    path: '.github/ISSUE_TEMPLATE/02-feature-request.yml',
+    typeLabel: 'type: feature',
+    requiredIds: [
+      'problem',
+      'desired-outcome',
+      'current-workaround',
+      'target-users',
+      'privacy-confirmation',
+      'duplicate-check',
+    ],
+  },
+  {
+    path: '.github/ISSUE_TEMPLATE/03-prompt-contribution.yml',
+    typeLabel: 'type: feature',
+    requiredLabels: ['area: agent'],
+    requiredIds: [
+      'contribution-kind',
+      'asset-kind',
+      'target',
+      'use-case',
+      'desired-behavior',
+      'content-authorization',
+      'privacy-confirmation',
+      'duplicate-check',
+    ],
+  },
+  {
+    path: '.github/ISSUE_TEMPLATE/04-support-request.yml',
+    typeLabel: 'type: support',
+    requiredIds: [
+      'question',
+      'version',
+      'installation',
+      'environment',
+      'attempted',
+      'current-result',
+      'privacy-confirmation',
+      'duplicate-check',
+    ],
+  },
+  {
+    path: '.github/ISSUE_TEMPLATE/99-other-request.yml',
+    typeLabel: 'type: other',
+    requiredIds: [
+      'topic',
+      'why-other',
+      'details',
+      'privacy-confirmation',
+      'duplicate-check',
+    ],
+  },
+]
 
 const yamlPaths = [
-    ".github/labels.yml",
-    ...formContracts.map((contract) => contract.path),
-    ".github/ISSUE_TEMPLATE/config.yml",
-    ".github/workflows/community-docs.yml",
-    ".github/workflows/code-baseline.yml",
-    ".github/workflows/deploy-docs.yml",
-];
+  '.github/labels.yml',
+  ...formContracts.map(contract => contract.path),
+  '.github/ISSUE_TEMPLATE/config.yml',
+  '.github/workflows/community-docs.yml',
+  '.github/workflows/code-baseline.yml',
+  '.github/workflows/deploy-docs.yml',
+]
 
 const codeBaselinePaths = [
-    "app/**",
-    "assets/**",
-    "packages/**",
-    "plugins/**",
-    "prisma/**",
-    "scripts/**",
-    "server/**",
-    "shared/**",
-    "world-engine/**",
-    "*.d.ts",
-    ".env.example",
-    ".env.docker.example",
-    "Dockerfile*",
-    "bunfig.toml",
-    "config.example.yaml",
-    "docker-compose*.yml",
-    "nuxt.config.ts",
-    "prisma.config.ts",
-    "release-state-migration.json",
-    "tsconfig.json",
-    "uno.config.ts",
-    "vitest.config.ts",
-    "package.json",
-    "bun.lock",
-    "patches/**",
-    ".github/workflows/code-baseline.yml",
-];
+  'app/**',
+  'assets/**',
+  'packages/**',
+  'plugins/**',
+  'prisma/**',
+  'scripts/**',
+  'server/**',
+  'shared/**',
+  'world-engine/**',
+  '*.d.ts',
+  '.env.example',
+  '.env.docker.example',
+  'Dockerfile*',
+  'bunfig.toml',
+  'config.example.yaml',
+  'docker-compose*.yml',
+  'nuxt.config.ts',
+  'prisma.config.ts',
+  'release-state-migration.json',
+  'tsconfig.json',
+  'uno.config.ts',
+  'vitest.config.ts',
+  'package.json',
+  'bun.lock',
+  'patches/**',
+  '.github/workflows/code-baseline.yml',
+]
 
 const docsRuntimePaths = [
-    "patches/**",
-    "scripts/ci/validate-nitropack-patch.ts",
-    "nuxt.config.ts",
-    "tsconfig.json",
-    "package.json",
-    "bun.lock",
-];
+  'patches/**',
+  'scripts/ci/validate-nitropack-patch.ts',
+  'nuxt.config.ts',
+  'tsconfig.json',
+  'package.json',
+  'bun.lock',
+]
 
-const nitroPatchTestCommand = "bun scripts/ci/validate-nitropack-patch.ts";
+const nitroPatchTestCommand = 'bun scripts/ci/validate-nitropack-patch.ts'
 
 /** 读取仓库内的 UTF-8 文本文件。 */
 async function readRepoFile(path: string): Promise<string> {
-    return await readFile(resolve(root, path), "utf8");
+  return await readFile(resolve(root, path), 'utf8')
 }
 
 /** 解析受版本控制的 YAML 配置。 */
 async function readYaml<T>(path: string): Promise<T> {
-    return parse(await readRepoFile(path)) as T;
+  return parse(await readRepoFile(path)) as T
 }
 
 /** 在社区配置违反明确合同时终止校验。 */
 function ensure(condition: boolean, message: string): asserts condition {
-    if (!condition) {
-        throw new Error(message);
-    }
+  if (!condition) {
+    throw new Error(message)
+  }
 }
 
 /** 验证标签名称、颜色和描述可以作为仓库标签真相源。 */
 async function validateLabels(): Promise<Set<string>> {
-    const labels = await readLabelManifest(resolve(root, ".github/labels.yml"));
-    return new Set(labels.map((label) => label.name));
+  const labels = await readLabelManifest(resolve(root, '.github/labels.yml'))
+  return new Set(labels.map(label => label.name))
 }
 
 /** 判断表单字段是否通过字段级或 checkbox option 声明为必填。 */
 function isRequired(field: FormField): boolean {
-    if (field.validations?.required === true) {
-        return true;
-    }
-    return field.type === "checkboxes"
-        && Boolean(field.attributes?.options?.some((option) => option.required === true));
+  if (field.validations?.required === true) {
+    return true
+  }
+  return field.type === 'checkboxes'
+    && Boolean(field.attributes?.options?.some(option => option.required === true))
 }
 
 /** 验证 Issue Form 的标签引用、字段 ID、必填字段和隐私确认。 */
 async function validateForm(contract: FormContract, labelNames: Set<string>): Promise<void> {
-    const form = await readYaml<IssueForm>(contract.path);
-    ensure(Boolean(form.name) && Boolean(form.description), `${contract.path} 缺少 name 或 description`);
-    ensure(form.labels.filter((label) => label.startsWith("type: ")).length === 1, `${contract.path} 必须恰好引用一个 type:* 标签`);
-    ensure(form.labels.filter((label) => label.startsWith("status: ")).length === 1, `${contract.path} 必须恰好引用一个 status:* 标签`);
-    ensure(form.labels.includes(contract.typeLabel), `${contract.path} 缺少 ${contract.typeLabel}`);
-    ensure(form.labels.includes("status: needs-triage"), `${contract.path} 缺少 status: needs-triage`);
-    for (const label of contract.requiredLabels ?? []) {
-        ensure(form.labels.includes(label), `${contract.path} 缺少 ${label}`);
-    }
+  const form = await readYaml<IssueForm>(contract.path)
+  ensure(Boolean(form.name) && Boolean(form.description), `${contract.path} 缺少 name 或 description`)
+  ensure(form.labels.filter(label => label.startsWith('type: ')).length === 1, `${contract.path} 必须恰好引用一个 type:* 标签`)
+  ensure(form.labels.filter(label => label.startsWith('status: ')).length === 1, `${contract.path} 必须恰好引用一个 status:* 标签`)
+  ensure(form.labels.includes(contract.typeLabel), `${contract.path} 缺少 ${contract.typeLabel}`)
+  ensure(form.labels.includes('status: needs-triage'), `${contract.path} 缺少 status: needs-triage`)
+  for (const label of contract.requiredLabels ?? []) {
+    ensure(form.labels.includes(label), `${contract.path} 缺少 ${label}`)
+  }
 
-    for (const label of form.labels) {
-        ensure(labelNames.has(label), `${contract.path} 引用了未登记标签: ${label}`);
-    }
+  for (const label of form.labels) {
+    ensure(labelNames.has(label), `${contract.path} 引用了未登记标签: ${label}`)
+  }
 
-    const ids = new Set<string>();
-    for (const field of form.body) {
-        if (!field.id) {
-            continue;
-        }
-        ensure(!ids.has(field.id), `${contract.path} 字段 ID 重复: ${field.id}`);
-        ids.add(field.id);
+  const ids = new Set<string>()
+  for (const field of form.body) {
+    if (!field.id) {
+      continue
     }
+    ensure(!ids.has(field.id), `${contract.path} 字段 ID 重复: ${field.id}`)
+    ids.add(field.id)
+  }
 
-    for (const id of contract.requiredIds) {
-        const field = form.body.find((candidate) => candidate.id === id);
-        ensure(Boolean(field), `${contract.path} 缺少字段: ${id}`);
-        ensure(isRequired(field!), `${contract.path} 字段必须为必填: ${id}`);
-    }
+  for (const id of contract.requiredIds) {
+    const field = form.body.find(candidate => candidate.id === id)
+    ensure(Boolean(field), `${contract.path} 缺少字段: ${id}`)
+    ensure(isRequired(field!), `${contract.path} 字段必须为必填: ${id}`)
+  }
 
-    const privacy = form.body.find((field) => field.id === "privacy-confirmation");
-    ensure(privacy?.type === "checkboxes", `${contract.path} 隐私确认必须使用 checkboxes`);
-    ensure(Boolean(privacy.attributes?.label?.includes("隐私")), `${contract.path} 隐私确认缺少中文标识`);
-    ensure(Boolean(privacy.attributes?.label?.includes("Privacy")), `${contract.path} 隐私确认缺少英文标识`);
+  const privacy = form.body.find(field => field.id === 'privacy-confirmation')
+  ensure(privacy?.type === 'checkboxes', `${contract.path} 隐私确认必须使用 checkboxes`)
+  ensure(Boolean(privacy.attributes?.label?.includes('隐私')), `${contract.path} 隐私确认缺少中文标识`)
+  ensure(Boolean(privacy.attributes?.label?.includes('Privacy')), `${contract.path} 隐私确认缺少英文标识`)
 }
 
 /** 验证 Issue Form 文件集合与文件名排序合同完全一致。 */
 async function validateFormFiles(): Promise<void> {
-    const actual = (await readdir(resolve(root, ".github/ISSUE_TEMPLATE")))
-        .filter((name) => name.endsWith(".yml") && name !== "config.yml")
-        .sort();
-    const expected = formContracts.map((contract) => basename(contract.path));
+  const actual = (await readdir(resolve(root, '.github/ISSUE_TEMPLATE')))
+    .filter(name => name.endsWith('.yml') && name !== 'config.yml')
+    .sort()
+  const expected = formContracts.map(contract => basename(contract.path))
 
-    ensure(
-        JSON.stringify(actual) === JSON.stringify(expected),
-        `Issue Form 文件或排序不一致：期望 ${expected.join(", ")}，实际 ${actual.join(", ")}`,
-    );
+  ensure(
+    JSON.stringify(actual) === JSON.stringify(expected),
+    `Issue Form 文件或排序不一致：期望 ${expected.join(', ')}，实际 ${actual.join(', ')}`,
+  )
 }
 
 /** 验证指定短语在文档中存在并保持给定顺序。 */
 function ensurePhraseOrder(text: string, phrases: readonly string[], label: string): void {
-    let previousIndex = -1;
-    for (const phrase of phrases) {
-        const index = text.indexOf(phrase);
-        ensure(index > previousIndex, `${label} 缺少短语或顺序错误: ${phrase}`);
-        previousIndex = index;
-    }
+  let previousIndex = -1
+  for (const phrase of phrases) {
+    const index = text.indexOf(phrase)
+    ensure(index > previousIndex, `${label} 缺少短语或顺序错误: ${phrase}`)
+    previousIndex = index
+  }
 }
 
 /** 验证中英文贡献指南保持相同章节、入口与分流合同。 */
 async function validateGuides(): Promise<void> {
-    const chinese = await readRepoFile("CONTRIBUTING.md");
-    const english = await readRepoFile("CONTRIBUTING.en.md");
-    ensure(chinese.includes("[English](CONTRIBUTING.en.md)"), "中文贡献指南必须链接英文镜像");
-    ensure(english.includes("[中文](CONTRIBUTING.md)"), "英文贡献指南必须链接中文主入口");
+  const chinese = await readRepoFile('CONTRIBUTING.md')
+  const english = await readRepoFile('CONTRIBUTING.en.md')
+  ensure(chinese.includes('[English](CONTRIBUTING.en.md)'), '中文贡献指南必须链接英文镜像')
+  ensure(english.includes('[中文](CONTRIBUTING.md)'), '英文贡献指南必须链接中文主入口')
 
-    const chineseHeadings = chinese.match(/^## .+$/gm) ?? [];
-    const englishHeadings = english.match(/^## .+$/gm) ?? [];
-    ensure(chineseHeadings.length === 10, `中文贡献指南应有 10 个二级章节，实际 ${chineseHeadings.length}`);
-    ensure(englishHeadings.length === chineseHeadings.length, "中英文贡献指南二级章节数量不一致");
-    for (const phrase of [
-        "needs-triage",
-        "needs-info",
-        "needs-design",
-        "status: ready",
-        "status: blocked",
-        "help wanted",
-        "good first issue",
-    ]) {
-        ensure(chinese.includes(phrase), `中文贡献指南缺少分流合同: ${phrase}`);
-        ensure(english.includes(phrase), `英文贡献指南缺少分流合同: ${phrase}`);
-    }
+  const chineseHeadings = chinese.match(/^## .+$/gm) ?? []
+  const englishHeadings = english.match(/^## .+$/gm) ?? []
+  ensure(chineseHeadings.length === 10, `中文贡献指南应有 10 个二级章节，实际 ${chineseHeadings.length}`)
+  ensure(englishHeadings.length === chineseHeadings.length, '中英文贡献指南二级章节数量不一致')
+  for (const phrase of [
+    'needs-triage',
+    'needs-info',
+    'needs-design',
+    'status: ready',
+    'status: blocked',
+    'help wanted',
+    'good first issue',
+  ]) {
+    ensure(chinese.includes(phrase), `中文贡献指南缺少分流合同: ${phrase}`)
+    ensure(english.includes(phrase), `英文贡献指南缺少分流合同: ${phrase}`)
+  }
 
-    ensurePhraseOrder(chinese, [
-        "错误报告",
-        "功能建议",
-        "提示词与内置 Agent 资产",
-        "使用与安装问题",
-        "其它问题",
-    ], "中文贡献指南 Issue 入口");
-    ensurePhraseOrder(english, [
-        "Bug report",
-        "Feature request",
-        "Prompts and built-in Agent assets",
-        "Usage and installation question",
-        "Other issue",
-    ], "英文贡献指南 Issue 入口");
-    ensure(chinese.includes("提示词表单还会添加 `area: agent`"), "中文贡献指南缺少提示词表单 area: agent 例外");
-    ensure(english.includes("The prompt form also adds `area: agent`"), "英文贡献指南缺少提示词表单 area: agent 例外");
-    ensure(chinese.includes("不要借此绕过安全报告"), "中文贡献指南缺少其它问题的安全边界");
-    ensure(english.includes("not a way to bypass private security reporting"), "英文贡献指南缺少其它问题的安全边界");
+  ensurePhraseOrder(chinese, [
+    '错误报告',
+    '功能建议',
+    '提示词与内置 Agent 资产',
+    '使用与安装问题',
+    '其它问题',
+  ], '中文贡献指南 Issue 入口')
+  ensurePhraseOrder(english, [
+    'Bug report',
+    'Feature request',
+    'Prompts and built-in Agent assets',
+    'Usage and installation question',
+    'Other issue',
+  ], '英文贡献指南 Issue 入口')
+  ensure(chinese.includes('提示词表单还会添加 `area: agent`'), '中文贡献指南缺少提示词表单 area: agent 例外')
+  ensure(english.includes('The prompt form also adds `area: agent`'), '英文贡献指南缺少提示词表单 area: agent 例外')
+  ensure(chinese.includes('不要借此绕过安全报告'), '中文贡献指南缺少其它问题的安全边界')
+  ensure(english.includes('not a way to bypass private security reporting'), '英文贡献指南缺少其它问题的安全边界')
 }
 
 /** 验证公开 Issue 配置、PR 模板和安全政策的关键入口。 */
 async function validatePublicTemplates(): Promise<void> {
-    const config = await readYaml<IssueTemplateConfig>(".github/ISSUE_TEMPLATE/config.yml");
-    ensure(config.blank_issues_enabled === false, "Issue 配置必须禁止空白 Issue");
-    ensure((config.contact_links ?? []).length === 0, "Issue chooser 不得配置 contact link；安全报告使用 GitHub 原生入口");
+  const config = await readYaml<IssueTemplateConfig>('.github/ISSUE_TEMPLATE/config.yml')
+  ensure(config.blank_issues_enabled === false, 'Issue 配置必须禁止空白 Issue')
+  ensure((config.contact_links ?? []).length === 0, 'Issue chooser 不得配置 contact link；安全报告使用 GitHub 原生入口')
 
-    const pullRequest = await readRepoFile(".github/PULL_REQUEST_TEMPLATE.md");
-    for (const heading of [
-        "## 关联 Issue / Related issue",
-        "## 本次范围 / Scope",
-        "## 验证 / Verification",
-        "## 文档与记录 / Documentation and records",
-        "## 风险与边界 / Risks and boundaries",
-        "## 提交者确认 / Contributor confirmation",
-    ]) {
-        ensure(pullRequest.includes(heading), `PR 模板缺少章节: ${heading}`);
-    }
-    ensure(pullRequest.includes("无 / None"), "PR 模板必须允许轻量文档修正不关联 Issue");
+  const pullRequest = await readRepoFile('.github/PULL_REQUEST_TEMPLATE.md')
+  for (const heading of [
+    '## 关联 Issue / Related issue',
+    '## 本次范围 / Scope',
+    '## 验证 / Verification',
+    '## 文档与记录 / Documentation and records',
+    '## 风险与边界 / Risks and boundaries',
+    '## 提交者确认 / Contributor confirmation',
+  ]) {
+    ensure(pullRequest.includes(heading), `PR 模板缺少章节: ${heading}`)
+  }
+  ensure(pullRequest.includes('无 / None'), 'PR 模板必须允许轻量文档修正不关联 Issue')
 
-    const security = await readRepoFile(".github/SECURITY.md");
-    ensure(security.includes("Private Vulnerability Reporting"), "安全政策必须说明私密漏洞报告");
-    ensure(security.includes("/security/advisories/new"), "安全政策必须链接私密漏洞报告入口");
+  const security = await readRepoFile('.github/SECURITY.md')
+  ensure(security.includes('Private Vulnerability Reporting'), '安全政策必须说明私密漏洞报告')
+  ensure(security.includes('/security/advisories/new'), '安全政策必须链接私密漏洞报告入口')
 }
 
 /** 取得工作流 job 的 run 命令列表。 */
 function jobCommands(job: WorkflowJob | undefined, label: string): readonly string[] {
-    ensure(Boolean(job), `工作流缺少 job: ${label}`);
-    ensure(Array.isArray(job!.steps), `工作流 job 缺少 steps: ${label}`);
-    return job!.steps!.flatMap((step) => step.run ? [step.run] : []);
+  ensure(Boolean(job), `工作流缺少 job: ${label}`)
+  ensure(Array.isArray(job!.steps), `工作流 job 缺少 steps: ${label}`)
+  return job!.steps!.flatMap(step => step.run ? [step.run] : [])
 }
 
 /** 验证 job 在执行命令前按固定顺序准备 Node 24 与 Bun。 */
 function ensureRuntimeSetup(job: WorkflowJob | undefined, label: string): void {
-    const steps = job?.steps;
-    ensure(Array.isArray(steps), `工作流 job 缺少 steps: ${label}`);
-    const checkoutIndex = steps.findIndex((step) => step.uses === "actions/checkout@v5");
-    const nodeIndex = steps.findIndex((step) => step.uses === "actions/setup-node@v5");
-    const bunIndex = steps.findIndex((step) => step.uses === "oven-sh/setup-bun@v2");
-    const firstCommandIndex = steps.findIndex((step) => Boolean(step.run));
+  const steps = job?.steps
+  ensure(Array.isArray(steps), `工作流 job 缺少 steps: ${label}`)
+  const checkoutIndex = steps.findIndex(step => step.uses === 'actions/checkout@v5')
+  const nodeIndex = steps.findIndex(step => step.uses === 'actions/setup-node@v5')
+  const bunIndex = steps.findIndex(step => step.uses === 'oven-sh/setup-bun@v2')
+  const firstCommandIndex = steps.findIndex(step => Boolean(step.run))
 
-    ensure(checkoutIndex >= 0, `${label} 缺少 actions/checkout@v5`);
-    ensure(nodeIndex > checkoutIndex, `${label} 必须在 checkout 后设置 Node`);
-    ensure(bunIndex > nodeIndex, `${label} 必须在 Node 后设置 Bun`);
-    ensure(firstCommandIndex > bunIndex, `${label} 必须在运行命令前完成 Node/Bun 设置`);
-    ensure(String(steps[nodeIndex]?.with?.["node-version"]) === "24", `${label} 必须使用 Node 24`);
+  ensure(checkoutIndex >= 0, `${label} 缺少 actions/checkout@v5`)
+  ensure(nodeIndex > checkoutIndex, `${label} 必须在 checkout 后设置 Node`)
+  ensure(bunIndex > nodeIndex, `${label} 必须在 Node 后设置 Bun`)
+  ensure(firstCommandIndex > bunIndex, `${label} 必须在运行命令前完成 Node/Bun 设置`)
+  ensure(String(steps[nodeIndex]?.with?.['node-version']) === '24', `${label} 必须使用 Node 24`)
 }
 
 /** 判断两个 paths 列表是否为完全相同的集合。 */
 function haveSamePaths(left: readonly string[], right: readonly string[]): boolean {
-    const leftSorted = [...left].sort();
-    const rightSorted = [...right].sort();
-    return leftSorted.length === rightSorted.length
-        && leftSorted.every((path, index) => path === rightSorted[index]);
+  const leftSorted = [...left].sort()
+  const rightSorted = [...right].sort()
+  return leftSorted.length === rightSorted.length
+    && leftSorted.every((path, index) => path === rightSorted[index])
 }
 
 /** 验证若干命令存在并保持给定顺序。 */
 function ensureCommandOrder(commands: readonly string[], expected: readonly string[], label: string): void {
-    let previousIndex = -1;
-    for (const command of expected) {
-        const index = commands.indexOf(command);
-        ensure(index > previousIndex, `${label} 缺少命令或顺序错误: ${command}`);
-        previousIndex = index;
-    }
+  let previousIndex = -1
+  for (const command of expected) {
+    const index = commands.indexOf(command)
+    ensure(index > previousIndex, `${label} 缺少命令或顺序错误: ${command}`)
+    previousIndex = index
+  }
 }
 
 /** 验证社区、文档部署和代码基线工作流的稳定合同。 */
 async function validateWorkflows(): Promise<void> {
-    const community = await readYaml<WorkflowConfig>(".github/workflows/community-docs.yml");
-    ensure(community.permissions.contents === "read", "Community workflow 必须保持 contents: read");
-    ensure(Object.keys(community.permissions).length === 1, "Community workflow 不得获得写权限");
-    const communityPush = community.on.push;
-    const communityPullRequest = community.on.pull_request;
-    ensure(communityPush?.branches?.includes("main") === true, "Community workflow 必须监听 main push");
-    const communityPushPaths = communityPush?.paths ?? [];
-    const communityPullRequestPaths = communityPullRequest?.paths ?? [];
-    ensure(haveSamePaths(communityPushPaths, communityPullRequestPaths), "Community workflow 的 push 与 PR paths 必须完全一致");
-    for (const path of docsRuntimePaths) {
-        ensure(communityPushPaths.includes(path), `Community workflow 缺少运行时 path: ${path}`);
-    }
-    const communityJob = community.jobs["community-docs"];
-    ensure(communityJob?.["timeout-minutes"] === 15, "Community workflow 超时必须为 15 分钟");
-    ensureRuntimeSetup(communityJob, "Community workflow");
-    ensureCommandOrder(jobCommands(communityJob, "community-docs"), [
-        "bun install --frozen-lockfile",
-        nitroPatchTestCommand,
-        "bun run nuxt:prepare",
-        "bun scripts/ci/validate-community-files.ts",
-        "bun run docs:build",
-    ], "Community workflow");
+  const community = await readYaml<WorkflowConfig>('.github/workflows/community-docs.yml')
+  ensure(community.permissions.contents === 'read', 'Community workflow 必须保持 contents: read')
+  ensure(Object.keys(community.permissions).length === 1, 'Community workflow 不得获得写权限')
+  const communityPush = community.on.push
+  const communityPullRequest = community.on.pull_request
+  ensure(communityPush?.branches?.includes('main') === true, 'Community workflow 必须监听 main push')
+  const communityPushPaths = communityPush?.paths ?? []
+  const communityPullRequestPaths = communityPullRequest?.paths ?? []
+  ensure(haveSamePaths(communityPushPaths, communityPullRequestPaths), 'Community workflow 的 push 与 PR paths 必须完全一致')
+  for (const path of docsRuntimePaths) {
+    ensure(communityPushPaths.includes(path), `Community workflow 缺少运行时 path: ${path}`)
+  }
+  const communityJob = community.jobs['community-docs']
+  ensure(communityJob?.['timeout-minutes'] === 15, 'Community workflow 超时必须为 15 分钟')
+  ensureRuntimeSetup(communityJob, 'Community workflow')
+  ensureCommandOrder(jobCommands(communityJob, 'community-docs'), [
+    'bun install --frozen-lockfile',
+    nitroPatchTestCommand,
+    'bun run nuxt:prepare',
+    'bun scripts/ci/validate-community-files.ts',
+    'bun run docs:build',
+  ], 'Community workflow')
 
-    const deployDocs = await readYaml<WorkflowConfig>(".github/workflows/deploy-docs.yml");
-    ensure(deployDocs.permissions.contents === "read", "Deploy Docs 必须保持 contents: read");
-    ensure(deployDocs.permissions.pages === "write", "Deploy Docs 必须声明 pages: write");
-    ensure(deployDocs.permissions["id-token"] === "write", "Deploy Docs 必须声明 id-token: write");
-    ensure(deployDocs.on.push?.branches?.includes("main") === true, "Deploy Docs 必须监听 main push");
-    const deployPaths = deployDocs.on.push?.paths ?? [];
-    for (const path of docsRuntimePaths) {
-        ensure(deployPaths.includes(path), `Deploy Docs 缺少运行时 path: ${path}`);
-    }
-    const deployBuild = deployDocs.jobs.build;
-    ensure(deployBuild?.["timeout-minutes"] === 15, "Deploy Docs build 超时必须为 15 分钟");
-    ensure(deployDocs.jobs.deploy?.["timeout-minutes"] === 10, "Deploy Docs deploy 超时必须为 10 分钟");
-    ensureRuntimeSetup(deployBuild, "Deploy Docs build");
-    ensureCommandOrder(jobCommands(deployBuild, "deploy-docs/build"), [
-        "bun install --frozen-lockfile",
-        nitroPatchTestCommand,
-        "bun run nuxt:prepare",
-        "bun run docs:build",
-    ], "Deploy Docs");
+  const deployDocs = await readYaml<WorkflowConfig>('.github/workflows/deploy-docs.yml')
+  ensure(deployDocs.permissions.contents === 'read', 'Deploy Docs 必须保持 contents: read')
+  ensure(deployDocs.permissions.pages === 'write', 'Deploy Docs 必须声明 pages: write')
+  ensure(deployDocs.permissions['id-token'] === 'write', 'Deploy Docs 必须声明 id-token: write')
+  ensure(deployDocs.on.push?.branches?.includes('main') === true, 'Deploy Docs 必须监听 main push')
+  const deployPaths = deployDocs.on.push?.paths ?? []
+  for (const path of docsRuntimePaths) {
+    ensure(deployPaths.includes(path), `Deploy Docs 缺少运行时 path: ${path}`)
+  }
+  const deployBuild = deployDocs.jobs.build
+  ensure(deployBuild?.['timeout-minutes'] === 15, 'Deploy Docs build 超时必须为 15 分钟')
+  ensure(deployDocs.jobs.deploy?.['timeout-minutes'] === 10, 'Deploy Docs deploy 超时必须为 10 分钟')
+  ensureRuntimeSetup(deployBuild, 'Deploy Docs build')
+  ensureCommandOrder(jobCommands(deployBuild, 'deploy-docs/build'), [
+    'bun install --frozen-lockfile',
+    nitroPatchTestCommand,
+    'bun run nuxt:prepare',
+    'bun run docs:build',
+  ], 'Deploy Docs')
 
-    const baseline = await readYaml<WorkflowConfig>(".github/workflows/code-baseline.yml");
-    ensure(baseline.name === "Code Baseline (Advisory)", "Code Baseline 必须明确标记 Advisory");
-    ensure(baseline.permissions.contents === "read", "Code Baseline 必须保持 contents: read");
-    ensure(Object.keys(baseline.permissions).length === 1, "Code Baseline 不得获得写权限");
-    const paths = baseline.on.pull_request?.paths ?? [];
-    for (const path of codeBaselinePaths) {
-        ensure(paths.includes(path), `Code Baseline 缺少 paths 合同: ${path}`);
-    }
+  const baseline = await readYaml<WorkflowConfig>('.github/workflows/code-baseline.yml')
+  ensure(baseline.name === 'Code Baseline (Advisory)', 'Code Baseline 必须明确标记 Advisory')
+  ensure(baseline.permissions.contents === 'read', 'Code Baseline 必须保持 contents: read')
+  ensure(Object.keys(baseline.permissions).length === 1, 'Code Baseline 不得获得写权限')
+  const paths = baseline.on.pull_request?.paths ?? []
+  for (const path of codeBaselinePaths) {
+    ensure(paths.includes(path), `Code Baseline 缺少 paths 合同: ${path}`)
+  }
 
-    const typecheck = baseline.jobs.typecheck;
-    const test = baseline.jobs.test;
-    ensure(typecheck?.name?.includes("advisory") === true, "Typecheck job 必须标记 advisory");
-    ensure(test?.name?.includes("advisory") === true, "Test job 必须标记 advisory");
-    ensure(typecheck?.["timeout-minutes"] === 15, "Typecheck 超时必须为 15 分钟");
-    ensure(test?.["timeout-minutes"] === 30, "Full tests 超时必须为 30 分钟");
-    ensureRuntimeSetup(typecheck, "Code Baseline typecheck");
-    ensureRuntimeSetup(test, "Code Baseline test");
-    ensure(jobCommands(typecheck, "code-baseline/typecheck").includes("bun run typecheck"), "缺少 typecheck 命令");
-    ensure(jobCommands(test, "code-baseline/test").includes("bun run test -- --reporter=dot"), "缺少全量测试命令");
+  const typecheck = baseline.jobs.typecheck
+  const test = baseline.jobs.test
+  ensure(typecheck?.name?.includes('advisory') === true, 'Typecheck job 必须标记 advisory')
+  ensure(test?.name?.includes('advisory') === true, 'Test job 必须标记 advisory')
+  ensure(typecheck?.['timeout-minutes'] === 15, 'Typecheck 超时必须为 15 分钟')
+  ensure(test?.['timeout-minutes'] === 30, 'Full tests 超时必须为 30 分钟')
+  ensureRuntimeSetup(typecheck, 'Code Baseline typecheck')
+  ensureRuntimeSetup(test, 'Code Baseline test')
+  ensure(jobCommands(typecheck, 'code-baseline/typecheck').includes('bun run typecheck'), '缺少 typecheck 命令')
+  ensure(jobCommands(test, 'code-baseline/test').includes('bun run test -- --reporter=dot'), '缺少全量测试命令')
 }
 
 /** 解析所有新增 YAML，提前发现 GitHub 无法读取的配置。 */
 async function validateYaml(): Promise<void> {
-    for (const path of yamlPaths) {
-        await readYaml<object>(path);
-    }
+  for (const path of yamlPaths) {
+    await readYaml<object>(path)
+  }
 }
 
 /** 执行贡献体系静态合同校验。 */
 async function main(): Promise<void> {
-    await validateYaml();
-    await validateFormFiles();
-    const labelNames = await validateLabels();
-    for (const contract of formContracts) {
-        await validateForm(contract, labelNames);
-    }
-    await validateGuides();
-    await validatePublicTemplates();
-    await validateWorkflows();
-    console.log(`贡献体系校验通过：${labelNames.size} 个标签、${formContracts.length} 个 Issue Form、${yamlPaths.length} 个 YAML。`);
+  await validateYaml()
+  await validateFormFiles()
+  const labelNames = await validateLabels()
+  for (const contract of formContracts) {
+    await validateForm(contract, labelNames)
+  }
+  await validateGuides()
+  await validatePublicTemplates()
+  await validateWorkflows()
+  console.log(`贡献体系校验通过：${labelNames.size} 个标签、${formContracts.length} 个 Issue Form、${yamlPaths.length} 个 YAML。`)
 }
 
-await main();
+await main()

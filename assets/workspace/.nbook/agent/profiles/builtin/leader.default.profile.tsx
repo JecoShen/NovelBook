@@ -1,148 +1,142 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import {Type, type Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, plotReadBindings, plotWriteBindings, toolset} from "nbook/profile-sdk";
-import {LeaderDefaultInitialSchema, LeaderDefaultOutputSchema} from "nbook/profile-sdk";
-import {
-    AgentCatalog,
-    AppendingSet,
-    FileChangeNotice,
-    HistorySet,
-    Import,
-    LinkedAgentsReminder,
-    Message,
-    MentionedSkillsReminder,
-    ModelContext,
-    ModeAvailabilityReminder,
-    ModeReminder,
-    ProfilePrompt,
-    SkillCatalog,
-    SqlSchemaSummary,
-    System,
-    TaskReminder,
-    WorkflowCatalog,
-    WorkspaceFocusReminder,
-} from "nbook/profile-sdk";
-import {defineProfileHome, type ProfileHomeFacade} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
-import {defineLowCodeForm, profileHomeResource} from "nbook/profile-sdk";
+import { Type, type Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, plotReadBindings, plotWriteBindings, toolset, LeaderDefaultInitialSchema, LeaderDefaultOutputSchema,
+  AgentCatalog,
+  AppendingSet,
+  FileChangeNotice,
+  HistorySet,
+  Import,
+  LinkedAgentsReminder,
+  Message,
+  MentionedSkillsReminder,
+  ModelContext,
+  ModeAvailabilityReminder,
+  ModeReminder,
+  ProfilePrompt,
+  SkillCatalog,
+  SqlSchemaSummary,
+  System,
+  TaskReminder,
+  WorkflowCatalog,
+  WorkspaceFocusReminder, profileText, defineLowCodeForm, profileHomeResource } from 'nbook/profile-sdk'
+import { defineProfileHome, type ProfileHomeFacade } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "leader.default",
-    name: "主创",
-    description: "默认协作与统筹 agent：协助小说创作、workspace 文件操作、World Engine 世界状态 / Lorebook / Manuscript 协调，并按需创建或复用专用 profile agent。",
-} as const;
+  key: 'leader.default',
+  name: '主创',
+  description: '默认协作与统筹 agent：协助小说创作、workspace 文件操作、World Engine 世界状态 / Lorebook / Manuscript 协调，并按需创建或复用专用 profile agent。',
+} as const
 
-export const InitialSchema = LeaderDefaultInitialSchema;
+export const InitialSchema = LeaderDefaultInitialSchema
 
-export const OutputSchema = LeaderDefaultOutputSchema;
+export const OutputSchema = LeaderDefaultOutputSchema
 
 export const SettingsSchema = Type.Object({
-    collaborationMode: Type.Union([
-        Type.Literal("default"),
-        Type.Literal("conservative"),
-    ]),
-    neuroBookFamiliarity: Type.Union([
-        Type.Literal("beginner"),
-        Type.Literal("default"),
-    ]),
-    questionStrategy: Type.Union([
-        Type.Literal("concise"),
-        Type.Literal("default"),
-        Type.Literal("thorough"),
-    ]),
-    leaderPersonaPreset: Type.String(),
-    customTopSystemPrompt: Type.String(),
-    fileChangeAwareness: Type.Union([
-        Type.Literal("off"),
-        Type.Literal("minimal"),
-        Type.Literal("full"),
-    ]),
-}, {additionalProperties: false});
+  collaborationMode: Type.Union([
+    Type.Literal('default'),
+    Type.Literal('conservative'),
+  ]),
+  neuroBookFamiliarity: Type.Union([
+    Type.Literal('beginner'),
+    Type.Literal('default'),
+  ]),
+  questionStrategy: Type.Union([
+    Type.Literal('concise'),
+    Type.Literal('default'),
+    Type.Literal('thorough'),
+  ]),
+  leaderPersonaPreset: Type.String(),
+  customTopSystemPrompt: Type.String(),
+  fileChangeAwareness: Type.Union([
+    Type.Literal('off'),
+    Type.Literal('minimal'),
+    Type.Literal('full'),
+  ]),
+}, { additionalProperties: false })
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
-export type Settings = Static<typeof SettingsSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
+export type Settings = Static<typeof SettingsSchema>
 
-const DEFAULT_LEADER_PERSONA_PRESET = "personas/caihui-lite.md";
+const DEFAULT_LEADER_PERSONA_PRESET = 'personas/caihui-lite.md'
 
 export const LeaderDefaultSettingsForm = defineLowCodeForm({
-    schema: SettingsSchema,
-    defaults: {
-        collaborationMode: "default",
-        neuroBookFamiliarity: "default",
-        questionStrategy: "default",
-        leaderPersonaPreset: DEFAULT_LEADER_PERSONA_PRESET,
-        customTopSystemPrompt: "",
-        fileChangeAwareness: "full",
+  schema: SettingsSchema,
+  defaults: {
+    collaborationMode: 'default',
+    neuroBookFamiliarity: 'default',
+    questionStrategy: 'default',
+    leaderPersonaPreset: DEFAULT_LEADER_PERSONA_PRESET,
+    customTopSystemPrompt: '',
+    fileChangeAwareness: 'full',
+  },
+  fields: [
+    {
+      path: 'customTopSystemPrompt',
+      component: 'textarea',
+      label: '最高优先级置顶提示词',
+      description: '插入在主创系统提示词的最前面，是优先级最高的自定义规则；人设、协作模式等其他设置都排在它后面。',
+      placeholder: '写入需要长期置顶的自定义规则，例如破限预设、全局行为要求。',
+      rows: 6,
     },
-    fields: [
-        {
-            path: "customTopSystemPrompt",
-            component: "textarea",
-            label: "最高优先级置顶提示词",
-            description: "插入在主创系统提示词的最前面，是优先级最高的自定义规则；人设、协作模式等其他设置都排在它后面。",
-            placeholder: "写入需要长期置顶的自定义规则，例如破限预设、全局行为要求。",
-            rows: 6,
-        },
-        {
-            path: "leaderPersonaPreset",
-            component: "resource-preset",
-            label: "Leader 人设",
-            description: "只影响 Leader 的对话气质，不改变普通写作 Leader 的职责边界。",
-            placeholder: "选择 Leader 人设",
-            resource: profileHomeResource({
-                directory: "personas",
-                extension: ".md",
-                template: "在这里写入 Leader 的对话气质说明。",
-            }),
-        },
-        {
-            path: "collaborationMode",
-            component: "radio",
-            label: "协作主动程度",
-            options: [
-                {value: "default", label: "默认", description: "用户主导核心创作决策，Leader 只在关键风险处主动补充。"},
-                {value: "conservative", label: "保守", description: "更倾向先提问、给候选方向，并主动核查现实知识、科学常识和外部事实。"},
-            ],
-        },
-        {
-            path: "neuroBookFamiliarity",
-            component: "radio",
-            label: "NeuroBook 熟练度",
-            description: "影响 Leader 解释核心概念时的详细程度。",
-            options: [
-                {value: "default", label: "默认", description: "默认用户理解基础概念，复杂或底层概念只在必要时解释。"},
-                {value: "beginner", label: "完全人话", description: "第一次提到 World Engine、Project Workspace、内容节点等核心概念时，用人话解释。"},
-            ],
-        },
-        {
-            path: "questionStrategy",
-            component: "radio",
-            label: "提问策略",
-            options: [
-                {value: "default", label: "默认", description: "只问关键阻塞问题。"},
-                {value: "concise", label: "少问", description: "少问问题，优先给建议和默认路径。"},
-                {value: "thorough", label: "细问", description: "更多追问，接近创作访谈，但避免无意义表单化提问。"},
-            ],
-        },
-        {
-            path: "fileChangeAwareness",
-            component: "radio",
-            label: "文件变更感知",
-            description: "每轮开始前提醒 agent：上次看过之后，项目文件被其他人（用户 / 其他 agent / 外部工具）改过哪些。",
-            options: [
-                {value: "full", label: "完整", description: "含归因（谁改的）与操作类型，并提示续写前先重读相关文件。"},
-                {value: "minimal", label: "精简", description: "只列变更文件路径和条数。"},
-                {value: "off", label: "关闭", description: "不注入文件变更提醒。"},
-            ],
-        },
-    ],
-});
+    {
+      path: 'leaderPersonaPreset',
+      component: 'resource-preset',
+      label: 'Leader 人设',
+      description: '只影响 Leader 的对话气质，不改变普通写作 Leader 的职责边界。',
+      placeholder: '选择 Leader 人设',
+      resource: profileHomeResource({
+        directory: 'personas',
+        extension: '.md',
+        template: '在这里写入 Leader 的对话气质说明。',
+      }),
+    },
+    {
+      path: 'collaborationMode',
+      component: 'radio',
+      label: '协作主动程度',
+      options: [
+        { value: 'default', label: '默认', description: '用户主导核心创作决策，Leader 只在关键风险处主动补充。' },
+        { value: 'conservative', label: '保守', description: '更倾向先提问、给候选方向，并主动核查现实知识、科学常识和外部事实。' },
+      ],
+    },
+    {
+      path: 'neuroBookFamiliarity',
+      component: 'radio',
+      label: 'NeuroBook 熟练度',
+      description: '影响 Leader 解释核心概念时的详细程度。',
+      options: [
+        { value: 'default', label: '默认', description: '默认用户理解基础概念，复杂或底层概念只在必要时解释。' },
+        { value: 'beginner', label: '完全人话', description: '第一次提到 World Engine、Project Workspace、内容节点等核心概念时，用人话解释。' },
+      ],
+    },
+    {
+      path: 'questionStrategy',
+      component: 'radio',
+      label: '提问策略',
+      options: [
+        { value: 'default', label: '默认', description: '只问关键阻塞问题。' },
+        { value: 'concise', label: '少问', description: '少问问题，优先给建议和默认路径。' },
+        { value: 'thorough', label: '细问', description: '更多追问，接近创作访谈，但避免无意义表单化提问。' },
+      ],
+    },
+    {
+      path: 'fileChangeAwareness',
+      component: 'radio',
+      label: '文件变更感知',
+      description: '每轮开始前提醒 agent：上次看过之后，项目文件被其他人（用户 / 其他 agent / 外部工具）改过哪些。',
+      options: [
+        { value: 'full', label: '完整', description: '含归因（谁改的）与操作类型，并提示续写前先重读相关文件。' },
+        { value: 'minimal', label: '精简', description: '只列变更文件路径和条数。' },
+        { value: 'off', label: '关闭', description: '不注入文件变更提醒。' },
+      ],
+    },
+  ],
+})
 
 async function initializeLeaderDefaultHome(home: ProfileHomeFacade): Promise<void> {
-    await home.writeText(DEFAULT_LEADER_PERSONA_PRESET, DEFAULT_LEADER_PERSONA, {mode: "create"});
+  await home.writeText(DEFAULT_LEADER_PERSONA_PRESET, DEFAULT_LEADER_PERSONA, { mode: 'create' })
 }
 
 const DEFAULT_LEADER_PERSONA = profileText`
@@ -152,183 +146,191 @@ const DEFAULT_LEADER_PERSONA = profileText`
 
     你和用户的对话气质熟悉、活泼、直率，有创作陪伴感。
     你可以轻松自然地接住用户的灵感，也可以直接指出设定、节奏或表达里的问题。
-`;
+`
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    settingsForm: LeaderDefaultSettingsForm,
-    home: defineProfileHome({
-        async init(ctx) {
-            await initializeLeaderDefaultHome(ctx.home);
-        },
-        async upgrade(ctx) {
-            await initializeLeaderDefaultHome(ctx.home);
-        },
-        async reset(ctx) {
-            await ctx.home.clear();
-            await initializeLeaderDefaultHome(ctx.home);
-        },
-    }),
-    tools: toolset(
-        builtin.file.read,
-        builtin.file.write,
-        builtin.file.edit,
-        builtin.file.applyPatch,
-        builtin.file.bash,
-        builtin.agent.create,
-        builtin.agent.invoke,
-        builtin.agent.get,
-        builtin.agent.getProfile,
-        builtin.agent.getSession,
-        builtin.agent.detach,
-        builtin.control.requestUserInput,
-        builtin.control.switchMode,
-        builtin.task.create,
-        builtin.task.setStatus,
-        builtin.world.execute("readwrite"),
-        // Plot 读写 bundle（Task 97 D7）：leader 持有全部 Plot 读工具与 save_* 写工具。
-        ...plotReadBindings,
-        ...plotWriteBindings,
-        builtin.sql.execute,
-        builtin.workflow.run,
-        builtin.workflow.list,
-        builtin.jobs.list,
-        builtin.jobs.get,
-        builtin.jobs.cancel,
-    ),
-    runtimeDefaults: {
-        summarizer: {
-            enabled: true,
-            profileKey: "summarizer",
-            trigger: "afterInvocation",
-            interval: {
-                kind: "sourceInvocation",
-                value: 16,
-            },
-            maxDialogueContentTokens: 80_000,
-        },
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  settingsForm: LeaderDefaultSettingsForm,
+  home: defineProfileHome({
+    async init(ctx) {
+      await initializeLeaderDefaultHome(ctx.home)
     },
-    async context(ctx) {
-        // Leader 人设：唯一的异步读取，先取出正文再进 JSX
-        const personaKey = ctx.settings.leaderPersonaPreset || DEFAULT_LEADER_PERSONA_PRESET;
-        const personaBody = ctx.home ? await ctx.home.readText(personaKey) : DEFAULT_LEADER_PERSONA;
-        const customTopPrompt = (ctx.settings.customTopSystemPrompt ?? "").trim();
-        return (
-            <ProfilePrompt>
-                <System>
-                    {[
-                        customTopPrompt && profileText`
+    async upgrade(ctx) {
+      await initializeLeaderDefaultHome(ctx.home)
+    },
+    async reset(ctx) {
+      await ctx.home.clear()
+      await initializeLeaderDefaultHome(ctx.home)
+    },
+  }),
+  tools: toolset(
+    builtin.file.read,
+    builtin.file.write,
+    builtin.file.edit,
+    builtin.file.applyPatch,
+    builtin.file.bash,
+    builtin.agent.create,
+    builtin.agent.invoke,
+    builtin.agent.get,
+    builtin.agent.getProfile,
+    builtin.agent.getSession,
+    builtin.agent.detach,
+    builtin.control.requestUserInput,
+    builtin.control.switchMode,
+    builtin.task.create,
+    builtin.task.setStatus,
+    builtin.world.execute('readwrite'),
+    // Plot 读写 bundle（Task 97 D7）：leader 持有全部 Plot 读工具与 save_* 写工具。
+    ...plotReadBindings,
+    ...plotWriteBindings,
+    builtin.sql.execute,
+    builtin.workflow.run,
+    builtin.workflow.list,
+    builtin.jobs.list,
+    builtin.jobs.get,
+    builtin.jobs.cancel,
+  ),
+  runtimeDefaults: {
+    summarizer: {
+      enabled: true,
+      profileKey: 'summarizer',
+      trigger: 'afterInvocation',
+      interval: {
+        kind: 'sourceInvocation',
+        value: 16,
+      },
+      maxDialogueContentTokens: 80_000,
+    },
+  },
+  async context(ctx) {
+    // Leader 人设：唯一的异步读取，先取出正文再进 JSX
+    const personaKey = ctx.settings.leaderPersonaPreset || DEFAULT_LEADER_PERSONA_PRESET
+    const personaBody = ctx.home ? await ctx.home.readText(personaKey) : DEFAULT_LEADER_PERSONA
+    const customTopPrompt = (ctx.settings.customTopSystemPrompt ?? '').trim()
+    return (
+      <ProfilePrompt>
+        <System>
+          {[
+            customTopPrompt && profileText`
                             <custom_top_system_prompt>
                               ${customTopPrompt}
                             </custom_top_system_prompt>
                         `,
-                        profileText`
+            profileText`
                             <leader_persona preset="${personaKey}">
                               ${personaBody}
                             </leader_persona>
                         `,
-                        ctx.settings.collaborationMode === "conservative" ? profileText`
+            ctx.settings.collaborationMode === 'conservative'
+              ? profileText`
                             <collaboration_mode value="conservative">
                               - 更倾向先提问、给多个候选方向，再推进执行。
                               - 用户表达涉及现实知识、科学常识、历史事实或外部资料时，主动识别可能错误。
                               - 需要联网或外部事实核查时，优先通过 researcher agent 调研。
                               - 对可能是小说设定而不是现实事实的内容，先指出差异，并请用户确认是否作为 canon。
                             </collaboration_mode>
-                        ` : profileText`
+                        `
+              : profileText`
                             <collaboration_mode value="default">
                             采用默认协作主动程度：用户主导核心创作决策，你负责整理、提问、补充候选和指出关键风险。
                             </collaboration_mode>
                         `,
-                        ctx.settings.neuroBookFamiliarity === "beginner" ? profileText`
+            ctx.settings.neuroBookFamiliarity === 'beginner'
+              ? profileText`
                             <neurobook_familiarity value="beginner">
                               - 第一次抛出 World Engine、Project Workspace、内容节点等核心概念时，用人话解释。
                               - 尽量不直接暴露 slice、patch、schema op 等底层词。
                             </neurobook_familiarity>
-                        ` : profileText`
+                        `
+              : profileText`
                             <neurobook_familiarity value="default">
                               默认用户已经理解 NeuroBook 基础概念。复杂或更底层的概念仍尽量少披露，只在必要时解释。
                             </neurobook_familiarity>
                         `,
-                        ctx.settings.questionStrategy === "concise" ? profileText`
+            ctx.settings.questionStrategy === 'concise'
+              ? profileText`
                             <question_strategy value="concise">
                               少问，优先给建议和默认路径；只有真正阻塞时才停下来问。
                             </question_strategy>
-                        ` : ctx.settings.questionStrategy === "thorough" ? profileText`
+                        `
+              : ctx.settings.questionStrategy === 'thorough'
+                ? profileText`
                             <question_strategy value="thorough">
                               更多追问，接近创作访谈；仍避免无意义表单化提问。
                             </question_strategy>
-                        ` : profileText`
+                        `
+                : profileText`
                             <question_strategy value="default">
                               只问关键阻塞问题，其他内容通过建议、候选方向和风险提示自然推进。
                             </question_strategy>
                         `,
-                        LEADER_SYSTEM_PROMPT,
-                    ].filter(Boolean).join("\n\n")}
-                </System>
-                <HistorySet>
-                    <Message>
-                        <AgentCatalog />
-                    </Message>
-                    <Message>
-                        <Import path="reference/agent/profile-routing.md" />
-                    </Message>
-                    <Message>
-                        <SkillCatalog />
-                    </Message>
-                    <Message><Import path="assets/workspace/.nbook/agent/skills/novel-guide/SKILL.md" /></Message>
-                    <Message>
-                        <WorkflowCatalog />
-                    </Message>
-                    <Message>
-                        <Import path="AGENTS.md" />
-                    </Message>
-                    <Message>
-                        <Import path="reference/agent/workspace-tool-use.md" />
-                    </Message>
-                    <Message>
-                        <Import path="reference/agent/leader-default.md" />
-                    </Message>
-                    <Message>
-                        <Import path="reference/plot/system.md" />
-                    </Message>
-                    <Message>
-                        <Import path="reference/plot/agent-spec.md" />
-                    </Message>
-                    <Message>
-                        <Import path="reference/content/markdown-dialect.md" />
-                    </Message>
-                    <Message>
-                        <Import path="reference/agent/project-workspace-guide.md" />
-                    </Message>
-                    <Message>
-                        <Import path="reference/world-engine/workflow.md" />
-                    </Message>
-                    <Message>
-                        <Import path="reference/world-engine/recording-principles.md" />
-                    </Message>
-                </HistorySet>
-                <ModelContext>
-                    <Message>
-                        <SqlSchemaSummary />
-                    </Message>
-                </ModelContext>
-                <AppendingSet>
-                    <WorkspaceFocusReminder />
-                    <FileChangeNotice mode={ctx.settings.fileChangeAwareness} />
-                    <ModeAvailabilityReminder />
-                    <LinkedAgentsReminder />
-                    <TaskReminder stateKey="agent.tasks" repeatEveryTurns={8} />
-                    <ModeReminder stateKey="agent.mode" />
-                    <Message>
-                        <MentionedSkillsReminder />
-                    </Message>
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+            LEADER_SYSTEM_PROMPT,
+          ].filter(Boolean).join('\n\n')}
+        </System>
+        <HistorySet>
+          <Message>
+            <AgentCatalog />
+          </Message>
+          <Message>
+            <Import path="reference/agent/profile-routing.md" />
+          </Message>
+          <Message>
+            <SkillCatalog />
+          </Message>
+          <Message><Import path="assets/workspace/.nbook/agent/skills/novel-guide/SKILL.md" /></Message>
+          <Message>
+            <WorkflowCatalog />
+          </Message>
+          <Message>
+            <Import path="AGENTS.md" />
+          </Message>
+          <Message>
+            <Import path="reference/agent/workspace-tool-use.md" />
+          </Message>
+          <Message>
+            <Import path="reference/agent/leader-default.md" />
+          </Message>
+          <Message>
+            <Import path="reference/plot/system.md" />
+          </Message>
+          <Message>
+            <Import path="reference/plot/agent-spec.md" />
+          </Message>
+          <Message>
+            <Import path="reference/content/markdown-dialect.md" />
+          </Message>
+          <Message>
+            <Import path="reference/agent/project-workspace-guide.md" />
+          </Message>
+          <Message>
+            <Import path="reference/world-engine/workflow.md" />
+          </Message>
+          <Message>
+            <Import path="reference/world-engine/recording-principles.md" />
+          </Message>
+        </HistorySet>
+        <ModelContext>
+          <Message>
+            <SqlSchemaSummary />
+          </Message>
+        </ModelContext>
+        <AppendingSet>
+          <WorkspaceFocusReminder />
+          <FileChangeNotice mode={ctx.settings.fileChangeAwareness} />
+          <ModeAvailabilityReminder />
+          <LinkedAgentsReminder />
+          <TaskReminder stateKey="agent.tasks" repeatEveryTurns={8} />
+          <ModeReminder stateKey="agent.mode" />
+          <Message>
+            <MentionedSkillsReminder />
+          </Message>
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 const LEADER_SYSTEM_PROMPT = profileText`
         你现在在 Neuro Book 中作为默认 Leader Agent 工作。你的核心任务是协助用户进行小说创作、设定整理、剧情设计、文件编辑和工程侧检查。
@@ -405,4 +407,4 @@ const LEADER_SYSTEM_PROMPT = profileText`
        # Notes
 
        - 如果用户提到 “破限”、“预设修改”、“文风调节”，则向他说明这些目前都需要通过调整 profile 的系统提示词来达成，把用户引导到 “用户资产” 界面，右上角点击 “Agent” 打开 “用户资产助手” 代理。简单配置（置顶提示词、人设、文风预设选择）也可以直接在设置界面的 “Agent Profile 模型” 面板填写，不需要改源码。
-    `;
+    `

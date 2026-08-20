@@ -11,10 +11,10 @@
 export default {
   type: 'simple',
 
-  eraBefore: '旧纪元',  // instant < 0 时的纪元名
-  eraAfter: '新纪元',   // instant >= 0 时的纪元名
+  eraBefore: '旧纪元', // instant < 0 时的纪元名
+  eraAfter: '新纪元', // instant >= 0 时的纪元名
 
-  baseUnit: 'second',   // instant 的单位（1 刻 = 1 秒）
+  baseUnit: 'second', // instant 的单位（1 刻 = 1 秒）
 
   units: [
     // 从小到大定义单位（顺序可以乱，系统会自动拓扑排序）
@@ -28,23 +28,23 @@ export default {
       parent: 'day',
       ratio: 7,
       cycleNames: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-      startOffset: 0  // instant=0 是周一
+      startOffset: 0, // instant=0 是周一
     },
 
     // 月份（4 个月，每月 90 天）。cycleNames 长度必须等于 ratio，所以这里使用数字月份。
     {
       name: 'month',
       parent: 'day',
-      ratio: 90
+      ratio: 90,
     },
 
     // 年（一年 = 4 个月）
-    { name: 'year', parent: 'month', ratio: 4 }
+    { name: 'year', parent: 'month', ratio: 4 },
   ],
 
   // Format 模板（可用 token 见 reference/world-engine/calendar-system.md）
-  format: '{eraName}{year}年{month}月{day}日 {week} {hour:02}:{minute:02}'
-};
+  format: '{eraName}{year}年{month}月{day}日 {week} {hour:02}:{minute:02}',
+}
 
 /**
  * 示例输出：

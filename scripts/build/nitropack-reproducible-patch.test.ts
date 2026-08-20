@@ -1,9 +1,9 @@
-import {describe, it} from "vitest";
+import { describe, it } from 'vitest'
 
-import {validateNitropackPatch} from "nbook/scripts/ci/validate-nitropack-patch";
+import { validateNitropackPatch } from 'nbook/scripts/ci/validate-nitropack-patch'
 
-describe("Nitro 可复现构建 patch", () => {
-    it("保持 patch 坐标与实际安装产物可执行", async () => {
-        await validateNitropackPatch();
-    });
-});
+describe('Nitro 可复现构建 patch', () => {
+  it('保持 patch 坐标与实际安装产物可执行', async () => {
+    await validateNitropackPatch()
+  })
+})

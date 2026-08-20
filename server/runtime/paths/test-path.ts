@@ -1,5 +1,5 @@
-import path from "node:path";
-import {absoluteFsPath, type AbsoluteFsPath} from "nbook/server/runtime/paths/file-path";
+import path from 'node:path'
+import { absoluteFsPath, type AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 
 /**
  * 为不触碰真实用户目录的测试建立宿主原生绝对路径。
@@ -9,9 +9,9 @@ import {absoluteFsPath, type AbsoluteFsPath} from "nbook/server/runtime/paths/fi
  * `path.win32`，而不是调用本辅助函数。
  */
 export function testHostPath(...segments: string[]): string {
-    return path.resolve(process.cwd(), ".agent", "tmp", "test-paths", ...segments);
+  return path.resolve(process.cwd(), '.agent', 'tmp', 'test-paths', ...segments)
 }
 
 export function testAbsoluteFsPath(...segments: string[]): AbsoluteFsPath {
-    return absoluteFsPath(testHostPath(...segments));
+  return absoluteFsPath(testHostPath(...segments))
 }

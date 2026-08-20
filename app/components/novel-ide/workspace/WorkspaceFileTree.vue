@@ -1,265 +1,269 @@
 <script setup lang="ts">
-import WorkspaceFileNode from "nbook/app/components/novel-ide/workspace/WorkspaceFileNode.vue";
-import type {WorkspaceFileNode as WorkspaceFileNodeDto} from "nbook/app/stores/novel-ide";
+import WorkspaceFileNode from 'nbook/app/components/novel-ide/workspace/WorkspaceFileNode.vue'
+import type { WorkspaceFileNode as WorkspaceFileNodeDto } from 'nbook/app/stores/novel-ide'
 import {
-    buildWorkspaceFileTreeIndexMaps,
-    buildWorkspaceFileTree,
-    buildWorkspaceNodeDropContextMap,
-    canDropOnWorkspaceNode,
-    resolveWorkspaceNodeDropPosition,
-    resolveWorkspaceTailDrop,
-    sanitizeExpandedPaths,
-    type WorkspaceFileDropState,
-    type WorkspaceFileMovePayload,
-    workspaceFileTreeContextKey,
-} from "nbook/app/components/novel-ide/workspace/workspace-file-tree";
+  buildWorkspaceFileTreeIndexMaps,
+  buildWorkspaceFileTree,
+  buildWorkspaceNodeDropContextMap,
+  canDropOnWorkspaceNode,
+  resolveWorkspaceNodeDropPosition,
+  resolveWorkspaceTailDrop,
+  sanitizeExpandedPaths,
+  type WorkspaceFileDropState,
+  type WorkspaceFileMovePayload,
+  workspaceFileTreeContextKey,
+} from 'nbook/app/components/novel-ide/workspace/workspace-file-tree'
 
 const props = withDefaults(defineProps<{
-    nodes: WorkspaceFileNodeDto[];
-    selectedPath: string;
-    expandedPaths: string[];
-    forcedExpandedPaths?: string[];
+  nodes: WorkspaceFileNodeDto[]
+  selectedPath: string
+  expandedPaths: string[]
+  forcedExpandedPaths?: string[]
 }>(), {
-    forcedExpandedPaths: () => [],
-});
+  forcedExpandedPaths: () => [],
+})
 
 const emit = defineEmits<{
-    (e: "update:expandedPaths", value: string[]): void;
-    (e: "select", node: WorkspaceFileNodeDto): void;
-    (e: "open", node: WorkspaceFileNodeDto): void;
-    (e: "move", payload: WorkspaceFileMovePayload): void;
-    (e: "node-contextmenu", node: WorkspaceFileNodeDto, event: MouseEvent): void;
-    (e: "root-contextmenu", event: MouseEvent): void;
-}>();
+  (e: 'update:expandedPaths', value: string[]): void
+  (e: 'select', node: WorkspaceFileNodeDto): void
+  (e: 'open', node: WorkspaceFileNodeDto): void
+  (e: 'move', payload: WorkspaceFileMovePayload): void
+  (e: 'node-contextmenu', node: WorkspaceFileNodeDto, event: MouseEvent): void
+  (e: 'root-contextmenu', event: MouseEvent): void
+}>()
 
-const draggedPath = ref<string | null>(null);
+const draggedPath = ref<string | null>(null)
 const dropState = ref<WorkspaceFileDropState>({
-    targetPath: null,
-    position: null,
-    visualKind: null,
-});
+  targetPath: null,
+  position: null,
+  visualKind: null,
+})
 
-const roots = computed(() => buildWorkspaceFileTree(props.nodes));
-const selectedPath = computed(() => props.selectedPath);
-const expandedPathSet = computed(() => new Set(props.expandedPaths));
-const forcedExpandedPathSet = computed(() => new Set(props.forcedExpandedPaths));
+const roots = computed(() => buildWorkspaceFileTree(props.nodes))
+const selectedPath = computed(() => props.selectedPath)
+const expandedPathSet = computed(() => new Set(props.expandedPaths))
+const forcedExpandedPathSet = computed(() => new Set(props.forcedExpandedPaths))
 const visibleExpandedPathSet = computed(() => new Set([
-    ...props.expandedPaths,
-    ...props.forcedExpandedPaths,
-]));
-const indexMaps = computed(() => buildWorkspaceFileTreeIndexMaps(roots.value));
-const dropContextMap = computed(() => buildWorkspaceNodeDropContextMap(roots.value, visibleExpandedPathSet.value));
+  ...props.expandedPaths,
+  ...props.forcedExpandedPaths,
+]))
+const indexMaps = computed(() => buildWorkspaceFileTreeIndexMaps(roots.value))
+const dropContextMap = computed(() => buildWorkspaceNodeDropContextMap(roots.value, visibleExpandedPathSet.value))
 
 /**
  * 清空拖拽态。
  */
 const clearDragState = (): void => {
-    draggedPath.value = null;
-    dropState.value = {
-        targetPath: null,
-        position: null,
-        visualKind: null,
-    };
-};
+  draggedPath.value = null
+  dropState.value = {
+    targetPath: null,
+    position: null,
+    visualKind: null,
+  }
+}
 
 /**
  * 仅清空落点高亮，不中断当前拖拽。
  */
 const clearDropState = (): void => {
-    dropState.value = {
-        targetPath: null,
-        position: null,
-        visualKind: null,
-    };
-};
+  dropState.value = {
+    targetPath: null,
+    position: null,
+    visualKind: null,
+  }
+}
 
 /**
  * 选中节点。
  */
 const selectNode = (node: WorkspaceFileNodeDto): void => {
-    emit("select", node);
-};
+  emit('select', node)
+}
 
 /**
  * 双击打开节点并保留标签。
  */
 const openNode = (node: WorkspaceFileNodeDto): void => {
-    emit("open", node);
-};
+  emit('open', node)
+}
 
 /**
  * 切换目录展开态。
  */
 const toggleExpanded = (node: WorkspaceFileNodeDto): void => {
-    if (!node.isDirectory) {
-        return;
-    }
+  if (!node.isDirectory) {
+    return
+  }
 
-    const nextExpandedPaths = new Set(props.expandedPaths);
-    if (nextExpandedPaths.has(node.path)) {
-        nextExpandedPaths.delete(node.path);
-    } else {
-        nextExpandedPaths.add(node.path);
-    }
-    emit("update:expandedPaths", [...nextExpandedPaths]);
-};
+  const nextExpandedPaths = new Set(props.expandedPaths)
+  if (nextExpandedPaths.has(node.path)) {
+    nextExpandedPaths.delete(node.path)
+  }
+  else {
+    nextExpandedPaths.add(node.path)
+  }
+  emit('update:expandedPaths', [...nextExpandedPaths])
+}
 
 /**
  * 开始拖拽一个真实路径。
  */
 const startDrag = (node: WorkspaceFileNodeDto, event: DragEvent): void => {
-    draggedPath.value = node.path;
-    if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", node.path);
-    }
-};
+  draggedPath.value = node.path
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', node.path)
+  }
+}
 
 /**
  * 按当前节点和鼠标位置刷新落点。
  */
 const updateDropState = (node: WorkspaceFileNodeDto, event: DragEvent): void => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (draggedPath.value === null) {
-        return;
-    }
-    if (!canDropOnWorkspaceNode(draggedPath.value, node.path, indexMaps.value.parentByPath)) {
-        clearDropState();
-        return;
-    }
-    if (event.dataTransfer) {
-        event.dataTransfer.dropEffect = "move";
-    }
-    dropState.value = resolveWorkspaceNodeDropPosition(node, event, dropContextMap.value.get(node.path) ?? null);
-};
+  event.preventDefault()
+  event.stopPropagation()
+  if (draggedPath.value === null) {
+    return
+  }
+  if (!canDropOnWorkspaceNode(draggedPath.value, node.path, indexMaps.value.parentByPath)) {
+    clearDropState()
+    return
+  }
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dropState.value = resolveWorkspaceNodeDropPosition(node, event, dropContextMap.value.get(node.path) ?? null)
+}
 
 /**
  * 刷新子节点尾部落点。
  */
 const updateTailDropState = (node: WorkspaceFileNodeDto, event: DragEvent): void => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (draggedPath.value === null) {
-        return;
-    }
-    if (!canDropOnWorkspaceNode(draggedPath.value, node.path, indexMaps.value.parentByPath)) {
-        clearDropState();
-        return;
-    }
-    if (event.dataTransfer) {
-        event.dataTransfer.dropEffect = "move";
-    }
-    dropState.value = resolveWorkspaceTailDrop(node, dropContextMap.value.get(node.path) ?? null);
-};
+  event.preventDefault()
+  event.stopPropagation()
+  if (draggedPath.value === null) {
+    return
+  }
+  if (!canDropOnWorkspaceNode(draggedPath.value, node.path, indexMaps.value.parentByPath)) {
+    clearDropState()
+    return
+  }
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dropState.value = resolveWorkspaceTailDrop(node, dropContextMap.value.get(node.path) ?? null)
+}
 
 /**
  * 提交拖拽移动。
  */
 const commitDrop = (event: DragEvent): void => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (draggedPath.value === null || dropState.value.position === null || dropState.value.visualKind === null) {
-        clearDragState();
-        return;
-    }
+  event.preventDefault()
+  event.stopPropagation()
+  if (draggedPath.value === null || dropState.value.position === null || dropState.value.visualKind === null) {
+    clearDragState()
+    return
+  }
 
-    emit("move", {
-        sourcePath: draggedPath.value,
-        targetPath: dropState.value.targetPath,
-        position: dropState.value.position,
-        visualKind: dropState.value.visualKind,
-    });
-    clearDragState();
-};
+  emit('move', {
+    sourcePath: draggedPath.value,
+    targetPath: dropState.value.targetPath,
+    position: dropState.value.position,
+    visualKind: dropState.value.visualKind,
+  })
+  clearDragState()
+}
 
 /**
  * 空白根区域可以作为移动到根的目标。
  */
 const handleRootDragOver = (event: DragEvent): void => {
-    event.preventDefault();
-    if (draggedPath.value === null) {
-        return;
-    }
+  event.preventDefault()
+  if (draggedPath.value === null) {
+    return
+  }
 
-    const targetElement = event.target as HTMLElement | null;
-    if (targetElement?.closest('[data-role="workspace-file-node"]')) {
-        return;
-    }
-    if (event.dataTransfer) {
-        event.dataTransfer.dropEffect = "move";
-    }
-    dropState.value = {
-        targetPath: null,
-        position: "root",
-        visualKind: "root-line",
-    };
-};
+  const targetElement = event.target as HTMLElement | null
+  if (targetElement?.closest('[data-role="workspace-file-node"]')) {
+    return
+  }
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dropState.value = {
+    targetPath: null,
+    position: 'root',
+    visualKind: 'root-line',
+  }
+}
 
 /**
  * 提交根级 drop。
  */
 const handleRootDrop = (event: DragEvent): void => {
-    const targetElement = event.target as HTMLElement | null;
-    if (targetElement?.closest('[data-role="workspace-file-node"]') && dropState.value.position !== "root") {
-        return;
-    }
-    commitDrop(event);
-};
+  const targetElement = event.target as HTMLElement | null
+  if (targetElement?.closest('[data-role="workspace-file-node"]') && dropState.value.position !== 'root') {
+    return
+  }
+  commitDrop(event)
+}
 
 /**
  * 根区域右键仅在空白区触发。
  */
 const handleRootContextMenu = (event: MouseEvent): void => {
-    const targetElement = event.target as HTMLElement | null;
-    if (targetElement?.closest('[data-role="workspace-file-node"]')) {
-        return;
-    }
-    emit("root-contextmenu", event);
-};
+  const targetElement = event.target as HTMLElement | null
+  if (targetElement?.closest('[data-role="workspace-file-node"]')) {
+    return
+  }
+  emit('root-contextmenu', event)
+}
 
 watch(roots, () => {
-    const nextExpandedPaths = sanitizeExpandedPaths(roots.value, props.expandedPaths);
-    if (nextExpandedPaths.length !== props.expandedPaths.length) {
-        emit("update:expandedPaths", nextExpandedPaths);
-    }
-}, {immediate: true});
+  const nextExpandedPaths = sanitizeExpandedPaths(roots.value, props.expandedPaths)
+  if (nextExpandedPaths.length !== props.expandedPaths.length) {
+    emit('update:expandedPaths', nextExpandedPaths)
+  }
+}, { immediate: true })
 
 provide(workspaceFileTreeContextKey, {
-    selectedPath,
-    expandedPathSet,
-    forcedExpandedPathSet,
-    dropState,
-    draggedPath,
-    selectNode,
-    openNode,
-    toggleExpanded,
-    startDrag,
-    updateDropState,
-    updateTailDropState,
-    commitDrop,
-    clearDragState,
-    emitNodeContextMenu: (node, event) => emit("node-contextmenu", node, event),
-});
+  selectedPath,
+  expandedPathSet,
+  forcedExpandedPathSet,
+  dropState,
+  draggedPath,
+  selectNode,
+  openNode,
+  toggleExpanded,
+  startDrag,
+  updateDropState,
+  updateTailDropState,
+  commitDrop,
+  clearDragState,
+  emitNodeContextMenu: (node, event) => emit('node-contextmenu', node, event),
+})
 </script>
 
 <template>
-    <!-- 工作区文件树 -->
-    <div
-        class="relative h-full min-h-[120px] select-none pb-6"
-        data-role="workspace-file-tree-root"
-        @dragover="handleRootDragOver"
-        @drop="handleRootDrop"
-        @contextmenu.prevent.stop="handleRootContextMenu"
-    >
-        <WorkspaceFileNode
-            v-for="node in roots"
-            :key="node.path"
-            :node="node"
-            :depth="0"
-            :indent="18"
-        />
+  <!-- 工作区文件树 -->
+  <div
+    class="relative h-full min-h-[120px] select-none pb-6"
+    data-role="workspace-file-tree-root"
+    @dragover="handleRootDragOver"
+    @drop="handleRootDrop"
+    @contextmenu.prevent.stop="handleRootContextMenu"
+  >
+    <WorkspaceFileNode
+      v-for="node in roots"
+      :key="node.path"
+      :node="node"
+      :depth="0"
+      :indent="18"
+    />
 
-        <div v-if="dropState.visualKind === 'root-line'" class="mt-1 h-[2px] rounded-full bg-[var(--accent-main)]"></div>
-    </div>
+    <div
+      v-if="dropState.visualKind === 'root-line'"
+      class="mt-1 h-[2px] rounded-full bg-[var(--accent-main)]"
+    />
+  </div>
 </template>

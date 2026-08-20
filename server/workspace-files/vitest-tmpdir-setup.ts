@@ -1,7 +1,7 @@
-import {mkdtempSync, mkdirSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {randomBytes} from "node:crypto";
-import {join} from "node:path";
+import { mkdtempSync, mkdirSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { randomBytes } from 'node:crypto'
+import { join } from 'node:path'
 
 /**
  * 受控测试临时根（仓库级 Vitest setup）。
@@ -17,12 +17,12 @@ import {join} from "node:path";
  * 运行时读取的 `os.tmpdir()` 都会拿到受控根（Node/Bun 每次调用动态读
  * TMPDIR/TEMP/TMP）。
  */
-const BASE_TMP = tmpdir();
-const RUN_ID = process.env.NBOOK_TEST_RUN_ID ?? randomBytes(4).toString("hex");
-const CONTROLLED_TMP_ROOT = join(BASE_TMP, "neuro-book-vitest", RUN_ID);
-mkdirSync(CONTROLLED_TMP_ROOT, {recursive: true});
+const BASE_TMP = tmpdir()
+const RUN_ID = process.env.NBOOK_TEST_RUN_ID ?? randomBytes(4).toString('hex')
+const CONTROLLED_TMP_ROOT = join(BASE_TMP, 'neuro-book-vitest', RUN_ID)
+mkdirSync(CONTROLLED_TMP_ROOT, { recursive: true })
 
-process.env.TMPDIR = CONTROLLED_TMP_ROOT;
-process.env.TEMP = CONTROLLED_TMP_ROOT;
-process.env.TMP = CONTROLLED_TMP_ROOT;
-process.env.NBOOK_TEST_TMPDIR = CONTROLLED_TMP_ROOT;
+process.env.TMPDIR = CONTROLLED_TMP_ROOT
+process.env.TEMP = CONTROLLED_TMP_ROOT
+process.env.TMP = CONTROLLED_TMP_ROOT
+process.env.NBOOK_TEST_TMPDIR = CONTROLLED_TMP_ROOT

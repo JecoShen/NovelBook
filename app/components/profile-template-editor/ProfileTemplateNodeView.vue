@@ -1,372 +1,449 @@
 <script setup lang="ts">
-import {CollisionPriority} from "@dnd-kit/abstract";
-import {useDroppable} from "@dnd-kit/vue";
-import {useSortable} from "@dnd-kit/vue/sortable";
-import AgentMarkdownContent from "nbook/app/components/novel-ide/agent/AgentMarkdownContent.vue";
-import type {ProfileTemplateNodeDto, ProfileTemplateNodeType, ProfileTemplatePropValue} from "nbook/shared/dto/profile-template.dto";
+import { CollisionPriority } from '@dnd-kit/abstract'
+import { useDroppable } from '@dnd-kit/vue'
+import { useSortable } from '@dnd-kit/vue/sortable'
+import AgentMarkdownContent from 'nbook/app/components/novel-ide/agent/AgentMarkdownContent.vue'
+import type { ProfileTemplateNodeDto, ProfileTemplateNodeType, ProfileTemplatePropValue } from 'nbook/shared/dto/profile-template.dto'
 
 const props = defineProps<{
-    node: ProfileTemplateNodeDto;
-    selectedId: string;
-    depth: number;
-    index: number;
-    parentId: string;
-    canHaveChildren: boolean;
-    disabledDropNodeIds: string[];
-}>();
+  node: ProfileTemplateNodeDto
+  selectedId: string
+  depth: number
+  index: number
+  parentId: string
+  canHaveChildren: boolean
+  disabledDropNodeIds: string[]
+}>()
 
 const emit = defineEmits<{
-    (e: "select", id: string): void;
-    (e: "prepareDrag", id: string): void;
-    (e: "duplicate", id: string): void;
-    (e: "delete", id: string): void;
-}>();
+  (e: 'select', id: string): void
+  (e: 'prepareDrag', id: string): void
+  (e: 'duplicate', id: string): void
+  (e: 'delete', id: string): void
+}>()
 
-const collapsed = ref(false);
-const elementRef = ref<HTMLElement | null>(null);
-const handleRef = ref<HTMLElement | null>(null);
-const targetRef = ref<HTMLElement | null>(null);
-const beforeDropRef = ref<HTMLElement | null>(null);
-const afterDropRef = ref<HTMLElement | null>(null);
-const insideDropRef = ref<HTMLElement | null>(null);
-const dropDisabled = computed(() => props.disabledDropNodeIds.includes(props.node.id));
-const hasChildrenPanel = computed(() => props.canHaveChildren && (!collapsed.value || props.node.children.length === 0));
+const collapsed = ref(false)
+const elementRef = ref<HTMLElement | null>(null)
+const handleRef = ref<HTMLElement | null>(null)
+const targetRef = ref<HTMLElement | null>(null)
+const beforeDropRef = ref<HTMLElement | null>(null)
+const afterDropRef = ref<HTMLElement | null>(null)
+const insideDropRef = ref<HTMLElement | null>(null)
+const dropDisabled = computed(() => props.disabledDropNodeIds.includes(props.node.id))
+const hasChildrenPanel = computed(() => props.canHaveChildren && (!collapsed.value || props.node.children.length === 0))
 
-const {isDragging} = useSortable({
-    id: computed(() => props.node.id),
-    index: computed(() => props.index),
-    group: computed(() => props.parentId),
-    type: "profile-template-node",
-    accept: "profile-template-node",
-    data: computed(() => ({
-        kind: "profile-template-node" as const,
-        nodeId: props.node.id,
-        parentId: props.parentId,
-    })),
-    element: elementRef,
-    handle: handleRef,
-    target: targetRef,
-    feedback: "default",
-    transition: null,
-    disabled: computed(() => props.node.type === "ProfilePrompt"),
-});
-
-useDroppable({
-    id: computed(() => `drop-before-${props.node.id}`),
-    type: "profile-template-drop-zone",
-    accept: ["profile-template-node", "library-node"],
-    data: computed(() => ({
-        kind: "profile-template-drop" as const,
-        parentId: props.parentId,
-        targetId: props.node.id,
-        position: "before" as const,
-    })),
-    element: beforeDropRef,
-    collisionPriority: CollisionPriority.Highest,
-    disabled: dropDisabled,
-});
+const { isDragging } = useSortable({
+  id: computed(() => props.node.id),
+  index: computed(() => props.index),
+  group: computed(() => props.parentId),
+  type: 'profile-template-node',
+  accept: 'profile-template-node',
+  data: computed(() => ({
+    kind: 'profile-template-node' as const,
+    nodeId: props.node.id,
+    parentId: props.parentId,
+  })),
+  element: elementRef,
+  handle: handleRef,
+  target: targetRef,
+  feedback: 'default',
+  transition: null,
+  disabled: computed(() => props.node.type === 'ProfilePrompt'),
+})
 
 useDroppable({
-    id: computed(() => `drop-after-${props.node.id}`),
-    type: "profile-template-drop-zone",
-    accept: ["profile-template-node", "library-node"],
-    data: computed(() => ({
-        kind: "profile-template-drop" as const,
-        parentId: props.parentId,
-        targetId: props.node.id,
-        position: "after" as const,
-    })),
-    element: afterDropRef,
-    collisionPriority: CollisionPriority.Highest,
-    disabled: dropDisabled,
-});
+  id: computed(() => `drop-before-${props.node.id}`),
+  type: 'profile-template-drop-zone',
+  accept: ['profile-template-node', 'library-node'],
+  data: computed(() => ({
+    kind: 'profile-template-drop' as const,
+    parentId: props.parentId,
+    targetId: props.node.id,
+    position: 'before' as const,
+  })),
+  element: beforeDropRef,
+  collisionPriority: CollisionPriority.Highest,
+  disabled: dropDisabled,
+})
 
 useDroppable({
-    id: computed(() => `drop-inside-${props.node.id}`),
-    type: "profile-template-drop-zone",
-    accept: ["profile-template-node", "library-node"],
-    data: computed(() => ({
-        kind: "profile-template-drop" as const,
-        parentId: props.node.id,
-        targetId: null,
-        position: "inside" as const,
-    })),
-    element: insideDropRef,
-    collisionPriority: CollisionPriority.Highest,
-    disabled: computed(() => !hasChildrenPanel.value || dropDisabled.value),
-});
+  id: computed(() => `drop-after-${props.node.id}`),
+  type: 'profile-template-drop-zone',
+  accept: ['profile-template-node', 'library-node'],
+  data: computed(() => ({
+    kind: 'profile-template-drop' as const,
+    parentId: props.parentId,
+    targetId: props.node.id,
+    position: 'after' as const,
+  })),
+  element: afterDropRef,
+  collisionPriority: CollisionPriority.Highest,
+  disabled: dropDisabled,
+})
+
+useDroppable({
+  id: computed(() => `drop-inside-${props.node.id}`),
+  type: 'profile-template-drop-zone',
+  accept: ['profile-template-node', 'library-node'],
+  data: computed(() => ({
+    kind: 'profile-template-drop' as const,
+    parentId: props.node.id,
+    targetId: null,
+    position: 'inside' as const,
+  })),
+  element: insideDropRef,
+  collisionPriority: CollisionPriority.Highest,
+  disabled: computed(() => !hasChildrenPanel.value || dropDisabled.value),
+})
 
 const nodeIconMap: Record<ProfileTemplateNodeType, string> = {
-    ProfilePrompt: "i-lucide-code-2",
-    System: "i-lucide-terminal-square",
-    HistorySet: "i-lucide-archive",
-    ModelContext: "i-lucide-panel-top",
-    AppendingSet: "i-lucide-panel-bottom",
-    FileChangeNotice: "i-lucide-file-diff",
-    Compaction: "i-lucide-archive-restore",
-    CompactionPrompt: "i-lucide-file-text",
-    CompactionSummaryPrefix: "i-lucide-text-quote",
-    Text: "i-lucide-type",
-    Message: "i-lucide-message-square",
-    AIMessage: "i-lucide-sparkles",
-    ToolCall: "i-lucide-wrench",
-    ToolResult: "i-lucide-check-circle",
-    Reminder: "i-lucide-bell-ring",
-    Watch: "i-lucide-eye",
-    If: "i-lucide-git-branch",
-    SystemReminder: "i-lucide-badge-alert",
-    LinkedAgentsSummary: "i-lucide-git-merge",
-    LinkedAgentsReminder: "i-lucide-network",
-    WorkspaceFocusReminder: "i-lucide-folder-kanban",
-    ModeAvailabilityReminder: "i-lucide-clipboard-plus",
-    TaskReminder: "i-lucide-list-checks",
-    ModeReminder: "i-lucide-clipboard-check",
-    ModeSlot: "i-lucide-file-text",
-    MentionedSkillsReminder: "i-lucide-at-sign",
-    AgentCatalog: "i-lucide-bot",
-    SkillCatalog: "i-lucide-library",
-    WorkflowCatalog: "i-lucide-workflow",
-    ActivatedSkills: "i-lucide-sparkles",
-    SqlSchemaSummary: "i-lucide-database",
-    Import: "i-lucide-file-input",
-};
+  ProfilePrompt: 'i-lucide-code-2',
+  System: 'i-lucide-terminal-square',
+  HistorySet: 'i-lucide-archive',
+  ModelContext: 'i-lucide-panel-top',
+  AppendingSet: 'i-lucide-panel-bottom',
+  FileChangeNotice: 'i-lucide-file-diff',
+  Compaction: 'i-lucide-archive-restore',
+  CompactionPrompt: 'i-lucide-file-text',
+  CompactionSummaryPrefix: 'i-lucide-text-quote',
+  Text: 'i-lucide-type',
+  Message: 'i-lucide-message-square',
+  AIMessage: 'i-lucide-sparkles',
+  ToolCall: 'i-lucide-wrench',
+  ToolResult: 'i-lucide-check-circle',
+  Reminder: 'i-lucide-bell-ring',
+  Watch: 'i-lucide-eye',
+  If: 'i-lucide-git-branch',
+  SystemReminder: 'i-lucide-badge-alert',
+  LinkedAgentsSummary: 'i-lucide-git-merge',
+  LinkedAgentsReminder: 'i-lucide-network',
+  WorkspaceFocusReminder: 'i-lucide-folder-kanban',
+  ModeAvailabilityReminder: 'i-lucide-clipboard-plus',
+  TaskReminder: 'i-lucide-list-checks',
+  ModeReminder: 'i-lucide-clipboard-check',
+  ModeSlot: 'i-lucide-file-text',
+  MentionedSkillsReminder: 'i-lucide-at-sign',
+  AgentCatalog: 'i-lucide-bot',
+  SkillCatalog: 'i-lucide-library',
+  WorkflowCatalog: 'i-lucide-workflow',
+  ActivatedSkills: 'i-lucide-sparkles',
+  SqlSchemaSummary: 'i-lucide-database',
+  Import: 'i-lucide-file-input',
+}
 
 /**
  * 返回节点展示标题。
  */
 function nodeTitle(node: ProfileTemplateNodeDto): string {
-    if (node.type === "Text") {
-        return "Text";
-    }
-    if (node.type === "Message" || node.type === "AIMessage") {
-        return node.type;
-    }
-    if (node.type === "ToolCall") {
-        return "ToolCall";
-    }
-    return node.type;
+  if (node.type === 'Text') {
+    return 'Text'
+  }
+  if (node.type === 'Message' || node.type === 'AIMessage') {
+    return node.type
+  }
+  if (node.type === 'ToolCall') {
+    return 'ToolCall'
+  }
+  return node.type
 }
 
 /**
  * 返回节点的短属性摘要。
  */
 function nodeMeta(node: ProfileTemplateNodeDto): string {
-    if (node.type === "Message") {
-        return `role: ${String(node.props.role ?? "user")}`;
-    }
-    if (node.type === "Text") {
-        return node.textKind === "source" ? "source" : "text";
-    }
-    if (node.type === "AIMessage") {
-        return "role: assistant";
-    }
-    if (node.type === "ToolCall") {
-        return `tool: ${String(node.props.name ?? "tool")}`;
-    }
-    if (node.type === "ToolResult") {
-        return `tool: ${String(node.props.toolName ?? "tool")}`;
-    }
-    if (node.type === "Reminder" || node.type === "WorkspaceFocusReminder" || node.type === "ModeAvailabilityReminder" || node.type === "TaskReminder" || node.type === "ModeReminder") {
-        return ["id", "watchPath", "watchValue", "repeatEveryTurns"]
-            .filter((key) => node.props[key] !== undefined && node.props[key] !== "")
-            .map((key) => `${key}: ${formatPropValue(node.props[key])}`)
-            .join(" · ");
-    }
-    if (node.type === "Watch") {
-        return `path: ${String(node.props.path ?? "")}`;
-    }
-    if (node.type === "Import") {
-        return `path: ${String(node.props.path ?? "")}`;
-    }
-    if (node.type === "Compaction") {
-        return ["triggerPercent", "triggerTokens", "keepRecentPercent", "keepRecentTokens", "reserveTokens"]
-            .filter((key) => node.props[key] !== undefined && node.props[key] !== "")
-            .map((key) => `${key}: ${formatPropValue(node.props[key])}`)
-            .join(" · ");
-    }
-    if (node.type === "If") {
-        const condition = node.props.condition;
-        return `condition: ${typeof condition === "object" && condition !== null && "kind" in condition && condition.kind === "expression" ? condition.code : String(condition ?? "true")}`;
-    }
-    return node.id;
+  if (node.type === 'Message') {
+    return `role: ${String(node.props.role ?? 'user')}`
+  }
+  if (node.type === 'Text') {
+    return node.textKind === 'source' ? 'source' : 'text'
+  }
+  if (node.type === 'AIMessage') {
+    return 'role: assistant'
+  }
+  if (node.type === 'ToolCall') {
+    return `tool: ${String(node.props.name ?? 'tool')}`
+  }
+  if (node.type === 'ToolResult') {
+    return `tool: ${String(node.props.toolName ?? 'tool')}`
+  }
+  if (node.type === 'Reminder' || node.type === 'WorkspaceFocusReminder' || node.type === 'ModeAvailabilityReminder' || node.type === 'TaskReminder' || node.type === 'ModeReminder') {
+    return ['id', 'watchPath', 'watchValue', 'repeatEveryTurns']
+      .filter(key => node.props[key] !== undefined && node.props[key] !== '')
+      .map(key => `${key}: ${formatPropValue(node.props[key])}`)
+      .join(' · ')
+  }
+  if (node.type === 'Watch') {
+    return `path: ${String(node.props.path ?? '')}`
+  }
+  if (node.type === 'Import') {
+    return `path: ${String(node.props.path ?? '')}`
+  }
+  if (node.type === 'Compaction') {
+    return ['triggerPercent', 'triggerTokens', 'keepRecentPercent', 'keepRecentTokens', 'reserveTokens']
+      .filter(key => node.props[key] !== undefined && node.props[key] !== '')
+      .map(key => `${key}: ${formatPropValue(node.props[key])}`)
+      .join(' · ')
+  }
+  if (node.type === 'If') {
+    const condition = node.props.condition
+    return `condition: ${typeof condition === 'object' && condition !== null && 'kind' in condition && condition.kind === 'expression' ? condition.code : String(condition ?? 'true')}`
+  }
+  return node.id
 }
 
 /**
  * 将属性值转成适合节点标题行显示的短文本。
  */
 function formatPropValue(value: ProfileTemplatePropValue | undefined): string {
-    if (typeof value === "object" && value !== null && "kind" in value && value.kind === "expression") {
-        return value.code;
-    }
-    return String(value ?? "");
+  if (typeof value === 'object' && value !== null && 'kind' in value && value.kind === 'expression') {
+    return value.code
+  }
+  return String(value ?? '')
 }
 
 /**
  * 返回节点说明或正文预览。
  */
 function nodeSummary(node: ProfileTemplateNodeDto): string {
-    if (node.text) {
-        return node.text.replace(/\s+/g, " ").slice(0, 160);
-    }
-    if (node.type === "HistorySet") {
-        return "长期记忆上下文，进长期历史。";
-    }
-    if (node.type === "System") {
-        return "Provider systemPrompt，不写入 session。";
-    }
-    if (node.type === "ModelContext") {
-        return "本轮临时上下文，仅用于模型。";
-    }
-    if (node.type === "AppendingSet") {
-        return "输出追加集合，写入历史尾部。";
-    }
-    if (node.type === "Compaction") {
-        return "Profile 级上下文压缩策略。";
-    }
-    if (node.type === "CompactionPrompt") {
-        return "压缩摘要调用的 systemPrompt。";
-    }
-    if (node.type === "CompactionSummaryPrefix") {
-        return "摘要注入后续上下文的前缀。";
-    }
-    if (node.type === "ActivatedSkills") {
-        return String(node.props.text ?? "${activatedSkillsText}");
-    }
-    if (node.type === "AgentCatalog") {
-        return String(node.props.text ?? "${agentCatalogText}");
-    }
-    if (node.type === "SkillCatalog") {
-        return String(node.props.text ?? "${skillCatalogText}");
-    }
-    if (node.type === "SqlSchemaSummary") {
-        return String(node.props.text ?? "${sqlSchemaSummaryText}");
-    }
-    if (node.type === "Import") {
-        const heading = node.props.heading ? `#${String(node.props.heading)}` : "";
-        return `Import ${String(node.props.path ?? "")}${heading}`;
-    }
-    if (node.type === "LinkedAgentsReminder" || node.type === "LinkedAgentsSummary") {
-        return "Linked agents summary.";
-    }
-    if (node.type === "WorkspaceFocusReminder") {
-        return "File scope and workspace focus reminder.";
-    }
-    if (node.type === "ModeAvailabilityReminder") {
-        return "switch_mode availability reminder in normal mode.";
-    }
-    if (node.type === "TaskReminder") {
-        return "Task list reminder from agent.tasks.";
-    }
-    if (node.type === "ModeReminder") {
-        return "Agent mode lifecycle reminder.";
-    }
-    if (node.type === "ModeSlot") {
-        return `Custom mode reminder slot: ${String(node.props.kind ?? "")}`;
-    }
-    if (node.type === "MentionedSkillsReminder") {
-        return "Reminder for explicit $skill mentions.";
-    }
-    if (node.type === "FileChangeNotice") {
-        return `Workspace file changes · mode: ${String(node.props.mode ?? "minimal")}`;
-    }
-    return "";
+  if (node.text) {
+    return node.text.replace(/\s+/g, ' ').slice(0, 160)
+  }
+  if (node.type === 'HistorySet') {
+    return '长期记忆上下文，进长期历史。'
+  }
+  if (node.type === 'System') {
+    return 'Provider systemPrompt，不写入 session。'
+  }
+  if (node.type === 'ModelContext') {
+    return '本轮临时上下文，仅用于模型。'
+  }
+  if (node.type === 'AppendingSet') {
+    return '输出追加集合，写入历史尾部。'
+  }
+  if (node.type === 'Compaction') {
+    return 'Profile 级上下文压缩策略。'
+  }
+  if (node.type === 'CompactionPrompt') {
+    return '压缩摘要调用的 systemPrompt。'
+  }
+  if (node.type === 'CompactionSummaryPrefix') {
+    return '摘要注入后续上下文的前缀。'
+  }
+  if (node.type === 'ActivatedSkills') {
+    return String(node.props.text ?? '${activatedSkillsText}')
+  }
+  if (node.type === 'AgentCatalog') {
+    return String(node.props.text ?? '${agentCatalogText}')
+  }
+  if (node.type === 'SkillCatalog') {
+    return String(node.props.text ?? '${skillCatalogText}')
+  }
+  if (node.type === 'SqlSchemaSummary') {
+    return String(node.props.text ?? '${sqlSchemaSummaryText}')
+  }
+  if (node.type === 'Import') {
+    const heading = node.props.heading ? `#${String(node.props.heading)}` : ''
+    return `Import ${String(node.props.path ?? '')}${heading}`
+  }
+  if (node.type === 'LinkedAgentsReminder' || node.type === 'LinkedAgentsSummary') {
+    return 'Linked agents summary.'
+  }
+  if (node.type === 'WorkspaceFocusReminder') {
+    return 'File scope and workspace focus reminder.'
+  }
+  if (node.type === 'ModeAvailabilityReminder') {
+    return 'switch_mode availability reminder in normal mode.'
+  }
+  if (node.type === 'TaskReminder') {
+    return 'Task list reminder from agent.tasks.'
+  }
+  if (node.type === 'ModeReminder') {
+    return 'Agent mode lifecycle reminder.'
+  }
+  if (node.type === 'ModeSlot') {
+    return `Custom mode reminder slot: ${String(node.props.kind ?? '')}`
+  }
+  if (node.type === 'MentionedSkillsReminder') {
+    return 'Reminder for explicit $skill mentions.'
+  }
+  if (node.type === 'FileChangeNotice') {
+    return `Workspace file changes · mode: ${String(node.props.mode ?? 'minimal')}`
+  }
+  return ''
 }
 
 /**
  * 判断是否显示节点正文摘要。
  */
 function shouldShowSummary(node: ProfileTemplateNodeDto): boolean {
-    return node.type !== "ProfilePrompt" && node.type !== "Text";
+  return node.type !== 'ProfilePrompt' && node.type !== 'Text'
 }
 
 /**
  * 选择当前节点。
  */
 function selectNode(): void {
-    emit("select", props.node.id);
+  emit('select', props.node.id)
 }
 
 /**
  * 开始拖拽前先同步选中状态。
  */
 function prepareDrag(): void {
-    emit("prepareDrag", props.node.id);
+  emit('prepareDrag', props.node.id)
 }
-
 </script>
 
 <template>
-    <div ref="elementRef" class="node-wrap" :data-dragging="isDragging || undefined" :style="{ marginLeft: `${props.depth === 0 ? 0 : 6}px` }">
-        <article
-            class="node-card"
-            :class="[{ selected: props.selectedId === props.node.id }, `node-${props.node.type}`]"
-            :data-dragging="isDragging || undefined"
-            @click.stop="selectNode"
+  <div
+    ref="elementRef"
+    class="node-wrap"
+    :data-dragging="isDragging || undefined"
+    :style="{ marginLeft: `${props.depth === 0 ? 0 : 6}px` }"
+  >
+    <article
+      class="node-card"
+      :class="[{ selected: props.selectedId === props.node.id }, `node-${props.node.type}`]"
+      :data-dragging="isDragging || undefined"
+      @click.stop="selectNode"
+    >
+      <div
+        ref="beforeDropRef"
+        class="node-edge-drop node-edge-drop-before"
+      />
+      <div
+        ref="targetRef"
+        class="node-sort-target"
+      >
+        <button
+          ref="handleRef"
+          type="button"
+          class="node-drag-handle mt-1"
+          title="拖拽排序"
+          @pointerdown="prepareDrag"
+          @click.stop
         >
-            <div ref="beforeDropRef" class="node-edge-drop node-edge-drop-before"></div>
-            <div ref="targetRef" class="node-sort-target">
-                <button ref="handleRef" type="button" class="node-drag-handle mt-1" title="拖拽排序" @pointerdown="prepareDrag" @click.stop>
-                    <span class="i-lucide-grip-vertical h-4 w-4"></span>
-                </button>
+          <span class="i-lucide-grip-vertical h-4 w-4" />
+        </button>
 
-                <button v-if="props.node.children.length > 0" type="button" class="node-icon-btn mt-1" title="折叠/展开" @click.stop="collapsed = !collapsed">
-                    <span :class="collapsed ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'" class="h-3.5 w-3.5"></span>
-                </button>
+        <button
+          v-if="props.node.children.length > 0"
+          type="button"
+          class="node-icon-btn mt-1"
+          title="折叠/展开"
+          @click.stop="collapsed = !collapsed"
+        >
+          <span
+            :class="collapsed ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
+            class="h-3.5 w-3.5"
+          />
+        </button>
 
-                <div class="node-icon mt-0.5">
-                    <span :class="nodeIconMap[props.node.type]" class="h-3.5 w-3.5"></span>
-                </div>
+        <div class="node-icon mt-0.5">
+          <span
+            :class="nodeIconMap[props.node.type]"
+            class="h-3.5 w-3.5"
+          />
+        </div>
 
-                <div class="node-main">
-                    <div class="node-title-row">
-                        <span class="truncate text-sm font-semibold text-[var(--text-main)]">{{ nodeTitle(props.node) }}</span>
-                        <span class="node-meta" :class="{ 'condition-meta': props.node.type === 'If' }">{{ nodeMeta(props.node) }}</span>
-                    </div>
-                    <div v-if="props.node.type === 'Message' && (props.node.text ?? '').trim()" class="node-message-body mt-2">
-                        <pre v-if="props.node.textKind === 'source'" class="node-source-body">{{ props.node.text }}</pre>
-                        <AgentMarkdownContent v-else :content="props.node.text ?? ''" />
-                    </div>
-                    <div v-else-if="shouldShowSummary(props.node) && nodeSummary(props.node)" class="mt-1 line-clamp-2 text-xs leading-5 text-[var(--text-secondary)]">
-                        {{ nodeSummary(props.node) }}
-                    </div>
-                </div>
+        <div class="node-main">
+          <div class="node-title-row">
+            <span class="truncate text-sm font-semibold text-[var(--text-main)]">{{ nodeTitle(props.node) }}</span>
+            <span
+              class="node-meta"
+              :class="{ 'condition-meta': props.node.type === 'If' }"
+            >{{ nodeMeta(props.node) }}</span>
+          </div>
+          <div
+            v-if="props.node.type === 'Message' && (props.node.text ?? '').trim()"
+            class="node-message-body mt-2"
+          >
+            <pre
+              v-if="props.node.textKind === 'source'"
+              class="node-source-body"
+            >{{ props.node.text }}</pre>
+            <AgentMarkdownContent
+              v-else
+              :content="props.node.text ?? ''"
+            />
+          </div>
+          <div
+            v-else-if="shouldShowSummary(props.node) && nodeSummary(props.node)"
+            class="mt-1 line-clamp-2 text-xs leading-5 text-[var(--text-secondary)]"
+          >
+            {{ nodeSummary(props.node) }}
+          </div>
+        </div>
 
-                <div v-if="props.depth > 0" class="node-actions">
-                    <button type="button" class="node-action-btn" title="复制" @click.stop="emit('duplicate', props.node.id)">
-                        <span class="i-lucide-copy h-3.5 w-3.5"></span>
-                    </button>
-                    <button type="button" class="node-action-btn danger" title="删除" @click.stop="emit('delete', props.node.id)">
-                        <span class="i-lucide-trash-2 h-3.5 w-3.5"></span>
-                    </button>
-                </div>
-                <div v-if="props.node.type === 'Text' && (props.node.text ?? '').trim()" class="node-message-body node-text-body-row" @click.stop="selectNode">
-                    <pre v-if="props.node.textKind === 'source'" class="node-source-body">{{ props.node.text }}</pre>
-                    <AgentMarkdownContent v-else :content="props.node.text ?? ''" />
-                </div>
-            </div>
+        <div
+          v-if="props.depth > 0"
+          class="node-actions"
+        >
+          <button
+            type="button"
+            class="node-action-btn"
+            title="复制"
+            @click.stop="emit('duplicate', props.node.id)"
+          >
+            <span class="i-lucide-copy h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            class="node-action-btn danger"
+            title="删除"
+            @click.stop="emit('delete', props.node.id)"
+          >
+            <span class="i-lucide-trash-2 h-3.5 w-3.5" />
+          </button>
+        </div>
+        <div
+          v-if="props.node.type === 'Text' && (props.node.text ?? '').trim()"
+          class="node-message-body node-text-body-row"
+          @click.stop="selectNode"
+        >
+          <pre
+            v-if="props.node.textKind === 'source'"
+            class="node-source-body"
+          >{{ props.node.text }}</pre>
+          <AgentMarkdownContent
+            v-else
+            :content="props.node.text ?? ''"
+          />
+        </div>
+      </div>
 
-            <div v-if="hasChildrenPanel" class="node-children" :data-empty="props.node.children.length === 0 || undefined">
-                <ProfileTemplateNodeView
-                    v-if="props.node.children.length > 0"
-                    v-for="(child, childIndex) in props.node.children"
-                    :key="child.id"
-                    :node="child"
-                    :selected-id="props.selectedId"
-                    :depth="props.depth + 1"
-                    :index="childIndex"
-                    :parent-id="props.node.id"
-                    :can-have-children="!['Text', 'ToolCall', 'ToolResult', 'AgentCatalog', 'SkillCatalog', 'WorkflowCatalog', 'ActivatedSkills', 'SqlSchemaSummary', 'Import', 'LinkedAgentsSummary', 'LinkedAgentsReminder', 'WorkspaceFocusReminder', 'ModeAvailabilityReminder', 'TaskReminder', 'MentionedSkillsReminder', 'FileChangeNotice'].includes(child.type)"
-                    :disabled-drop-node-ids="props.disabledDropNodeIds"
-                    @select="emit('select', $event)"
-                    @prepare-drag="emit('prepareDrag', $event)"
-                    @duplicate="emit('duplicate', $event)"
-                    @delete="emit('delete', $event)"
-                />
-                <div ref="insideDropRef" class="node-inside-drop"></div>
-            </div>
-            <div ref="afterDropRef" class="node-edge-drop node-edge-drop-after"></div>
-        </article>
-    </div>
+      <div
+        v-if="hasChildrenPanel"
+        class="node-children"
+        :data-empty="props.node.children.length === 0 || undefined"
+      >
+        <ProfileTemplateNodeView
+          v-for="(child, childIndex) in props.node.children"
+          v-if="props.node.children.length > 0"
+          :key="child.id"
+          :node="child"
+          :selected-id="props.selectedId"
+          :depth="props.depth + 1"
+          :index="childIndex"
+          :parent-id="props.node.id"
+          :can-have-children="!['Text', 'ToolCall', 'ToolResult', 'AgentCatalog', 'SkillCatalog', 'WorkflowCatalog', 'ActivatedSkills', 'SqlSchemaSummary', 'Import', 'LinkedAgentsSummary', 'LinkedAgentsReminder', 'WorkspaceFocusReminder', 'ModeAvailabilityReminder', 'TaskReminder', 'MentionedSkillsReminder', 'FileChangeNotice'].includes(child.type)"
+          :disabled-drop-node-ids="props.disabledDropNodeIds"
+          @select="emit('select', $event)"
+          @prepare-drag="emit('prepareDrag', $event)"
+          @duplicate="emit('duplicate', $event)"
+          @delete="emit('delete', $event)"
+        />
+        <div
+          ref="insideDropRef"
+          class="node-inside-drop"
+        />
+      </div>
+      <div
+        ref="afterDropRef"
+        class="node-edge-drop node-edge-drop-after"
+      />
+    </article>
+  </div>
 </template>
 
 <style scoped>

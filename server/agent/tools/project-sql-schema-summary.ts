@@ -1,5 +1,5 @@
-import {PROJECT_AGENT_SQL_MODULE_TOKEN} from "nbook/server/agent/tools/agent-sql-project-module";
-import {activateReadyProjectModule, type ReadyProjectSessionRef} from "nbook/server/workspace-files/project-session";
+import { PROJECT_AGENT_SQL_MODULE_TOKEN } from 'nbook/server/agent/tools/agent-sql-project-module'
+import { activateReadyProjectModule, type ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session'
 
 /**
  * 取当前 Project Workspace 的 SQL schema 摘要。
@@ -13,9 +13,9 @@ import {activateReadyProjectModule, type ReadyProjectSessionRef} from "nbook/ser
  *              由 profile 侧 catch 渲染「暂不可用」降级文案。
  */
 export async function projectSqlSchemaSummary(ready: ReadyProjectSessionRef | null): Promise<string> {
-    if (!ready) {
-        throw new Error("当前session没有Project Workspace");
-    }
-    const sql = await activateReadyProjectModule(ready, PROJECT_AGENT_SQL_MODULE_TOKEN);
-    return await sql.schemaSummary();
+  if (!ready) {
+    throw new Error('当前session没有Project Workspace')
+  }
+  const sql = await activateReadyProjectModule(ready, PROJECT_AGENT_SQL_MODULE_TOKEN)
+  return await sql.schemaSummary()
 }

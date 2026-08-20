@@ -1,54 +1,50 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import type {Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {RetrievalInitialSchema, RetrievalOutputSchema} from "nbook/profile-sdk";
-import {AppendingSet, HistorySet, Import, Message, ProfilePrompt, SkillCatalog, System, WorkspaceFocusReminder} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, toolset, RetrievalInitialSchema, RetrievalOutputSchema, AppendingSet, HistorySet, Import, Message, ProfilePrompt, SkillCatalog, System, WorkspaceFocusReminder, profileText } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "retrieval",
-    name: "内容检索",
-    description: "内容节点召回和候选判断 agent：为 Leader 查找 lorebook/manuscript 相关节点，输出 entries 给调用方判断，不直接替 writer 写正文。",
-} as const;
+  key: 'retrieval',
+  name: '内容检索',
+  description: '内容节点召回和候选判断 agent：为 Leader 查找 lorebook/manuscript 相关节点，输出 entries 给调用方判断，不直接替 writer 写正文。',
+} as const
 
-export const InitialSchema = RetrievalInitialSchema;
-export const OutputSchema = RetrievalOutputSchema;
+export const InitialSchema = RetrievalInitialSchema
+export const OutputSchema = RetrievalOutputSchema
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    tools: toolset(
-        builtin.file.bash,
-        builtin.file.read,
-        builtin.result.main(),
-    ),
-    context(ctx) {
-        return (
-            <ProfilePrompt>
-                <System>{renderSystemPrompt()}</System>
-                <HistorySet>
-                    <Message><Import path="reference/content/retrieval.md" /></Message>
-                    <Message><Import path="reference/agent/profile-context-memory.md" /></Message>
-                    <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
-                    <Message><SkillCatalog /></Message>
-                </HistorySet>
-                <AppendingSet>
-                    <WorkspaceFocusReminder />
-                    <Message>{`Search prompt:\n${ctx.initial.prompt}`}</Message>
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  tools: toolset(
+    builtin.file.bash,
+    builtin.file.read,
+    builtin.result.main(),
+  ),
+  context(ctx) {
+    return (
+      <ProfilePrompt>
+        <System>{renderSystemPrompt()}</System>
+        <HistorySet>
+          <Message><Import path="reference/content/retrieval.md" /></Message>
+          <Message><Import path="reference/agent/profile-context-memory.md" /></Message>
+          <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
+          <Message><SkillCatalog /></Message>
+        </HistorySet>
+        <AppendingSet>
+          <WorkspaceFocusReminder />
+          <Message>{`Search prompt:\n${ctx.initial.prompt}`}</Message>
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 function renderSystemPrompt(): string {
-    return profileText`
+  return profileText`
         You are the retrieval profile. 使用中文作为你的默认语言，使用中文思考。你的任务是在写作前为 Leader 选择一小组值得交给 writer 阅读的内容节点候选。你是检索器和候选解释器，不是正文作者。
 
         # 内容节点事实
@@ -89,5 +85,5 @@ function renderSystemPrompt(): string {
         - note 可选，用于整体说明没有强相关条目、结果偏少、建议补充搜索条件等情况。
         - 不要输出上述合同以外的旧字段或自造字段。
         - report_result.result 只写一句简短说明。不要编辑文件，不要用 prose-only final answer 代替 report_result。
-    `;
+    `
 }

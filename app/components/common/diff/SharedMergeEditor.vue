@@ -1,202 +1,211 @@
 <script setup lang="ts">
-import {loadMonacoEditor, type MonacoEditorApi} from "nbook/app/components/markdown-studio/load-monaco-editor";
-import {applyMonacoDiffTheme} from "nbook/app/components/common/diff/monaco-diff-theme";
-import type {IdeTheme} from "nbook/app/utils/theme/theme-tokens";
-import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+import { loadMonacoEditor, type MonacoEditorApi } from 'nbook/app/components/markdown-studio/load-monaco-editor'
+import { applyMonacoDiffTheme } from 'nbook/app/components/common/diff/monaco-diff-theme'
+import type { IdeTheme } from 'nbook/app/utils/theme/theme-tokens'
+import type * as Monaco from 'monaco-editor/esm/vs/editor/editor.api.js'
 
 const props = withDefaults(defineProps<{
-    modelValue: string;
-    currentContent?: string;
-    incomingContent?: string;
-    currentLabel?: string;
-    incomingLabel?: string;
-    language?: string;
-    theme?: IdeTheme;
-    readonly?: boolean;
-    modelKey?: string;
-    showWhitespace?: boolean;
-    resultLabel?: string;
+  modelValue: string
+  currentContent?: string
+  incomingContent?: string
+  currentLabel?: string
+  incomingLabel?: string
+  language?: string
+  theme?: IdeTheme
+  readonly?: boolean
+  modelKey?: string
+  showWhitespace?: boolean
+  resultLabel?: string
 }>(), {
-    currentContent: "",
-    incomingContent: "",
-    currentLabel: "Current",
-    incomingLabel: "Incoming",
-    language: "markdown",
-    theme: "sepia",
-    readonly: false,
-    modelKey: "merge",
-    showWhitespace: false,
-    resultLabel: "Result",
-});
+  currentContent: '',
+  incomingContent: '',
+  currentLabel: 'Current',
+  incomingLabel: 'Incoming',
+  language: 'markdown',
+  theme: 'sepia',
+  readonly: false,
+  modelKey: 'merge',
+  showWhitespace: false,
+  resultLabel: 'Result',
+})
 
 const emit = defineEmits<{
-    (e: "update:modelValue", value: string): void;
-    (e: "save-request"): void;
-    (e: "ready"): void;
-}>();
+  (e: 'update:modelValue', value: string): void
+  (e: 'save-request'): void
+  (e: 'ready'): void
+}>()
 
-const rootRef = ref<HTMLDivElement | null>(null);
-const currentRef = ref<HTMLDivElement | null>(null);
-const incomingRef = ref<HTMLDivElement | null>(null);
-let monacoApi: MonacoEditorApi | null = null;
-let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
-let model: Monaco.editor.ITextModel | null = null;
-let currentEditor: Monaco.editor.IStandaloneCodeEditor | null = null;
-let incomingEditor: Monaco.editor.IStandaloneCodeEditor | null = null;
-let currentModel: Monaco.editor.ITextModel | null = null;
-let incomingModel: Monaco.editor.ITextModel | null = null;
-let changeListener: Monaco.IDisposable | null = null;
-let suppressChange = false;
+const rootRef = ref<HTMLDivElement | null>(null)
+const currentRef = ref<HTMLDivElement | null>(null)
+const incomingRef = ref<HTMLDivElement | null>(null)
+let monacoApi: MonacoEditorApi | null = null
+let editor: Monaco.editor.IStandaloneCodeEditor | null = null
+let model: Monaco.editor.ITextModel | null = null
+let currentEditor: Monaco.editor.IStandaloneCodeEditor | null = null
+let incomingEditor: Monaco.editor.IStandaloneCodeEditor | null = null
+let currentModel: Monaco.editor.ITextModel | null = null
+let incomingModel: Monaco.editor.ITextModel | null = null
+let changeListener: Monaco.IDisposable | null = null
+let suppressChange = false
 
 function disposeModel(): void {
-    changeListener?.dispose();
-    model?.dispose();
-    currentModel?.dispose();
-    incomingModel?.dispose();
-    changeListener = null;
-    model = null;
-    currentModel = null;
-    incomingModel = null;
+  changeListener?.dispose()
+  model?.dispose()
+  currentModel?.dispose()
+  incomingModel?.dispose()
+  changeListener = null
+  model = null
+  currentModel = null
+  incomingModel = null
 }
 
 function updateOptions(): void {
-    editor?.updateOptions({
-        readOnly: props.readonly,
-        renderWhitespace: props.showWhitespace ? "boundary" : "none",
-    });
-    currentEditor?.updateOptions({renderWhitespace: props.showWhitespace ? "boundary" : "none"});
-    incomingEditor?.updateOptions({renderWhitespace: props.showWhitespace ? "boundary" : "none"});
+  editor?.updateOptions({
+    readOnly: props.readonly,
+    renderWhitespace: props.showWhitespace ? 'boundary' : 'none',
+  })
+  currentEditor?.updateOptions({ renderWhitespace: props.showWhitespace ? 'boundary' : 'none' })
+  incomingEditor?.updateOptions({ renderWhitespace: props.showWhitespace ? 'boundary' : 'none' })
 }
 
 function syncModelValue(value: string): void {
-    if (!model || model.getValue() === value) {
-        return;
-    }
-    suppressChange = true;
-    model.pushEditOperations([], [{range: model.getFullModelRange(), text: value}], () => null);
-    queueMicrotask(() => {
-        suppressChange = false;
-    });
+  if (!model || model.getValue() === value) {
+    return
+  }
+  suppressChange = true
+  model.pushEditOperations([], [{ range: model.getFullModelRange(), text: value }], () => null)
+  queueMicrotask(() => {
+    suppressChange = false
+  })
 }
 
 function createModel(): void {
-    if (!monacoApi || !editor) {
-        return;
+  if (!monacoApi || !editor) {
+    return
+  }
+  disposeModel()
+  const suffix = encodeURIComponent(`${props.modelKey}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  currentModel = monacoApi.editor.createModel(props.currentContent, props.language, monacoApi.Uri.parse(`file:///merge/${suffix}/current`))
+  incomingModel = monacoApi.editor.createModel(props.incomingContent, props.language, monacoApi.Uri.parse(`file:///merge/${suffix}/incoming`))
+  model = monacoApi.editor.createModel(props.modelValue, props.language, monacoApi.Uri.parse(`file:///merge/${suffix}/result`))
+  changeListener = model.onDidChangeContent(() => {
+    if (!suppressChange) {
+      emit('update:modelValue', model?.getValue() ?? '')
     }
-    disposeModel();
-    const suffix = encodeURIComponent(`${props.modelKey}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    currentModel = monacoApi.editor.createModel(props.currentContent, props.language, monacoApi.Uri.parse(`file:///merge/${suffix}/current`));
-    incomingModel = monacoApi.editor.createModel(props.incomingContent, props.language, monacoApi.Uri.parse(`file:///merge/${suffix}/incoming`));
-    model = monacoApi.editor.createModel(props.modelValue, props.language, monacoApi.Uri.parse(`file:///merge/${suffix}/result`));
-    changeListener = model.onDidChangeContent(() => {
-        if (!suppressChange) {
-            emit("update:modelValue", model?.getValue() ?? "");
-        }
-    });
-    currentEditor?.setModel(currentModel);
-    incomingEditor?.setModel(incomingModel);
-    editor.setModel(model);
+  })
+  currentEditor?.setModel(currentModel)
+  incomingEditor?.setModel(incomingModel)
+  editor.setModel(model)
 }
 
 async function ensureEditor(): Promise<void> {
-    if (!rootRef.value || !currentRef.value || !incomingRef.value) {
-        return;
-    }
-    monacoApi = monacoApi ?? await loadMonacoEditor();
-    applyMonacoDiffTheme(monacoApi, props.theme, rootRef.value);
-    applyMonacoDiffTheme(monacoApi, props.theme, currentRef.value);
-    applyMonacoDiffTheme(monacoApi, props.theme, incomingRef.value);
-    if (!currentEditor) {
-        currentEditor = monacoApi.editor.create(currentRef.value, {
-            automaticLayout: true,
-            readOnly: true,
-            minimap: {enabled: false},
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            language: props.language,
-            renderWhitespace: props.showWhitespace ? "boundary" : "none",
-        });
-    }
-    if (!incomingEditor) {
-        incomingEditor = monacoApi.editor.create(incomingRef.value, {
-            automaticLayout: true,
-            readOnly: true,
-            minimap: {enabled: false},
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            language: props.language,
-            renderWhitespace: props.showWhitespace ? "boundary" : "none",
-        });
-    }
-    if (!editor) {
-        editor = monacoApi.editor.create(rootRef.value, {
-            automaticLayout: true,
-            readOnly: props.readonly,
-            minimap: {enabled: false},
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            language: props.language,
-            renderWhitespace: props.showWhitespace ? "boundary" : "none",
-        });
-        editor.addCommand(monacoApi.KeyMod.CtrlCmd | monacoApi.KeyCode.KeyS, () => emit("save-request"));
-        emit("ready");
-    }
-    updateOptions();
-    createModel();
-    requestAnimationFrame(() => {
-        currentEditor?.layout();
-        incomingEditor?.layout();
-        editor?.layout();
-    });
+  if (!rootRef.value || !currentRef.value || !incomingRef.value) {
+    return
+  }
+  monacoApi = monacoApi ?? await loadMonacoEditor()
+  applyMonacoDiffTheme(monacoApi, props.theme, rootRef.value)
+  applyMonacoDiffTheme(monacoApi, props.theme, currentRef.value)
+  applyMonacoDiffTheme(monacoApi, props.theme, incomingRef.value)
+  if (!currentEditor) {
+    currentEditor = monacoApi.editor.create(currentRef.value, {
+      automaticLayout: true,
+      readOnly: true,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      wordWrap: 'on',
+      language: props.language,
+      renderWhitespace: props.showWhitespace ? 'boundary' : 'none',
+    })
+  }
+  if (!incomingEditor) {
+    incomingEditor = monacoApi.editor.create(incomingRef.value, {
+      automaticLayout: true,
+      readOnly: true,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      wordWrap: 'on',
+      language: props.language,
+      renderWhitespace: props.showWhitespace ? 'boundary' : 'none',
+    })
+  }
+  if (!editor) {
+    editor = monacoApi.editor.create(rootRef.value, {
+      automaticLayout: true,
+      readOnly: props.readonly,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      wordWrap: 'on',
+      language: props.language,
+      renderWhitespace: props.showWhitespace ? 'boundary' : 'none',
+    })
+    editor.addCommand(monacoApi.KeyMod.CtrlCmd | monacoApi.KeyCode.KeyS, () => emit('save-request'))
+    emit('ready')
+  }
+  updateOptions()
+  createModel()
+  requestAnimationFrame(() => {
+    currentEditor?.layout()
+    incomingEditor?.layout()
+    editor?.layout()
+  })
 }
 
 onMounted(() => {
-    void ensureEditor();
-});
+  void ensureEditor()
+})
 
-watch(() => props.modelValue, (value) => syncModelValue(value));
+watch(() => props.modelValue, value => syncModelValue(value))
 
 watch(() => [
-    props.language,
-    props.modelKey,
-    props.currentContent,
-    props.incomingContent,
-], () => createModel());
+  props.language,
+  props.modelKey,
+  props.currentContent,
+  props.incomingContent,
+], () => createModel())
 
 watch(() => [props.theme, props.readonly, props.showWhitespace], () => {
-    if (monacoApi) {
-        applyMonacoDiffTheme(monacoApi, props.theme, rootRef.value);
-        applyMonacoDiffTheme(monacoApi, props.theme, currentRef.value);
-        applyMonacoDiffTheme(monacoApi, props.theme, incomingRef.value);
-    }
-    updateOptions();
-});
+  if (monacoApi) {
+    applyMonacoDiffTheme(monacoApi, props.theme, rootRef.value)
+    applyMonacoDiffTheme(monacoApi, props.theme, currentRef.value)
+    applyMonacoDiffTheme(monacoApi, props.theme, incomingRef.value)
+  }
+  updateOptions()
+})
 
 onBeforeUnmount(() => {
-    currentEditor?.dispose();
-    incomingEditor?.dispose();
-    editor?.dispose();
-    disposeModel();
-    currentEditor = null;
-    incomingEditor = null;
-    editor = null;
-    monacoApi = null;
-});
+  currentEditor?.dispose()
+  incomingEditor?.dispose()
+  editor?.dispose()
+  disposeModel()
+  currentEditor = null
+  incomingEditor = null
+  editor = null
+  monacoApi = null
+})
 </script>
 
 <template>
-    <div class="shared-merge-editor">
-        <div class="shared-merge-editor__labels">
-            <span>{{ currentLabel }}</span>
-            <span>{{ incomingLabel }}</span>
-            <span>{{ resultLabel }}</span>
-        </div>
-        <div class="shared-merge-editor__grid">
-            <div ref="currentRef" class="shared-merge-editor__editor"></div>
-            <div ref="incomingRef" class="shared-merge-editor__editor"></div>
-            <div ref="rootRef" class="shared-merge-editor__editor"></div>
-        </div>
+  <div class="shared-merge-editor">
+    <div class="shared-merge-editor__labels">
+      <span>{{ currentLabel }}</span>
+      <span>{{ incomingLabel }}</span>
+      <span>{{ resultLabel }}</span>
     </div>
+    <div class="shared-merge-editor__grid">
+      <div
+        ref="currentRef"
+        class="shared-merge-editor__editor"
+      />
+      <div
+        ref="incomingRef"
+        class="shared-merge-editor__editor"
+      />
+      <div
+        ref="rootRef"
+        class="shared-merge-editor__editor"
+      />
+    </div>
+  </div>
 </template>
 
 <style scoped>

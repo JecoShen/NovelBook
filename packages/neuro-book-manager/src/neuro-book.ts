@@ -1,2 +1,2 @@
 #!/usr/bin/env bun
-import "#manager/cli";
+import '#manager/cli'

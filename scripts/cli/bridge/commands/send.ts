@@ -1,23 +1,23 @@
-import {randomUUID} from "node:crypto";
-import {bridgeRequest} from "../util/http";
+import { randomUUID } from 'node:crypto'
+import { bridgeRequest } from '../util/http'
 
 export interface SendInput {
-    sessionId: number;
-    message: string;
-    followup?: boolean;
-    title?: string;
-    token: string;
-    baseUrl: string;
-    signal?: AbortSignal;
+  sessionId: number
+  message: string
+  followup?: boolean
+  title?: string
+  token: string
+  baseUrl: string
+  signal?: AbortSignal
 }
 
 export interface InvokeResult {
-    status: "completed" | "waiting" | "error";
-    finalMessage?: unknown;
-    reportResult?: {result: unknown; data: unknown} | unknown;
-    error?: {message: string; phase?: string};
-    aborted?: boolean;
-    elapsedMs?: number;
+  status: 'completed' | 'waiting' | 'error'
+  finalMessage?: unknown
+  reportResult?: { result: unknown, data: unknown } | unknown
+  error?: { message: string, phase?: string }
+  aborted?: boolean
+  elapsedMs?: number
 }
 
 /**
@@ -32,19 +32,19 @@ export interface InvokeResult {
  * object，缺失 `text` 字段直接 fail。CLI 这一处必须与 DTO 严格对齐。
  */
 export async function sendCommand(input: SendInput): Promise<InvokeResult> {
-    const mode = input.followup ? "followup" : "prompt";
-    const body = {
-        mode,
-        clientMessageId: randomUUID(),
-        message: {text: input.message},
-        ...(input.title ? {title: input.title} : {}),
-    };
-    return bridgeRequest<InvokeResult>({
-        method: "POST",
-        path: `/api/agent/bridge/sessions/${input.sessionId}/invoke`,
-        body,
-        token: input.token,
-        baseUrl: input.baseUrl,
-        signal: input.signal,
-    });
+  const mode = input.followup ? 'followup' : 'prompt'
+  const body = {
+    mode,
+    clientMessageId: randomUUID(),
+    message: { text: input.message },
+    ...(input.title ? { title: input.title } : {}),
+  }
+  return bridgeRequest<InvokeResult>({
+    method: 'POST',
+    path: `/api/agent/bridge/sessions/${input.sessionId}/invoke`,
+    body,
+    token: input.token,
+    baseUrl: input.baseUrl,
+    signal: input.signal,
+  })
 }

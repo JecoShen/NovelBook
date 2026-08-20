@@ -1,65 +1,61 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import type {Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, plotReadBindings, plotWriteBindings, toolset} from "nbook/profile-sdk";
-import {DirectorInitialSchema, DirectorOutputSchema} from "nbook/profile-sdk";
-import {AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, plotReadBindings, plotWriteBindings, toolset, DirectorInitialSchema, DirectorOutputSchema, AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder, profileText } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "director",
-    name: "剧情导演",
-    description: "剧情导演：管理 Thread / Scene，设计剧情结构、节奏、伏笔和章节 handoff，不写正文也不写 World Engine。",
-} as const;
+  key: 'director',
+  name: '剧情导演',
+  description: '剧情导演：管理 Thread / Scene，设计剧情结构、节奏、伏笔和章节 handoff，不写正文也不写 World Engine。',
+} as const
 
-export const InitialSchema = DirectorInitialSchema;
-export const OutputSchema = DirectorOutputSchema;
+export const InitialSchema = DirectorInitialSchema
+export const OutputSchema = DirectorOutputSchema
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    tools: toolset(
-        builtin.file.read,
-        builtin.agent.create,
-        builtin.agent.invoke,
-        builtin.agent.get,
-        builtin.agent.getProfile,
-        builtin.agent.getSession,
-        // Plot 读写 bundle（Task 97 D7）：director 持有全部 Plot 读工具与 save_* 写工具。
-        ...plotReadBindings,
-        ...plotWriteBindings,
-        builtin.result.main(),
-    ),
-    context(ctx) {
-        return (
-            <ProfilePrompt>
-                <System>{renderSystemPrompt()}</System>
-                <HistorySet>
-                    <Message><AgentCatalog /></Message>
-                    <Message><Import path="AGENTS.md" /></Message>
-                    <Message><Import path="reference/plot/system.md" /></Message>
-                    <Message><Import path="reference/plot/agent-spec.md" /></Message>
-                    <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
-                </HistorySet>
-                <ModelContext>
-                    <Message>{renderRuntimeInput(ctx.initial)}</Message>
-                </ModelContext>
-                <AppendingSet>
-                    <WorkspaceFocusReminder />
-                    <LinkedAgentsReminder />
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  tools: toolset(
+    builtin.file.read,
+    builtin.agent.create,
+    builtin.agent.invoke,
+    builtin.agent.get,
+    builtin.agent.getProfile,
+    builtin.agent.getSession,
+    // Plot 读写 bundle（Task 97 D7）：director 持有全部 Plot 读工具与 save_* 写工具。
+    ...plotReadBindings,
+    ...plotWriteBindings,
+    builtin.result.main(),
+  ),
+  context(ctx) {
+    return (
+      <ProfilePrompt>
+        <System>{renderSystemPrompt()}</System>
+        <HistorySet>
+          <Message><AgentCatalog /></Message>
+          <Message><Import path="AGENTS.md" /></Message>
+          <Message><Import path="reference/plot/system.md" /></Message>
+          <Message><Import path="reference/plot/agent-spec.md" /></Message>
+          <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
+        </HistorySet>
+        <ModelContext>
+          <Message>{renderRuntimeInput(ctx.initial)}</Message>
+        </ModelContext>
+        <AppendingSet>
+          <WorkspaceFocusReminder />
+          <LinkedAgentsReminder />
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 function renderSystemPrompt(): string {
-    return profileText`
+  return profileText`
         你是 NeuroBook 的 director，剧情导演。使用中文作为默认语言。
 
         # 核心职责
@@ -119,15 +115,15 @@ function renderSystemPrompt(): string {
         - writer_handoff：可交给 writer 的结构化写作 handoff；没有则写空字符串。
         - world_engine_requests：需要 leader.default 用 World Engine 处理的问题；没有返回 []。
         - open_questions：需要 leader 或用户确认的问题；没有返回 []。
-    `;
+    `
 }
 
 function renderRuntimeInput(input: Initial): string {
-    return profileText`
+  return profileText`
         <director_input>
         projectRoot: ${input.projectRoot}
-        mode: ${input.mode ?? "未指定"}
-        defaultChapterPath: ${input.defaultChapterPath?.trim() || "未指定"}
+        mode: ${input.mode ?? '未指定'}
+        defaultChapterPath: ${input.defaultChapterPath?.trim() || '未指定'}
         </director_input>
-    `;
+    `
 }

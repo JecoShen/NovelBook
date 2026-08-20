@@ -1,25 +1,25 @@
-import path from "node:path";
-import {describe, expect, it} from "vitest";
+import path from 'node:path'
+import { describe, expect, it } from 'vitest'
 
 import {
-    resolveApplicationRoot,
-    resolveBootConfigPath,
-    resolveStateRoot,
-    resolveStateWorkspaceRoot,
-} from "nbook/server/runtime/installation-paths";
+  resolveApplicationRoot,
+  resolveBootConfigPath,
+  resolveStateRoot,
+  resolveStateWorkspaceRoot,
+} from 'nbook/server/runtime/installation-paths'
 
-describe("installation paths", () => {
-    it("默认 State Root 等于 Application Root", () => {
-        const root = path.resolve("C:/neuro-book");
-        expect(resolveApplicationRoot(root, {})).toBe(root);
-        expect(resolveStateRoot(root, {})).toBe(root);
-        expect(resolveStateWorkspaceRoot(root, {})).toBe(path.join(root, "workspace"));
-    });
+describe('installation paths', () => {
+  it('默认 State Root 等于 Application Root', () => {
+    const root = path.resolve('C:/neuro-book')
+    expect(resolveApplicationRoot(root, {})).toBe(root)
+    expect(resolveStateRoot(root, {})).toBe(root)
+    expect(resolveStateWorkspaceRoot(root, {})).toBe(path.join(root, 'workspace'))
+  })
 
-    it("Portable 可把 State Root 指向 data", () => {
-        const root = path.resolve("C:/neuro-book");
-        const env = {NEURO_BOOK_APPLICATION_ROOT: root, NEURO_BOOK_STATE_ROOT: "data"};
-        expect(resolveStateRoot(root, env)).toBe(path.join(root, "data"));
-        expect(resolveBootConfigPath(root, env)).toBe(path.join(root, "data", "config.yaml"));
-    });
-});
+  it('Portable 可把 State Root 指向 data', () => {
+    const root = path.resolve('C:/neuro-book')
+    const env = { NEURO_BOOK_APPLICATION_ROOT: root, NEURO_BOOK_STATE_ROOT: 'data' }
+    expect(resolveStateRoot(root, env)).toBe(path.join(root, 'data'))
+    expect(resolveBootConfigPath(root, env)).toBe(path.join(root, 'data', 'config.yaml'))
+  })
+})

@@ -1,55 +1,55 @@
-import {readFile} from "node:fs/promises";
-import {describe, expect, it} from "vitest";
+import { readFile } from 'node:fs/promises'
+import { describe, expect, it } from 'vitest'
 
-import {PRODUCT_PLATFORMS} from "nbook/packages/neuro-book-manager/src/types";
+import { PRODUCT_PLATFORMS } from 'nbook/packages/neuro-book-manager/src/types'
 
-describe("Product Runtime Image measurement contracts", () => {
-    it("package 暴露独立 measurement 与正式 policy preflight", async () => {
-        const packageJson = JSON.parse(await readFile("package.json", "utf8")) as {
-            scripts: {[name: string]: string};
-        };
+describe('Product Runtime Image measurement contracts', () => {
+  it('package 暴露独立 measurement 与正式 policy preflight', async () => {
+    const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as {
+      scripts: { [name: string]: string }
+    }
 
-        expect(packageJson.scripts["product:measure"]).toBe(
-            "bun scripts/build/measure-product-runtime-image.ts",
-        );
-        expect(packageJson.scripts["product:policy:check"]).toContain("--require-all");
-        expect(packageJson.scripts["nuxt:build"]).toBe("bun scripts/build/build-product-runtime-image.ts");
-    });
+    expect(packageJson.scripts['product:measure']).toBe(
+      'bun scripts/build/measure-product-runtime-image.ts',
+    )
+    expect(packageJson.scripts['product:policy:check']).toContain('--require-all')
+    expect(packageJson.scripts['nuxt:build']).toBe('bun scripts/build/build-product-runtime-image.ts')
+  })
 
-    it("手动 workflow 覆盖全部平台且只上传 measurement report", async () => {
-        const workflow = await readFile(".github/workflows/product-runtime-baselines.yml", "utf8");
+  it('手动 workflow 覆盖全部平台且只上传 measurement report', async () => {
+    const workflow = await readFile('.github/workflows/product-runtime-baselines.yml', 'utf8')
 
-        expect(workflow).toContain("workflow_dispatch:");
-        expect(workflow).not.toContain("pull_request:");
-        expect(workflow).not.toContain("release:");
-        for (const platform of PRODUCT_PLATFORMS) {
-            expect(workflow).toContain(`platform: ${platform}`);
-        }
-        expect(workflow.match(/bun run product:measure --output/gu)).toHaveLength(2);
-        expect(workflow).toContain("compare-product-runtime-measurements.ts");
-        expect(workflow).toMatch(/name: Upload baseline measurement\r?\n\s+if: always\(\)/u);
-        expect(workflow).toContain("product-runtime-measurement-${{ matrix.platform }}");
-        expect(workflow).not.toContain("bun run nuxt:build\n");
-        expect(workflow).not.toContain("release:product:");
-    });
+    expect(workflow).toContain('workflow_dispatch:')
+    expect(workflow).not.toContain('pull_request:')
+    expect(workflow).not.toContain('release:')
+    for (const platform of PRODUCT_PLATFORMS) {
+      expect(workflow).toContain(`platform: ${platform}`)
+    }
+    expect(workflow.match(/bun run product:measure --output/gu)).toHaveLength(2)
+    expect(workflow).toContain('compare-product-runtime-measurements.ts')
+    expect(workflow).toMatch(/name: Upload baseline measurement\r?\n\s+if: always\(\)/u)
+    expect(workflow).toContain('product-runtime-measurement-${{ matrix.platform }}')
+    expect(workflow).not.toContain('bun run nuxt:build\n')
+    expect(workflow).not.toContain('release:product:')
+  })
 
-    it("平台 CI 按登记状态分流，正式 release 在构建前检查全部 policy", async () => {
-        const [platformChecks, release] = await Promise.all([
-            readFile(".github/workflows/product-platforms.yml", "utf8"),
-            readFile(".github/workflows/release-container.yml", "utf8"),
-        ]);
+  it('平台 CI 按登记状态分流，正式 release 在构建前检查全部 policy', async () => {
+    const [platformChecks, release] = await Promise.all([
+      readFile('.github/workflows/product-platforms.yml', 'utf8'),
+      readFile('.github/workflows/release-container.yml', 'utf8'),
+    ])
 
-        expect(platformChecks).toContain("check-product-runtime-policies.ts --platform");
-        expect(platformChecks).toContain("steps.runtime_policy.outputs.registered != 'true'");
-        expect(platformChecks).toContain("steps.runtime_policy.outputs.registered == 'true'");
-        expect(platformChecks).toContain("bun run product:measure --output");
-        for (const platform of PRODUCT_PLATFORMS.filter((candidate) => candidate !== "windows-x64")) {
-            expect(platformChecks).toContain(`platform: ${platform}`);
-        }
-        expect(platformChecks).toMatch(
-            /name: Verify Manager platform contracts\r?\n\s+if: steps\.runtime_policy\.outputs\.registered == 'true'/u,
-        );
-        expect(release).toContain("Verify approved Product Runtime Image policies");
-        expect(release).toContain("run: bun run product:policy:check");
-    });
-});
+    expect(platformChecks).toContain('check-product-runtime-policies.ts --platform')
+    expect(platformChecks).toContain('steps.runtime_policy.outputs.registered != \'true\'')
+    expect(platformChecks).toContain('steps.runtime_policy.outputs.registered == \'true\'')
+    expect(platformChecks).toContain('bun run product:measure --output')
+    for (const platform of PRODUCT_PLATFORMS.filter(candidate => candidate !== 'windows-x64')) {
+      expect(platformChecks).toContain(`platform: ${platform}`)
+    }
+    expect(platformChecks).toMatch(
+      /name: Verify Manager platform contracts\r?\n\s+if: steps\.runtime_policy\.outputs\.registered == 'true'/u,
+    )
+    expect(release).toContain('Verify approved Product Runtime Image policies')
+    expect(release).toContain('run: bun run product:policy:check')
+  })
+})

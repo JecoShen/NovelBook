@@ -7,6 +7,6 @@
  */
 
 export {
-    routeMetaMap,
-    type RouteMetaEntry,
-} from "../server/openapi/route-map";
+  routeMetaMap,
+  type RouteMetaEntry,
+} from '../server/openapi/route-map'

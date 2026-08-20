@@ -1,63 +1,63 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import {Type} from "nbook/profile-sdk";
-import type {Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
+import { Type } from 'nbook/profile-sdk'
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile } from 'nbook/profile-sdk'
+import { builtin, toolset } from 'nbook/profile-sdk'
+import { AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder } from 'nbook/profile-sdk'
+import { profileText } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "world.engine",
-    name: "世界引擎",
-    description: "世界引擎验证与维护 agent：使用 World Engine 查询、写入、删除工具管理 subject 与 slice、按时刻 reduce 世界状态，不接旧 simulation workflow。",
-} as const;
+  key: 'world.engine',
+  name: '世界引擎',
+  description: '世界引擎验证与维护 agent：使用 World Engine 查询、写入、删除工具管理 subject 与 slice、按时刻 reduce 世界状态，不接旧 simulation workflow。',
+} as const
 
-export const InitialSchema = Type.Object({});
+export const InitialSchema = Type.Object({})
 export const OutputSchema = Type.Object({
-    result: Type.Optional(Type.String({description: "本轮世界引擎维护或验证结果摘要。"})),
-});
+  result: Type.Optional(Type.String({ description: '本轮世界引擎维护或验证结果摘要。' })),
+})
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    tools: toolset(
-        builtin.file.read,
-        builtin.file.write,
-        builtin.file.edit,
-        builtin.file.applyPatch,
-        builtin.agent.getProfile,
-        builtin.agent.getSession,
-        builtin.world.execute("readwrite"),
-    ),
-    context(ctx) {
-        return (
-            <ProfilePrompt>
-                <System>{WORLD_ENGINE_SYSTEM_PROMPT}</System>
-                <HistorySet>
-                    <Message><AgentCatalog /></Message>
-                    <Message><Import path="reference/agent/profile-routing.md" /></Message>
-                    <Message><Import path="AGENTS.md" /></Message>
-                    <Message><Import path="reference/world-engine/README.md" /></Message>
-                    <Message><Import path="reference/world-engine/workflow.md" /></Message>
-                    <Message><Import path="reference/world-engine/subject-lifecycle.md" /></Message>
-                    <Message><Import path="reference/world-engine/schema-system.md" /></Message>
-                </HistorySet>
-                <ModelContext>
-                    <Message>{renderRuntimeInput(ctx.session.currentProject?.workspace.ref.projectRoot)}</Message>
-                </ModelContext>
-                <AppendingSet>
-                    <WorkspaceFocusReminder />
-                    <LinkedAgentsReminder />
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  tools: toolset(
+    builtin.file.read,
+    builtin.file.write,
+    builtin.file.edit,
+    builtin.file.applyPatch,
+    builtin.agent.getProfile,
+    builtin.agent.getSession,
+    builtin.world.execute('readwrite'),
+  ),
+  context(ctx) {
+    return (
+      <ProfilePrompt>
+        <System>{WORLD_ENGINE_SYSTEM_PROMPT}</System>
+        <HistorySet>
+          <Message><AgentCatalog /></Message>
+          <Message><Import path="reference/agent/profile-routing.md" /></Message>
+          <Message><Import path="AGENTS.md" /></Message>
+          <Message><Import path="reference/world-engine/README.md" /></Message>
+          <Message><Import path="reference/world-engine/workflow.md" /></Message>
+          <Message><Import path="reference/world-engine/subject-lifecycle.md" /></Message>
+          <Message><Import path="reference/world-engine/schema-system.md" /></Message>
+        </HistorySet>
+        <ModelContext>
+          <Message>{renderRuntimeInput(ctx.session.currentProject?.workspace.ref.projectRoot)}</Message>
+        </ModelContext>
+        <AppendingSet>
+          <WorkspaceFocusReminder />
+          <LinkedAgentsReminder />
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 const WORLD_ENGINE_SYSTEM_PROMPT = profileText`
     你是 NeuroBook 的 world.engine，世界引擎验证与维护 agent。使用中文作为默认语言。
@@ -130,15 +130,15 @@ const WORLD_ENGINE_SYSTEM_PROMPT = profileText`
     - 如果 execute_world 只是在查询世界状态，优先让脚本 return 文本摘要；不要把原始 JSON 当成最终阅读材料。
     - 汇报应包含：使用的 projectRoot、写入/编辑/删除的 slice、返回的 issues、error/advisory 处理结论、查询到的关键状态、发现的问题。
     - 做试用评估时，明确区分“功能 bug”“工具提示不清”“用户体验不顺手”“后续优化建议”。
-`;
+`
 
 function renderRuntimeInput(projectRoot: string | undefined): string {
-    return profileText`
+  return profileText`
         <world_engine_input>
-        projectRoot: ${projectRoot?.trim() || "Current Workspace Focus"}
+        projectRoot: ${projectRoot?.trim() || 'Current Workspace Focus'}
         configRoot: world-engine/
         timeInput: project calendar string only
         rawInstant: forbidden for Agent tools
         </world_engine_input>
-    `;
+    `
 }

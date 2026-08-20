@@ -1,48 +1,51 @@
 <script setup lang="ts">
-import {useDraggable} from "@dnd-kit/vue";
-import type {ProfileTemplateNodeType} from "nbook/shared/dto/profile-template.dto";
+import { useDraggable } from '@dnd-kit/vue'
+import type { ProfileTemplateNodeType } from 'nbook/shared/dto/profile-template.dto'
 
 const props = defineProps<{
-    type: ProfileTemplateNodeType;
-    label: string;
-    description: string;
-    iconClass: string;
-    itemClass: string;
-}>();
+  type: ProfileTemplateNodeType
+  label: string
+  description: string
+  iconClass: string
+  itemClass: string
+}>()
 
 const emit = defineEmits<{
-    (e: "add", type: ProfileTemplateNodeType): void;
-}>();
+  (e: 'add', type: ProfileTemplateNodeType): void
+}>()
 
-const elementRef = ref<HTMLElement | null>(null);
+const elementRef = ref<HTMLElement | null>(null)
 
-const {isDragging} = useDraggable({
-    id: computed(() => `library-${props.type}`),
-    type: "library-node",
-    data: computed(() => ({
-        kind: "library-node" as const,
-        type: props.type,
-    })),
-    element: elementRef,
-});
+const { isDragging } = useDraggable({
+  id: computed(() => `library-${props.type}`),
+  type: 'library-node',
+  data: computed(() => ({
+    kind: 'library-node' as const,
+    type: props.type,
+  })),
+  element: elementRef,
+})
 </script>
 
 <template>
-    <button
-        ref="elementRef"
-        type="button"
-        class="library-component-item"
-        :class="[props.itemClass, isDragging ? 'library-component-item-dragging' : '']"
-        @click="emit('add', props.type)"
-    >
-        <span class="library-component-icon">
-            <span :class="props.iconClass" class="h-3.5 w-3.5"></span>
-        </span>
-        <span class="min-w-0 flex-1">
-            <span class="block truncate text-xs font-semibold text-[var(--text-main)]">{{ props.label }}</span>
-            <span class="mt-1 block text-[11px] leading-4 text-[var(--text-muted)]">{{ props.description }}</span>
-        </span>
-    </button>
+  <button
+    ref="elementRef"
+    type="button"
+    class="library-component-item"
+    :class="[props.itemClass, isDragging ? 'library-component-item-dragging' : '']"
+    @click="emit('add', props.type)"
+  >
+    <span class="library-component-icon">
+      <span
+        :class="props.iconClass"
+        class="h-3.5 w-3.5"
+      />
+    </span>
+    <span class="min-w-0 flex-1">
+      <span class="block truncate text-xs font-semibold text-[var(--text-main)]">{{ props.label }}</span>
+      <span class="mt-1 block text-[11px] leading-4 text-[var(--text-muted)]">{{ props.description }}</span>
+    </span>
+  </button>
 </template>
 
 <style scoped>

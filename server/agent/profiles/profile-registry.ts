@@ -3,22 +3,22 @@
  * 只保存 Publisher/refresh 已经构建好的 catalog 视图并递增 epoch。
  */
 export class ProfileRegistry<TCatalog> {
-    private currentCatalog?: TCatalog;
-    private currentEpoch = 0;
+  private currentCatalog?: TCatalog
+  private currentEpoch = 0
 
-    get catalog(): TCatalog | undefined {
-        return this.currentCatalog;
-    }
+  get catalog(): TCatalog | undefined {
+    return this.currentCatalog
+  }
 
-    get epoch(): number {
-        return this.currentEpoch;
-    }
+  get epoch(): number {
+    return this.currentEpoch
+  }
 
-    /**
+  /**
      * 原子翻转当前内存视图。
      */
-    publish(catalog: TCatalog): void {
-        this.currentCatalog = catalog;
-        this.currentEpoch += 1;
-    }
+  publish(catalog: TCatalog): void {
+    this.currentCatalog = catalog
+    this.currentEpoch += 1
+  }
 }

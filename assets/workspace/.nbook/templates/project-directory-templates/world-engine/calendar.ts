@@ -9,15 +9,15 @@
  */
 
 export default {
-    type: 'gregorian',
+  type: 'gregorian',
 
-    // Era 前后缀
-    eraBefore: '公元前',
-    eraAfter: '公元',
+  // Era 前后缀
+  eraBefore: '公元前',
+  eraAfter: '公元',
 
-    // 默认到分钟，不带秒。示例：公元2020年4月12日 18:00
-    format: '{eraName}{year}年{month}月{day}日 {hour:02}:{minute:02}'
-};
+  // 默认到分钟，不带秒。示例：公元2020年4月12日 18:00
+  format: '{eraName}{year}年{month}月{day}日 {hour:02}:{minute:02}',
+}
 
 /**
  * 其他选项：

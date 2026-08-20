@@ -1,23 +1,23 @@
-import {randomUUID} from "node:crypto";
-import {mkdir, writeFile} from "node:fs/promises";
-import {dirname, resolve} from "node:path";
-import {parseArgs} from "node:util";
+import { randomUUID } from 'node:crypto'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+import { parseArgs } from 'node:util'
 
-import {currentProductPlatform} from "nbook/packages/neuro-book-manager/src/platform";
+import { currentProductPlatform } from 'nbook/packages/neuro-book-manager/src/platform'
 import {
-    buildProductRuntimePayload,
-    prepareProductRuntimeSource,
-    productBuildEnvironment,
-    withProductBuildLease,
-} from "nbook/scripts/build/build-product-runtime-image";
+  buildProductRuntimePayload,
+  prepareProductRuntimeSource,
+  productBuildEnvironment,
+  withProductBuildLease,
+} from 'nbook/scripts/build/build-product-runtime-image'
 import {
-    ProductRuntimeImageBuilder,
-    type ProductRuntimeMeasurementReport,
-} from "nbook/scripts/build/product-runtime-image-builder";
+  ProductRuntimeImageBuilder,
+  type ProductRuntimeMeasurementReport,
+} from 'nbook/scripts/build/product-runtime-image-builder'
 
 /** measurement CLI 的输入；outputPath 未提供时写入 ignored `.deploy/measurements`。 */
 export interface ProductRuntimeMeasurementOptions {
-    outputPath?: string;
+  outputPath?: string
 }
 
 /**
@@ -25,49 +25,49 @@ export interface ProductRuntimeMeasurementOptions {
  * 返回的 JSON 只能用于审查和登记 baseline，候选本身在返回前已经删除。
  */
 export async function measureProductRuntimeImage(
-    options: ProductRuntimeMeasurementOptions = {},
-): Promise<{outputPath: string; report: ProductRuntimeMeasurementReport}> {
-    const projectRoot = process.cwd();
-    return await withProductBuildLease(projectRoot, async () => {
-        const platform = currentProductPlatform();
-        const buildEnvironment = productBuildEnvironment(process.env);
-        await prepareProductRuntimeSource(buildEnvironment);
-        const explicitRevision = process.env.NEURO_BOOK_SOURCE_REVISION?.trim();
-        const operationId = `measure-${new Date().toISOString().replace(/[^0-9]/gu, "")}-${randomUUID()}`;
-        const report = await new ProductRuntimeImageBuilder(projectRoot).measureCandidate({
-            operationId,
-            platform,
-            expectedSource: explicitRevision ? {revision: explicitRevision, dirty: false} : undefined,
-            async build(context) {
-                await buildProductRuntimePayload(context, buildEnvironment);
-            },
-        });
-        const outputPath = resolve(options.outputPath?.trim() || resolve(
-            projectRoot,
-            ".deploy",
-            "measurements",
-            `${platform}-${operationId}.json`,
-        ));
-        await mkdir(dirname(outputPath), {recursive: true});
-        await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, {encoding: "utf8", flag: "wx"});
-        console.log([
-            `Product Runtime Image measurement: ${outputPath}`,
-            `platform=${report.platform}`,
-            `registered=${String(report.policy.registered)}`,
-            `files=${report.inventory.files}`,
-            `bytes=${report.inventory.bytes}`,
-        ].join(" "));
-        return {outputPath, report};
-    });
+  options: ProductRuntimeMeasurementOptions = {},
+): Promise<{ outputPath: string, report: ProductRuntimeMeasurementReport }> {
+  const projectRoot = process.cwd()
+  return await withProductBuildLease(projectRoot, async () => {
+    const platform = currentProductPlatform()
+    const buildEnvironment = productBuildEnvironment(process.env)
+    await prepareProductRuntimeSource(buildEnvironment)
+    const explicitRevision = process.env.NEURO_BOOK_SOURCE_REVISION?.trim()
+    const operationId = `measure-${new Date().toISOString().replace(/[^0-9]/gu, '')}-${randomUUID()}`
+    const report = await new ProductRuntimeImageBuilder(projectRoot).measureCandidate({
+      operationId,
+      platform,
+      expectedSource: explicitRevision ? { revision: explicitRevision, dirty: false } : undefined,
+      async build(context) {
+        await buildProductRuntimePayload(context, buildEnvironment)
+      },
+    })
+    const outputPath = resolve(options.outputPath?.trim() || resolve(
+      projectRoot,
+      '.deploy',
+      'measurements',
+      `${platform}-${operationId}.json`,
+    ))
+    await mkdir(dirname(outputPath), { recursive: true })
+    await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' })
+    console.log([
+      `Product Runtime Image measurement: ${outputPath}`,
+      `platform=${report.platform}`,
+      `registered=${String(report.policy.registered)}`,
+      `files=${report.inventory.files}`,
+      `bytes=${report.inventory.bytes}`,
+    ].join(' '))
+    return { outputPath, report }
+  })
 }
 
 if (import.meta.main) {
-    const {values} = parseArgs({
-        allowPositionals: false,
-        options: {
-            output: {type: "string"},
-        },
-        strict: true,
-    });
-    await measureProductRuntimeImage({outputPath: values.output});
+  const { values } = parseArgs({
+    allowPositionals: false,
+    options: {
+      output: { type: 'string' },
+    },
+    strict: true,
+  })
+  await measureProductRuntimeImage({ outputPath: values.output })
 }

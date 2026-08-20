@@ -1,76 +1,96 @@
 <script setup lang="ts">
-import FormInput from "nbook/app/components/common/form/FormInput.vue";
-import ProfileTemplateLibraryItem from "nbook/app/components/profile-template-editor/ProfileTemplateLibraryItem.vue";
+import FormInput from 'nbook/app/components/common/form/FormInput.vue'
+import ProfileTemplateLibraryItem from 'nbook/app/components/profile-template-editor/ProfileTemplateLibraryItem.vue'
 import type {
-    ComponentLibraryGroup,
-    ComponentLibraryGroupView,
-} from "nbook/app/components/profile-template-editor/profile-template-editor-ui";
-import type {ProfileTemplateNodeType} from "nbook/shared/dto/profile-template.dto";
+  ComponentLibraryGroup,
+  ComponentLibraryGroupView,
+} from 'nbook/app/components/profile-template-editor/profile-template-editor-ui'
+import type { ProfileTemplateNodeType } from 'nbook/shared/dto/profile-template.dto'
 
 const props = defineProps<{
-    search: string;
-    activeGroup: ComponentLibraryGroup;
-    groupTabs: Array<{value: ComponentLibraryGroup; label: string}>;
-    componentGroups: ComponentLibraryGroupView[];
-}>();
+  search: string
+  activeGroup: ComponentLibraryGroup
+  groupTabs: Array<{ value: ComponentLibraryGroup, label: string }>
+  componentGroups: ComponentLibraryGroupView[]
+}>()
 
 const emit = defineEmits<{
-    (e: "update:search", value: string): void;
-    (e: "update:activeGroup", value: ComponentLibraryGroup): void;
-    (e: "collapse"): void;
-    (e: "add-node", type: ProfileTemplateNodeType): void;
-}>();
+  (e: 'update:search', value: string): void
+  (e: 'update:activeGroup', value: ComponentLibraryGroup): void
+  (e: 'collapse'): void
+  (e: 'add-node', type: ProfileTemplateNodeType): void
+}>()
 </script>
 
 <template>
-    <!-- 左侧组件库：组件拖入画布或点击快速添加 -->
-    <aside class="panel flex min-h-0 flex-col">
-        <div class="mb-3 flex items-start justify-between gap-2">
-            <div>
-                <div class="panel-title">组件库</div>
-                <div class="mt-1 text-[11px] text-[var(--text-muted)]">拖拽组件到画布中编辑</div>
-            </div>
-            <button type="button" class="panel-icon-btn" title="收起组件库" @click="emit('collapse')">
-                <span class="i-lucide-panel-left-close h-4 w-4"></span>
-            </button>
+  <!-- 左侧组件库：组件拖入画布或点击快速添加 -->
+  <aside class="panel flex min-h-0 flex-col">
+    <div class="mb-3 flex items-start justify-between gap-2">
+      <div>
+        <div class="panel-title">
+          组件库
         </div>
-        <div class="relative mb-3">
-            <span class="i-lucide-search absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]"></span>
-            <FormInput :model-value="props.search" placeholder="搜索组件（如：Message）" class="pl-8" type="search" @update:model-value="emit('update:search', $event)" />
+        <div class="mt-1 text-[11px] text-[var(--text-muted)]">
+          拖拽组件到画布中编辑
         </div>
-        <div class="mb-3 flex flex-wrap gap-1">
-            <button
-                v-for="tab in props.groupTabs"
-                :key="tab.value"
-                class="library-tab"
-                :class="props.activeGroup === tab.value ? 'active' : ''"
-                @click="emit('update:activeGroup', tab.value)"
-            >
-                {{ tab.label }}
-            </button>
+      </div>
+      <button
+        type="button"
+        class="panel-icon-btn"
+        title="收起组件库"
+        @click="emit('collapse')"
+      >
+        <span class="i-lucide-panel-left-close h-4 w-4" />
+      </button>
+    </div>
+    <div class="relative mb-3">
+      <span class="i-lucide-search absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+      <FormInput
+        :model-value="props.search"
+        placeholder="搜索组件（如：Message）"
+        class="pl-8"
+        type="search"
+        @update:model-value="emit('update:search', $event)"
+      />
+    </div>
+    <div class="mb-3 flex flex-wrap gap-1">
+      <button
+        v-for="tab in props.groupTabs"
+        :key="tab.value"
+        class="library-tab"
+        :class="props.activeGroup === tab.value ? 'active' : ''"
+        @click="emit('update:activeGroup', tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+    <div class="min-h-0 flex-1 space-y-4 overflow-auto pr-1 custom-scrollbar">
+      <section
+        v-for="group in props.componentGroups"
+        :key="group.group"
+      >
+        <div class="mb-2 text-[11px] font-semibold text-[var(--text-secondary)]">
+          {{ group.label }}
         </div>
-        <div class="min-h-0 flex-1 space-y-4 overflow-auto pr-1 custom-scrollbar">
-            <section v-for="group in props.componentGroups" :key="group.group">
-                <div class="mb-2 text-[11px] font-semibold text-[var(--text-secondary)]">{{ group.label }}</div>
-                <div class="space-y-2">
-                    <ProfileTemplateLibraryItem
-                        v-for="item in group.items"
-                        :key="item.type"
-                        :type="item.type"
-                        :label="item.label"
-                        :description="item.description"
-                        :icon-class="item.iconClass"
-                        :item-class="`component-${item.group} library-node-${item.type}`"
-                        @add="emit('add-node', $event)"
-                    />
-                </div>
-            </section>
+        <div class="space-y-2">
+          <ProfileTemplateLibraryItem
+            v-for="item in group.items"
+            :key="item.type"
+            :type="item.type"
+            :label="item.label"
+            :description="item.description"
+            :icon-class="item.iconClass"
+            :item-class="`component-${item.group} library-node-${item.type}`"
+            @add="emit('add-node', $event)"
+          />
         </div>
-        <div class="mt-3 rounded-md border border-[var(--border-color)] bg-[var(--bg-input)]/60 p-3 text-[11px] leading-5 text-[var(--text-muted)]">
-            <span class="i-lucide-lightbulb mr-1 inline-block h-3.5 w-3.5 align-text-bottom"></span>
-            提示：点击组件快速添加到当前选中节点。
-        </div>
-    </aside>
+      </section>
+    </div>
+    <div class="mt-3 rounded-md border border-[var(--border-color)] bg-[var(--bg-input)]/60 p-3 text-[11px] leading-5 text-[var(--text-muted)]">
+      <span class="i-lucide-lightbulb mr-1 inline-block h-3.5 w-3.5 align-text-bottom" />
+      提示：点击组件快速添加到当前选中节点。
+    </div>
+  </aside>
 </template>
 
 <style scoped>

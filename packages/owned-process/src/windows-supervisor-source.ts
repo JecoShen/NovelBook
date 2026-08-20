@@ -1,11 +1,11 @@
-export type WindowsSupervisorFault = "invalid-terminate-handle";
+export type WindowsSupervisorFault = 'invalid-terminate-handle'
 
 /**
  * 生成Windows监督进程源码。fault只供包内Windows回归使用，不进入Owned Process公共Interface。
  */
 export function buildWindowsSupervisorSource(fault?: WindowsSupervisorFault): string {
-    const invalidTerminateHandle = fault === "invalid-terminate-handle";
-    return String.raw`
+  const invalidTerminateHandle = fault === 'invalid-terminate-handle'
+  return String.raw`
 import {spawn} from "node:child_process";
 import {dlopen, FFIType, ptr} from "bun:ffi";
 
@@ -196,8 +196,8 @@ function run(job, kernel32) {
         if (normalCleanupTimer) clearTimeout(normalCleanupTimer);
     }
 }
-`;
+`
 }
 
 /** Windows监督进程默认生产源码。 */
-export const WINDOWS_SUPERVISOR_SOURCE = buildWindowsSupervisorSource();
+export const WINDOWS_SUPERVISOR_SOURCE = buildWindowsSupervisorSource()

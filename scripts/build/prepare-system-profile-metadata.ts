@@ -1,1 +1,1 @@
-import "./prepare-system-assets.ts";
+import './prepare-system-assets.ts'

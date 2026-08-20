@@ -1,77 +1,73 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import type {Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {SimulatorLeaderInitialSchema, SimulatorLeaderOutputSchema} from "nbook/profile-sdk";
-import {AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, toolset, SimulatorLeaderInitialSchema, SimulatorLeaderOutputSchema, AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder, profileText } from 'nbook/profile-sdk'
 
 export const profileManifest = {
-    key: "simulator.leader",
-    name: "世界模拟",
-    description: "世界模拟主管：先做 LOD 分层世界模拟，再调度 simulator.actor 模拟角色，裁决因果并写回 simulation/ 状态。RP Tick 模式返回全知裁决结果报告。普通写作模式由 leader.default 直接管理 World Engine 和 Plot。",
-} as const;
+  key: 'simulator.leader',
+  name: '世界模拟',
+  description: '世界模拟主管：先做 LOD 分层世界模拟，再调度 simulator.actor 模拟角色，裁决因果并写回 simulation/ 状态。RP Tick 模式返回全知裁决结果报告。普通写作模式由 leader.default 直接管理 World Engine 和 Plot。',
+} as const
 
-export const InitialSchema = SimulatorLeaderInitialSchema;
-export const OutputSchema = SimulatorLeaderOutputSchema;
+export const InitialSchema = SimulatorLeaderInitialSchema
+export const OutputSchema = SimulatorLeaderOutputSchema
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    tools: toolset(
-        builtin.file.read,
-        builtin.file.write,
-        builtin.file.edit,
-        builtin.file.applyPatch,
-        builtin.file.bash,
-        builtin.agent.create,
-        builtin.agent.invoke,
-        builtin.agent.get,
-        builtin.agent.getProfile,
-        builtin.agent.getSession,
-        builtin.plot.getTree,
-        builtin.plot.getThread,
-        builtin.plot.getSceneContext,
-        builtin.plot.getChapter,
-    ),
-    context(ctx) {
-        return (
-            <ProfilePrompt>
-                <System>{renderSystemPrompt()}</System>
-                <HistorySet>
-                    <Message><AgentCatalog /></Message>
-                    <Message><Import path="reference/agent/profile-routing.md" /></Message>
-                    <Message><Import path="AGENTS.md" /></Message>
-                    <Message><Import path="reference/content/project-structure.md" /></Message>
-                    <Message><Import path="reference/content/simulation.md" /></Message>
-                    <Message><Import path="reference/agent/workspace-tool-use.md" /></Message>
-                    <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
-                    <Message><Import path="reference/plot/system.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/lod-simulation.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/actor-facing-packet.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/adjudication-report.md" /></Message>
-                    <Message><Import path="reference/content/subjects.md" /></Message>
-                    <Message><Import path="reference/agent/rp-tick/subject-creation-guide.md" /></Message>
-                </HistorySet>
-                <ModelContext>
-                    <Message>{renderRuntimeInput(ctx.session.currentProject?.workspace.ref.projectRoot)}</Message>
-                </ModelContext>
-                <AppendingSet>
-                    <WorkspaceFocusReminder />
-                    <LinkedAgentsReminder />
-                </AppendingSet>
-            </ProfilePrompt>
-        );
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  tools: toolset(
+    builtin.file.read,
+    builtin.file.write,
+    builtin.file.edit,
+    builtin.file.applyPatch,
+    builtin.file.bash,
+    builtin.agent.create,
+    builtin.agent.invoke,
+    builtin.agent.get,
+    builtin.agent.getProfile,
+    builtin.agent.getSession,
+    builtin.plot.getTree,
+    builtin.plot.getThread,
+    builtin.plot.getSceneContext,
+    builtin.plot.getChapter,
+  ),
+  context(ctx) {
+    return (
+      <ProfilePrompt>
+        <System>{renderSystemPrompt()}</System>
+        <HistorySet>
+          <Message><AgentCatalog /></Message>
+          <Message><Import path="reference/agent/profile-routing.md" /></Message>
+          <Message><Import path="AGENTS.md" /></Message>
+          <Message><Import path="reference/content/project-structure.md" /></Message>
+          <Message><Import path="reference/content/simulation.md" /></Message>
+          <Message><Import path="reference/agent/workspace-tool-use.md" /></Message>
+          <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
+          <Message><Import path="reference/plot/system.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/lod-simulation.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/actor-facing-packet.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/adjudication-report.md" /></Message>
+          <Message><Import path="reference/content/subjects.md" /></Message>
+          <Message><Import path="reference/agent/rp-tick/subject-creation-guide.md" /></Message>
+        </HistorySet>
+        <ModelContext>
+          <Message>{renderRuntimeInput(ctx.session.currentProject?.workspace.ref.projectRoot)}</Message>
+        </ModelContext>
+        <AppendingSet>
+          <WorkspaceFocusReminder />
+          <LinkedAgentsReminder />
+        </AppendingSet>
+      </ProfilePrompt>
+    )
+  },
+})
 
 function renderSystemPrompt(): string {
-    return profileText`
+  return profileText`
         你是 NeuroBook 的 simulator.leader，世界模拟主管。使用中文作为默认语言。
 
         # 核心职责
@@ -153,15 +149,15 @@ function renderSystemPrompt(): string {
         - RP Tick 模式：按 adjudication-report.md 的格式返回裁决结果报告，不输出 Writer Brief。
         - 写作模式适合结构化汇报时，优先使用这些轻量 Markdown 标题：## 模拟结果、## 已修改文件、## Writer Brief、## Director Handoff、## 待确认。
         - 不适合结构化汇报时，可以自然回复，但仍要让调用方看懂本轮裁决、实际文件修改、可交给 writer / director 的信息和需要确认的问题。
-    `;
+    `
 }
 
 function renderRuntimeInput(projectRoot: string | undefined): string {
-    return profileText`
+  return profileText`
         <simulator_leader_input>
-        projectRoot: ${projectRoot?.trim() || "Current Workspace Focus"}
+        projectRoot: ${projectRoot?.trim() || 'Current Workspace Focus'}
         simulationRoot: simulation/
         mode: 每轮任务 prompt 指定；profile initial 不保存稳定模式。
         </simulator_leader_input>
-    `;
+    `
 }

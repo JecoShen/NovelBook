@@ -8,18 +8,18 @@
  * <JsonViewer :value="someObject" />
  * <JsonViewer :value="someObject" mode="text" :max-height="200" />
  */
-import JsonEditorVue from "json-editor-vue";
-import {Mode} from "vanilla-jsoneditor";
+import JsonEditorVue from 'json-editor-vue'
+import { Mode } from 'vanilla-jsoneditor'
 
-type JsonViewerMode = Mode;
+type JsonViewerMode = Mode
 
 /**
  * json-editor-vue 暴露的编辑器实例接口。
  * 这里只声明当前自定义 toolbar 实际会使用到的方法，避免把类型扩得过大。
  */
 interface JsonEditorInstance {
-    expand(path: Array<string | number>, callback?: (path: Array<string | number>) => boolean): void;
-    collapse(path: Array<string | number>, recursive?: boolean): void;
+  expand(path: Array<string | number>, callback?: (path: Array<string | number>) => boolean): void
+  collapse(path: Array<string | number>, recursive?: boolean): void
 }
 
 /**
@@ -27,87 +27,87 @@ interface JsonEditorInstance {
  * `jsonEditor` 来自上游 defineExpose，这里显式声明，避免使用 any。
  */
 interface JsonEditorVueExpose {
-    jsonEditor?: JsonEditorInstance;
+  jsonEditor?: JsonEditorInstance
 }
 
 const props = withDefaults(defineProps<{
-    /** 要展示的 JSON 值（对象、数组、字符串等）。 */
-    value: unknown;
-    /** 编辑器模式。默认 tree。 */
-    mode?: JsonViewerMode;
-    /** 是否只读。默认 true。 */
-    readOnly?: boolean;
-    /** 是否显示自定义工具栏。默认 true。 */
-    mainMenuBar?: boolean;
-    /** 是否显示导航栏。默认 false。 */
-    navigationBar?: boolean;
-    /** 是否显示状态栏。默认 false。 */
-    statusBar?: boolean;
-    /** 容器最大高度（px）。超出后内部滚动。为 0 表示不限制。 */
-    maxHeight?: number;
+  /** 要展示的 JSON 值（对象、数组、字符串等）。 */
+  value: unknown
+  /** 编辑器模式。默认 tree。 */
+  mode?: JsonViewerMode
+  /** 是否只读。默认 true。 */
+  readOnly?: boolean
+  /** 是否显示自定义工具栏。默认 true。 */
+  mainMenuBar?: boolean
+  /** 是否显示导航栏。默认 false。 */
+  navigationBar?: boolean
+  /** 是否显示状态栏。默认 false。 */
+  statusBar?: boolean
+  /** 容器最大高度（px）。超出后内部滚动。为 0 表示不限制。 */
+  maxHeight?: number
 }>(), {
-    mode: Mode.tree,
-    readOnly: true,
-    mainMenuBar: true,
-    navigationBar: false,
-    statusBar: false,
-    maxHeight: 300,
-});
+  mode: Mode.tree,
+  readOnly: true,
+  mainMenuBar: true,
+  navigationBar: false,
+  statusBar: false,
+  maxHeight: 300,
+})
 
 const emit = defineEmits<{
-    /** 编辑内容变化；字符串模式保留用户当前输入，即使 JSON 暂时不完整。 */
-    (e: "update:value", value: unknown): void;
-    /** 编辑器报告语法或结构校验结果。 */
-    (e: "validation-change", hasErrors: boolean): void;
-}>();
+  /** 编辑内容变化；字符串模式保留用户当前输入，即使 JSON 暂时不完整。 */
+  (e: 'update:value', value: unknown): void
+  /** 编辑器报告语法或结构校验结果。 */
+  (e: 'validation-change', hasErrors: boolean): void
+}>()
 
 /**
  * 当前编辑器模式。
  * 外部 `mode` 变化时会覆盖内部状态；用户点击 toolbar 时只更新内部状态。
  */
-const currentMode = ref<JsonViewerMode>(props.mode);
+const currentMode = ref<JsonViewerMode>(props.mode)
 
 watch(() => props.mode, (mode) => {
-    currentMode.value = mode;
-});
+  currentMode.value = mode
+})
 
 /**
  * JsonEditorVue 组件引用。
  */
-const editorRef = ref<(InstanceType<typeof JsonEditorVue> & JsonEditorVueExpose) | null>(null);
+const editorRef = ref<(InstanceType<typeof JsonEditorVue> & JsonEditorVueExpose) | null>(null)
 
 /**
  * 底层 json editor 实例。
  */
-const jsonEditor = computed(() => editorRef.value?.jsonEditor);
+const jsonEditor = computed(() => editorRef.value?.jsonEditor)
 
 const containerStyle = computed(() => {
-    if (props.maxHeight > 0) {
-        return { maxHeight: `${props.maxHeight}px` };
-    }
-    return {};
-});
+  if (props.maxHeight > 0) {
+    return { maxHeight: `${props.maxHeight}px` }
+  }
+  return {}
+})
 
 /**
  * 是否允许展开/折叠。
  * table 模式下不提供这两个操作。
  */
-const canToggleExpand = computed(() => currentMode.value !== Mode.table);
+const canToggleExpand = computed(() => currentMode.value !== Mode.table)
 
 /**
  * 模式切换按钮定义。
  */
-const modeButtons: Array<{ key: JsonViewerMode; iconClass: string; title: string; }> = [
-    { key: Mode.text, iconClass: "i-lucide-file-json-2", title: "切换到文本模式" },
-    { key: Mode.tree, iconClass: "i-lucide-git-branch", title: "切换到树形模式" },
-    { key: Mode.table, iconClass: "i-lucide-table-properties", title: "切换到表格模式" },
-];
+const modeButtons: Array<{ key: JsonViewerMode, iconClass: string, title: string }> = [
+  { key: Mode.text, iconClass: 'i-lucide-file-json-2', title: '切换到文本模式' },
+  { key: Mode.tree, iconClass: 'i-lucide-git-branch', title: '切换到树形模式' },
+  { key: Mode.table, iconClass: 'i-lucide-table-properties', title: '切换到表格模式' },
+]
 
 /**
  * 切换查看模式。
  */
 function switchMode(mode: JsonViewerMode) {
-    currentMode.value = mode;
+  currentMode.value = mode
 }
 
 /**
@@ -115,41 +115,42 @@ function switchMode(mode: JsonViewerMode) {
  * 字符串保持原样，其他值使用格式化 JSON 输出。
  */
 async function copyValue() {
-    try {
-        const text = typeof props.value === "string"
-            ? props.value
-            : JSON.stringify(props.value, null, 2);
+  try {
+    const text = typeof props.value === 'string'
+      ? props.value
+      : JSON.stringify(props.value, null, 2)
 
-        if (!text) {
-            return;
-        }
-
-        await navigator.clipboard.writeText(text);
-    } catch (error) {
-        console.warn("JsonViewer 复制失败", error);
+    if (!text) {
+      return
     }
+
+    await navigator.clipboard.writeText(text)
+  }
+  catch (error) {
+    console.warn('JsonViewer 复制失败', error)
+  }
 }
 
 /**
  * 展开全部节点。
  */
 function expandAll() {
-    if (!canToggleExpand.value) {
-        return;
-    }
+  if (!canToggleExpand.value) {
+    return
+  }
 
-    jsonEditor.value?.expand([], () => true);
+  jsonEditor.value?.expand([], () => true)
 }
 
 /**
  * 折叠全部节点。
  */
 function collapseAll() {
-    if (!canToggleExpand.value) {
-        return;
-    }
+  if (!canToggleExpand.value) {
+    return
+  }
 
-    jsonEditor.value?.collapse([], true);
+  jsonEditor.value?.collapse([], true)
 }
 
 /**
@@ -157,79 +158,95 @@ function collapseAll() {
  * `stringified` 模式会保留文本模式中的原始输入，即使 JSON 仍处于编辑中的非法状态。
  */
 function handleEditorUpdate(value: unknown): void {
-    emit("update:value", value);
-    if (typeof value !== "string" || !value.trim()) {
-        emit("validation-change", false);
-        return;
-    }
-    try {
-        JSON.parse(value);
-        emit("validation-change", false);
-    } catch {
-        emit("validation-change", true);
-    }
+  emit('update:value', value)
+  if (typeof value !== 'string' || !value.trim()) {
+    emit('validation-change', false)
+    return
+  }
+  try {
+    JSON.parse(value)
+    emit('validation-change', false)
+  }
+  catch {
+    emit('validation-change', true)
+  }
 }
 </script>
 
 <template>
-    <!-- JSON 查看器容器 -->
-    <div class="json-viewer" :class="{'json-viewer--readonly': props.readOnly}" :style="containerStyle">
-        <!-- 自定义工具栏 -->
-        <div v-if="props.mainMenuBar" class="json-viewer__toolbar">
-            <div class="json-viewer__modes">
-                <button
-                    v-for="item in modeButtons"
-                    :key="item.key"
-                    type="button"
-                    class="json-viewer__mode-button"
-                    :class="{ 'json-viewer__mode-button--active': currentMode === item.key }"
-                    :title="item.title"
-                    @click="switchMode(item.key)"
-                >
-                    <span :class="item.iconClass" class="h-3.5 w-3.5"></span>
-                </button>
-            </div>
+  <!-- JSON 查看器容器 -->
+  <div
+    class="json-viewer"
+    :class="{ 'json-viewer--readonly': props.readOnly }"
+    :style="containerStyle"
+  >
+    <!-- 自定义工具栏 -->
+    <div
+      v-if="props.mainMenuBar"
+      class="json-viewer__toolbar"
+    >
+      <div class="json-viewer__modes">
+        <button
+          v-for="item in modeButtons"
+          :key="item.key"
+          type="button"
+          class="json-viewer__mode-button"
+          :class="{ 'json-viewer__mode-button--active': currentMode === item.key }"
+          :title="item.title"
+          @click="switchMode(item.key)"
+        >
+          <span
+            :class="item.iconClass"
+            class="h-3.5 w-3.5"
+          />
+        </button>
+      </div>
 
-            <div class="json-viewer__actions">
-                <button type="button" class="json-viewer__icon-button" title="复制 JSON" @click="copyValue">
-                    <span class="i-lucide-copy h-3.5 w-3.5"></span>
-                </button>
-                <button
-                    type="button"
-                    class="json-viewer__icon-button"
-                    title="展开全部"
-                    :disabled="!canToggleExpand"
-                    @click="expandAll"
-                >
-                    <span class="i-lucide-unfold-vertical h-3.5 w-3.5"></span>
-                </button>
-                <button
-                    type="button"
-                    class="json-viewer__icon-button"
-                    title="折叠全部"
-                    :disabled="!canToggleExpand"
-                    @click="collapseAll"
-                >
-                    <span class="i-lucide-fold-vertical h-3.5 w-3.5"></span>
-                </button>
-            </div>
-        </div>
-
-        <!-- JSON 编辑器主体：外层只负责裁切与高度，内部由 jsoneditor 自己滚动 -->
-        <div class="json-viewer__editor">
-            <JsonEditorVue
-                ref="editorRef"
-                :model-value="props.value"
-                :mode="currentMode"
-                :stringified="typeof props.value === 'string'"
-                :read-only="props.readOnly"
-                :main-menu-bar="false"
-                :navigation-bar="props.navigationBar"
-                :status-bar="props.statusBar"
-                @update:model-value="handleEditorUpdate"
-            />
-        </div>
+      <div class="json-viewer__actions">
+        <button
+          type="button"
+          class="json-viewer__icon-button"
+          title="复制 JSON"
+          @click="copyValue"
+        >
+          <span class="i-lucide-copy h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          class="json-viewer__icon-button"
+          title="展开全部"
+          :disabled="!canToggleExpand"
+          @click="expandAll"
+        >
+          <span class="i-lucide-unfold-vertical h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          class="json-viewer__icon-button"
+          title="折叠全部"
+          :disabled="!canToggleExpand"
+          @click="collapseAll"
+        >
+          <span class="i-lucide-fold-vertical h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
+
+    <!-- JSON 编辑器主体：外层只负责裁切与高度，内部由 jsoneditor 自己滚动 -->
+    <div class="json-viewer__editor">
+      <JsonEditorVue
+        ref="editorRef"
+        :model-value="props.value"
+        :mode="currentMode"
+        :stringified="typeof props.value === 'string'"
+        :read-only="props.readOnly"
+        :main-menu-bar="false"
+        :navigation-bar="props.navigationBar"
+        :status-bar="props.statusBar"
+        @update:model-value="handleEditorUpdate"
+      />
+    </div>
+  </div>
 </template>
 
 <style scoped>

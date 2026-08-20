@@ -1,4 +1,4 @@
-import type {ReadyProjectSessionRef} from "nbook/profile-sdk/contracts";
+import type { ReadyProjectSessionRef } from 'nbook/profile-sdk/contracts'
 
 /**
  * Plan Mode 目录的纯路径逻辑。
@@ -11,16 +11,16 @@ import type {ReadyProjectSessionRef} from "nbook/profile-sdk/contracts";
 /**
  * Project Workspace 内 Plan Mode 计划目录的固定相对路径。
  */
-export const PLAN_MODE_DIRECTORY = ".agent/plan";
+export const PLAN_MODE_DIRECTORY = '.agent/plan'
 
 export type PlanModeLocationInput = {
-    workspaceRoot: string;
-    currentProject: ReadyProjectSessionRef | null;
-};
+  workspaceRoot: string
+  currentProject: ReadyProjectSessionRef | null
+}
 
 /**
  * 返回 Agent 文件工具可使用的 Plan Mode 目录路径。
  */
 export function planModeToolDirectory(input: PlanModeLocationInput): string {
-    return PLAN_MODE_DIRECTORY;
+  return PLAN_MODE_DIRECTORY
 }

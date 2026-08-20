@@ -1,321 +1,310 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import {existsSync} from "node:fs";
-import {readFile} from "node:fs/promises";
-import {isAbsolute, join, posix} from "node:path";
-import {Type, type Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, plotReadBindings, pluginTool, toolset} from "nbook/profile-sdk";
-import {WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema} from "nbook/profile-sdk";
-import {AppendingSet, FileChangeNotice, HistorySet, If, Import, Message, ProfilePrompt, System} from "nbook/profile-sdk";
-import type {ProfilePrepareContext} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
-import {DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey} from "nbook/profile-sdk/writing";
-import {DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey} from "nbook/profile-sdk/writing";
-import {DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords} from "nbook/profile-sdk/writing";
-import {defineLowCodeForm, profileHomeResource} from "nbook/profile-sdk";
-import {defineProfileHome} from "nbook/profile-sdk";
-import type {ReadyProjectSessionRef} from "nbook/profile-sdk";
-import type {AbsoluteFsPath} from "nbook/profile-sdk/runtime-paths";
-import {resolveForChapter} from "nbook/profile-sdk/lore";
-import {renderInjectedMarkdown} from "nbook/profile-sdk/lore";
-import type {ReadyProjectSessionRef as ServerReadyProjectSessionRef} from "nbook/profile-sdk/lore";
+import { existsSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
+import { isAbsolute, join, posix } from 'node:path'
+import type { ProfilePrepareContext, ReadyProjectSessionRef, Type, type Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, plotReadBindings, pluginTool, toolset, WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema, AppendingSet, FileChangeNotice, HistorySet, If, Import, Message, ProfilePrompt, System, profileText, defineLowCodeForm, profileHomeResource, defineProfileHome } from 'nbook/profile-sdk'
+import { DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey, DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey, DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords } from 'nbook/profile-sdk/writing'
+import type { AbsoluteFsPath } from 'nbook/profile-sdk/runtime-paths'
+import { resolveForChapter, renderInjectedMarkdown } from 'nbook/profile-sdk/lore'
+import type { ReadyProjectSessionRef as ServerReadyProjectSessionRef } from 'nbook/profile-sdk/lore'
 
-const DEFAULT_PARAGRAPH_RHYTHM = "段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段；不要为了凑短段打碎完整语义，场景描写、复杂动作和连续心理变化可以保留为较短自然段。";
-const DEFAULT_WORD_COUNT_CONTROL = "2000-2600 字";
-const DEFAULT_POLISHING_WORKFLOW = "写完正文后，必须用 bash 运行 `llmlint check <文件路径>` 检查 AI 写作痕迹（filler phrases、机械句式、抽象说理等）。对 error 级别问题必须修正，warning 级别问题审视后决定是否修正。修正后再次运行 llmlint check 确认通过，再执行 report_result。llmlint 路径：.nbook/agent/skills/llmlint/bin/llmlint.ts。";
+const DEFAULT_PARAGRAPH_RHYTHM = '段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段；不要为了凑短段打碎完整语义，场景描写、复杂动作和连续心理变化可以保留为较短自然段。'
+const DEFAULT_WORD_COUNT_CONTROL = '2000-2600 字'
+const DEFAULT_POLISHING_WORKFLOW = '写完正文后，必须用 bash 运行 `llmlint check <文件路径>` 检查 AI 写作痕迹（filler phrases、机械句式、抽象说理等）。对 error 级别问题必须修正，warning 级别问题审视后决定是否修正。修正后再次运行 llmlint check 确认通过，再执行 report_result。llmlint 路径：.nbook/agent/skills/llmlint/bin/llmlint.ts。'
 
 export const profileManifest = {
-    key: "writer",
-    name: "正文写作",
-    version: 2,
-    description: "长期可复用正文写作 agent（autonomous 防全知模式）：创建 initial 为空，每轮 invoke.message 写任务、invoke.input 传 {path, chapterId?, context?}。writer 自主用 get_chapter_writer_brief / execute_world / read 查证设定与状态。brief 格式规范见 reference/plot/writer-brief.md。写正文时不要自己写，总是优先使用 writer。",
-} as const;
+  key: 'writer',
+  name: '正文写作',
+  version: 2,
+  description: '长期可复用正文写作 agent（autonomous 防全知模式）：创建 initial 为空，每轮 invoke.message 写任务、invoke.input 传 {path, chapterId?, context?}。writer 自主用 get_chapter_writer_brief / execute_world / read 查证设定与状态。brief 格式规范见 reference/plot/writer-brief.md。写正文时不要自己写，总是优先使用 writer。',
+} as const
 
-export const InitialSchema = WriterInitialSchema;
-export const PayloadSchema = WriterPayloadSchema;
-export const OutputSchema = WriterOutputSchema;
+export const InitialSchema = WriterInitialSchema
+export const PayloadSchema = WriterPayloadSchema
+export const OutputSchema = WriterOutputSchema
 export const SettingsSchema = Type.Object({
-    customTopSystemPrompt: Type.String(),
-    writingStylePreset: Type.String(),
-    writingReferencePreset: Type.String(),
-    narrativePerson: Type.Union([
-        Type.Literal("first"),
-        Type.Literal("second"),
-        Type.Literal("third"),
-    ]),
-    paragraphRhythm: Type.String(),
-    wordCountControl: Type.String(),
-    polishingWorkflow: Type.String(),
-    avoidWordsPreset: Type.String(),
-    adultStylePrompt: Type.String(),
-    fileChangeAwareness: Type.Union([
-        Type.Literal("off"),
-        Type.Literal("minimal"),
-        Type.Literal("full"),
-    ]),
-}, {additionalProperties: false});
+  customTopSystemPrompt: Type.String(),
+  writingStylePreset: Type.String(),
+  writingReferencePreset: Type.String(),
+  narrativePerson: Type.Union([
+    Type.Literal('first'),
+    Type.Literal('second'),
+    Type.Literal('third'),
+  ]),
+  paragraphRhythm: Type.String(),
+  wordCountControl: Type.String(),
+  polishingWorkflow: Type.String(),
+  avoidWordsPreset: Type.String(),
+  adultStylePrompt: Type.String(),
+  fileChangeAwareness: Type.Union([
+    Type.Literal('off'),
+    Type.Literal('minimal'),
+    Type.Literal('full'),
+  ]),
+}, { additionalProperties: false })
 
-export type Initial = Static<typeof InitialSchema>;
-export type Payload = Static<typeof PayloadSchema>;
-export type Output = Static<typeof OutputSchema>;
-export type Settings = Static<typeof SettingsSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Payload = Static<typeof PayloadSchema>
+export type Output = Static<typeof OutputSchema>
+export type Settings = Static<typeof SettingsSchema>
 
 export const WriterSettingsForm = defineLowCodeForm({
-    schema: SettingsSchema,
-    defaults: {
-        customTopSystemPrompt: "",
-        writingStylePreset: DEFAULT_WRITING_STYLE_PRESET,
-        writingReferencePreset: DEFAULT_WRITING_REFERENCE_PRESET,
-        narrativePerson: "third",
-        paragraphRhythm: DEFAULT_PARAGRAPH_RHYTHM,
-        wordCountControl: DEFAULT_WORD_COUNT_CONTROL,
-        polishingWorkflow: DEFAULT_POLISHING_WORKFLOW,
-        avoidWordsPreset: DEFAULT_AVOID_WORDS_PRESET,
-        adultStylePrompt: "",
-        fileChangeAwareness: "minimal",
+  schema: SettingsSchema,
+  defaults: {
+    customTopSystemPrompt: '',
+    writingStylePreset: DEFAULT_WRITING_STYLE_PRESET,
+    writingReferencePreset: DEFAULT_WRITING_REFERENCE_PRESET,
+    narrativePerson: 'third',
+    paragraphRhythm: DEFAULT_PARAGRAPH_RHYTHM,
+    wordCountControl: DEFAULT_WORD_COUNT_CONTROL,
+    polishingWorkflow: DEFAULT_POLISHING_WORKFLOW,
+    avoidWordsPreset: DEFAULT_AVOID_WORDS_PRESET,
+    adultStylePrompt: '',
+    fileChangeAwareness: 'minimal',
+  },
+  fields: [
+    {
+      path: 'customTopSystemPrompt',
+      component: 'textarea',
+      label: '最高优先级置顶提示词',
+      description: '插入在 Writer 系统提示词的最前面，是优先级最高的自定义规则；文风、字数等其他设置都排在它后面。',
+      placeholder: '写入需要长期置顶的指令，例如破限预设、整体尺度、长期禁写内容。',
+      rows: 6,
     },
-    fields: [
-        {
-            path: "customTopSystemPrompt",
-            component: "textarea",
-            label: "最高优先级置顶提示词",
-            description: "插入在 Writer 系统提示词的最前面，是优先级最高的自定义规则；文风、字数等其他设置都排在它后面。",
-            placeholder: "写入需要长期置顶的指令，例如破限预设、整体尺度、长期禁写内容。",
-            rows: 6,
-        },
-        {
-            path: "writingStylePreset",
-            component: "resource-preset",
-            label: "文风要求",
-            description: "条文式的文风规则（用词、句式、禁用项），作为写作约束注入。",
-            placeholder: "选择默认文风要求",
-            resource: profileHomeResource({
-                directory: "styles",
-                extension: ".md",
-                template: "在这里写入文风要求。",
-            }),
-        },
-        {
-            path: "writingReferencePreset",
-            component: "resource-preset",
-            label: "文风参考",
-            description: "供模仿语感的正文样本，与「文风要求」互补：一个给规则，一个给示例。",
-            placeholder: "选择默认参考样本",
-            resource: profileHomeResource({
-                directory: "references",
-                extension: ".md",
-                template: "在这里写入文风参考样本。",
-            }),
-        },
-        {
-            path: "narrativePerson",
-            component: "radio",
-            label: "默认人称",
-            description: "正文默认叙事人称；本轮写作任务另有要求时以任务为准。",
-            options: [
-                {value: "third", label: "第三人称"},
-                {value: "first", label: "第一人称"},
-                {value: "second", label: "第二人称"},
-            ],
-        },
-        {
-            path: "paragraphRhythm",
-            component: "textarea",
-            label: "段落节奏",
-            description: "默认段落与分行节奏偏好；本轮写作任务另有要求时以任务为准。",
-            rows: 4,
-            placeholder: "描述你偏好的长段、短段或分行节奏。",
-        },
-        {
-            path: "wordCountControl",
-            component: "text",
-            label: "默认字数",
-            description: "单章默认字数范围；材料不足时 Writer 不会硬凑字数。",
-            placeholder: "例如：2000-2600 字",
-        },
-        {
-            path: "polishingWorkflow",
-            component: "text",
-            label: "润色工作流",
-            description: "写完正文后的自查与润色流程。",
-            placeholder: "描述写完后如何复查和润色。",
-        },
-        {
-            path: "avoidWordsPreset",
-            component: "resource-preset",
-            label: "避讳词与禁用句式",
-            description: "写作时需要避免的词汇、句式和表达模式。",
-            placeholder: "选择避讳词预设",
-            resource: profileHomeResource({
-                directory: "avoid-words",
-                extension: ".md",
-                template: "在这里写入需要避免的词汇、句式和表达模式。",
-            }),
-        },
-        {
-            path: "adultStylePrompt",
-            component: "text",
-            label: "成人风格增强",
-            description: "填写后作为成人场景写作约束注入；留空则完全不注入。",
-            placeholder: "例如：注重情绪推进与关系变化，避免机械描写。",
-        },
-        {
-            path: "fileChangeAwareness",
-            component: "radio",
-            label: "文件变更感知",
-            description: "每轮开始前提醒 agent：上次看过之后，项目文件被其他人（用户 / 其他 agent / 外部工具）改过哪些。",
-            options: [
-                {value: "minimal", label: "精简", description: "只列变更文件路径和条数。"},
-                {value: "full", label: "完整", description: "含归因（谁改的）与操作类型，并提示续写前先重读相关文件。"},
-                {value: "off", label: "关闭", description: "不注入文件变更提醒。"},
-            ],
-        },
-    ],
-    async validate(value, ctx) {
-        const [styles, references] = await Promise.all([
-            loadWritingStylePresets(),
-            loadWritingReferencePresets(),
-        ]);
-        const issues: Array<{path: string; severity: "error"; message: string}> = [];
-        const styleExists = ctx.home
-            ? await ctx.home.exists(normalizeStyleHomeKey(value.writingStylePreset))
-            : styles.some((style) => style.key === value.writingStylePreset || legacyStyleKeyToHomeKey(style.key) === value.writingStylePreset);
-        const referenceExists = ctx.home
-            ? await ctx.home.exists(normalizeReferenceHomeKey(value.writingReferencePreset))
-            : references.some((reference) => reference.key === value.writingReferencePreset || legacyReferenceKeyToHomeKey(reference.key) === value.writingReferencePreset);
-        if (!styleExists) {
-            issues.push({path: "writingStylePreset", severity: "error" as const, message: "选择的文风要求不存在。"});
-        }
-        if (!referenceExists) {
-            issues.push({path: "writingReferencePreset", severity: "error" as const, message: "选择的文风参考不存在。"});
-        }
-        return issues;
+    {
+      path: 'writingStylePreset',
+      component: 'resource-preset',
+      label: '文风要求',
+      description: '条文式的文风规则（用词、句式、禁用项），作为写作约束注入。',
+      placeholder: '选择默认文风要求',
+      resource: profileHomeResource({
+        directory: 'styles',
+        extension: '.md',
+        template: '在这里写入文风要求。',
+      }),
     },
-});
+    {
+      path: 'writingReferencePreset',
+      component: 'resource-preset',
+      label: '文风参考',
+      description: '供模仿语感的正文样本，与「文风要求」互补：一个给规则，一个给示例。',
+      placeholder: '选择默认参考样本',
+      resource: profileHomeResource({
+        directory: 'references',
+        extension: '.md',
+        template: '在这里写入文风参考样本。',
+      }),
+    },
+    {
+      path: 'narrativePerson',
+      component: 'radio',
+      label: '默认人称',
+      description: '正文默认叙事人称；本轮写作任务另有要求时以任务为准。',
+      options: [
+        { value: 'third', label: '第三人称' },
+        { value: 'first', label: '第一人称' },
+        { value: 'second', label: '第二人称' },
+      ],
+    },
+    {
+      path: 'paragraphRhythm',
+      component: 'textarea',
+      label: '段落节奏',
+      description: '默认段落与分行节奏偏好；本轮写作任务另有要求时以任务为准。',
+      rows: 4,
+      placeholder: '描述你偏好的长段、短段或分行节奏。',
+    },
+    {
+      path: 'wordCountControl',
+      component: 'text',
+      label: '默认字数',
+      description: '单章默认字数范围；材料不足时 Writer 不会硬凑字数。',
+      placeholder: '例如：2000-2600 字',
+    },
+    {
+      path: 'polishingWorkflow',
+      component: 'text',
+      label: '润色工作流',
+      description: '写完正文后的自查与润色流程。',
+      placeholder: '描述写完后如何复查和润色。',
+    },
+    {
+      path: 'avoidWordsPreset',
+      component: 'resource-preset',
+      label: '避讳词与禁用句式',
+      description: '写作时需要避免的词汇、句式和表达模式。',
+      placeholder: '选择避讳词预设',
+      resource: profileHomeResource({
+        directory: 'avoid-words',
+        extension: '.md',
+        template: '在这里写入需要避免的词汇、句式和表达模式。',
+      }),
+    },
+    {
+      path: 'adultStylePrompt',
+      component: 'text',
+      label: '成人风格增强',
+      description: '填写后作为成人场景写作约束注入；留空则完全不注入。',
+      placeholder: '例如：注重情绪推进与关系变化，避免机械描写。',
+    },
+    {
+      path: 'fileChangeAwareness',
+      component: 'radio',
+      label: '文件变更感知',
+      description: '每轮开始前提醒 agent：上次看过之后，项目文件被其他人（用户 / 其他 agent / 外部工具）改过哪些。',
+      options: [
+        { value: 'minimal', label: '精简', description: '只列变更文件路径和条数。' },
+        { value: 'full', label: '完整', description: '含归因（谁改的）与操作类型，并提示续写前先重读相关文件。' },
+        { value: 'off', label: '关闭', description: '不注入文件变更提醒。' },
+      ],
+    },
+  ],
+  async validate(value, ctx) {
+    const [styles, references] = await Promise.all([
+      loadWritingStylePresets(),
+      loadWritingReferencePresets(),
+    ])
+    const issues: Array<{ path: string, severity: 'error', message: string }> = []
+    const styleExists = ctx.home
+      ? await ctx.home.exists(normalizeStyleHomeKey(value.writingStylePreset))
+      : styles.some(style => style.key === value.writingStylePreset || legacyStyleKeyToHomeKey(style.key) === value.writingStylePreset)
+    const referenceExists = ctx.home
+      ? await ctx.home.exists(normalizeReferenceHomeKey(value.writingReferencePreset))
+      : references.some(reference => reference.key === value.writingReferencePreset || legacyReferenceKeyToHomeKey(reference.key) === value.writingReferencePreset)
+    if (!styleExists) {
+      issues.push({ path: 'writingStylePreset', severity: 'error' as const, message: '选择的文风要求不存在。' })
+    }
+    if (!referenceExists) {
+      issues.push({ path: 'writingReferencePreset', severity: 'error' as const, message: '选择的文风参考不存在。' })
+    }
+    return issues
+  },
+})
 
 type WriterPayloadTarget = {
-    path: string;
-    projectRoot: string;
-    chapterPath: string | null;
-};
+  path: string
+  projectRoot: string
+  chapterPath: string | null
+}
 
-async function initializeWriterHome(home: NonNullable<ProfilePrepareContext<Initial, Payload, Settings>["home"]>): Promise<void> {
-    const [styles, references] = await Promise.all([
-        loadWritingStylePresets(),
-        loadWritingReferencePresets(),
-    ]);
-    for (const style of styles) {
-        await home.writeText(legacyStyleKeyToHomeKey(style.key), renderStyleResource(style), {mode: "create"});
-    }
-    for (const reference of references) {
-        await home.writeText(legacyReferenceKeyToHomeKey(reference.key), renderReferenceResource(reference), {mode: "create"});
-    }
-    // 写入内置默认避讳词
-    await home.writeText(DEFAULT_AVOID_WORDS_PRESET, [
-        "禁止使用以下词汇：一丝、不容置疑、不易察觉、几不可察。",
-        "禁止使用以下句式：他没有……，而是……；不是……，而是……；与其说……不如说是……。",
-        "如果想表达转折、对比或修正，直接写实际发生的动作、事实或判断，请换一种表述方式。",
-    ].join("\n"), {mode: "create"});
+async function initializeWriterHome(home: NonNullable<ProfilePrepareContext<Initial, Payload, Settings>['home']>): Promise<void> {
+  const [styles, references] = await Promise.all([
+    loadWritingStylePresets(),
+    loadWritingReferencePresets(),
+  ])
+  for (const style of styles) {
+    await home.writeText(legacyStyleKeyToHomeKey(style.key), renderStyleResource(style), { mode: 'create' })
+  }
+  for (const reference of references) {
+    await home.writeText(legacyReferenceKeyToHomeKey(reference.key), renderReferenceResource(reference), { mode: 'create' })
+  }
+  // 写入内置默认避讳词
+  await home.writeText(DEFAULT_AVOID_WORDS_PRESET, [
+    '禁止使用以下词汇：一丝、不容置疑、不易察觉、几不可察。',
+    '禁止使用以下句式：他没有……，而是……；不是……，而是……；与其说……不如说是……。',
+    '如果想表达转折、对比或修正，直接写实际发生的动作、事实或判断，请换一种表述方式。',
+  ].join('\n'), { mode: 'create' })
 }
 
 function renderStyleResource(style: Awaited<ReturnType<typeof loadWritingStylePresets>>[number]): string {
-    return [
-        "---",
-        `key: "${style.key}"`,
-        `title: "${style.label.replaceAll("\"", "\\\"")}"`,
-        `label: "${style.label.replaceAll("\"", "\\\"")}"`,
-        `sourcePreset: "${style.sourcePreset.replaceAll("\"", "\\\"")}"`,
-        `identifier: "${style.identifier.replaceAll("\"", "\\\"")}"`,
-        `name: "${style.name.replaceAll("\"", "\\\"")}"`,
-        `enabled: ${style.enabled === null ? "null" : style.enabled}`,
-        `role: ${style.role === null ? "null" : `"${style.role.replaceAll("\"", "\\\"")}"`}`,
-        "---",
-        "",
-        style.content,
-    ].join("\n");
+  return [
+    '---',
+    `key: "${style.key}"`,
+    `title: "${style.label.replaceAll('"', '\\"')}"`,
+    `label: "${style.label.replaceAll('"', '\\"')}"`,
+    `sourcePreset: "${style.sourcePreset.replaceAll('"', '\\"')}"`,
+    `identifier: "${style.identifier.replaceAll('"', '\\"')}"`,
+    `name: "${style.name.replaceAll('"', '\\"')}"`,
+    `enabled: ${style.enabled === null ? 'null' : style.enabled}`,
+    `role: ${style.role === null ? 'null' : `"${style.role.replaceAll('"', '\\"')}"`}`,
+    '---',
+    '',
+    style.content,
+  ].join('\n')
 }
 
 function renderReferenceResource(reference: Awaited<ReturnType<typeof loadWritingReferencePresets>>[number]): string {
-    return [
-        "---",
-        `key: "${reference.key}"`,
-        `title: "${reference.label.replaceAll("\"", "\\\"")}"`,
-        `label: "${reference.label.replaceAll("\"", "\\\"")}"`,
-        `sourceTitle: "${reference.sourceTitle.replaceAll("\"", "\\\"")}"`,
-        `sourceChapters: "${reference.sourceChapters.replaceAll("\"", "\\\"")}"`,
-        `generatedFrom: "${reference.generatedFrom.replaceAll("\"", "\\\"")}"`,
-        "---",
-        "",
-        reference.content,
-    ].join("\n");
+  return [
+    '---',
+    `key: "${reference.key}"`,
+    `title: "${reference.label.replaceAll('"', '\\"')}"`,
+    `label: "${reference.label.replaceAll('"', '\\"')}"`,
+    `sourceTitle: "${reference.sourceTitle.replaceAll('"', '\\"')}"`,
+    `sourceChapters: "${reference.sourceChapters.replaceAll('"', '\\"')}"`,
+    `generatedFrom: "${reference.generatedFrom.replaceAll('"', '\\"')}"`,
+    '---',
+    '',
+    reference.content,
+  ].join('\n')
 }
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    payloadSchema: PayloadSchema,
-    outputSchema: OutputSchema,
-    settingsForm: WriterSettingsForm,
-    home: defineProfileHome({
-        async init(ctx) {
-            await initializeWriterHome(ctx.home);
-        },
-        async upgrade(ctx) {
-            await initializeWriterHome(ctx.home);
-        },
-        async reset(ctx) {
-            await ctx.home.clear();
-            await initializeWriterHome(ctx.home);
-        },
-    }),
-    tools: toolset(
-        builtin.file.read,
-        builtin.file.write,
-        builtin.file.edit,
-        builtin.file.bash,
-        builtin.world.execute("readonly"),
-        // autonomous 模式:writer 只 spread Plot 读 bundle(Task 97 D7),可自取章节 brief 与场景/世界上下文;不含 save_* 写工具。
-        ...plotReadBindings,
-        // 按额外实体名追加检索 lore 卡片(Task 6,spec §2.5);实现注册在 server/agent/tools/lore-resolver-tools.ts。
-        pluginTool("lore_resolver_query"),
-        builtin.result.main(),
-    ),
-    async context(ctx) {
-        return buildWriterPrompt(ctx);
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  payloadSchema: PayloadSchema,
+  outputSchema: OutputSchema,
+  settingsForm: WriterSettingsForm,
+  home: defineProfileHome({
+    async init(ctx) {
+      await initializeWriterHome(ctx.home)
     },
-});
+    async upgrade(ctx) {
+      await initializeWriterHome(ctx.home)
+    },
+    async reset(ctx) {
+      await ctx.home.clear()
+      await initializeWriterHome(ctx.home)
+    },
+  }),
+  tools: toolset(
+    builtin.file.read,
+    builtin.file.write,
+    builtin.file.edit,
+    builtin.file.bash,
+    builtin.world.execute('readonly'),
+    // autonomous 模式:writer 只 spread Plot 读 bundle(Task 97 D7),可自取章节 brief 与场景/世界上下文;不含 save_* 写工具。
+    ...plotReadBindings,
+    // 按额外实体名追加检索 lore 卡片(Task 6,spec §2.5);实现注册在 server/agent/tools/lore-resolver-tools.ts。
+    pluginTool('lore_resolver_query'),
+    builtin.result.main(),
+  ),
+  async context(ctx) {
+    return buildWriterPrompt(ctx)
+  },
+})
 
 /**
  * 构造 writer prompt。保留 v2 的同名 helper 入口，但返回当前 v3 TSX Profile DSL。
  */
 export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payload, Settings>) {
-    const writingStyle = await buildWritingStyle({preset: ctx.settings.writingStylePreset, home: ctx.home});
-    const writingReference = await buildWritingReference({preset: ctx.settings.writingReferencePreset, home: ctx.home});
-    const avoidWords = await buildAvoidWords({preset: ctx.settings.avoidWordsPreset, home: ctx.home});
-    const narrativePerson = narrativePersonText(ctx.settings.narrativePerson);
-    const customTopPrompt = ctx.settings.customTopSystemPrompt.trim();
-    const adultStylePrompt = ctx.settings.adultStylePrompt.trim();
-    const inputContext = await renderInputContext(ctx);
-    const chapterLoreContext = await renderChapterLoreContext(ctx);  // ★ I-1: lore 注入
-    const chapterLoreBlock = chapterLoreContext.length > 0
-        ? profileText`
+  const writingStyle = await buildWritingStyle({ preset: ctx.settings.writingStylePreset, home: ctx.home })
+  const writingReference = await buildWritingReference({ preset: ctx.settings.writingReferencePreset, home: ctx.home })
+  const avoidWords = await buildAvoidWords({ preset: ctx.settings.avoidWordsPreset, home: ctx.home })
+  const narrativePerson = narrativePersonText(ctx.settings.narrativePerson)
+  const customTopPrompt = ctx.settings.customTopSystemPrompt.trim()
+  const adultStylePrompt = ctx.settings.adultStylePrompt.trim()
+  const inputContext = await renderInputContext(ctx)
+  const chapterLoreContext = await renderChapterLoreContext(ctx) // ★ I-1: lore 注入
+  const chapterLoreBlock = chapterLoreContext.length > 0
+    ? profileText`
 <chapter_lore_context>
 ${chapterLoreContext}
 </chapter_lore_context>
 `
-        : "";
-    return (
-        <ProfilePrompt>
-            <System>
-                <If condition={customTopPrompt.length > 0}>
-                    {profileText`
+    : ''
+  return (
+    <ProfilePrompt>
+      <System>
+        <If condition={customTopPrompt.length > 0}>
+          {profileText`
                         <custom_top_system_prompt>
                             ${customTopPrompt}
                         </custom_top_system_prompt>
                     `}
-                </If>
-                {profileText`
+        </If>
+        {profileText`
                     <writing_reference>
                         ${writingReference}
                     </writing_reference>
@@ -460,175 +449,173 @@ ${chapterLoreContext}
                         - report_result.data：默认不填，除非调用方明确需要结构化结果
                     </output_protocol>
                     `}
-                    <If condition={adultStylePrompt.length > 0}>
-                        {`
+        <If condition={adultStylePrompt.length > 0}>
+          {`
                         <adult_style>
                             ${adultStylePrompt}
                         </adult_style>
                         `}
-                    </If>
-            </System>
-            <HistorySet>
-                <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
-                <Message><Import path="reference/content/markdown-dialect.md" /></Message>
-                <Message><Import path="reference/content/information-control.md" /></Message>
-                <Message><Import path="reference/world-engine/workflow.md" /></Message>
-                <Message><Import path="reference/agent/profile-context-memory.md" /></Message>
-                <Message><Import path="assets/workspace/.nbook/agent/skills/novel-writer-execution/SKILL.md" /></Message>
-                <Message>{inputContext}</Message>
-            </HistorySet>
-            <AppendingSet>
-                <FileChangeNotice mode={ctx.settings.fileChangeAwareness} />
-                <If condition={!ctx.invocation?.message}>
-                    <Message>本轮没有收到 invoke_agent.message。不要写文件；请通过 report_result.result 要求调用方补充本轮写作任务。</Message>
-                </If>
-                <If condition={chapterLoreContext.length > 0}>
-                    <Message>{chapterLoreContext}</Message>
-                </If>
-            </AppendingSet>
-        </ProfilePrompt>
-    );
+        </If>
+      </System>
+      <HistorySet>
+        <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
+        <Message><Import path="reference/content/markdown-dialect.md" /></Message>
+        <Message><Import path="reference/content/information-control.md" /></Message>
+        <Message><Import path="reference/world-engine/workflow.md" /></Message>
+        <Message><Import path="reference/agent/profile-context-memory.md" /></Message>
+        <Message><Import path="assets/workspace/.nbook/agent/skills/novel-writer-execution/SKILL.md" /></Message>
+        <Message>{inputContext}</Message>
+      </HistorySet>
+      <AppendingSet>
+        <FileChangeNotice mode={ctx.settings.fileChangeAwareness} />
+        <If condition={!ctx.invocation?.message}>
+          <Message>本轮没有收到 invoke_agent.message。不要写文件；请通过 report_result.result 要求调用方补充本轮写作任务。</Message>
+        </If>
+        <If condition={chapterLoreContext.length > 0}>
+          <Message>{chapterLoreContext}</Message>
+        </If>
+      </AppendingSet>
+    </ProfilePrompt>
+  )
 }
 
 /**
  * 渲染默认叙事人称。
  */
-function narrativePersonText(value: Settings["narrativePerson"]): string {
-    switch (value) {
-        case "first":
-            return "第一人称";
-        case "second":
-            return "第二人称";
-        case "third":
-            return "第三人称";
-    }
+function narrativePersonText(value: Settings['narrativePerson']): string {
+  switch (value) {
+    case 'first':
+      return '第一人称'
+    case 'second':
+      return '第二人称'
+    case 'third':
+      return '第三人称'
+  }
 }
 
-
-
 async function renderInputContext(ctx: ProfilePrepareContext<Initial, Payload>): Promise<string> {
-    const payload = ctx.invocation?.payload;
-    if (!payload) {
-        return [
-            "<writer_input_context>",
-            `cwd: ${ctx.session.currentProject?.workspace.root ?? ctx.session.workspaceRoot}`,
-            "<missing_payload>",
-            "当前没有收到 invoke_agent.input。writer 不能写文件，必须通过 report_result.result 要求调用方补充 input.path 和可选 input.context。",
-            "</missing_payload>",
-            "</writer_input_context>",
-        ].join("\n");
-    }
-
-    const target = resolvePayloadTarget(payload.path, ctx.session.currentProject);
-    const context = normalizePayloadContext(target, payload.context);
+  const payload = ctx.invocation?.payload
+  if (!payload) {
     return [
-        "<writer_input_context>",
-        `cwd: ${ctx.session.currentProject?.workspace.root ?? ctx.session.workspaceRoot}`,
-        renderTargetFile(target),
-        payload.chapterId ? `<chapter_id>${payload.chapterId}</chapter_id>\n用 get_chapter_writer_brief({projectRoot: "${target.projectRoot}", chapterId: "${payload.chapterId}"}) 自取本章 brief。` : "",
-        renderSuggestedContext(target, context),
-        "</writer_input_context>",
-    ].filter(Boolean).join("\n");
+      '<writer_input_context>',
+      `cwd: ${ctx.session.currentProject?.workspace.root ?? ctx.session.workspaceRoot}`,
+      '<missing_payload>',
+      '当前没有收到 invoke_agent.input。writer 不能写文件，必须通过 report_result.result 要求调用方补充 input.path 和可选 input.context。',
+      '</missing_payload>',
+      '</writer_input_context>',
+    ].join('\n')
+  }
+
+  const target = resolvePayloadTarget(payload.path, ctx.session.currentProject)
+  const context = normalizePayloadContext(target, payload.context)
+  return [
+    '<writer_input_context>',
+    `cwd: ${ctx.session.currentProject?.workspace.root ?? ctx.session.workspaceRoot}`,
+    renderTargetFile(target),
+    payload.chapterId ? `<chapter_id>${payload.chapterId}</chapter_id>\n用 get_chapter_writer_brief({projectRoot: "${target.projectRoot}", chapterId: "${payload.chapterId}"}) 自取本章 brief。` : '',
+    renderSuggestedContext(target, context),
+    '</writer_input_context>',
+  ].filter(Boolean).join('\n')
 }
 
 /**
  * 解析本轮 writer payload 的唯一写入目标。
  */
 function resolvePayloadTarget(
-    rawPath: string,
-    currentProject: ReadyProjectSessionRef | null,
+  rawPath: string,
+  currentProject: ReadyProjectSessionRef | null,
 ): WriterPayloadTarget {
-    const path = normalizePayloadPath(rawPath, "writer.input.path");
-    if (!path.endsWith(".md")) {
-        throw new Error("writer.input.path 必须指向当前 Project Workspace 内的 Markdown 文件，例如 manuscript/001-chapter/index.md。");
-    }
-    if (!currentProject) {
-        throw new Error("writer需要绑定Current Project，才能解析Project相对input.path。");
-    }
-    const projectRoot = currentProject.workspace.ref.projectRoot;
-    if (path === projectRoot || path.startsWith(`${projectRoot}/`) || path.startsWith("workspace/")) {
-        throw new Error("writer.input.path必须相对当前Project Workspace；不要添加Project slug或workspace/<project>/前缀。");
-    }
-    const projectRelativePath = path;
-    const chapterPath = projectRelativePath.startsWith("manuscript/") && projectRelativePath.endsWith("/index.md")
-        ? `${posix.dirname(projectRelativePath)}/`
-        : null;
-    return {
-        path,
-        projectRoot,
-        chapterPath,
-    };
+  const path = normalizePayloadPath(rawPath, 'writer.input.path')
+  if (!path.endsWith('.md')) {
+    throw new Error('writer.input.path 必须指向当前 Project Workspace 内的 Markdown 文件，例如 manuscript/001-chapter/index.md。')
+  }
+  if (!currentProject) {
+    throw new Error('writer需要绑定Current Project，才能解析Project相对input.path。')
+  }
+  const projectRoot = currentProject.workspace.ref.projectRoot
+  if (path === projectRoot || path.startsWith(`${projectRoot}/`) || path.startsWith('workspace/')) {
+    throw new Error('writer.input.path必须相对当前Project Workspace；不要添加Project slug或workspace/<project>/前缀。')
+  }
+  const projectRelativePath = path
+  const chapterPath = projectRelativePath.startsWith('manuscript/') && projectRelativePath.endsWith('/index.md')
+    ? `${posix.dirname(projectRelativePath)}/`
+    : null
+  return {
+    path,
+    projectRoot,
+    chapterPath,
+  }
 }
 
 /**
  * 校验并规范化 payload.context 中的建议读取路径。
  */
-function normalizePayloadContext(target: WriterPayloadTarget, context: Payload["context"] | undefined): NonNullable<Payload["context"]> {
-    return {
-        lorebookEntries: context?.lorebookEntries?.map((path) => normalizeProjectRelativePath(path, target.projectRoot, "writer.input.context.lorebookEntries", {preserveTrailingSlash: true})),
-        readablePaths: context?.readablePaths?.map((path) => normalizeProjectRelativePath(path, target.projectRoot, "writer.input.context.readablePaths", {mustBeMarkdown: true})),
-    };
+function normalizePayloadContext(target: WriterPayloadTarget, context: Payload['context'] | undefined): NonNullable<Payload['context']> {
+  return {
+    lorebookEntries: context?.lorebookEntries?.map(path => normalizeProjectRelativePath(path, target.projectRoot, 'writer.input.context.lorebookEntries', { preserveTrailingSlash: true })),
+    readablePaths: context?.readablePaths?.map(path => normalizeProjectRelativePath(path, target.projectRoot, 'writer.input.context.readablePaths', { mustBeMarkdown: true })),
+  }
 }
 
 function renderTargetFile(target: WriterPayloadTarget): string {
-    return [
-        "<target_file>",
-        `path: ${target.path}`,
-        `projectRoot: ${target.projectRoot}`,
-        target.chapterPath ? `chapterPath: ${target.chapterPath}` : "",
-        "规则：这是本轮唯一允许写入或修改的文件。若文件已存在，写作前先用 read 读取原文；若文件不存在，可按 message 创建。",
-        "</target_file>",
-    ].filter(Boolean).join("\n");
+  return [
+    '<target_file>',
+    `path: ${target.path}`,
+    `projectRoot: ${target.projectRoot}`,
+    target.chapterPath ? `chapterPath: ${target.chapterPath}` : '',
+    '规则：这是本轮唯一允许写入或修改的文件。若文件已存在，写作前先用 read 读取原文；若文件不存在，可按 message 创建。',
+    '</target_file>',
+  ].filter(Boolean).join('\n')
 }
 
-function renderSuggestedContext(target: WriterPayloadTarget, context: NonNullable<Payload["context"]>): string {
-    return [
-        "<suggested_context>",
-        "这些是调用方建议读取的上下文引用，不是任务正文，也不是必须全部读取的清单。请根据本轮 message 判断需要读什么。",
-        `projectRoot: ${target.projectRoot}`,
-        renderList("lorebookEntries", context.lorebookEntries, "建议按需用 read 读取节点 index.md，必要时读取同级 state.md。"),
-        renderList("readablePaths", context.readablePaths, "建议按需用 read 读取。"),
-        "</suggested_context>",
-    ].filter(Boolean).join("\n");
+function renderSuggestedContext(target: WriterPayloadTarget, context: NonNullable<Payload['context']>): string {
+  return [
+    '<suggested_context>',
+    '这些是调用方建议读取的上下文引用，不是任务正文，也不是必须全部读取的清单。请根据本轮 message 判断需要读什么。',
+    `projectRoot: ${target.projectRoot}`,
+    renderList('lorebookEntries', context.lorebookEntries, '建议按需用 read 读取节点 index.md，必要时读取同级 state.md。'),
+    renderList('readablePaths', context.readablePaths, '建议按需用 read 读取。'),
+    '</suggested_context>',
+  ].filter(Boolean).join('\n')
 }
 
 function renderList(label: string, values: readonly string[] | undefined, hint: string): string {
-    if (!values?.length) {
-        return `${label}: []`;
-    }
-    return [
-        `${label}:`,
-        ...values.map((value) => `- ${value}`),
-        `hint: ${hint}`,
-    ].join("\n");
+  if (!values?.length) {
+    return `${label}: []`
+  }
+  return [
+    `${label}:`,
+    ...values.map(value => `- ${value}`),
+    `hint: ${hint}`,
+  ].join('\n')
 }
 
-function normalizeProjectRelativePath(rawPath: string, projectRoot: string, label: string, options: {mustBeMarkdown?: boolean; preserveTrailingSlash?: boolean} = {}): string {
-    const path = normalizePayloadPath(rawPath, label, {preserveTrailingSlash: options.preserveTrailingSlash});
-    if (options.mustBeMarkdown && !path.endsWith(".md")) {
-        throw new Error(`${label} 必须指向 Project Workspace 内的 Markdown 文件：${rawPath}`);
-    }
-    if (path === projectRoot || path.startsWith(`${projectRoot}/`) || path.startsWith("workspace/")) {
-        throw new Error(`${label}必须相对当前Project Workspace；不要添加${projectRoot}/或workspace/<project>/前缀。`);
-    }
-    return path;
+function normalizeProjectRelativePath(rawPath: string, projectRoot: string, label: string, options: { mustBeMarkdown?: boolean, preserveTrailingSlash?: boolean } = {}): string {
+  const path = normalizePayloadPath(rawPath, label, { preserveTrailingSlash: options.preserveTrailingSlash })
+  if (options.mustBeMarkdown && !path.endsWith('.md')) {
+    throw new Error(`${label} 必须指向 Project Workspace 内的 Markdown 文件：${rawPath}`)
+  }
+  if (path === projectRoot || path.startsWith(`${projectRoot}/`) || path.startsWith('workspace/')) {
+    throw new Error(`${label}必须相对当前Project Workspace；不要添加${projectRoot}/或workspace/<project>/前缀。`)
+  }
+  return path
 }
 
-function normalizePayloadPath(rawPath: string, label: string, options: {preserveTrailingSlash?: boolean} = {}): string {
-    const trimmed = rawPath.trim();
-    if (!trimmed) {
-        throw new Error(`${label} 不能为空。`);
-    }
-    if (isAbsolute(trimmed) || /^[A-Za-z]:[\\/]/u.test(trimmed) || trimmed.startsWith("/") || trimmed.startsWith("\\")) {
-        throw new Error(`${label}必须是当前Project Workspace相对路径，不能是绝对路径：${rawPath}`);
-    }
-    const hadTrailingSlash = /[\\/]$/u.test(trimmed);
-    const normalized = trimmed.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/\/+$/u, "");
-    const parts = normalized.split("/");
-    if (parts.some((part) => part === "." || part === ".." || part === "")) {
-        throw new Error(`${label} 不能包含空路径段、. 或 ..：${rawPath}`);
-    }
-    return options.preserveTrailingSlash && hadTrailingSlash ? `${normalized}/` : normalized;
+function normalizePayloadPath(rawPath: string, label: string, options: { preserveTrailingSlash?: boolean } = {}): string {
+  const trimmed = rawPath.trim()
+  if (!trimmed) {
+    throw new Error(`${label} 不能为空。`)
+  }
+  if (isAbsolute(trimmed) || /^[A-Za-z]:[\\/]/u.test(trimmed) || trimmed.startsWith('/') || trimmed.startsWith('\\')) {
+    throw new Error(`${label}必须是当前Project Workspace相对路径，不能是绝对路径：${rawPath}`)
+  }
+  const hadTrailingSlash = /[\\/]$/u.test(trimmed)
+  const normalized = trimmed.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/+$/u, '')
+  const parts = normalized.split('/')
+  if (parts.some(part => part === '.' || part === '..' || part === '')) {
+    throw new Error(`${label} 不能包含空路径段、. 或 ..：${rawPath}`)
+  }
+  return options.preserveTrailingSlash && hadTrailingSlash ? `${normalized}/` : normalized
 }
 
 /**
@@ -638,16 +625,16 @@ function normalizePayloadPath(rawPath: string, label: string, options: {preserve
  * - 自动去 frontmatter, 只留正文
  */
 async function readFileSafely(
-    relativePath: string,
-    project: ServerReadyProjectSessionRef,
+  relativePath: string,
+  project: ServerReadyProjectSessionRef,
 ): Promise<string> {
-    const absPath = join(project.workspace.ref.projectRoot, relativePath);
-    if (!existsSync(absPath)) {
-        return "";  // 新章起笔, 合理退化
-    }
-    const content = await readFile(absPath, "utf8");
-    // 去掉 frontmatter 部分, 只留正文
-    return content.replace(/^---\n[\s\S]*?\n---\n?/, "").trim();
+  const absPath = join(project.workspace.ref.projectRoot, relativePath)
+  if (!existsSync(absPath)) {
+    return '' // 新章起笔, 合理退化
+  }
+  const content = await readFile(absPath, 'utf8')
+  // 去掉 frontmatter 部分, 只留正文
+  return content.replace(/^---\n[\s\S]*?\n---\n?/, '').trim()
 }
 
 /**
@@ -658,40 +645,41 @@ async function readFileSafely(
  * - 任何失败 → console.warn + return "" (per spec §4 降级)
  */
 async function renderChapterLoreContext(
-    ctx: ProfilePrepareContext<Initial, Payload, Settings>,
+  ctx: ProfilePrepareContext<Initial, Payload, Settings>,
 ): Promise<string> {
-    const payload = ctx.invocation?.payload;
-    if (!payload?.path) {
-        return "";
+  const payload = ctx.invocation?.payload
+  if (!payload?.path) {
+    return ''
+  }
+  const project = ctx.session.currentProject
+  if (!project) {
+    return ''
+  }
+  try {
+    const chapterText = await readFileSafely(payload.path, project as ServerReadyProjectSessionRef)
+    if (chapterText.length < 100) {
+      return ''
     }
-    const project = ctx.session.currentProject;
-    if (!project) {
-        return "";
+    const resolved = await resolveForChapter({
+      project: project as ServerReadyProjectSessionRef,
+      chapterText,
+      maxPaths: 8,
+    })
+    if (resolved.paths.length === 0) {
+      return ''
     }
-    try {
-        const chapterText = await readFileSafely(payload.path, project as ServerReadyProjectSessionRef);
-        if (chapterText.length < 100) {
-            return "";
-        }
-        const resolved = await resolveForChapter({
-            project: project as ServerReadyProjectSessionRef,
-            chapterText,
-            maxPaths: 8,
-        });
-        if (resolved.paths.length === 0) {
-            return "";
-        }
-        const injected = await renderInjectedMarkdown({
-            project: project as ServerReadyProjectSessionRef,
-            paths: resolved.paths,
-            maxChars: 8000,
-        });
-        return injected.markdown;
-    } catch (e: unknown) {
-        console.warn(
-            "[writer.lore-injection] skipped:",
-            e instanceof Error ? e.message : String(e),
-        );
-        return "";
-    }
+    const injected = await renderInjectedMarkdown({
+      project: project as ServerReadyProjectSessionRef,
+      paths: resolved.paths,
+      maxChars: 8000,
+    })
+    return injected.markdown
+  }
+  catch (e: unknown) {
+    console.warn(
+      '[writer.lore-injection] skipped:',
+      e instanceof Error ? e.message : String(e),
+    )
+    return ''
+  }
 }

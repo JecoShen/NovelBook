@@ -1,14 +1,14 @@
-import {randomUUID} from "node:crypto";
-import {mkdir, readFile, rm, writeFile} from "node:fs/promises";
-import {isAbsolute, join, relative, resolve, sep} from "node:path";
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 
-import {ensureDirectory, pathExists, sha256File, writeJsonAtomic} from "#manager/files";
-import {runCapture} from "#manager/process";
-import {INSTALLED_WINDOWS_ROOT_LOCATORS, localAppDataRoot, resolveInstallationRoots} from "#manager/root-locators";
+import { ensureDirectory, pathExists, sha256File, writeJsonAtomic } from '#manager/files'
+import { runCapture } from '#manager/process'
+import { INSTALLED_WINDOWS_ROOT_LOCATORS, localAppDataRoot, resolveInstallationRoots } from '#manager/root-locators'
 
-const INTENT_PATH = join(".deploy", "uninstall-intent.json");
-const HOST_COMMAND_ENVIRONMENT = "NEURO_BOOK_WINDOWS_UNINSTALL_HOST_COMMAND";
-const HOST_INPUT_ENVIRONMENT = "NEURO_BOOK_WINDOWS_UNINSTALL_HOST_INPUT";
+const INTENT_PATH = join('.deploy', 'uninstall-intent.json')
+const HOST_COMMAND_ENVIRONMENT = 'NEURO_BOOK_WINDOWS_UNINSTALL_HOST_COMMAND'
+const HOST_INPUT_ENVIRONMENT = 'NEURO_BOOK_WINDOWS_UNINSTALL_HOST_INPUT'
 
 const WINDOWS_UNINSTALL_HOST_BOOTSTRAP = String.raw`$hostInput = $env:NEURO_BOOK_WINDOWS_UNINSTALL_HOST_INPUT | ConvertFrom-Json
 $scriptPath = [string]$hostInput.scriptPath
@@ -21,7 +21,7 @@ $parameters = @{
     ResultPath = [string]$hostInput.resultPath
 }
 & $scriptPath @parameters
-`;
+`
 
 const WINDOWS_UNINSTALL_LAUNCHER_SCRIPT = String.raw`$arguments = @(
     "-NoLogo",
@@ -35,34 +35,34 @@ const WINDOWS_UNINSTALL_LAUNCHER_SCRIPT = String.raw`$arguments = @(
 $hostProcess = Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -WindowStyle Hidden -PassThru
 if ($null -eq $hostProcess -or $hostProcess.Id -le 0) { throw "Windows Uninstall Host launch failed." }
 Write-Output $hostProcess.Id
-`;
+`
 
 /** Host 只支持当前两种 Windows 可发行安装布局。 */
-export type WindowsUninstallLayout = "installation-scoped" | "installed-windows";
+export type WindowsUninstallLayout = 'installation-scoped' | 'installed-windows'
 
 /** Windows 外置 Uninstall Host 唯一接受的 durable intent。 */
 export type WindowsUninstallIntent = Readonly<{
-    schemaVersion: 1;
-    token: string;
-    layout: WindowsUninstallLayout;
-    installationRoot: string;
-    stateRoot: string;
-    cacheRoot: string;
-    desktopRoot: string;
-    deleteData: boolean;
-    createdAt: string;
-}>;
+  schemaVersion: 1
+  token: string
+  layout: WindowsUninstallLayout
+  installationRoot: string
+  stateRoot: string
+  cacheRoot: string
+  desktopRoot: string
+  deleteData: boolean
+  createdAt: string
+}>
 
 /** 当前 Bun 位于 Installation Root 内时，Windows 不能由本进程同步删除它。 */
 export function requiresWindowsUninstallHost(root: string, executable = process.execPath): boolean {
-    return process.platform === "win32" && isSameOrWithin(resolve(root), resolve(executable));
+  return process.platform === 'win32' && isSameOrWithin(resolve(root), resolve(executable))
 }
 
 /** 返回仍在等待外置 Host 完成的卸载 intent。 */
 export async function pendingWindowsUninstall(root: string): Promise<WindowsUninstallIntent | null> {
-    const path = resolve(root, INTENT_PATH);
-    if (!await pathExists(path)) return null;
-    return parseWindowsUninstallIntent(JSON.parse(await readFile(path, "utf8")), resolve(root));
+  const path = resolve(root, INTENT_PATH)
+  if (!await pathExists(path)) return null
+  return parseWindowsUninstallIntent(JSON.parse(await readFile(path, 'utf8')), resolve(root))
 }
 
 /**
@@ -72,88 +72,90 @@ export async function pendingWindowsUninstall(root: string): Promise<WindowsUnin
  * 持有 Installation lease，确保 intent 发布与 Host 启动之间没有其他 mutation。
  */
 export async function scheduleWindowsUninstall(input: {
-    root: string;
-    layout: WindowsUninstallLayout;
-    stateRoot: string;
-    cacheRoot: string;
-    desktopRoot: string;
-    deleteData: boolean;
-    parentPid?: number;
-    intent?: WindowsUninstallIntent;
-}): Promise<{intent: WindowsUninstallIntent; resultPath: string}> {
-    if (process.platform !== "win32") throw new Error("Windows Uninstall Host 只能在 Windows 上启动。" );
-    const root = resolve(input.root);
-    const intent = input.intent ?? Object.freeze({
-        schemaVersion: 1 as const,
-        token: randomUUID(),
-        layout: input.layout,
-        installationRoot: root,
-        stateRoot: resolve(input.stateRoot),
-        cacheRoot: resolve(input.cacheRoot),
-        desktopRoot: resolve(input.desktopRoot),
-        deleteData: input.deleteData,
-        createdAt: new Date().toISOString(),
-    });
-    assertWindowsUninstallIntent(intent, root);
-    if (
-        intent.layout !== input.layout
-        || !samePath(intent.stateRoot, input.stateRoot)
-        || !samePath(intent.cacheRoot, input.cacheRoot)
-        || !samePath(intent.desktopRoot, input.desktopRoot)
-        || intent.deleteData !== input.deleteData
-    ) {
-        throw new Error("待完成的 Windows uninstall intent 与当前卸载请求不一致。" );
+  root: string
+  layout: WindowsUninstallLayout
+  stateRoot: string
+  cacheRoot: string
+  desktopRoot: string
+  deleteData: boolean
+  parentPid?: number
+  intent?: WindowsUninstallIntent
+}): Promise<{ intent: WindowsUninstallIntent, resultPath: string }> {
+  if (process.platform !== 'win32') throw new Error('Windows Uninstall Host 只能在 Windows 上启动。')
+  const root = resolve(input.root)
+  const intent = input.intent ?? Object.freeze({
+    schemaVersion: 1 as const,
+    token: randomUUID(),
+    layout: input.layout,
+    installationRoot: root,
+    stateRoot: resolve(input.stateRoot),
+    cacheRoot: resolve(input.cacheRoot),
+    desktopRoot: resolve(input.desktopRoot),
+    deleteData: input.deleteData,
+    createdAt: new Date().toISOString(),
+  })
+  assertWindowsUninstallIntent(intent, root)
+  if (
+    intent.layout !== input.layout
+    || !samePath(intent.stateRoot, input.stateRoot)
+    || !samePath(intent.cacheRoot, input.cacheRoot)
+    || !samePath(intent.desktopRoot, input.desktopRoot)
+    || intent.deleteData !== input.deleteData
+  ) {
+    throw new Error('待完成的 Windows uninstall intent 与当前卸载请求不一致。')
+  }
+  const intentPath = resolve(root, INTENT_PATH)
+  const hostRoot = resolve(localAppDataRoot(), 'NeuroBook', 'uninstall-hosts', intent.token)
+  const resultRoot = resolve(localAppDataRoot(), 'NeuroBook', 'uninstall-results')
+  if (isSameOrWithin(root, hostRoot) || isSameOrWithin(root, resultRoot)) {
+    throw new Error('Windows Uninstall Host 与结果目录必须位于 Installation Root 外。')
+  }
+  const resultPath = resolve(resultRoot, `${intent.token}.json`)
+  const scriptPath = resolve(hostRoot, 'uninstall.ps1')
+  await ensureDirectory(hostRoot)
+  await ensureDirectory(resultRoot)
+  if (input.intent) {
+    const current = await pendingWindowsUninstall(root)
+    if (!current || !sameIntent(current, intent)) {
+      throw new Error('待完成的 Windows uninstall intent 已被修改。')
     }
-    const intentPath = resolve(root, INTENT_PATH);
-    const hostRoot = resolve(localAppDataRoot(), "NeuroBook", "uninstall-hosts", intent.token);
-    const resultRoot = resolve(localAppDataRoot(), "NeuroBook", "uninstall-results");
-    if (isSameOrWithin(root, hostRoot) || isSameOrWithin(root, resultRoot)) {
-        throw new Error("Windows Uninstall Host 与结果目录必须位于 Installation Root 外。" );
-    }
-    const resultPath = resolve(resultRoot, `${intent.token}.json`);
-    const scriptPath = resolve(hostRoot, "uninstall.ps1");
-    await ensureDirectory(hostRoot);
-    await ensureDirectory(resultRoot);
-    if (input.intent) {
-        const current = await pendingWindowsUninstall(root);
-        if (!current || !sameIntent(current, intent)) {
-            throw new Error("待完成的 Windows uninstall intent 已被修改。" );
-        }
-    } else {
-        await writeJsonAtomic(intentPath, intent);
-    }
-    const intentSha256 = await sha256File(intentPath);
-    await writeFile(scriptPath, WINDOWS_UNINSTALL_HOST_SCRIPT, "utf8");
-    try {
-        const hostInput = JSON.stringify({
-            scriptPath,
-            parentPid: input.parentPid ?? process.pid,
-            intentPath,
-            expectedToken: intent.token,
-            expectedRoot: root,
-            expectedIntentSha256: intentSha256,
-            resultPath,
-        });
-        const hostCommand = Buffer.from(WINDOWS_UNINSTALL_HOST_BOOTSTRAP, "utf16le").toString("base64");
-        await runCapture("powershell.exe", [
-            "-NoLogo",
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            WINDOWS_UNINSTALL_LAUNCHER_SCRIPT,
-        ], {
-            env: {
-                ...process.env,
-                [HOST_COMMAND_ENVIRONMENT]: hostCommand,
-                [HOST_INPUT_ENVIRONMENT]: hostInput,
-            },
-        });
-    } catch (error) {
-        if (!input.intent) await rm(intentPath, {force: true});
-        await rm(hostRoot, {recursive: true, force: true});
-        throw error;
-    }
-    return {intent, resultPath};
+  }
+  else {
+    await writeJsonAtomic(intentPath, intent)
+  }
+  const intentSha256 = await sha256File(intentPath)
+  await writeFile(scriptPath, WINDOWS_UNINSTALL_HOST_SCRIPT, 'utf8')
+  try {
+    const hostInput = JSON.stringify({
+      scriptPath,
+      parentPid: input.parentPid ?? process.pid,
+      intentPath,
+      expectedToken: intent.token,
+      expectedRoot: root,
+      expectedIntentSha256: intentSha256,
+      resultPath,
+    })
+    const hostCommand = Buffer.from(WINDOWS_UNINSTALL_HOST_BOOTSTRAP, 'utf16le').toString('base64')
+    await runCapture('powershell.exe', [
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      WINDOWS_UNINSTALL_LAUNCHER_SCRIPT,
+    ], {
+      env: {
+        ...process.env,
+        [HOST_COMMAND_ENVIRONMENT]: hostCommand,
+        [HOST_INPUT_ENVIRONMENT]: hostInput,
+      },
+    })
+  }
+  catch (error) {
+    if (!input.intent) await rm(intentPath, { force: true })
+    await rm(hostRoot, { recursive: true, force: true })
+    throw error
+  }
+  return { intent, resultPath }
 }
 
 /** 测试与审计共用的固定 Host 脚本；业务路径只通过参数和 intent JSON 进入。 */
@@ -306,80 +308,80 @@ try {
     Write-HostResult $result
     exit 1
 }
-`;
+`
 
 function parseWindowsUninstallIntent(value: unknown, root: string): WindowsUninstallIntent {
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Windows uninstall intent 不是对象。" );
-    const record = value as Partial<WindowsUninstallIntent>;
-    if (
-        record.schemaVersion !== 1
-        || typeof record.token !== "string"
-        || !/^[0-9a-f-]{36}$/iu.test(record.token)
-        || (record.layout !== "installation-scoped" && record.layout !== "installed-windows")
-        || typeof record.installationRoot !== "string"
-        || typeof record.stateRoot !== "string"
-        || typeof record.cacheRoot !== "string"
-        || typeof record.desktopRoot !== "string"
-        || typeof record.deleteData !== "boolean"
-        || typeof record.createdAt !== "string"
-    ) {
-        throw new Error("Windows uninstall intent 字段无效。" );
-    }
-    const intent: WindowsUninstallIntent = Object.freeze({
-        schemaVersion: 1,
-        token: record.token,
-        layout: record.layout,
-        installationRoot: record.installationRoot,
-        stateRoot: record.stateRoot,
-        cacheRoot: record.cacheRoot,
-        desktopRoot: record.desktopRoot,
-        deleteData: record.deleteData,
-        createdAt: record.createdAt,
-    });
-    assertWindowsUninstallIntent(intent, root);
-    return intent;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Windows uninstall intent 不是对象。')
+  const record = value as Partial<WindowsUninstallIntent>
+  if (
+    record.schemaVersion !== 1
+    || typeof record.token !== 'string'
+    || !/^[0-9a-f-]{36}$/iu.test(record.token)
+    || (record.layout !== 'installation-scoped' && record.layout !== 'installed-windows')
+    || typeof record.installationRoot !== 'string'
+    || typeof record.stateRoot !== 'string'
+    || typeof record.cacheRoot !== 'string'
+    || typeof record.desktopRoot !== 'string'
+    || typeof record.deleteData !== 'boolean'
+    || typeof record.createdAt !== 'string'
+  ) {
+    throw new Error('Windows uninstall intent 字段无效。')
+  }
+  const intent: WindowsUninstallIntent = Object.freeze({
+    schemaVersion: 1,
+    token: record.token,
+    layout: record.layout,
+    installationRoot: record.installationRoot,
+    stateRoot: record.stateRoot,
+    cacheRoot: record.cacheRoot,
+    desktopRoot: record.desktopRoot,
+    deleteData: record.deleteData,
+    createdAt: record.createdAt,
+  })
+  assertWindowsUninstallIntent(intent, root)
+  return intent
 }
 
 function assertWindowsUninstallIntent(intent: WindowsUninstallIntent, root: string): void {
-    if (!samePath(intent.installationRoot, root)) throw new Error("Windows uninstall intent 的 Installation Root 不一致。" );
-    if (intent.layout === "installation-scoped") {
-        for (const path of [intent.stateRoot, intent.cacheRoot, intent.desktopRoot]) {
-            if (!isSameOrWithin(root, path)) throw new Error(`Windows uninstall 路径越出 Installation Root：${path}`);
-        }
-        return;
+  if (!samePath(intent.installationRoot, root)) throw new Error('Windows uninstall intent 的 Installation Root 不一致。')
+  if (intent.layout === 'installation-scoped') {
+    for (const path of [intent.stateRoot, intent.cacheRoot, intent.desktopRoot]) {
+      if (!isSameOrWithin(root, path)) throw new Error(`Windows uninstall 路径越出 Installation Root：${path}`)
     }
-    const allowedProgramRoots = [
-        resolve(localAppDataRoot(), "Programs", "NeuroBook"),
-        resolve(process.env.ProgramFiles ?? join(process.env.SystemDrive ?? "C:", "Program Files"), "NeuroBook"),
-    ];
-    const expectedRoots = resolveInstallationRoots(allowedProgramRoots[0]!, INSTALLED_WINDOWS_ROOT_LOCATORS);
-    if (
-        !allowedProgramRoots.some((candidate) => samePath(root, candidate))
-        || !samePath(intent.stateRoot, expectedRoots.state)
-        || !samePath(intent.cacheRoot, expectedRoots.cache)
-        || !samePath(intent.desktopRoot, expectedRoots.desktop)
-    ) {
-        throw new Error("Windows Installed uninstall intent 不符合固定 owner 布局。" );
-    }
+    return
+  }
+  const allowedProgramRoots = [
+    resolve(localAppDataRoot(), 'Programs', 'NeuroBook'),
+    resolve(process.env.ProgramFiles ?? join(process.env.SystemDrive ?? 'C:', 'Program Files'), 'NeuroBook'),
+  ]
+  const expectedRoots = resolveInstallationRoots(allowedProgramRoots[0]!, INSTALLED_WINDOWS_ROOT_LOCATORS)
+  if (
+    !allowedProgramRoots.some(candidate => samePath(root, candidate))
+    || !samePath(intent.stateRoot, expectedRoots.state)
+    || !samePath(intent.cacheRoot, expectedRoots.cache)
+    || !samePath(intent.desktopRoot, expectedRoots.desktop)
+  ) {
+    throw new Error('Windows Installed uninstall intent 不符合固定 owner 布局。')
+  }
 }
 
 function sameIntent(left: WindowsUninstallIntent, right: WindowsUninstallIntent): boolean {
-    return left.schemaVersion === right.schemaVersion
-        && left.token === right.token
-        && left.layout === right.layout
-        && samePath(left.installationRoot, right.installationRoot)
-        && samePath(left.stateRoot, right.stateRoot)
-        && samePath(left.cacheRoot, right.cacheRoot)
-        && samePath(left.desktopRoot, right.desktopRoot)
-        && left.deleteData === right.deleteData
-        && left.createdAt === right.createdAt;
+  return left.schemaVersion === right.schemaVersion
+    && left.token === right.token
+    && left.layout === right.layout
+    && samePath(left.installationRoot, right.installationRoot)
+    && samePath(left.stateRoot, right.stateRoot)
+    && samePath(left.cacheRoot, right.cacheRoot)
+    && samePath(left.desktopRoot, right.desktopRoot)
+    && left.deleteData === right.deleteData
+    && left.createdAt === right.createdAt
 }
 
 function samePath(left: string, right: string): boolean {
-    return resolve(left).toLocaleLowerCase("en-US") === resolve(right).toLocaleLowerCase("en-US");
+  return resolve(left).toLocaleLowerCase('en-US') === resolve(right).toLocaleLowerCase('en-US')
 }
 
 function isSameOrWithin(root: string, target: string): boolean {
-    const path = relative(resolve(root), resolve(target));
-    return path === "" || (!isAbsolute(path) && path !== ".." && !path.startsWith(`..${sep}`));
+  const path = relative(resolve(root), resolve(target))
+  return path === '' || (!isAbsolute(path) && path !== '..' && !path.startsWith(`..${sep}`))
 }

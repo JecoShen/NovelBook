@@ -1,5 +1,5 @@
-import {estimateContextTokens as estimatePiContextTokens, estimateTokens as estimatePiTokens} from "@earendil-works/pi-agent-core";
-import {storedMessageForEstimate, type StoredMessageLike} from "nbook/server/agent/messages/stored-message-presentation";
+import { estimateContextTokens as estimatePiContextTokens, estimateTokens as estimatePiTokens } from '@earendil-works/pi-agent-core'
+import { storedMessageForEstimate, type StoredMessageLike } from 'nbook/server/agent/messages/stored-message-presentation'
 
 /**
  * stored message 的 token 估算入口。
@@ -11,7 +11,7 @@ import {storedMessageForEstimate, type StoredMessageLike} from "nbook/server/age
 
 /** 不读取 blob 的单消息 token 估算。 */
 export function estimateStoredMessageTokens(message: StoredMessageLike): number {
-    return estimatePiTokens(storedMessageForEstimate(message));
+  return estimatePiTokens(storedMessageForEstimate(message))
 }
 
 /**
@@ -19,5 +19,5 @@ export function estimateStoredMessageTokens(message: StoredMessageLike): number 
  * 保留 Pi 对最近一次 assistant usage 的处理语义，避免 compaction 与主 turn 出现两套预算。
  */
 export function estimateStoredContextTokens(messages: readonly StoredMessageLike[]): ReturnType<typeof estimatePiContextTokens> {
-    return estimatePiContextTokens(messages.map(storedMessageForEstimate));
+  return estimatePiContextTokens(messages.map(storedMessageForEstimate))
 }

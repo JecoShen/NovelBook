@@ -1,12 +1,12 @@
-import {createError, getHeader, type H3Event} from "h3";
-import {PRODUCT_BRIDGE_TOKEN_ENVIRONMENT} from "nbook/shared/product-runtime-contract";
-import {isLoopbackRequest, matchesControlToken} from "nbook/server/runtime/control/loopback-auth";
+import { createError, getHeader, type H3Event } from 'h3'
+import { PRODUCT_BRIDGE_TOKEN_ENVIRONMENT } from 'nbook/shared/product-runtime-contract'
+import { isLoopbackRequest, matchesControlToken } from 'nbook/server/runtime/control/loopback-auth'
 
 /**
  * Agent Bridge 控制面的 URL 前缀。Auth 中间件用此豁免用户 session 鉴权
  * （桥路由自己用 loopback + token 鉴权），路由文件用此构建路径。
  */
-export const BRIDGE_API_PREFIX = "/api/agent/bridge";
+export const BRIDGE_API_PREFIX = '/api/agent/bridge'
 
 /**
  * 鉴权 Agent Bridge 路由。
@@ -20,22 +20,22 @@ export const BRIDGE_API_PREFIX = "/api/agent/bridge";
  * 一致的「功能开关」语义。
  */
 export function requireBridgeAuth(event: H3Event): void {
-    if (!isLoopbackRequest(event.node.req.socket.remoteAddress)) {
-        throw createError({statusCode: 403, message: "Agent Bridge 只接受 loopback 请求。"});
-    }
-    const expected = process.env[PRODUCT_BRIDGE_TOKEN_ENVIRONMENT]?.trim();
-    if (!expected) {
-        throw createError({
-            statusCode: 503,
-            message: "Agent Bridge 控制面未启用。",
-            data: {code: "BRIDGE_DISABLED"},
-        });
-    }
-    if (!matchesControlToken(getHeader(event, "authorization"), expected)) {
-        throw createError({
-            statusCode: 401,
-            message: "Agent Bridge token 无效。",
-            data: {code: "BRIDGE_INVALID_TOKEN"},
-        });
-    }
+  if (!isLoopbackRequest(event.node.req.socket.remoteAddress)) {
+    throw createError({ statusCode: 403, message: 'Agent Bridge 只接受 loopback 请求。' })
+  }
+  const expected = process.env[PRODUCT_BRIDGE_TOKEN_ENVIRONMENT]?.trim()
+  if (!expected) {
+    throw createError({
+      statusCode: 503,
+      message: 'Agent Bridge 控制面未启用。',
+      data: { code: 'BRIDGE_DISABLED' },
+    })
+  }
+  if (!matchesControlToken(getHeader(event, 'authorization'), expected)) {
+    throw createError({
+      statusCode: 401,
+      message: 'Agent Bridge token 无效。',
+      data: { code: 'BRIDGE_INVALID_TOKEN' },
+    })
+  }
 }

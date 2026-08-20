@@ -1,13 +1,13 @@
-export type PosixSupervisorFault = "signal" | "probe" | "probe-permission";
+export type PosixSupervisorFault = 'signal' | 'probe' | 'probe-permission'
 
 /** 生成 POSIX 监督进程源码；fault 只供包内故障回归使用。 */
 export function buildPosixSupervisorSource(fault?: PosixSupervisorFault): string {
-    return String.raw`
+  return String.raw`
 const {spawn} = require("node:child_process");
 
-const SIGNAL_FAULT = ${fault === "signal"};
-const PROBE_FAULT = ${fault === "probe"};
-let probePermissionPending = ${fault === "probe-permission"};
+const SIGNAL_FAULT = ${fault === 'signal'};
+const PROBE_FAULT = ${fault === 'probe'};
+let probePermissionPending = ${fault === 'probe-permission'};
 let child;
 let payload;
 let terminationReason;
@@ -194,7 +194,7 @@ function signalGroup(pid, signal) {
         if (error?.code !== "ESRCH") throw error;
     }
 }
-`;
+`
 }
 
-export const POSIX_SUPERVISOR_SOURCE = buildPosixSupervisorSource();
+export const POSIX_SUPERVISOR_SOURCE = buildPosixSupervisorSource()

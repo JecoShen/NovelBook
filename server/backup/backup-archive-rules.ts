@@ -6,20 +6,20 @@
  * relativePath 以 State Root 为基准、使用 / 分隔。
  */
 export function shouldExcludeFromBackup(relativePath: string): boolean {
-    const normalized = relativePath.replaceAll("\\", "/");
-    if (normalized === "secrets" || normalized.startsWith("secrets/")
-        || normalized === "logs" || normalized.startsWith("logs/")) {
-        return true;
-    }
-    const name = normalized.split("/").pop() ?? "";
-    return name.endsWith(".lock") || name.endsWith(".tmp") || name.endsWith("-wal") || name.endsWith("-shm");
+  const normalized = relativePath.replaceAll('\\', '/')
+  if (normalized === 'secrets' || normalized.startsWith('secrets/')
+    || normalized === 'logs' || normalized.startsWith('logs/')) {
+    return true
+  }
+  const name = normalized.split('/').pop() ?? ''
+  return name.endsWith('.lock') || name.endsWith('.tmp') || name.endsWith('-wal') || name.endsWith('-shm')
 }
 
 /**
  * SQLite 数据库判定：这类文件不能直接拷贝活文件，打包时走 VACUUM INTO 冷快照。
  */
 export function isSqliteFile(relativePath: string): boolean {
-    return relativePath.replaceAll("\\", "/").endsWith(".sqlite");
+  return relativePath.replaceAll('\\', '/').endsWith('.sqlite')
 }
 
 /**
@@ -27,13 +27,13 @@ export function isSqliteFile(relativePath: string): boolean {
  * 返回归一化的 / 分隔相对路径，非法返回 null。
  */
 export function sanitizeZipEntryName(entryName: string): string | null {
-    const normalized = entryName.replaceAll("\\", "/");
-    if (!normalized || normalized.startsWith("/") || normalized.startsWith("//") || /^[a-zA-Z]:/.test(normalized)) {
-        return null;
-    }
-    const parts = normalized.split("/").filter((part) => part.length > 0 && part !== ".");
-    if (parts.length === 0 || parts.some((part) => part === "..")) {
-        return null;
-    }
-    return parts.join("/");
+  const normalized = entryName.replaceAll('\\', '/')
+  if (!normalized || normalized.startsWith('/') || normalized.startsWith('//') || /^[a-zA-Z]:/.test(normalized)) {
+    return null
+  }
+  const parts = normalized.split('/').filter(part => part.length > 0 && part !== '.')
+  if (parts.length === 0 || parts.some(part => part === '..')) {
+    return null
+  }
+  return parts.join('/')
 }

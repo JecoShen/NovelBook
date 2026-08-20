@@ -1,50 +1,46 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import type {Static} from "nbook/profile-sdk";
-import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, toolset} from "nbook/profile-sdk";
-import {RpWriterInitialSchema, RpWriterOutputSchema} from "nbook/profile-sdk";
-import {AppendingSet, HistorySet, If, Import, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder} from "nbook/profile-sdk";
-import {profileText} from "nbook/profile-sdk";
-import {buildWritingReference, buildWritingStyle} from "nbook/profile-sdk/writing";
+import type { Static } from 'nbook/profile-sdk'
+import { defineAgentProfile, builtin, toolset, RpWriterInitialSchema, RpWriterOutputSchema, AppendingSet, HistorySet, If, Import, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder, profileText } from 'nbook/profile-sdk'
+import { buildWritingReference, buildWritingStyle } from 'nbook/profile-sdk/writing'
 
-const ENABLE_KITTEN_ADULT_STYLE = false;
+const ENABLE_KITTEN_ADULT_STYLE = false
 
 export const profileManifest = {
-    key: "rp.writer",
-    name: "跑团写作",
-    description: "RP Tick 正文渲染 agent：消费上级注入的 writer brief，先打草稿再用 stop-slop 自查，把裁决结果写成讲故事口吻的用户可见正文，并写入 brief 指定的 prose 路径。",
-} as const;
+  key: 'rp.writer',
+  name: '跑团写作',
+  description: 'RP Tick 正文渲染 agent：消费上级注入的 writer brief，先打草稿再用 stop-slop 自查，把裁决结果写成讲故事口吻的用户可见正文，并写入 brief 指定的 prose 路径。',
+} as const
 
-export const InitialSchema = RpWriterInitialSchema;
-export const OutputSchema = RpWriterOutputSchema;
+export const InitialSchema = RpWriterInitialSchema
+export const OutputSchema = RpWriterOutputSchema
 
-export type Initial = Static<typeof InitialSchema>;
-export type Output = Static<typeof OutputSchema>;
+export type Initial = Static<typeof InitialSchema>
+export type Output = Static<typeof OutputSchema>
 
 export default defineAgentProfile({
-    manifest: profileManifest,
-    initialSchema: InitialSchema,
-    outputSchema: OutputSchema,
-    tools: toolset(
-        builtin.file.read,
-        builtin.file.write,
-        builtin.file.edit,
-        builtin.file.bash,
-        builtin.result.main(),
-    ),
-    async context() {
-        return buildRpWriterPrompt();
-    },
-});
+  manifest: profileManifest,
+  initialSchema: InitialSchema,
+  outputSchema: OutputSchema,
+  tools: toolset(
+    builtin.file.read,
+    builtin.file.write,
+    builtin.file.edit,
+    builtin.file.bash,
+    builtin.result.main(),
+  ),
+  async context() {
+    return buildRpWriterPrompt()
+  },
+})
 
 async function buildRpWriterPrompt() {
-    const writingStyle = await buildWritingStyle();
-    const writingReference = await buildWritingReference();
-    return (
-        <ProfilePrompt>
-            <System>
-                {profileText`
+  const writingStyle = await buildWritingStyle()
+  const writingReference = await buildWritingReference()
+  return (
+    <ProfilePrompt>
+      <System>
+        {profileText`
                     <writing_reference>
                         ${writingReference}
                     </writing_reference>
@@ -222,8 +218,8 @@ async function buildRpWriterPrompt() {
                         - 不替用户角色添加未输入的内心独白、明确情绪、主动台词、关键动作或长期目标。
                     </output_protocol>
                     `}
-                    <If condition={ENABLE_KITTEN_ADULT_STYLE}>
-                        {`
+        <If condition={ENABLE_KITTEN_ADULT_STYLE}>
+          {`
                         <adult_style>
                             - nsfw要注重色情，要有细节。五感上的色情特写以及语言上的低俗挑逗，用词直白（直接使用肉棒、鸡巴、小穴、逼、乳、奶子……等下流词汇）色情不避讳，最大化欲望与色情氛围。
 色情场景要细致，在没有用户的要求时，不应结束性爱，而是将回复停止在性爱中途
@@ -233,34 +229,34 @@ async function buildRpWriterPrompt() {
                             - 成人场景也必须遵守 <char_performance> 与 <writing_style>，不能因为题材变化就丢掉角色逻辑、视角边界和文风禁用项。
                         </adult_style>
                         `}
-                    </If>
-            </System>
-            <HistorySet>
-                <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
-                <Message><Import path="reference/content/markdown-dialect.md" /></Message>
-                <Message><Import path="reference/agent/rp-tick/writer-brief.md" /></Message>
-                <Message><Import path="reference/agent/rp-tick/rp-writer-interaction.md" /></Message>
-                <Message><Import path="reference/agent/profile-context-memory.md" /></Message>
-                <Message><Import path="assets/workspace/.nbook/agent/skills/stop-slop/SKILL.md" /></Message>
-                <Message><Import path="assets/workspace/.nbook/agent/skills/stop-slop/references/examples.md" /></Message>
-                <Message><Import path="assets/workspace/.nbook/agent/skills/stop-slop/references/phrases.md" /></Message>
-                <Message><Import path="assets/workspace/.nbook/agent/skills/stop-slop/references/structures.md" /></Message>
-            </HistorySet>
-            <ModelContext>
-                <Message>{renderInvocationReminder()}</Message>
-            </ModelContext>
-            <AppendingSet>
-                <WorkspaceFocusReminder />
-            </AppendingSet>
-        </ProfilePrompt>
-    );
+        </If>
+      </System>
+      <HistorySet>
+        <Message><Import path="reference/agent/project-workspace-guide.md" /></Message>
+        <Message><Import path="reference/content/markdown-dialect.md" /></Message>
+        <Message><Import path="reference/agent/rp-tick/writer-brief.md" /></Message>
+        <Message><Import path="reference/agent/rp-tick/rp-writer-interaction.md" /></Message>
+        <Message><Import path="reference/agent/profile-context-memory.md" /></Message>
+        <Message><Import path="assets/workspace/.nbook/agent/skills/stop-slop/SKILL.md" /></Message>
+        <Message><Import path="assets/workspace/.nbook/agent/skills/stop-slop/references/examples.md" /></Message>
+        <Message><Import path="assets/workspace/.nbook/agent/skills/stop-slop/references/phrases.md" /></Message>
+        <Message><Import path="assets/workspace/.nbook/agent/skills/stop-slop/references/structures.md" /></Message>
+      </HistorySet>
+      <ModelContext>
+        <Message>{renderInvocationReminder()}</Message>
+      </ModelContext>
+      <AppendingSet>
+        <WorkspaceFocusReminder />
+      </AppendingSet>
+    </ProfilePrompt>
+  )
 }
 
 function renderInvocationReminder(): string {
-    return profileText`
+  return profileText`
         本轮只从最新 user message 读取完整 Writer Brief；profile initial 为空，不能从旧上下文、writing_reference 或默认项目猜任务。
         先自检Brief是否足以写作且是否包含当前Project相对prose输出路径。缺关键材料或缺路径时调用report_result.result提问或报错，不写文件。
         材料足够时只根据 Writer Brief 写用户可见正文，write 到 Brief 指定路径，edit 润色后调用 report_result.result 汇报实际落点。
         不生成选项、标题、摘要、规则解释或后台说明，不使用 report_result.data 的结构化字段。
-    `;
+    `
 }

@@ -1,11 +1,11 @@
-import {bridgeRequest} from "../util/http";
+import { bridgeRequest } from '../util/http'
 
 export interface AbortInput {
-    sessionId: number;
-    reason?: string;
-    token: string;
-    baseUrl: string;
-    signal?: AbortSignal;
+  sessionId: number
+  reason?: string
+  token: string
+  baseUrl: string
+  signal?: AbortSignal
 }
 
 /**
@@ -14,12 +14,12 @@ export interface AbortInput {
  * 不必复制一份。
  */
 export async function abortCommand(input: AbortInput): Promise<unknown> {
-    return bridgeRequest({
-        method: "POST",
-        path: `/api/agent/sessions/${input.sessionId}/abort`,
-        body: {reason: input.reason ?? "user-abort-from-cli"},
-        token: input.token,
-        baseUrl: input.baseUrl,
-        signal: input.signal,
-    });
+  return bridgeRequest({
+    method: 'POST',
+    path: `/api/agent/sessions/${input.sessionId}/abort`,
+    body: { reason: input.reason ?? 'user-abort-from-cli' },
+    token: input.token,
+    baseUrl: input.baseUrl,
+    signal: input.signal,
+  })
 }

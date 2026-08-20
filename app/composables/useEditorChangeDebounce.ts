@@ -11,66 +11,66 @@
  * 否则防抖窗口内的输入会被误判为「无修改」而丢失（文本回退 bug 的根源）。
  */
 export interface EditorChangeDebounce {
-    /** 排一次防抖上报；输入事件里调用 */
-    schedule: () => void;
-    /** 立即读值上报（无论是否有 pending）；评论增删改等低频编辑操作用 */
-    emitNow: () => void;
-    /** 有 pending 才读值上报；blur / 保存快捷键 / store flush 钩子用 */
-    flush: () => void;
-    /** 丢弃 pending（外部权威内容即将覆盖本地状态时用） */
-    cancel: () => void;
-    /** 是否存在未上报的输入 */
-    pending: () => boolean;
+  /** 排一次防抖上报；输入事件里调用 */
+  schedule: () => void
+  /** 立即读值上报（无论是否有 pending）；评论增删改等低频编辑操作用 */
+  emitNow: () => void
+  /** 有 pending 才读值上报；blur / 保存快捷键 / store flush 钩子用 */
+  flush: () => void
+  /** 丢弃 pending（外部权威内容即将覆盖本地状态时用） */
+  cancel: () => void
+  /** 是否存在未上报的输入 */
+  pending: () => boolean
 }
 
 interface EditorChangeDebounceOptions {
-    /** 防抖窗口，默认 300ms */
-    delayMs?: number;
-    /** 读取编辑器当前值；返回 null 表示编辑器不可用，本次上报跳过 */
-    readValue: () => string | null;
-    /** 上报出口（emit change 等） */
-    onEmit: (value: string) => void;
+  /** 防抖窗口，默认 300ms */
+  delayMs?: number
+  /** 读取编辑器当前值；返回 null 表示编辑器不可用，本次上报跳过 */
+  readValue: () => string | null
+  /** 上报出口（emit change 等） */
+  onEmit: (value: string) => void
 }
 
 export function useEditorChangeDebounce(options: EditorChangeDebounceOptions): EditorChangeDebounce {
-    const delayMs = options.delayMs ?? 300;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let pending = false;
+  const delayMs = options.delayMs ?? 300
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let pending = false
 
-    const clearTimer = (): void => {
-        if (timer !== null) {
-            clearTimeout(timer);
-            timer = null;
-        }
-    };
+  const clearTimer = (): void => {
+    if (timer !== null) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
 
-    const emitNow = (): void => {
-        clearTimer();
-        pending = false;
-        const value = options.readValue();
-        if (value === null) {
-            return;
-        }
-        options.onEmit(value);
-    };
+  const emitNow = (): void => {
+    clearTimer()
+    pending = false
+    const value = options.readValue()
+    if (value === null) {
+      return
+    }
+    options.onEmit(value)
+  }
 
-    return {
-        schedule: () => {
-            pending = true;
-            clearTimer();
-            timer = setTimeout(emitNow, delayMs);
-        },
-        emitNow,
-        flush: () => {
-            if (!pending) {
-                return;
-            }
-            emitNow();
-        },
-        cancel: () => {
-            clearTimer();
-            pending = false;
-        },
-        pending: () => pending,
-    };
+  return {
+    schedule: () => {
+      pending = true
+      clearTimer()
+      timer = setTimeout(emitNow, delayMs)
+    },
+    emitNow,
+    flush: () => {
+      if (!pending) {
+        return
+      }
+      emitNow()
+    },
+    cancel: () => {
+      clearTimer()
+      pending = false
+    },
+    pending: () => pending,
+  }
 }

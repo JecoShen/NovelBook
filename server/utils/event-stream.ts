@@ -4,5 +4,5 @@
  * 判定后应当收尾清理而非上抛。presence 与 workspace-files 两个 SSE 路由共用此判定。
  */
 export function isClosingEventStreamError(error: unknown): boolean {
-    return error instanceof TypeError && error.message.includes("stream is closing or closed");
+  return error instanceof TypeError && error.message.includes('stream is closing or closed')
 }

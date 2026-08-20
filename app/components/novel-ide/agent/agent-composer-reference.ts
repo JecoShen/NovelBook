@@ -4,12 +4,12 @@
  * 入参是单段 projectRoot；输出的 `workspace/<root>/...` 是 Address 层仍在消费的旧形态。
  */
 export function completeProjectFileAddress(target: string, projectRoot: string | null): string {
-    const normalized = target.trim().replaceAll("\\", "/").replace(/^\.\//u, "");
-    if (normalized.startsWith("workspace/") || /^(?:[a-z][a-z0-9+.-]*:|\/)/iu.test(normalized)) {
-        return normalized;
-    }
-    const normalizedRoot = projectRoot?.trim().replaceAll("\\", "/").replace(/\/+$/u, "");
-    return normalizedRoot && !normalizedRoot.includes("/")
-        ? `workspace/${normalizedRoot}/${normalized}`
-        : normalized;
+  const normalized = target.trim().replaceAll('\\', '/').replace(/^\.\//u, '')
+  if (normalized.startsWith('workspace/') || /^(?:[a-z][a-z0-9+.-]*:|\/)/iu.test(normalized)) {
+    return normalized
+  }
+  const normalizedRoot = projectRoot?.trim().replaceAll('\\', '/').replace(/\/+$/u, '')
+  return normalizedRoot && !normalizedRoot.includes('/')
+    ? `workspace/${normalizedRoot}/${normalized}`
+    : normalized
 }

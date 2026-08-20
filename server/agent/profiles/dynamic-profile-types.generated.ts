@@ -5,7 +5,7 @@
  * 运行时不依赖它；它只服务源码开发时按自定义 profile key 推导 Input / Output。
  */
 export type DynamicProfileInputMap = {
-};
+}
 
 export type DynamicProfileOutputMap = {
-};
+}

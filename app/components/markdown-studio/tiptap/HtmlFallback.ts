@@ -1,6 +1,6 @@
-import {Extension, mergeAttributes, Node} from "@tiptap/core";
-import type {MarkdownToken} from "@tiptap/core";
-import {MARKDOWN_BLOCK_DIALECT_TAGS} from "nbook/shared/markdown-workbench";
+import { Extension, mergeAttributes, Node } from '@tiptap/core'
+import type { MarkdownToken } from '@tiptap/core'
+import { MARKDOWN_BLOCK_DIALECT_TAGS } from 'nbook/shared/markdown-workbench'
 
 /**
  * HTML 兜底层：防止方言之外的 HTML / XML 标签被静默丢弃。
@@ -31,20 +31,20 @@ import {MARKDOWN_BLOCK_DIALECT_TAGS} from "nbook/shared/markdown-workbench";
 
 /** DOM 解析路径能正确还原语义的真 HTML 行内标签：合法形态与残片都交回 DOM（浏览器语义） */
 const DOM_HANDLED_INLINE_TAGS = new Set([
-    "a", "b", "strong", "i", "em", "u", "s", "del", "strike", "code", "br", "img",
-    "sup", "sub", "mark",
-]);
+  'a', 'b', 'strong', 'i', 'em', 'u', 's', 'del', 'strike', 'code', 'br', 'img',
+  'sup', 'sub', 'mark',
+])
 
 /**
  * 方言行内标签：合法形态由各自 tokenizer（priority 更低、先执行）接管，
  * 能流到行内兜底的必然是失配残片——保 chip，绝不能交给 DOM 剥标签丢数据。
  */
 const DIALECT_INLINE_TAGS = new Set([
-    "comment", "inline-comment", "bilingual", "align", "ruby", "rt",
-]);
+  'comment', 'inline-comment', 'bilingual', 'align', 'ruby', 'rt',
+])
 
 /** 有 DOM parseHTML 规则、完整闭合时可交回 DOM 自愈的方言标签（bilingual 无 DOM 规则，不在内） */
-const DOM_PARSEABLE_DIALECT_TAGS = new Set(["comment", "inline-comment", "ruby", "align"]);
+const DOM_PARSEABLE_DIALECT_TAGS = new Set(['comment', 'inline-comment', 'ruby', 'align'])
 
 /**
  * 块级兜底的完整排除名单。
@@ -52,36 +52,36 @@ const DOM_PARSEABLE_DIALECT_TAGS = new Set(["comment", "inline-comment", "ruby",
  * 若把方言行内组漏掉，<ruby text="x">汉</ruby> 单独成段会被块级兜底整段吃成
  * 源码块（ruby 是 inline tokenizer，块级抢走后它永远轮不到）。
  */
-const KNOWN_BLOCK_EXCLUDED_TAGS = new Set([...MARKDOWN_BLOCK_DIALECT_TAGS, ...DOM_HANDLED_INLINE_TAGS, ...DIALECT_INLINE_TAGS]);
+const KNOWN_BLOCK_EXCLUDED_TAGS = new Set([...MARKDOWN_BLOCK_DIALECT_TAGS, ...DOM_HANDLED_INLINE_TAGS, ...DIALECT_INLINE_TAGS])
 
 /** 无闭合标签的 void 元素 */
-const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'])
 
-const OPEN_TAG_PATTERN = /^<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/;
-const SELF_CLOSING_PATTERN = /^<([a-zA-Z][\w-]*)(?:"[^"]*"|'[^']*'|[^>"'])*\/>/;
+const OPEN_TAG_PATTERN = /^<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/
+const SELF_CLOSING_PATTERN = /^<([a-zA-Z][\w-]*)(?:"[^"]*"|'[^']*'|[^>"'])*\/>/
 
 interface HtmlFallbackToken extends MarkdownToken {
-    html?: string;
+  html?: string
 }
 
 /**
  * 在同名标签嵌套计数下查找匹配闭合标签，返回闭合标签结束位置；找不到返回 -1。
  */
 function findMatchingCloseEnd(src: string, tag: string, searchFrom: number): number {
-    const tagPattern = new RegExp(`<(/?)${tag}(?=[\\s/>])((?:"[^"]*"|'[^']*'|[^>"'])*)>`, "gi");
-    tagPattern.lastIndex = searchFrom;
-    let depth = 1;
-    let matched: RegExpExecArray | null;
-    while ((matched = tagPattern.exec(src)) !== null) {
-        if ((matched[2] ?? "").endsWith("/")) {
-            continue;
-        }
-        depth += matched[1] === "/" ? -1 : 1;
-        if (depth === 0) {
-            return matched.index + matched[0].length;
-        }
+  const tagPattern = new RegExp(`<(/?)${tag}(?=[\\s/>])((?:"[^"]*"|'[^']*'|[^>"'])*)>`, 'gi')
+  tagPattern.lastIndex = searchFrom
+  let depth = 1
+  let matched: RegExpExecArray | null
+  while ((matched = tagPattern.exec(src)) !== null) {
+    if ((matched[2] ?? '').endsWith('/')) {
+      continue
     }
-    return -1;
+    depth += matched[1] === '/' ? -1 : 1
+    if (depth === 0) {
+      return matched.index + matched[0].length
+    }
+  }
+  return -1
 }
 
 /**
@@ -91,33 +91,35 @@ function findMatchingCloseEnd(src: string, tag: string, searchFrom: number): num
  * 返回 null 表示不是可捕获形态（交还给后续 tokenizer / marked 原生处理）。
  */
 function captureUnknownHtml(src: string, knownTags: Set<string>, requireLineEnd: boolean): string | null {
-    let captured: string | null = null;
-    const selfClosing = SELF_CLOSING_PATTERN.exec(src);
-    if (selfClosing) {
-        captured = knownTags.has(selfClosing[1]!.toLowerCase()) ? null : selfClosing[0];
-    } else {
-        const open = OPEN_TAG_PATTERN.exec(src);
-        if (!open) {
-            return null;
-        }
-        const tag = open[1]!.toLowerCase();
-        if (knownTags.has(tag)) {
-            return null;
-        }
-        if (VOID_TAGS.has(tag)) {
-            captured = open[0];
-        } else {
-            const closeEnd = findMatchingCloseEnd(src, tag, open[0].length);
-            captured = closeEnd < 0 ? null : src.slice(0, closeEnd);
-        }
+  let captured: string | null = null
+  const selfClosing = SELF_CLOSING_PATTERN.exec(src)
+  if (selfClosing) {
+    captured = knownTags.has(selfClosing[1]!.toLowerCase()) ? null : selfClosing[0]
+  }
+  else {
+    const open = OPEN_TAG_PATTERN.exec(src)
+    if (!open) {
+      return null
     }
-    if (!captured) {
-        return null;
+    const tag = open[1]!.toLowerCase()
+    if (knownTags.has(tag)) {
+      return null
     }
-    if (requireLineEnd && !/^[ \t]*(?:\r?\n|$)/.test(src.slice(captured.length))) {
-        return null;
+    if (VOID_TAGS.has(tag)) {
+      captured = open[0]
     }
-    return captured;
+    else {
+      const closeEnd = findMatchingCloseEnd(src, tag, open[0].length)
+      captured = closeEnd < 0 ? null : src.slice(0, closeEnd)
+    }
+  }
+  if (!captured) {
+    return null
+  }
+  if (requireLineEnd && !/^[ \t]*(?:\r?\n|$)/.test(src.slice(captured.length))) {
+    return null
+  }
+  return captured
 }
 
 /**
@@ -129,15 +131,15 @@ function captureUnknownHtml(src: string, knownTags: Set<string>, requireLineEnd:
  * 真 HTML 行内标签（excludedTags）维持浏览器语义：残片被 DOM 忽略，不出 chip。
  */
 function captureHtmlTagFragment(src: string, excludedTags: Set<string>): string | null {
-    const closeTag = /^<\/([a-zA-Z][\w-]*)\s*>/.exec(src);
-    if (closeTag) {
-        return excludedTags.has(closeTag[1]!.toLowerCase()) ? null : closeTag[0];
-    }
-    const openTag = OPEN_TAG_PATTERN.exec(src);
-    if (openTag && !excludedTags.has(openTag[1]!.toLowerCase())) {
-        return openTag[0];
-    }
-    return null;
+  const closeTag = /^<\/([a-zA-Z][\w-]*)\s*>/.exec(src)
+  if (closeTag) {
+    return excludedTags.has(closeTag[1]!.toLowerCase()) ? null : closeTag[0]
+  }
+  const openTag = OPEN_TAG_PATTERN.exec(src)
+  if (openTag && !excludedTags.has(openTag[1]!.toLowerCase())) {
+    return openTag[0]
+  }
+  return null
 }
 
 /**
@@ -145,83 +147,83 @@ function captureHtmlTagFragment(src: string, excludedTags: Set<string>): string 
  * 只显示源码，不提供渲染——渲染是显式 <html> 方言块（HtmlEmbed）的能力。
  */
 export const HtmlBlock = Node.create({
-    name: "htmlBlock",
-    group: "block",
-    atom: true,
-    selectable: true,
-    priority: 1400,
+  name: 'htmlBlock',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  priority: 1400,
 
-    addAttributes() {
-        return {
-            html: {
-                default: "",
-            },
-        };
-    },
+  addAttributes() {
+    return {
+      html: {
+        default: '',
+      },
+    }
+  },
 
-    parseHTML() {
-        return [{
-            tag: "pre[data-nb-html-block]",
-            getAttrs: (dom) => ({
-                html: (dom as HTMLElement).textContent ?? "",
-            }),
-        }];
-    },
+  parseHTML() {
+    return [{
+      tag: 'pre[data-nb-html-block]',
+      getAttrs: dom => ({
+        html: (dom as HTMLElement).textContent ?? '',
+      }),
+    }]
+  },
 
-    renderHTML({node}) {
-        return ["pre", mergeAttributes({
-            class: "nb-html-block",
-            "data-nb-html-block": "true",
-            contenteditable: "false",
-        }), String(node.attrs.html ?? "")];
-    },
+  renderHTML({ node }) {
+    return ['pre', mergeAttributes({
+      'class': 'nb-html-block',
+      'data-nb-html-block': 'true',
+      'contenteditable': 'false',
+    }), String(node.attrs.html ?? '')]
+  },
 
-    renderText({node}) {
-        return String(node.attrs.html ?? "");
-    },
+  renderText({ node }) {
+    return String(node.attrs.html ?? '')
+  },
 
-    markdownTokenizer: {
-        name: "htmlBlock",
-        level: "block",
-        start(src: string) {
-            // ⚠️ 只认「换行后的行首标签」：marked 段落中断检测会传入 src.slice(1)，
-            // 匹配 ^ 开头形态会把段内行内标签误判成截断点。真块首由 tokenize 直接兜住。
-            const pattern = /\n<([a-zA-Z][\w-]*)/g;
-            let matched: RegExpExecArray | null;
-            while ((matched = pattern.exec(src)) !== null) {
-                if (!KNOWN_BLOCK_EXCLUDED_TAGS.has(matched[1]!.toLowerCase())) {
-                    return matched.index + 1;
-                }
-            }
-            return -1;
-        },
-        tokenize(src: string) {
-            const html = captureUnknownHtml(src, KNOWN_BLOCK_EXCLUDED_TAGS, true);
-            if (!html) {
-                return undefined;
-            }
-            return {
-                type: "htmlBlock",
-                raw: html,
-                html,
-            };
-        },
-    },
-
-    parseMarkdown: (token, helpers) => {
-        const htmlToken = token as HtmlFallbackToken;
-        const html = String(htmlToken.html ?? htmlToken.raw ?? "").trim();
-        if (!html) {
-            // 空数组 = 未认领，MarkdownManager 会继续尝试其他 handler / fallback
-            return [];
+  markdownTokenizer: {
+    name: 'htmlBlock',
+    level: 'block',
+    start(src: string) {
+      // ⚠️ 只认「换行后的行首标签」：marked 段落中断检测会传入 src.slice(1)，
+      // 匹配 ^ 开头形态会把段内行内标签误判成截断点。真块首由 tokenize 直接兜住。
+      const pattern = /\n<([a-zA-Z][\w-]*)/g
+      let matched: RegExpExecArray | null
+      while ((matched = pattern.exec(src)) !== null) {
+        if (!KNOWN_BLOCK_EXCLUDED_TAGS.has(matched[1]!.toLowerCase())) {
+          return matched.index + 1
         }
-        return helpers.createNode("htmlBlock", {html});
+      }
+      return -1
     },
+    tokenize(src: string) {
+      const html = captureUnknownHtml(src, KNOWN_BLOCK_EXCLUDED_TAGS, true)
+      if (!html) {
+        return undefined
+      }
+      return {
+        type: 'htmlBlock',
+        raw: html,
+        html,
+      }
+    },
+  },
 
-    renderMarkdown: (node) => {
-        return String(node.attrs?.html ?? "");
-    },
-});
+  parseMarkdown: (token, helpers) => {
+    const htmlToken = token as HtmlFallbackToken
+    const html = String(htmlToken.html ?? htmlToken.raw ?? '').trim()
+    if (!html) {
+      // 空数组 = 未认领，MarkdownManager 会继续尝试其他 handler / fallback
+      return []
+    }
+    return helpers.createNode('htmlBlock', { html })
+  },
+
+  renderMarkdown: (node) => {
+    return String(node.attrs?.html ?? '')
+  },
+})
 
 /**
  * 接管 marked 原生块级 html token（自定义 tokenizer 没接住的截断形态），
@@ -231,35 +233,35 @@ export const HtmlBlock = Node.create({
  * 的单段形态 → DOM 自愈为行内评论 mark，下次保存写回规范形态）。
  */
 export const HtmlBlockBridge = Extension.create({
-    name: "htmlBlockBridge",
-    markdownTokenName: "html",
+  name: 'htmlBlockBridge',
+  markdownTokenName: 'html',
 
-    parseMarkdown: (token, helpers) => {
-        if (!token.block) {
-            // 空数组 = 未认领，行内 html token 交回默认 DOM 解析路径
-            return [];
-        }
-        const html = String(token.raw ?? token.text ?? "").trim();
-        if (!html) {
-            return [];
-        }
-        const firstTag = /^<([a-zA-Z][\w-]*)/.exec(html)?.[1]?.toLowerCase() ?? "";
-        if (firstTag && DOM_HANDLED_INLINE_TAGS.has(firstTag)) {
-            // <br> 等真 HTML 行内标签独占一行时按行内语义 DOM 解析，不变源码块
-            return [];
-        }
-        const openTagEnd = OPEN_TAG_PATTERN.exec(html)?.[0].length ?? 0;
-        if (
-            firstTag && DOM_PARSEABLE_DIALECT_TAGS.has(firstTag) && openTagEnd > 0
-            && findMatchingCloseEnd(html, firstTag, openTagEnd) === html.length
-        ) {
-            // 配对闭合恰好覆盖到结尾的方言标签交回 DOM 自愈；中途闭合（结尾还挂着
-            // 残片，如 <comment>a</comment>x</comment>）保源码块，防 DOM 静默丢残片
-            return [];
-        }
-        return helpers.createNode("htmlBlock", {html});
-    },
-});
+  parseMarkdown: (token, helpers) => {
+    if (!token.block) {
+      // 空数组 = 未认领，行内 html token 交回默认 DOM 解析路径
+      return []
+    }
+    const html = String(token.raw ?? token.text ?? '').trim()
+    if (!html) {
+      return []
+    }
+    const firstTag = /^<([a-zA-Z][\w-]*)/.exec(html)?.[1]?.toLowerCase() ?? ''
+    if (firstTag && DOM_HANDLED_INLINE_TAGS.has(firstTag)) {
+      // <br> 等真 HTML 行内标签独占一行时按行内语义 DOM 解析，不变源码块
+      return []
+    }
+    const openTagEnd = OPEN_TAG_PATTERN.exec(html)?.[0].length ?? 0
+    if (
+      firstTag && DOM_PARSEABLE_DIALECT_TAGS.has(firstTag) && openTagEnd > 0
+      && findMatchingCloseEnd(html, firstTag, openTagEnd) === html.length
+    ) {
+      // 配对闭合恰好覆盖到结尾的方言标签交回 DOM 自愈；中途闭合（结尾还挂着
+      // 残片，如 <comment>a</comment>x</comment>）保源码块，防 DOM 静默丢残片
+      return []
+    }
+    return helpers.createNode('htmlBlock', { html })
+  },
+})
 
 /**
  * 行内未知标签兜底节点：原样保留源码，展示为 code 风格 chip，序列化原样输出。
@@ -267,77 +269,77 @@ export const HtmlBlockBridge = Extension.create({
  * 孤立闭标签）退化为单标签 chip——两者都优于 DOM 解析剥标签造成的静默数据丢失。
  */
 export const RawInlineHtml = Node.create({
-    name: "rawInlineHtml",
-    group: "inline",
-    inline: true,
-    atom: true,
-    selectable: true,
-    priority: 1390,
+  name: 'rawInlineHtml',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
+  priority: 1390,
 
-    addAttributes() {
-        return {
-            html: {
-                default: "",
-            },
-        };
-    },
+  addAttributes() {
+    return {
+      html: {
+        default: '',
+      },
+    }
+  },
 
-    parseHTML() {
-        return [{
-            tag: "span[data-nb-raw-html]",
-            getAttrs: (dom) => ({
-                html: (dom as HTMLElement).getAttribute("data-nb-raw-html") ?? "",
-            }),
-        }];
-    },
+  parseHTML() {
+    return [{
+      tag: 'span[data-nb-raw-html]',
+      getAttrs: dom => ({
+        html: (dom as HTMLElement).getAttribute('data-nb-raw-html') ?? '',
+      }),
+    }]
+  },
 
-    renderHTML({node}) {
-        const html = String(node.attrs.html ?? "");
-        return ["span", mergeAttributes({
-            class: "nb-raw-inline-html",
-            "data-nb-raw-html": html,
-            contenteditable: "false",
-            title: html,
-        }), html];
-    },
+  renderHTML({ node }) {
+    const html = String(node.attrs.html ?? '')
+    return ['span', mergeAttributes({
+      'class': 'nb-raw-inline-html',
+      'data-nb-raw-html': html,
+      'contenteditable': 'false',
+      'title': html,
+    }), html]
+  },
 
-    renderText({node}) {
-        return String(node.attrs.html ?? "");
-    },
+  renderText({ node }) {
+    return String(node.attrs.html ?? '')
+  },
 
-    markdownTokenizer: {
-        name: "rawInlineHtml",
-        level: "inline",
-        start(src: string) {
-            // 也要认闭标签起始（</tag>），否则孤立闭标签残片轮不到本 tokenizer
-            const matched = /<\/?[a-zA-Z]/.exec(src);
-            return matched ? matched.index : -1;
-        },
-        tokenize(src: string) {
-            const html = captureUnknownHtml(src, DOM_HANDLED_INLINE_TAGS, false)
-                ?? captureHtmlTagFragment(src, DOM_HANDLED_INLINE_TAGS);
-            if (!html) {
-                return undefined;
-            }
-            return {
-                type: "rawInlineHtml",
-                raw: html,
-                html,
-            };
-        },
+  markdownTokenizer: {
+    name: 'rawInlineHtml',
+    level: 'inline',
+    start(src: string) {
+      // 也要认闭标签起始（</tag>），否则孤立闭标签残片轮不到本 tokenizer
+      const matched = /<\/?[a-zA-Z]/.exec(src)
+      return matched ? matched.index : -1
     },
+    tokenize(src: string) {
+      const html = captureUnknownHtml(src, DOM_HANDLED_INLINE_TAGS, false)
+        ?? captureHtmlTagFragment(src, DOM_HANDLED_INLINE_TAGS)
+      if (!html) {
+        return undefined
+      }
+      return {
+        type: 'rawInlineHtml',
+        raw: html,
+        html,
+      }
+    },
+  },
 
-    parseMarkdown: (token, helpers) => {
-        const htmlToken = token as HtmlFallbackToken;
-        const html = String(htmlToken.html ?? htmlToken.raw ?? "");
-        if (!html) {
-            // 空数组 = 未认领，MarkdownManager 会继续尝试其他 handler / fallback
-            return [];
-        }
-        return helpers.createNode("rawInlineHtml", {html});
-    },
+  parseMarkdown: (token, helpers) => {
+    const htmlToken = token as HtmlFallbackToken
+    const html = String(htmlToken.html ?? htmlToken.raw ?? '')
+    if (!html) {
+      // 空数组 = 未认领，MarkdownManager 会继续尝试其他 handler / fallback
+      return []
+    }
+    return helpers.createNode('rawInlineHtml', { html })
+  },
 
-    renderMarkdown: (node) => {
-        return String(node.attrs?.html ?? "");
-    },
-});
+  renderMarkdown: (node) => {
+    return String(node.attrs?.html ?? '')
+  },
+})

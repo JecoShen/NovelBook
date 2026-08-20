@@ -1,4 +1,4 @@
 export {
-    prisma,
-    usePrismaClient,
-} from "nbook/server/database/prisma";
+  prisma,
+  usePrismaClient,
+} from 'nbook/server/database/prisma'

@@ -5,8 +5,8 @@
  * metadata。Project 使用单段 root；user-assets Studio 与未选择 Project 都属于
  * Workspace Root session scope。
  */
-export function agentSessionScopeKey(workspaceKind: "novel" | "user-assets", projectRoot: string): string {
-    return workspaceKind === "novel" && projectRoot
-        ? `project:${projectRoot}`
-        : "workspace-root";
+export function agentSessionScopeKey(workspaceKind: 'novel' | 'user-assets', projectRoot: string): string {
+  return workspaceKind === 'novel' && projectRoot
+    ? `project:${projectRoot}`
+    : 'workspace-root'
 }
