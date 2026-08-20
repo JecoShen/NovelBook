@@ -58,7 +58,7 @@ export function parseBootConfigText(text: string, environment: NodeJS.ProcessEnv
 /**
  * 解析全站鉴权开关。显式配置优先；缺省时开发环境关闭、其他环境开启。
  */
-export function resolveBootAuthEnabled(nodeEnv: string | undefined = process.env.NODE_ENV): boolean {
+export function resolveBootAuthEnabled(nodeEnv?: string): boolean {
     const configured = loadBootConfigSync().auth?.enabled;
     return configured ?? nodeEnv !== "development";
 }
@@ -68,7 +68,7 @@ export function resolveBootAuthEnabled(nodeEnv: string | undefined = process.env
  */
 export function loadBootAuthEnabledSync(): boolean {
     if (cachedAuthEnabled === null) {
-        cachedAuthEnabled = resolveBootAuthEnabled();
+        cachedAuthEnabled = resolveBootAuthEnabled(process.env.NODE_ENV);
     }
     return cachedAuthEnabled;
 }
