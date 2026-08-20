@@ -3,6 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **patch v4.8** (Phase 4 audit, 2026-08-20): 8 minor 引用校正 — §1.2 M-7 TTL+LRU+accessCounter (Task 1 缓存模块) + §3.2 M-2 字符预算含 header/footer + M-3 cleanFrontmatter dropSummary (Task 3 injector) + §5.2 M-9 harness 内层 try-catch (Task 5) + Cat 4 6 处 main HEAD 校准注释 (L43/L52/L55/L1414/L1525/L1532, baseline `831270bf` → current main HEAD `a5652650`)
+> **patch v4.9** (Phase 5 audit, 2026-08-20): 3 minor + A1 + M-11 引用校正 — §6.1 M-10 writer binding 5 测试 (Task 6 writer profile) + §7.x M-11 carryOverPaths 累计 cross-ref (11/11 APPLIED) + §7.x A1 nits named const 引用 (MS_PER_MINUTE/DEFAULT_CACHE_TTL_MS/DEFAULT_CACHE_SIZE)
 
 **Goal:** 实现 `lore-resolver.ts` MVP——按章节文本解析 lorebook 触发器，渲染 Markdown `<chapter_lore_context>` 段注入到 writer prompt，调用 profile-context-access 记录 explicitInput 反馈。
 
@@ -1561,6 +1562,26 @@ git add assets/workspace/.nbook/agent/profiles/builtin/writer.profile.tsx
 git commit -m "feat(agent): writer profile 加 lore_resolver_query 工具 (spec §2.5)"
 ```
 
+### 6.1 M-10 minor: writer binding 5 测试 (3 minor 批次)
+
+**Files:**
+- Modify: `assets/workspace/.nbook/agent/profiles/builtin/writer-profile-lore-injection.test.ts` (加 5 测试, 总 11→16 tests)
+
+**Consumes:** Task 6 既有 writer profile 工具
+**Produces:** 5 new 边界/合规测试
+
+**为何 3 minor 批次单独落位**:
+- M-10 是在 MVP 验证 §8 7/7 通过**之后**才意识到的覆盖盲点: 边界 (chapter 长度 < 100 / == 100) + XML attrs 合规 + KIND_ORDER + maxChars budget 数学
+- 实施 commit `d8169a74` on `feat-i-1-production-wiring` (3 剩余 minor 批次 1 of 2)
+- 5 new 测试:
+  1. **chapter 长度边界 < 100** — auto-injection **不**触发 (per spec §2.4 `if (chapterText.length > 100)`)
+  2. **chapter 长度边界 == 100** — auto-injection 仍**不**触发 (`>` not `>=`)
+  3. **XML attrs** — 验证 `<chapter_lore_context generatedAt="..." maxPaths="..." included="..." truncated="...">` 全部存在且合法数字
+  4. **8 kinds KIND_ORDER** — character 先于 location 先于 faction 等 (per spec §2.3 M-4 决策)
+  5. **maxChars budget 数学** — 验证 `included+truncated = maxPaths` + truncated 是合法数字 (不强制 truncated > 0, 因 personality 截断 4 行后单卡字符数 < 1000)
+
+**§6.1 引用**: `M-10 实施 commit d8169a74 on feat-i-1-production-wiring, 详见 [[p1-3-3-remaining-minor-archive-2026-08-19]] memory`
+
 ---
 
 ## Task 7: archive 收尾 + 落 4 文档
@@ -1600,9 +1621,33 @@ cp assets/workspace/.nbook/agent/profiles/builtin/writer.profile.tsx \
 ```markdown
 # P1-3 lore-resolver MVP — archive 设计上下文
 
-**spec**：`docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf；worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
+**spec**：`docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf；worktree 创建时基线, 当前 main HEAD c0ad6915 2026-08-20 校准)
 **plan**：`docs/superpowers/plans/2026-08-18-lore-resolver-mvp.md` (本 archive 同步)
 **worktree**：`feat-p1-3-lore-resolver` (基于 main, 0 push/0 merge)
+
+## M-11 carryOverPaths 累计引用
+
+**§7.x M-11 cross-ref**:
+- spec: §2.2 (carryOverPaths 参数) + §2.4 (harness 集成) + §2.6 (carryover store) + §3 (数据流) + §4 (错误处理) + §5 (测试 5 case)
+- plan: `docs/superpowers/plans/2026-08-19-m-11-carryover-paths.md` (502 行, 独立 plan)
+- 实施 4 commits on `feat-i-1-production-wiring`:
+  - `8e293aae` feat(lore): M-11 carryOverPaths JSONL store
+  - `5b2cb363` feat(harness): M-11 wire carryOverPaths in prepareRun + record in commit-point
+  - `6d292d4e` docs(spec): v4.7 M-11 carryOverPaths spec
+  - `97e1361d` docs(plan): M-11 carryOverPaths TDD plan
+- 累计 P1-3 minor 11/11 APPLIED (M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-8/M-9/M-10/M-11)
+- 验证: 32/32 lore tests + 16/16 writer profile tests + i134 perf 0.00/0.20/2.68ms (余量 10000x/100x/19x)
+- 内存: `[[m-11-carryover-paths-archive-2026-08-19]]` (P1-3 minor 11/11 100% 闭环)
+
+## A1 nits named const 引用
+
+**§7.x A1 cross-ref**:
+- spec: §2.1 缓存策略 (MS_PER_MINUTE / DEFAULT_CACHE_TTL_MS / DEFAULT_CACHE_SIZE / accessCounter)
+- plan: §1.2 M-7 minor 实施细节 (含 named const)
+- 实施 commit `614d1a08` on `feat-p1-3-minor-nits` (branch 已删, 内容 main 已有)
+- 8 files +24/-46 (DRY 净 -22 行, 新 `lore-test-helpers.ts` 12 行)
+- 32/32 lore tests pass + tsc 0 errors + i134 perf 0.00/0.17/1.97ms
+- 内存: `[[p1-3-minor-nits-archive-cleaned-2026-08-20]]`
 
 ## 累计 token
 

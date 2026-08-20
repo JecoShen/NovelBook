@@ -6,6 +6,7 @@
 > **patch**: 2026-08-18 实施时校正 §6 文件清单 2 处路径错误 + §1 架构图 + §2.4 注释（详见 commit XXXXXXX 与 workspace/.../v45-p1-3-archive/02-patch-report.md）
 > **patch v4.7**: 2026-08-19 M-11 落地 + §2.2/§2.4/§2.6 校正 + §3/§4/§5 同步（详见 commit 待定 + workspace/.../v45-p1-3-archive/06-m-11-carryover-lockdown.md）
 > **patch v4.8** (Phase 4 audit, 2026-08-20): 8 minor 引用校正 — M-7 TTL+LRU+accessCounter (§2.1) + M-2 字符预算含 header/footer (§2.3) + M-3 cleanFrontmatter dropSummary (§2.3) + M-9 harness 内层 try-catch (§2.4) + §5 测试补 4 case + §6 文件清单 +1080→~980 行 + Cat 3 (per CLAUDE.md 假引用) L426/L511/L512 校正至 `vol2-v45-archive-mode` / `novel-frontend-display-fix-2026-08-17` memory
+> **patch v4.9** (Phase 5 audit, 2026-08-20): 3 minor + A1 + M-11 引用校正 — M-6 LoreEntryKind 8 kinds 决策 (§2.1) + M-4 §2.3 8 kinds 顺序决策 (§2.3) + M-10 writer binding 5 测试 (§2.5) + M-11 cross-ref (§2.6) + A1 nits named const (§2.1) + §5 测试矩阵补 M-4 + M-10 entries + M-10 5 测试覆盖 (boundary <100/==100 + XML attrs + KIND_ORDER + maxChars budget)
 > 目标：解决长篇 lore 全量注入 LLM 上下文导致超长 prompt 与 token 浪费
 
 ---
@@ -103,11 +104,18 @@ export function invalidateLoreResolverIndex(
 
 **构建过程**：
 1. 调 `project.workspace.ref.projectRoot` 拿到根
-2. 用 `fs.readdir` 遍历 `lorebook/{character,location,faction,event,item,world,system,spec}/`（**不**遍历 `note/`、`story-spec/`、`instruction/`）
+2. 用 `fs.readdir` 遍历 `lorebook/{character,location,faction,event,item,world,system,spec}/`（**不**遍历 `note/`、`story-spec/`、`instruction/`）— 8 dirs per **M-6 LoreEntryKind 决策** (note 故意排除, per §3 invariant 安全策略)
 3. 每个 entry 读 `index.md` 的 frontmatter，提取 `path/kind/title/triggers/enabled`
 4. `enabled === false` 跳过
 5. 触发器去重 + 长度过滤（< 2 字符的 trigger 跳过，避免误伤"我"/"他"等）
 6. 构建 `Map<trigger, Set<path>>` 索引
+
+**§2.1 M-6 决策**：
+- **LoreEntryKind = 8 kinds** (no `note`, 保留 `spec`)
+- `note/` 故意不 traverse (per §3 invariant: 作者笔记不可被 LLM 当 lore 读取)
+- `spec/` kind 可注入 (story-spec/index.md 是符合 lore 形态的元数据, 但走不同 prefix)
+- impl `ALLOWED_KINDS = 8` 是 spec 真相, spec §2.1 早期版本列 9 kinds (含 note) 是 spec 文档错误, 已校正
+- 实施 commit `7b3740d4` on `feat-i-1-production-wiring` (M-4 + M-6 合并 1 commit)
 
 **缓存策略（M-7）**：
 - TTL 5 分钟（`DEFAULT_CACHE_TTL_MS = 5 * MS_PER_MINUTE`）— 防止 `invalidate` 漏调时索引陈旧
@@ -116,7 +124,14 @@ export function invalidateLoreResolverIndex(
 - TTL 过期或 LRU 淘汰 → 重新 `buildLoreResolverIndex`
 - `setLoreCacheOptions({ ttlMs, size })` 暴露给测试/调优
 
-**§2.1 引用**：`M-7 TTL+LRU+accessCounter 详见 [[m-7-archive-2026-08-19]]` (实施 3 commits on `feat-i-1-production-wiring`)
+**缓存命名常量（A1 nits）**：
+- `MS_PER_MINUTE = 60 * 1000`
+- `DEFAULT_CACHE_TTL_MS = 5 * MS_PER_MINUTE`
+- `DEFAULT_CACHE_SIZE = 100`
+- `makeProjectRef(root)` 在 `lore-test-helpers.ts` 共享（6 test files DRY, 净 -22 行）
+- 实施 commit `614d1a08` on `feat-p1-3-minor-nits` (branch 已删, 内容 main 已有)
+
+**§2.1 引用**：`M-7 TTL+LRU+accessCounter 详见 [[m-7-archive-2026-08-19]]` (实施 3 commits on `feat-i-1-production-wiring`) + `M-6 LoreEntryKind 详见 [[p1-3-3-remaining-minor-archive-2026-08-19]]` + `A1 nits 详见 [[p1-3-minor-nits-archive-cleaned-2026-08-20]]`
 
 ### 2.2 `lore-resolver.ts`
 
@@ -210,6 +225,13 @@ export async function renderInjectedMarkdown(
 - drop 顺序按"作者不太会回看"由低到高：`ext → governance → retrieval`，便于未来 log debug
 
 **§2.3 引用**：`M-2 字符预算 + M-3 frontmatter dropSummary 详见 [[m-2-m-3-archive-2026-08-19]]` (实施 1 commit `16b456b0` on `feat-i-1-production-wiring`)
+
+**§2.3 M-4 决策**：
+- **KIND_ORDER 顺序 = 8 kinds 顺序**: `character` → `location` → `faction` → `event` → `item` → `world` → `system` → `spec`
+- spec §2.3 早期版本只列 7 kinds (no spec) 是 spec 漂移, impl `KIND_ORDER = 8 kinds` 是真相, spec 已校正
+- 顺序依据: 用户对角色 / 地点 / 阵营关注度 > 事件 / 物品 / 世界观 > 系统规则 / 设定
+- 同类型按 hits 数降序, 跨类型按 KIND_ORDER 优先
+- 实施 commit `7b3740d4` on `feat-i-1-production-wiring` (M-4 + M-6 合并 1 commit)
 
 **输出格式**：
 ```markdown
@@ -326,6 +348,16 @@ defineTool({
 });
 ```
 
+**§2.5 M-10 writer binding 测试**：
+- 测试文件: `writer-profile-lore-injection.test.ts` (16 tests: 11 baseline + 5 new)
+- 5 new 覆盖:
+  1. **chapter 长度边界 < 100** — auto-injection **不**触发 (per spec §2.4 `if (chapterText.length > 100)`)
+  2. **chapter 长度边界 == 100** — auto-injection 仍**不**触发 (`>` not `>=`)
+  3. **XML attrs** — 验证 `<chapter_lore_context generatedAt="..." maxPaths="..." included="..." truncated="...">` 全部存在且合法数字
+  4. **多卡片 KIND_ORDER** — 验证 character 先于 location 先于 faction 等 (8 kinds 顺序)
+  5. **maxChars budget 数学** — 验证 `included+truncated = maxPaths` + truncated 是合法数字 (不强制 truncated > 0, 因 personality 截断 4 行后单卡字符数 < 1000)
+- 实施 commit `d8169a74` on `feat-i-1-production-wiring`
+
 ### 2.6 `lore-carryover-store.ts` (M-11)
 
 持久化章节级 lore 注入记录，供下章 `resolveForChapter` 的 `carryOverPaths` 使用。
@@ -366,6 +398,18 @@ export async function readRecentLoreInjections(
 - append-only 写不需 read-modify-write，并发安全。
 - 损坏一行不影响其它行（每行独立 JSON 解析）。
 - 顺序读 tail 末 N 条 = O(1) 内存。
+
+**§2.6 M-11 引用**：
+- spec v4.7 patch + 实施 4 commits on `feat-i-1-production-wiring`:
+  - `8e293aae` feat(lore): M-11 carryOverPaths JSONL store
+  - `5b2cb363` feat(harness): M-11 wire carryOverPaths in prepareRun + record in commit-point
+  - `6d292d4e` docs(spec): v4.7 M-11 carryOverPaths spec
+  - `97e1361d` docs(plan): M-11 carryOverPaths TDD plan
+- 跨 spec 引用: §2.2 `ResolveForChapterInput.carryOverPaths` + §2.4 harness 集成 + §3 数据流 + §4 错误处理 + §5 测试矩阵 (5 case)
+- 详细 plan: `docs/superpowers/plans/2026-08-19-m-11-carryover-paths.md` (502 行)
+- 内存: `[[m-11-carryover-paths-archive-2026-08-19]]` (P1-3 minor 11/11 100% 闭环)
+- 累计 P1-3 minor 11/11 APPLIED (M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-8/M-9/M-10/M-11)
+- 验证: 32/32 lore tests + 16/16 writer profile tests + i134 perf 0.00/0.20/2.68ms (余量 10000x/100x/19x)
 
 ---
 
@@ -437,9 +481,10 @@ export async function readRecentLoreInjections(
 |---|---|
 | `lore-resolver-cache.test.ts` | (1) 扫 21 张 character 构建索引 (2) `enabled: false` 跳过 (3) 路径中含特殊字符（中文/空格） (4) frontmatter 缺字段时 defaults (5) `note/` 不进索引 **(6) M-7 TTL 过期 → 重新 build** **(7) M-7 LRU 100 上限 + accessCounter tie-breaker** |
 | `lore-resolver.test.ts` | (1) 单 trigger 命中 (2) 多 trigger 命中 (3) 同一 path 多 trigger 累加 (4) 排序：命中数 DESC (5) carryOver 优先 (6) `maxPaths` 截取 (7) 空文本返回空 paths (8) 文本中 trigger 跨段不误命中 |
-| `lore-context-injector.test.ts` | (1) 渲染 character/location/faction/spec 顺序 (2) `## 基本信息` 段提取 (3) `## 性格` 段只取 3 行 (4) `maxChars` 截断 + truncatedPaths (5) frontmatter 清洗（去掉 retrieval/governance/ext） **(6) M-2 字符预算含 header/footer** **(7) M-3 cleanFrontmatter dropSummary 防重复** |
+| `lore-context-injector.test.ts` | (1) 渲染 character/location/faction/**spec** 顺序 (2) `## 基本信息` 段提取 (3) `## 性格` 段只取 3 行 (4) `maxChars` 截断 + truncatedPaths (5) frontmatter 清洗（去掉 retrieval/governance/ext） **(6) M-2 字符预算含 header/footer** **(7) M-3 cleanFrontmatter dropSummary 防重复** **(8) M-4 8 kinds 顺序 (含 spec)** |
 | `lore-resolver-integration.test.ts` | (1) build → resolve → render 全链路 (2) harness 调用注入点 mock (3) 调 `lore_resolver_query` 工具 **(4) M-9 recordExplicitContextEntries throw → 不阻断主流程 + log agent.lore.record.failed** |
 | `lore-resolver-harness-trycatch.test.ts` (M-9) | (1) recordExplicitContextEntries throw → 日志键 + 继续 commit (2) recordLoreInjection throw → 同上 (3) 同步失败路径不重试（per profile-context-access 同步写 SQLite 易双写） |
+| `writer-profile-lore-injection.test.ts` (M-10) | (1) 11 baseline (2) **M-10 5 new**: chapter 长度边界 < 100 / == 100 + XML attrs 合法数字 + 8 kinds KIND_ORDER + maxChars budget 数学 (included+truncated=maxPaths, truncated 是合法数字) |
 | **`lore-carryover-store.test.ts` (M-11)** | (1) record 1 章 → read 1 返回该章 paths (2) record 5 章, read limit=3 返回末 3 章 union (3) 同一 chapterId 多次 record → read 保留多版本 + path 去重 (4) 文件不存在 → read 返回 `[]` (5) 末行 malformed → skip + 前面行正常返回 + 顺序保留 |
 
 **TDD 顺序**（per ECC `development-workflow.md`）：
