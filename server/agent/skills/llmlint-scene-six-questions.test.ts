@@ -40,7 +40,9 @@ describe("cn.structure.scene-six-questions ruleset (P1-4)", () => {
 
         expect(scene6q).toBeDefined();
         expect(scene6q?.action.type).toBe("suggest");
-        expect(scene6q?.action.message).toContain("reference/scene-six-questions.md");
+        if (scene6q?.action.type === "suggest") {
+            expect(scene6q.action.message).toContain("reference/scene-six-questions.md");
+        }
     });
 
     it("trigger: scanText 缺 ## 场景 段时生成 issue (I2 修复: 真实 issue 生成验证)", async () => {
