@@ -1233,6 +1233,7 @@ async function mapConcurrent<TInput, TOutput>(items: TInput[], concurrency: numb
  * 新 profile 合法需要新宿主模块时显式扩这里并过 review，而不是放松门禁。
  */
 const PROFILE_ARTIFACT_ALLOWED_SERVER_PREFIXES = [
+    "server/agent/lore/",
     "server/agent/messages/",
     "server/agent/profiles/",
     "server/agent/session/",
@@ -1363,7 +1364,7 @@ async function compileProfileFile(profileRoot: string, compiledDir: string, file
         kind: "profile",
         root: profileRoot,
         entry: file.absolutePath,
-        allowedSdkSpecifiers: ["nbook/profile-sdk", "nbook/profile-sdk/writing", "nbook/profile-sdk/workspace", "nbook/profile-sdk/runtime-paths"],
+        allowedSdkSpecifiers: ["nbook/profile-sdk", "nbook/profile-sdk/lore", "nbook/profile-sdk/writing", "nbook/profile-sdk/workspace", "nbook/profile-sdk/runtime-paths"],
     });
     const temporaryStem = stableArtifactStem(file.fileName, /\.profile\.(tsx|ts|mjs|js)$/);
     const temporaryOutputPath = join(compiledDir, `${temporaryStem}.${randomUUID()}.building.mjs`);

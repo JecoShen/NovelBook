@@ -1,6 +1,6 @@
 import type {LowCodeFormResolveContext} from "nbook/server/low-code-form";
 import type {ProfileHomeFacade} from "nbook/server/agent/profiles/profile-home";
-import {stripFrontmatterBody} from "nbook/server/utils/frontmatter-document";
+import {stripFrontmatterBody} from "nbook/profile-sdk/frontmatter";
 import type {
     ResourcePresetContent,
     ResourcePresetCreateInput,

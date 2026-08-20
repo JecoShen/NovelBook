@@ -67,6 +67,8 @@ export function assertNoReadonlyFrontmatterKeys(
 
 /**
  * 剥离 YAML frontmatter，仅返回正文部分；无 frontmatter 时原样返回。
+ *
+ * Profile SDK 白名单的入口见 profile-sdk/frontmatter.ts；本实现仅供 server 内部使用。
  */
 export function stripFrontmatterBody(content: string): string {
     const match = content.match(FRONTMATTER_PATTERN);

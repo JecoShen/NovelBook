@@ -17,10 +17,9 @@ import {defineLowCodeForm, profileHomeResource} from "nbook/profile-sdk";
 import {defineProfileHome} from "nbook/profile-sdk";
 import type {ReadyProjectSessionRef} from "nbook/profile-sdk";
 import type {AbsoluteFsPath} from "nbook/profile-sdk/runtime-paths";
-import {resolveForChapter} from "nbook/server/agent/lore/lore-resolver";
-import {renderInjectedMarkdown} from "nbook/server/agent/lore/lore-context-injector";
-import {invalidateLoreResolverIndex} from "nbook/server/agent/lore/lore-resolver-cache";
-import type {ReadyProjectSessionRef as ServerReadyProjectSessionRef} from "nbook/server/workspace-files/project-session-types";
+import {resolveForChapter} from "nbook/profile-sdk/lore";
+import {renderInjectedMarkdown} from "nbook/profile-sdk/lore";
+import type {ReadyProjectSessionRef as ServerReadyProjectSessionRef} from "nbook/profile-sdk/lore";
 
 const DEFAULT_PARAGRAPH_RHYTHM = "段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段；不要为了凑短段打碎完整语义，场景描写、复杂动作和连续心理变化可以保留为较短自然段。";
 const DEFAULT_WORD_COUNT_CONTROL = "2000-2600 字";
