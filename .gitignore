@@ -44,6 +44,8 @@ product/
 /coverage/
 /.agent/
 /.worktree/
+# Package-level runtime data (per AGENTS.md .agent convention); covers all .agent/ subdirs under packages/
+packages/*/.agent/
 docs/.vitepress/dist
 docs/.vitepress/cache
 assets/workspace/.nbook/agent/profiles/.compiled/
