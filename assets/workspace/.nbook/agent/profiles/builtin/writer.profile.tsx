@@ -3,7 +3,7 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, join, posix } from 'node:path'
-import type { ProfilePrepareContext, ReadyProjectSessionRef, Type, type Static } from 'nbook/profile-sdk'
+import { Type, type ProfilePrepareContext, type ReadyProjectSessionRef, type Static } from 'nbook/profile-sdk'
 import { defineAgentProfile, builtin, plotReadBindings, pluginTool, toolset, WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema, AppendingSet, FileChangeNotice, HistorySet, If, Import, Message, ProfilePrompt, System, profileText, defineLowCodeForm, profileHomeResource, defineProfileHome } from 'nbook/profile-sdk'
 import { DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey, DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey, DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords } from 'nbook/profile-sdk/writing'
 import type { AbsoluteFsPath } from 'nbook/profile-sdk/runtime-paths'

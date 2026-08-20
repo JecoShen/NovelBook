@@ -7,9 +7,9 @@ import FormAnnotationDialog from 'nbook/app/components/novel-ide/ai/FormAnnotati
 import { useDetailSession } from 'nbook/app/composables/useDetailSession'
 import { useStructuredReferenceMenu } from 'nbook/app/composables/useStructuredReferenceMenu'
 import { useNovelIdeStore } from 'nbook/app/stores/novel-ide'
-import type {
-  PlotThreadPanelDetail,
-  PlotThreadQuickSceneUpdate,
+import {
+  type PlotThreadPanelDetail,
+  type PlotThreadQuickSceneUpdate,
   PLOT_SCENE_STATUS_LABELS,
   PLOT_THREAD_TONE_STYLES,
   type PlotThreadPanelChapter,

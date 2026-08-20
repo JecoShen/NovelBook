@@ -1,4 +1,4 @@
-import type { MarkdownToken, mergeAttributes, Node, type Editor, type NodeViewProps } from '@tiptap/core'
+import { type MarkdownToken, mergeAttributes, Node, type Editor, type NodeViewProps } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
 import { Suggestion, type SuggestionMatch } from '@tiptap/suggestion'

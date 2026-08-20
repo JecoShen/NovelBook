@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref, type EffectScope, type MaybeRefOrGetter } from 'vue'
-import type { AgentJobsFeedController, createAgentJobsFeed, type AgentJobsFeedTransport } from 'nbook/app/composables/useAgentJobsFeed'
+import { createAgentJobsFeed, type AgentJobsFeedController, type AgentJobsFeedTransport } from 'nbook/app/composables/useAgentJobsFeed'
 import type {
   AgentJobEventCursor,
   AgentJobEventDto,

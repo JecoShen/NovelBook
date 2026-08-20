@@ -1,4 +1,4 @@
-import type { AnyExtension, Extension, mergeAttributes, Node, type Editor, type Range } from '@tiptap/core'
+import { type AnyExtension, Extension, mergeAttributes, Node, type Editor, type Range } from '@tiptap/core'
 import { Placeholder } from '@tiptap/extension-placeholder'
 import { PluginKey } from '@tiptap/pm/state'
 import { StarterKit } from '@tiptap/starter-kit'

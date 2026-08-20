@@ -1,4 +1,4 @@
-import type { TSchema, Type, type Static } from 'typebox'
+import { Type, type Static, type TSchema } from 'typebox'
 import { Compile, IsSchema } from 'typebox/schema'
 import type { JsonValue } from 'nbook/server/agent/messages/types'
 import { defineAgentProfile } from 'nbook/server/agent/profiles/define-agent-profile'

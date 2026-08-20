@@ -1,4 +1,4 @@
-import type { MarkdownToken, mergeAttributes, Node, type Editor, type Range } from '@tiptap/core'
+import { type MarkdownToken, mergeAttributes, Node, type Editor, type Range } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import { Suggestion, type SuggestionMatch } from '@tiptap/suggestion'
 import { getReferenceChipMeta } from 'nbook/app/components/common/reference-chip'

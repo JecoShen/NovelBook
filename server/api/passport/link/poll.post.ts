@@ -1,4 +1,4 @@
-import type { PassportLinkPollDto, PassportLinkPollRequestSchema, type PassportLinkPollRequestDto } from 'nbook/shared/dto/passport.dto'
+import { PassportLinkPollRequestSchema, type PassportLinkPollDto, type PassportLinkPollRequestDto } from 'nbook/shared/dto/passport.dto'
 import { validateBody } from 'nbook/server/utils/novel-chapter'
 import { usePassportClient } from 'nbook/server/passport/passport-client-service'
 

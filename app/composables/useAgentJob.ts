@@ -1,6 +1,6 @@
 import { computed, getCurrentScope, onScopeDispose, readonly, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { resolveApiErrorMessage } from 'nbook/app/utils/api-error'
-import type { AgentJobObservationStatus, useAgentJobsFeed, type AgentJobsFeedView } from 'nbook/app/composables/useAgentJobsFeed'
+import { useAgentJobsFeed, type AgentJobObservationStatus, type AgentJobsFeedView } from 'nbook/app/composables/useAgentJobsFeed'
 import type { AgentJobEventCursor, AgentJobSnapshot } from 'nbook/shared/dto/agent-job.dto'
 
 export type AgentJobObserver = {
