@@ -1,5 +1,8 @@
 [install]
 linker = "hoisted"
+# 上游 nitropack 未合可复现构建 + 栈帧增强补丁，必须在 install 阶段应用。
+# 见 docs/adr/0015 与 patches/nitropack@2.13.4.patch。
+patches = { "nitropack@2.13.4" = "patches/nitropack@2.13.4.patch" }
 
 [test]
 pathIgnorePatterns = [

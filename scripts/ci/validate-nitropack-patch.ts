@@ -51,7 +51,13 @@ export async function validateNitropackPatch(root = repositoryRoot): Promise<voi
     }
     for (const name of bunPackageNames) {
         if (name.startsWith("@nuxt+nitro-server@")) {
-            packageRoots.add(await realpath(join(bunPackageStore, name, "node_modules", "nitropack")));
+            try {
+                packageRoots.add(await realpath(join(bunPackageStore, name, "node_modules", "nitropack")));
+            } catch (error) {
+                if (!isMissingPath(error)) throw error;
+                // Hoisted linker 可能只把 nitropack 暴露在顶层 node_modules，下面的 symlink 会指向已不存在的 .bun 副本。
+                // 顶层入口已在上方 realpath 进入 packageRoots，跳过即可。
+            }
         }
     }
     ensure(packageRoots.size > 0, "未找到 Nuxt 实际使用的 nitropack 安装产物");
