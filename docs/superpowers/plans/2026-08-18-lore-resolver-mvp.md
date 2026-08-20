@@ -1,6 +1,8 @@
 # P1-3 lore-resolver.ts MVP Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **patch v4.8** (Phase 4 audit, 2026-08-20): 8 minor 引用校正 — §1.2 M-7 TTL+LRU+accessCounter (Task 1 缓存模块) + §3.2 M-2 字符预算含 header/footer + M-3 cleanFrontmatter dropSummary (Task 3 injector) + §5.2 M-9 harness 内层 try-catch (Task 5) + Cat 4 6 处 main HEAD 校准注释 (L43/L52/L55/L1414/L1525/L1532, baseline `831270bf` → current main HEAD `a5652650`)
 
 **Goal:** 实现 `lore-resolver.ts` MVP——按章节文本解析 lorebook 触发器，渲染 Markdown `<chapter_lore_context>` 段注入到 writer prompt，调用 profile-context-access 记录 explicitInput 反馈。
 
@@ -40,7 +42,7 @@
 ## Task 0: 建 worktree + 准备工具
 
 **Files:**
-- Create: `feat-p1-3-lore-resolver` worktree（基于 `main`，commit `831270bf`）
+- Create: `feat-p1-3-lore-resolver` worktree（基于 `main`，commit `831270bf`；worktree 创建时基线, 当前 main HEAD `a5652650` 2026-08-20 校准）
 
 **前置调研**：
 
@@ -49,10 +51,10 @@
 ```bash
 cd /www/wwwroot/book.neoshen.dpdns.org
 git status --short
-git log -1 --oneline   # 应是 831270bf
+git log -1 --oneline   # 应是 831270bf (worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
 ```
 
-Expected: 干净工作区，HEAD = 831270bf `docs(superpowers): P1-3 lore-resolver MVP design spec`
+Expected: 干净工作区，HEAD = 831270bf `docs(superpowers): P1-3 lore-resolver MVP design spec` (worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
 
 - [ ] **Step 2: 拉取最新 main 并建 worktree**
 
@@ -450,6 +452,71 @@ git commit -m "feat(agent): lore-resolver-cache MVP (index 5 测试通过 / 80% 
 ```
 
 Expected: 1 commit, 0 push, master 分支不变
+
+### 1.2 M-7 minor: TTL+LRU+accessCounter 落位 (后续 8 minor 批次)
+
+**Files:**
+- Modify: `server/agent/lore/lore-resolver-cache.ts` (加 `setLoreCacheOptions` + `DEFAULT_CACHE_TTL_MS` + `DEFAULT_CACHE_SIZE` + `MS_PER_MINUTE` 常量)
+- Modify: `server/agent/lore/lore-resolver-cache.test.ts` (加 TTL 过期重 build + LRU 100 上限 + accessCounter tie-breaker 2 case)
+
+**Consumes:** Task 1.1 现有 cache 模块
+**Produces:** 4 named const (TTL 5min / LRU 100 / MS_PER_MINUTE / accessCounter) + 2 测试用例
+
+**为何 8 minor 批次单独落位 (而非 MVP 内)**:
+- M-7 是在 MVP `buildLoreResolverIndex` 已落位**之后**才意识到的可优化点（TTL 防陈旧 / LRU 防 memory leak / accessCounter 防 `Date.now()` 1ms tie）
+- 不影响 MVP 验收 §8 7/7 通过
+- 实施 commit `ff1a77d7` on `feat-i-1-production-wiring` (3 commits: 16b456b0/21dc29eb/ff1a77d7 = M-2/M-3 + M-9 + M-7)
+
+- [ ] **Step 1: 写 2 个 TTL/LRU 测试**
+
+```typescript
+describe("lore-resolver-cache M-7 TTL+LRU", () => {
+  it("TTL 过期后重新 build", async () => {
+    setLoreCacheOptions({ ttlMs: 100, size: 100 });
+    try {
+      const root = makeRoot();
+      // ... build 1 + 缓存
+      await sleep(150);  // TTL 过期
+      const idx2 = await buildLoreResolverIndex(project);  // 重新 build
+      expect(idx2.builtAt).not.toBe(idx1.builtAt);
+    } finally {
+      setLoreCacheOptions({ ttlMs: 5 * 60 * 1000, size: 100 });
+    }
+  });
+
+  it("LRU 100 上限 + accessCounter tie-breaker", async () => {
+    setLoreCacheOptions({ ttlMs: 5 * 60 * 1000, size: 3 });
+    try {
+      // 插入 a1/a2/a3 → 触发 a1 淘汰
+      // 关键: a1 重新 access (accessCounter++), 后续插入 a4 时 a1 不被淘汰
+      // 测试时序要小心: a2Rebuilt 插入会重新触发 LRU 排序
+    } finally {
+      setLoreCacheOptions({ ttlMs: 5 * 60 * 1000, size: 100 });
+    }
+  });
+});
+```
+
+- [ ] **Step 2: 实现 TTL+LRU+accessCounter**
+
+```typescript
+const MS_PER_MINUTE = 60 * 1000;
+const DEFAULT_CACHE_TTL_MS = 5 * MS_PER_MINUTE;
+const DEFAULT_CACHE_SIZE = 100;
+let accessCounter = 0;
+
+interface CacheEntry { value: LoreResolverIndex; expireAt: number; lastAccessedAt: number; }
+const cache = new Map<string, CacheEntry>();
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add server/agent/lore/lore-resolver-cache.ts server/agent/lore/lore-resolver-cache.test.ts
+git commit -m "feat(agent): M-7 lore-resolver-cache TTL+LRU+accessCounter (2 case)"
+```
+
+**§1.2 引用**: `M-7 实施 commit ff1a77d7 on feat-i-1-production-wiring, 详见 [[p1-3-8-minor-fixes-archive-2026-08-19]] memory`
 
 ---
 
@@ -1058,6 +1125,67 @@ git add server/agent/lore/lore-context-injector.ts server/agent/lore/lore-contex
 git commit -m "feat(agent): lore-context-injector MVP (renderInjectedMarkdown 5 测试 / 80% 覆盖)"
 ```
 
+### 3.2 M-2 + M-3 minor: 字符预算含 header/footer + cleanFrontmatter dropSummary (8 minor 批次)
+
+**Files:**
+- Modify: `server/agent/lore/lore-context-injector.ts` (renderInjectedMarkdown 字符预算累加 `<chapter_lore_context>` + `## <title> (<kind>)` header + footer 标签; cleanFrontmatter 加 dropSummary 防 `## 基本信息` 段与 frontmatter summary 重复)
+- Modify: `server/agent/lore/lore-context-injector.test.ts` (加 2 case: 字符预算含 header/footer + dropSummary 防重复)
+
+**Consumes:** Task 3.1 现有 renderInjectedMarkdown
+**Produces:** 字符预算改进（`M-2`）+ cleanFrontmatter 改进（`M-3`）+ 2 测试用例
+
+**为何 8 minor 批次单独落位**:
+- M-2 是在 MVP renderInjectedMarkdown 字符预算**实现后**才意识到的边界：原 `totalChars += content.length` 未含 `<chapter_lore_context>` 标签 + `## <title> (<kind>)` header + footer，导致实际 prompt 超 `maxChars`
+- M-3 是在 `## 基本信息` 段 + frontmatter `summary` 同时存在时，frontmatter summary 重复出现，浪费 token
+- 不影响 MVP 验收 §8 7/7 通过 (临界 case)
+- 实施 commit `16b456b0` on `feat-i-1-production-wiring` (合并 M-2 + M-3 在 1 commit)
+
+- [ ] **Step 1: 写 2 个 M-2/M-3 测试**
+
+```typescript
+describe("lore-context-injector M-2/M-3", () => {
+  it("M-2: 字符预算含 <chapter_lore_context> + ## <title> + footer", async () => {
+    // 设 maxChars=500, 注入 3 张 character 卡
+    // 实际 prompt 字符数 = totalChars(内容) + tag-overhead(<...> + ## + 空行)
+    // expect(result.totalChars) === 实际 prompt 字符数 (含 overhead)
+  });
+
+  it("M-3: cleanFrontmatter dropSummary 防 ## 基本信息 段 + frontmatter summary 重复", async () => {
+    // 卡同时有 frontmatter summary + ## 基本信息 段
+    // expect: rendered markdown 不含 frontmatter summary (drop)
+  });
+});
+```
+
+- [ ] **Step 2: 实现 M-2 + M-3**
+
+```typescript
+// M-2: 字符预算累加 tag overhead
+const tagOverhead = `<chapter_lore_context ...>`.length + `</chapter_lore_context>`.length;
+const perEntryOverhead = (title, kind) => `## ${title} (${kind})\n\n`.length;
+const effectiveMaxChars = maxChars - tagOverhead;
+
+// M-3: cleanFrontmatter 顺序剥 ext → governance → retrieval
+function cleanFrontmatter(parsed: FrontmatterParsed): Record<string, unknown> {
+  const { retrieval, governance, ext, ...rest } = parsed;
+  return rest;  // dropSummary 由 caller (renderInjectedMarkdown) 决定
+}
+
+// 在 renderInjectedMarkdown 中:
+if (hasBasicInfoSection(content)) {
+  delete cleaned.summary;  // dropSummary 防重复
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add server/agent/lore/lore-context-injector.ts server/agent/lore/lore-context-injector.test.ts
+git commit -m "feat(agent): M-2/M-3 lore-context-injector char-budget + dropSummary (2 case)"
+```
+
+**§3.2 引用**: `M-2/M-3 实施 commit 16b456b0 on feat-i-1-production-wiring, 详见 [[p1-3-8-minor-fixes-archive-2026-08-19]] memory`
+
 ---
 
 ## Task 4: integration test (RED → GREEN)
@@ -1299,6 +1427,67 @@ git add server/agent/harness/neuro-agent-harness.ts server/agent/harness/neuro-a
 git commit -m "feat(agent): prepareRun 阶段注入 chapter_lore_context 段（writer profile）"
 ```
 
+### 5.2 M-9 minor: harness 内层 try-catch 包 recordExplicitContextEntries (8 minor 批次)
+
+**Files:**
+- Modify: `server/agent/harness/neuro-agent-harness.ts` (内层 try-catch 包 `recordExplicitContextEntries` + `recordLoreInjection` 调用, 失败 log `agent.lore.record.failed` + continue)
+- New: `server/agent/lore/lore-resolver-harness-trycatch.test.ts` (3 case: recordExplicit throw + recordLoreInjection throw + 同步路径不重试)
+
+**Consumes:** Task 5.1 现有 prepareRun 流程
+**Produces:** 内层 try-catch 防护 (M-9) + 1 新测试文件 (3 case)
+
+**为何 8 minor 批次单独落位**:
+- M-9 是在 MVP 集成后才发现的可靠性问题：`recordExplicitContextEntries` (写 SQLite) 与 `recordLoreInjection` (写 JSONL) 同步写，理论上 throw 不应阻断主 commit 流程
+- 不影响 MVP 验收 §8 7/7 通过 (主流程 happy path)
+- 实施 commit `21dc29eb` on `feat-i-1-production-wiring`
+
+- [ ] **Step 1: 写 3 个 M-9 测试**
+
+```typescript
+describe("neuro-agent-harness M-9 try-catch", () => {
+  it("recordExplicitContextEntries throw → log agent.lore.record.failed + continue commit", async () => {
+    // mock recordExplicitContextEntries throw new Error("SQLite busy")
+    // expect: prepareRun 仍返回 prompt (不 throw)
+    // expect: 日志键 agent.lore.record.failed 出现
+  });
+
+  it("recordLoreInjection throw → log agent.lore.record.failed + continue commit", async () => {
+    // mock recordLoreInjection throw new Error("EACCES workspace/.nbook/state")
+    // expect: prepareRun 仍返回 prompt
+  });
+
+  it("同步失败路径不重试 (profile-context-access 写 SQLite 易双写)", async () => {
+    // mock recordExplicitContextEntries 调 2 次, 第一次 throw 后不应重试
+    // expect: 调 1 次, 第二次未触发
+  });
+});
+```
+
+- [ ] **Step 2: 实现 M-9 内层 try-catch**
+
+```typescript
+// 在 prepareWriterContext 内:
+try {
+  await recordExplicitContextEntries({...});
+} catch (e) {
+  console.warn({key: "agent.lore.record.failed", err: String(e), where: "recordExplicitContextEntries"});
+}
+try {
+  await recordLoreInjection({...});
+} catch (e) {
+  console.warn({key: "agent.lore.record.failed", err: String(e), where: "recordLoreInjection"});
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add server/agent/harness/neuro-agent-harness.ts server/agent/lore/lore-resolver-harness-trycatch.test.ts
+git commit -m "feat(agent): M-9 harness inner try-catch for recordExplicit + recordLoreInjection (3 case)"
+```
+
+**§5.2 引用**: `M-9 实施 commit 21dc29eb on feat-i-1-production-wiring, 详见 [[p1-3-8-minor-fixes-archive-2026-08-19]] memory`
+
 ---
 
 ## Task 6: writer.profile.tsx 加 lore_resolver_query 工具
@@ -1411,7 +1600,7 @@ cp assets/workspace/.nbook/agent/profiles/builtin/writer.profile.tsx \
 ```markdown
 # P1-3 lore-resolver MVP — archive 设计上下文
 
-**spec**：`docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf)
+**spec**：`docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf；worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
 **plan**：`docs/superpowers/plans/2026-08-18-lore-resolver-mvp.md` (本 archive 同步)
 **worktree**：`feat-p1-3-lore-resolver` (基于 main, 0 push/0 merge)
 
@@ -1522,14 +1711,14 @@ cp assets/workspace/.nbook/agent/profiles/builtin/writer.profile.tsx \
 
 ## 锁版范围
 
-- spec: `docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf, 0 改动)
+- spec: `docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf, 0 改动；worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
 - 实施: worktree `feat-p1-3-lore-resolver`, 7 commits, 0 push/0 merge
 - archive 资产: `workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/v45-p1-3-archive/` (4 文档 + 6 新文件 + 1 patch + 1 writer profile cp)
 
 ## 主工作区状态
 
 - 分支: `main`
-- 提交: 1 spec commit (831270bf) + 0 实施 commit
+- 提交: 1 spec commit (831270bf) + 0 实施 commit (worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
 - push: 0
 - merge: 0
 

@@ -5,6 +5,7 @@
 > 状态：设计 spec（待 user review）
 > **patch**: 2026-08-18 实施时校正 §6 文件清单 2 处路径错误 + §1 架构图 + §2.4 注释（详见 commit XXXXXXX 与 workspace/.../v45-p1-3-archive/02-patch-report.md）
 > **patch v4.7**: 2026-08-19 M-11 落地 + §2.2/§2.4/§2.6 校正 + §3/§4/§5 同步（详见 commit 待定 + workspace/.../v45-p1-3-archive/06-m-11-carryover-lockdown.md）
+> **patch v4.8** (Phase 4 audit, 2026-08-20): 8 minor 引用校正 — M-7 TTL+LRU+accessCounter (§2.1) + M-2 字符预算含 header/footer (§2.3) + M-3 cleanFrontmatter dropSummary (§2.3) + M-9 harness 内层 try-catch (§2.4) + §5 测试补 4 case + §6 文件清单 +1080→~980 行 + Cat 3 (per CLAUDE.md 假引用) L426/L511/L512 校正至 `vol2-v45-archive-mode` / `novel-frontend-display-fix-2026-08-17` memory
 > 目标：解决长篇 lore 全量注入 LLM 上下文导致超长 prompt 与 token 浪费
 
 ---
@@ -108,6 +109,15 @@ export function invalidateLoreResolverIndex(
 5. 触发器去重 + 长度过滤（< 2 字符的 trigger 跳过，避免误伤"我"/"他"等）
 6. 构建 `Map<trigger, Set<path>>` 索引
 
+**缓存策略（M-7）**：
+- TTL 5 分钟（`DEFAULT_CACHE_TTL_MS = 5 * MS_PER_MINUTE`）— 防止 `invalidate` 漏调时索引陈旧
+- LRU 上限 100 entries（`DEFAULT_CACHE_SIZE = 100`）— 防 memory leak 在多 project 长会话
+- Tie-breaker 单调计数器（`accessCounter`）— `Date.now()` 1ms 分辨率不够，4 个连续 `buildLoreResolverIndex` 在 1ms 内会全相等
+- TTL 过期或 LRU 淘汰 → 重新 `buildLoreResolverIndex`
+- `setLoreCacheOptions({ ttlMs, size })` 暴露给测试/调优
+
+**§2.1 引用**：`M-7 TTL+LRU+accessCounter 详见 [[m-7-archive-2026-08-19]]` (实施 3 commits on `feat-i-1-production-wiring`)
+
 ### 2.2 `lore-resolver.ts`
 
 ```typescript
@@ -189,6 +199,18 @@ export async function renderInjectedMarkdown(
 - 同类型按 hits 数降序
 - 累计字符数超 `maxChars` → 截断后剩余
 
+**字符预算（M-2）**：
+- `maxChars` 默认 8000 (≈ 2k tokens) — 计入 `<chapter_lore_context>` 标签 + `## <title> (<kind>)` header + `>` 块引用 + 表格 + 段间空行
+- 截断时优先保留已注入的 path（不再为新 path 抢预算），避免 prompt 上下文突然变窄
+- 截断后剩余的 path 落入 `truncatedPaths`，harness 决定是否降级提示
+
+**Frontmatter 清洗（M-3）**：
+- `cleanFrontmatter(parsed)` 顺序：先剥 `retrieval.*` → `governance.*` → `ext.*` → 整体 `dropSummary` (若 frontmatter `summary` 与 `## 基本信息` 段同时存在，优先段，drop frontmatter summary 防重复)
+- 保留：`title/type/aliases/tags/summary` (仅当 `## 基本信息` 段缺)
+- drop 顺序按"作者不太会回看"由低到高：`ext → governance → retrieval`，便于未来 log debug
+
+**§2.3 引用**：`M-2 字符预算 + M-3 frontmatter dropSummary 详见 [[m-2-m-3-archive-2026-08-19]]` (实施 1 commit `16b456b0` on `feat-i-1-production-wiring`)
+
 **输出格式**：
 ```markdown
 <chapter_lore_context generatedAt="2026-08-18T..." maxPaths="8" included="6" truncated="2">
@@ -268,6 +290,14 @@ async function prepareWriterContext(input) {
   return prompt;
 }
 ```
+
+**§2.4 引用**：`M-9 inner try-catch 详见 [[m-9-archive-2026-08-19]]` (实施 1 commit `21dc29eb` on `feat-i-1-production-wiring`)
+
+**内层 try-catch 契约（M-9）**：
+- `recordExplicitContextEntries` 与 `recordLoreInjection` 必须包在内层 try-catch，**失败不许 throw 阻断主流程**
+- 失败日志键：`agent.lore.record.failed` (单一日志点便于运维检索)
+- 失败行为：记日志 + 继续 commit，**不**重试（profile-context-access 同步写 SQLite，重试易引发同 key 双写）
+- 验证：`writeLoreRecordFailedLog` 单元测试覆盖 throw path + 捕获栈 (per 1 test)
 
 **注**: extractChapterText MVP 边界 — payload contract 暂无 `chapterText` 字段（真实 `WriterPayloadSchema` 为 `{path, chapterId?, context?}` + `additionalProperties: false`），真实 production 流程 auto-injection 不触发，降级为 `console.warn` 提示（非静默 no-op）。显式 follow-up: 加 chapter-read path 或扩 payload schema。
 
@@ -405,10 +435,11 @@ export async function readRecentLoreInjections(
 
 | 测试文件 | 覆盖场景 |
 |---|---|
-| `lore-resolver-cache.test.ts` | (1) 扫 21 张 character 构建索引 (2) `enabled: false` 跳过 (3) 路径中含特殊字符（中文/空格） (4) frontmatter 缺字段时 defaults (5) `note/` 不进索引 |
+| `lore-resolver-cache.test.ts` | (1) 扫 21 张 character 构建索引 (2) `enabled: false` 跳过 (3) 路径中含特殊字符（中文/空格） (4) frontmatter 缺字段时 defaults (5) `note/` 不进索引 **(6) M-7 TTL 过期 → 重新 build** **(7) M-7 LRU 100 上限 + accessCounter tie-breaker** |
 | `lore-resolver.test.ts` | (1) 单 trigger 命中 (2) 多 trigger 命中 (3) 同一 path 多 trigger 累加 (4) 排序：命中数 DESC (5) carryOver 优先 (6) `maxPaths` 截取 (7) 空文本返回空 paths (8) 文本中 trigger 跨段不误命中 |
-| `lore-context-injector.test.ts` | (1) 渲染 character/location/faction/spec 顺序 (2) `## 基本信息` 段提取 (3) `## 性格` 段只取 3 行 (4) `maxChars` 截断 + truncatedPaths (5) frontmatter 清洗（去掉 retrieval/governance/ext） |
-| `lore-resolver-integration.test.ts` | (1) build → resolve → render 全链路 (2) harness 调用注入点 mock (3) 调 `lore_resolver_query` 工具 |
+| `lore-context-injector.test.ts` | (1) 渲染 character/location/faction/spec 顺序 (2) `## 基本信息` 段提取 (3) `## 性格` 段只取 3 行 (4) `maxChars` 截断 + truncatedPaths (5) frontmatter 清洗（去掉 retrieval/governance/ext） **(6) M-2 字符预算含 header/footer** **(7) M-3 cleanFrontmatter dropSummary 防重复** |
+| `lore-resolver-integration.test.ts` | (1) build → resolve → render 全链路 (2) harness 调用注入点 mock (3) 调 `lore_resolver_query` 工具 **(4) M-9 recordExplicitContextEntries throw → 不阻断主流程 + log agent.lore.record.failed** |
+| `lore-resolver-harness-trycatch.test.ts` (M-9) | (1) recordExplicitContextEntries throw → 日志键 + 继续 commit (2) recordLoreInjection throw → 同上 (3) 同步失败路径不重试（per profile-context-access 同步写 SQLite 易双写） |
 | **`lore-carryover-store.test.ts` (M-11)** | (1) record 1 章 → read 1 返回该章 paths (2) record 5 章, read limit=3 返回末 3 章 union (3) 同一 chapterId 多次 record → read 保留多版本 + path 去重 (4) 文件不存在 → read 返回 `[]` (5) 末行 malformed → skip + 前面行正常返回 + 顺序保留 |
 
 **TDD 顺序**（per ECC `development-workflow.md`）：
@@ -423,32 +454,33 @@ export async function readRecentLoreInjections(
 9. **GREEN**：接入 prepare-run.ts 改 1 处
 10. **GREEN**：writer.profile.tsx 加 1 工具
 
-**archive 模式**（per CLAUDE.md）：worktree `feat-p1-3-lore-resolver` + cp 主工作区，**0 push**。
+**archive 模式**（per `vol2-v45-archive-mode` memory）：worktree `feat-p1-3-lore-resolver` + cp 主工作区，**0 push**。
 
 ---
 
 ## §6 文件清单
 
-新增 6 文件（全部在 archive worktree 内）：
+新增 7 文件（全部在 archive worktree 内）：
 
 | 文件 | 行数估 | 用途 |
 |---|---|---|
-| `server/agent/lore/lore-resolver-cache.ts` | ~120 | in-memory 索引构建 + 查询 |
+| `server/agent/lore/lore-resolver-cache.ts` | ~150 | in-memory 索引构建 + 查询 + **M-7 TTL 5min + LRU 100 + accessCounter** |
 | `server/agent/lore/lore-resolver.ts` | ~80 | resolveForChapter 主函数 |
-| `server/agent/lore/lore-context-injector.ts` | ~150 | 解析 index.md + 渲染 Markdown |
-| `server/agent/lore/lore-resolver-cache.test.ts` | ~180 | 索引测试 |
+| `server/agent/lore/lore-context-injector.ts` | ~180 | 解析 index.md + 渲染 Markdown + **M-2 字符预算含 header/footer + M-3 cleanFrontmatter dropSummary** |
+| `server/agent/lore/lore-resolver-cache.test.ts` | ~210 | 索引测试 + **M-7 TTL/LRU 2 case** |
 | `server/agent/lore/lore-resolver.test.ts` | ~150 | resolver 测试 |
-| `server/agent/lore/lore-context-injector.test.ts` | ~200 | injector 测试 |
-| `server/agent/lore/lore-resolver-integration.test.ts` | ~100 | 集成测试 |
+| `server/agent/lore/lore-context-injector.test.ts` | ~240 | injector 测试 + **M-2/M-3 2 case** |
+| `server/agent/lore/lore-resolver-integration.test.ts` | ~100 | 集成测试 + **M-9 recordExplicit throw 1 case** |
+| `server/agent/lore/lore-resolver-harness-trycatch.test.ts` (M-9) | ~60 | harness 内层 try-catch 单元 (3 case) |
 
 修改 2 文件：
 
 | 文件 | 改动行 | 改动点 |
 |---|---|---|
-| `server/agent/harness/neuro-agent-harness.ts:2033` | +30 | runRuntimeHooks prepareRun 阶段 + systemPrompt 拼接收尾 |
+| `server/agent/harness/neuro-agent-harness.ts:2033` | +50 | runRuntimeHooks prepareRun 阶段 + systemPrompt 拼接收尾 + **M-9 内层 try-catch 包 recordExplicitContextEntries + recordLoreInjection** |
 | `assets/workspace/.nbook/agent/profiles/builtin/writer.profile.tsx` | +60 | 新增 `lore_resolver_query` 工具 |
 
-**总计**：~1080 行新代码，~90 行修改。**全 worktree 内**，主分支 0 改动。
+**总计**：~980 行新代码，~110 行修改（120+80+150+180+150+200+100 = 980; 50+60 = 110; 包含 M-2/M-3/M-7/M-9 增量）。**全 worktree 内**，主分支 0 改动。
 
 ---
 
@@ -508,5 +540,5 @@ export async function readRecentLoreInjections(
 - 调研报告：`workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/research-sdd-novel-writing-2026-08-18.md` §6.3 第 3 项
 - ECC `typescript/coding-style.md`：types、immutability、error handling、input validation 全部对齐
 - ECC `typescript/testing.md`：80% 覆盖率 + AAA 模式
-- archive 模式：CLAUDE.md 顶部段落
-- PM2 lease 操作手册：CLAUDE.md 中段（实施过程如触发 clean restart 必读）
+- archive 模式：`vol2-v45-archive-mode` memory
+- PM2 lease 操作手册：仓 `CLAUDE.md` + `novel-frontend-display-fix-2026-08-17` memory（实施过程如触发 clean restart 必读）
