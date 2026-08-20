@@ -2,9 +2,10 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **patch v4.8** (Phase 4 audit, 2026-08-20): 8 minor 引用校正 — §1.2 M-7 TTL+LRU+accessCounter (Task 1 缓存模块) + §3.2 M-2 字符预算含 header/footer + M-3 cleanFrontmatter dropSummary (Task 3 injector) + §5.2 M-9 harness 内层 try-catch (Task 5) + Cat 4 6 处 main HEAD 校准注释 (L43/L52/L55/L1414/L1525/L1532, baseline `831270bf` → current main HEAD `a5652650`)
+> **patch v4.8** (Phase 4 audit, 2026-08-20): 8 minor 引用校正 — §1.2 M-7 TTL+LRU+accessCounter (Task 1 缓存模块) + §3.2 M-2 字符预算含 header/footer + M-3 cleanFrontmatter dropSummary (Task 3 injector) + §5.2 M-9 harness 内层 try-catch (Task 5) + Cat 4 6 处 main HEAD 校准注释 (L47/L56/L59/L1625/L1760/L1767 post-v4.11 行号校准, original L43/L52/L55/L1414/L1525/L1532, baseline `831270bf` → current main HEAD `a5652650`)
 > **patch v4.9** (Phase 5 audit, 2026-08-20): 3 minor + A1 + M-11 引用校正 — §6.1 M-10 writer binding 5 测试 (Task 6 writer profile) + §7.x M-11 carryOverPaths 累计 cross-ref (11/11 APPLIED) + §7.x A1 nits named const 引用 (MS_PER_MINUTE/DEFAULT_CACHE_TTL_MS/DEFAULT_CACHE_SIZE)
-> **patch v4.10** (Phase 6 audit, 2026-08-20): Cat 4 6 处 main HEAD 校准注释刷新 — L46/L55/L58/L1624/L1759/L1766 (5 处 `a5652650` + 1 处 `c0ad6915` → current main HEAD `114ce437`). 原 v4.8 patch note 内 L43/L52/L55/L1414/L1525/L1532 行号与实际 L46/L55/L58/L1624/L1759/L1766 drift (Cat 7 line-number drift, 留 separate audit 校正)
+> **patch v4.10** (Phase 6 audit, 2026-08-20): Cat 4 6 处 main HEAD 校准注释刷新 — L47/L56/L59/L1625/L1760/L1767 post-v4.11 行号校准, original L46/L55/L58/L1624/L1759/L1766 (5 处 `a5652650` + 1 处 `c0ad6915` → current main HEAD `114ce437`). 原 v4.8 patch note 内 L43/L52/L55/L1414/L1525/L1532 行号与实际 L46/L55/L58/L1624/L1759/L1766 drift (Cat 7 line-number drift, v4.11 校正)
+> **patch v4.11** (Phase 6 audit Cat 7, 2026-08-20): patch note 行号 drift 校正 — v4.8 内 L43/L52/L55/L1414/L1525/L1532 → current L47/L56/L59/L1625/L1760/L1767 (post-v4.9/v4.10 插入 + Phase 4/5 引用增量 drift). v4.10 内 L46/L55/L58/L1624/L1759/L1766 同步刷新. drift 根因: 顶部 +2 行 (v4.9/v4.10 patch note), L1600+ 段 +~230 行来自 Phase 4/5 spec/plan 引用增量. commit `a26a60a3` 后 current main HEAD `a26a60a3` 推进 1 commit
 
 **Goal:** 实现 `lore-resolver.ts` MVP——按章节文本解析 lorebook 触发器，渲染 Markdown `<chapter_lore_context>` 段注入到 writer prompt，调用 profile-context-access 记录 explicitInput 反馈。
 
