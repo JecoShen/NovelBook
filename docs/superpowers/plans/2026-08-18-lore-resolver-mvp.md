@@ -4,6 +4,7 @@
 >
 > **patch v4.8** (Phase 4 audit, 2026-08-20): 8 minor 引用校正 — §1.2 M-7 TTL+LRU+accessCounter (Task 1 缓存模块) + §3.2 M-2 字符预算含 header/footer + M-3 cleanFrontmatter dropSummary (Task 3 injector) + §5.2 M-9 harness 内层 try-catch (Task 5) + Cat 4 6 处 main HEAD 校准注释 (L43/L52/L55/L1414/L1525/L1532, baseline `831270bf` → current main HEAD `a5652650`)
 > **patch v4.9** (Phase 5 audit, 2026-08-20): 3 minor + A1 + M-11 引用校正 — §6.1 M-10 writer binding 5 测试 (Task 6 writer profile) + §7.x M-11 carryOverPaths 累计 cross-ref (11/11 APPLIED) + §7.x A1 nits named const 引用 (MS_PER_MINUTE/DEFAULT_CACHE_TTL_MS/DEFAULT_CACHE_SIZE)
+> **patch v4.10** (Phase 6 audit, 2026-08-20): Cat 4 6 处 main HEAD 校准注释刷新 — L46/L55/L58/L1624/L1759/L1766 (5 处 `a5652650` + 1 处 `c0ad6915` → current main HEAD `114ce437`). 原 v4.8 patch note 内 L43/L52/L55/L1414/L1525/L1532 行号与实际 L46/L55/L58/L1624/L1759/L1766 drift (Cat 7 line-number drift, 留 separate audit 校正)
 
 **Goal:** 实现 `lore-resolver.ts` MVP——按章节文本解析 lorebook 触发器，渲染 Markdown `<chapter_lore_context>` 段注入到 writer prompt，调用 profile-context-access 记录 explicitInput 反馈。
 
@@ -43,7 +44,7 @@
 ## Task 0: 建 worktree + 准备工具
 
 **Files:**
-- Create: `feat-p1-3-lore-resolver` worktree（基于 `main`，commit `831270bf`；worktree 创建时基线, 当前 main HEAD `a5652650` 2026-08-20 校准）
+- Create: `feat-p1-3-lore-resolver` worktree（基于 `main`，commit `831270bf`；worktree 创建时基线, 当前 main HEAD `114ce437` 2026-08-20 Phase 6 audit 校准）
 
 **前置调研**：
 
@@ -52,10 +53,10 @@
 ```bash
 cd /www/wwwroot/book.neoshen.dpdns.org
 git status --short
-git log -1 --oneline   # 应是 831270bf (worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
+git log -1 --oneline   # 应是 831270bf (worktree 创建时基线, 当前 main HEAD 114ce437 2026-08-20 Phase 6 audit 校准)
 ```
 
-Expected: 干净工作区，HEAD = 831270bf `docs(superpowers): P1-3 lore-resolver MVP design spec` (worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
+Expected: 干净工作区，HEAD = 831270bf `docs(superpowers): P1-3 lore-resolver MVP design spec` (worktree 创建时基线, 当前 main HEAD 114ce437 2026-08-20 Phase 6 audit 校准)
 
 - [ ] **Step 2: 拉取最新 main 并建 worktree**
 
@@ -1621,7 +1622,7 @@ cp assets/workspace/.nbook/agent/profiles/builtin/writer.profile.tsx \
 ```markdown
 # P1-3 lore-resolver MVP — archive 设计上下文
 
-**spec**：`docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf；worktree 创建时基线, 当前 main HEAD c0ad6915 2026-08-20 校准)
+**spec**：`docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf；worktree 创建时基线, 当前 main HEAD `114ce437` 2026-08-20 Phase 6 audit 校准)
 **plan**：`docs/superpowers/plans/2026-08-18-lore-resolver-mvp.md` (本 archive 同步)
 **worktree**：`feat-p1-3-lore-resolver` (基于 main, 0 push/0 merge)
 
@@ -1756,14 +1757,14 @@ cp assets/workspace/.nbook/agent/profiles/builtin/writer.profile.tsx \
 
 ## 锁版范围
 
-- spec: `docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf, 0 改动；worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
+- spec: `docs/superpowers/specs/2026-08-18-lore-resolver-design.md` (commit 831270bf, 0 改动；worktree 创建时基线, 当前 main HEAD 114ce437 2026-08-20 Phase 6 audit 校准)
 - 实施: worktree `feat-p1-3-lore-resolver`, 7 commits, 0 push/0 merge
 - archive 资产: `workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/v45-p1-3-archive/` (4 文档 + 6 新文件 + 1 patch + 1 writer profile cp)
 
 ## 主工作区状态
 
 - 分支: `main`
-- 提交: 1 spec commit (831270bf) + 0 实施 commit (worktree 创建时基线, 当前 main HEAD a5652650 2026-08-20 校准)
+- 提交: 1 spec commit (831270bf) + 0 实施 commit (worktree 创建时基线, 当前 main HEAD 114ce437 2026-08-20 Phase 6 audit 校准)
 - push: 0
 - merge: 0
 
