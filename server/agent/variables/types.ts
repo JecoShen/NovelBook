@@ -85,6 +85,7 @@ export type VariableReadResult = {
  * 变量类型生成器会通过 module augmentation 扩展这个 map。
  * 运行时不依赖该类型；它只服务 TSX profile authoring 补全与返回值推导。
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ProfileVariableValueMap {
 }
 

@@ -242,6 +242,7 @@ export const Comment = Mark.create<CommentOptions>({
  * 多个段落
  * </comment>
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export const CommentBlock = Node.create<{}, {}>({
   name: 'commentBlock',
   group: 'block',

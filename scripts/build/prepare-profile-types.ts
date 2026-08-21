@@ -179,20 +179,33 @@ function readStringProperty(objectLiteral: TypeScript.ObjectLiteralExpression, n
  * 渲染类型索引源码。
  */
 function renderTypeIndex(entries: ProfileTypeEntry[]): string {
+  // 空 entries 时输出 Record<string, never> 而不是 `{ }`，
+  // 否则 `@typescript-eslint/no-empty-object-type` 规则会触发。
+  // 注：非空时仍使用 JSON.stringify 双引号 + 4 空格 + 末尾分号，匹配生成器历史风格；
+  // 风格 lint 收紧后另起 batch 调整（profile 缺 Input/Output export 也需先 fix）。
+  const renderMap = (
+    kind: 'Input' | 'Output',
+  ): string => {
+    if (entries.length === 0) {
+      return `export type DynamicProfile${kind}Map = Record<string, never>`
+    }
+    const lines = entries.map(entry => `    ${JSON.stringify(entry.profileKey)}: import(${JSON.stringify(entry.relativePath)}).${kind};`)
+    return [
+      `export type DynamicProfile${kind}Map = {`,
+      ...lines,
+      '};',
+    ].join('\n')
+  }
   return [
     '/**',
     ' * 动态 profile 类型索引。',
     ' *',
-    ' * 该文件由 `bun scripts/build/prepare-profile-types.ts` 生成。',
+    ' * 该文件由 `bun scripts/prepare-profile-types.ts` 生成。',
     ' * 运行时不依赖它；它只服务源码开发时按自定义 profile key 推导 Input / Output。',
     ' */',
-    'export type DynamicProfileInputMap = {',
-    ...entries.map(entry => `    ${JSON.stringify(entry.profileKey)}: import(${JSON.stringify(entry.relativePath)}).Input;`),
-    '};',
+    renderMap('Input'),
     '',
-    'export type DynamicProfileOutputMap = {',
-    ...entries.map(entry => `    ${JSON.stringify(entry.profileKey)}: import(${JSON.stringify(entry.relativePath)}).Output;`),
-    '};',
+    renderMap('Output'),
     '',
   ].join('\n')
 }

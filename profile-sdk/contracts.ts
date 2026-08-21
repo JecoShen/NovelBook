@@ -366,7 +366,7 @@ export type ProfileBuiltinNode
     | { kind: 'ProfileBuiltin', name: 'AgentCatalog' | 'WorkflowCatalog' | 'ActivatedSkills' | 'SqlSchemaSummary', props: { text?: string | ((ctx: ProfilePrepareContext) => string | Promise<string>) } }
     | { kind: 'ProfileBuiltin', name: 'Import', props: ProfileImportProps }
     | { kind: 'ProfileBuiltin', name: 'SystemReminder', props: { children?: ProfileDslChild | ProfileDslChild[] } }
-    | { kind: 'ProfileBuiltin', name: 'LinkedAgentsSummary' | 'MentionedSkillsReminder', props: {} }
+    | { kind: 'ProfileBuiltin', name: 'LinkedAgentsSummary' | 'MentionedSkillsReminder', props: Record<string, never> }
     | { kind: 'ProfileBuiltin', name: 'LinkedAgentsReminder' | 'WorkspaceFocusReminder' | 'ModeAvailabilityReminder', props: { id?: string, repeatEveryTurns?: number } }
     | { kind: 'ProfileBuiltin', name: 'TaskReminder', props: { id?: string, stateKey?: string, repeatEveryTurns?: number } }
     | { kind: 'ProfileBuiltin', name: 'ModeReminder', props: { id?: string, stateKey?: string, repeatEveryTurns?: number, children?: ProfileDslChild | ProfileDslChild[] } }

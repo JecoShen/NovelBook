@@ -22,7 +22,7 @@ export type FauxProviderConfigFixture = {
       name: string
       enabled: true
       modelApi: ResolvedFauxModel['api']
-      options: { apiKey: string, baseURL: string, proxy: string, timeoutMs: null, requestOptions: {} }
+      options: { apiKey: string, baseURL: string, proxy: string, timeoutMs: null, requestOptions: Record<string, never> }
       models: Array<{ id: string, name: string, enabled: true, api: ResolvedFauxModel['api'], contextWindowTokens: number, maxTokens: number }>
     }>
   }
