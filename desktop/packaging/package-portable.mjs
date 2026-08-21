@@ -6,7 +6,6 @@ import {
   lstat,
   mkdir,
   mkdtemp,
-  open,
   readFile,
   readdir,
   rm,
@@ -37,8 +36,6 @@ import { writeDesktopRuntimeWrappers } from 'nbook/packages/neuro-book-manager/s
 const execFileAsync = promisify(execFile)
 const PORTABLE_SCHEMA = 'nbook.desktop-portable/v1'
 const FIXED_TIME = new Date('1980-01-01T00:00:00.000Z')
-const PRODUCT_MANIFEST = '.output/runtime-image.json'
-const PRODUCT_READY = '.output/runtime-image.ready'
 
 /** 解析只供本地打包使用的显式参数；不读取 cwd 猜测 Product。 */
 function parseArgs(argv) {
