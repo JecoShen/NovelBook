@@ -833,8 +833,8 @@ export const UpdateStorySceneRequestDtoSchema = z.object({
   || value.purpose !== undefined
   || value.writingTip !== undefined
   || value.note !== undefined
-    || value.worldAnchor !== undefined
-    || value.refs !== undefined
+  || value.worldAnchor !== undefined
+  || value.refs !== undefined
 ), {
   message: '至少提供一个更新字段',
 })

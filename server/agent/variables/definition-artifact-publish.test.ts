@@ -97,8 +97,12 @@ describe('Variable definition 原子发布', () => {
     await writeDefinition(fixture.root, 'reader-new')
     let releaseRename!: () => void
     let enteredRename!: () => void
-    const entered = new Promise<void>((resolvePromise) => { enteredRename = resolvePromise })
-    const blocked = new Promise<void>((resolvePromise) => { releaseRename = resolvePromise })
+    const entered = new Promise<void>((resolvePromise) => {
+      enteredRename = resolvePromise
+    })
+    const blocked = new Promise<void>((resolvePromise) => {
+      releaseRename = resolvePromise
+    })
     faults.manifestRenameBarrier = async () => {
       enteredRename()
       await blocked

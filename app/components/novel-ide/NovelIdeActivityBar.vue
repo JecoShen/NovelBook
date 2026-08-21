@@ -108,16 +108,31 @@ function actionTitle(item: WorkbenchActivityItem): string {
 function invoke(item: WorkbenchActivityItem): void {
   if (item.disabled) return
   switch (item.id) {
-    case 'home': emit('open-home'); return
+    case 'home':
+      emit('open-home')
+      return
     case 'files':
     case 'characters':
-    case 'plot': emit('open-tab', item.id); return
-    case 'world': emit('open-world-engine'); return
-    case 'trace': emit('open-trace-viewer'); return
-    case 'history': emit('open-history-inbox'); return
-    case 'agent-panel': emit('toggle-agent-panel'); return
-    case 'settings': emit('open-settings'); return
-    case 'account': return
+    case 'plot':
+      emit('open-tab', item.id)
+      return
+    case 'world':
+      emit('open-world-engine')
+      return
+    case 'trace':
+      emit('open-trace-viewer')
+      return
+    case 'history':
+      emit('open-history-inbox')
+      return
+    case 'agent-panel':
+      emit('toggle-agent-panel')
+      return
+    case 'settings':
+      emit('open-settings')
+      return
+    case 'account':
+      return
   }
 }
 

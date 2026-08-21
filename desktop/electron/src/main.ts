@@ -828,7 +828,13 @@ function installTray(): void {
   tray.setToolTip('NeuroBook')
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '显示 NeuroBook', click: () => { window?.show() } },
-    { label: '设置', click: () => { window?.show(); window?.webContents.send('neurobook:menu', 'file.settings') } },
+    {
+      label: '设置',
+      click: () => {
+        window?.show()
+        window?.webContents.send('neurobook:menu', 'file.settings')
+      },
+    },
     { type: 'separator' },
     { label: '退出', click: () => void closeApplication() },
   ]))
@@ -1067,7 +1073,10 @@ async function main(): Promise<void> {
     args: process.argv.slice(firstLaunchArgument, firstLaunchArgument + 32),
     cwd: process.cwd(),
   })
-  if (!app.requestSingleInstanceLock(launchData)) { app.exit(0); return }
+  if (!app.requestSingleInstanceLock(launchData)) {
+    app.exit(0)
+    return
+  }
   if (launchData.args.some(arg => !arg.startsWith('--'))) queueDesktopLaunchRequest(launchData)
   app.on('second-instance', (_event, _commandLine, _workingDirectory, additionalData) => {
     if (window?.isMinimized()) window.restore()
@@ -1139,7 +1148,10 @@ async function main(): Promise<void> {
     if (appearance !== 'light' && appearance !== 'dark') throw new Error('Desktop appearance 不受支持。')
     applyTitleBarAppearance(appearance)
   })
-  ipcMain.handle('neurobook:desktop:settings', (event) => { assertTrustedFrame(event); return desktopSettings })
+  ipcMain.handle('neurobook:desktop:settings', (event) => {
+    assertTrustedFrame(event)
+    return desktopSettings
+  })
   ipcMain.handle('neurobook:desktop:settings:update', async (event, patch: unknown) => {
     assertTrustedFrame(event)
     desktopSettings = patchDesktopSettings(desktopSettings, patch as never)

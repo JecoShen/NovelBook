@@ -147,9 +147,9 @@ function parseSessionFields(
     || !isNonNegativeInteger(value.migrationTimestamp)
     || !isNonNegativeInteger(value.rewrittenPaths)
     || !isNonNegativeInteger(value.resetProfileReminders)
-      || !isNonNegativeInteger(value.cancelledToolCalls)
-        || !isNonNegativeInteger(value.clearedPendingResolutions)
-        || typeof value.clearedFollowUpQueue !== 'boolean') {
+    || !isNonNegativeInteger(value.cancelledToolCalls)
+    || !isNonNegativeInteger(value.clearedPendingResolutions)
+    || typeof value.clearedFollowUpQueue !== 'boolean') {
     throw new Error('migration session 字段无效')
   }
   const managed = value.classification === 'managed' || value.classification === 'stale_managed'

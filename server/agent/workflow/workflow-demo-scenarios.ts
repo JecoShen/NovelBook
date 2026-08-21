@@ -219,7 +219,10 @@ const writePipeline: WorkflowDefinition = {
       wf.progress({ phase: 'loop', done: rounds })
       const review = (await critic.invoke({ input: { draft: draft.data } })).result
       wf.log(`critic 第 ${rounds + 1} 轮：${review.message}`)
-      if ((review.data as { pass: boolean }).pass) { passed = true; break }
+      if ((review.data as { pass: boolean }).pass) {
+        passed = true
+        break
+      }
       wf.chart.node('revise', '写手修改')
       wf.chart.move('review', 'revise', { sessionId: writer.id, label: '驳回' })
       draft = (await writer.invoke({ mode: 'followup', input: { revisions: (review.data as { issues: string[] }).issues } })).result

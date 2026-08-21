@@ -35,9 +35,21 @@ describe('ProductShutdownController', () => {
     const thirdFailure = new Error('third failed')
     const order: string[] = []
     const controller = new ProductShutdownController([
-      { name: 'first', close: async () => { order.push('first'); throw firstFailure } },
+      {
+        name: 'first',
+        close: async () => {
+          order.push('first')
+          throw firstFailure
+        },
+      },
       { name: 'second', close: async () => { order.push('second') } },
-      { name: 'third', close: async () => { order.push('third'); throw thirdFailure } },
+      {
+        name: 'third',
+        close: async () => {
+          order.push('third')
+          throw thirdFailure
+        },
+      },
     ])
 
     const result = await controller.shutdown().catch((error: unknown) => error)

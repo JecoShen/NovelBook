@@ -362,8 +362,12 @@ describe('ProfileBuildCoordinator', () => {
     await writeProfile(fileName, `export const profileManifest = { key: "custom.staleDispose", name: "Stale Dispose" } as const;`)
     let signalStarted!: () => void
     let signalFinished!: () => void
-    const started = new Promise<void>((resolveStarted) => { signalStarted = resolveStarted })
-    const finish = new Promise<void>((resolveFinished) => { signalFinished = resolveFinished })
+    const started = new Promise<void>((resolveStarted) => {
+      signalStarted = resolveStarted
+    })
+    const finish = new Promise<void>((resolveFinished) => {
+      signalFinished = resolveFinished
+    })
     let compileCount = 0
     const worker = fakeWorker({
       compile: async () => {

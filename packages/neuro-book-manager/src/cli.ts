@@ -253,10 +253,16 @@ program.command('adopt')
     const inspection = preflight.inspection
     if (!options.yes && process.stdin.isTTY && process.stdout.isTTY) {
       const confirmed = await promptResult(p.confirm({ message: `接管${inspection.root}为${profile}？`, initialValue: true }))
-      if (!confirmed) { p.cancel('已取消接管，没有修改目录。'); return }
+      if (!confirmed) {
+        p.cancel('已取消接管，没有修改目录。')
+        return
+      }
     }
     const adoptedInput = { root: inspection.root, profile, channel: config.preferences.channel, port: options.port ?? 3000, authEnabled: options.auth ?? true, dryRun: options.dryRun, managerExecutable }
-    if (options.dryRun) { printJson({ preflight: preflight.report, plan: installPlan(adoptedInput) }); return }
+    if (options.dryRun) {
+      printJson({ preflight: preflight.report, plan: installPlan(adoptedInput) })
+      return
+    }
     const { manifest } = await adoptSourceInstallation(adoptedInput, preflight)
     p.outro(`接管完成：${inspection.root}\nProfile: ${manifest.profile}\nVersion: ${manifest.appVersion}`)
   })
@@ -481,13 +487,19 @@ desktop.command('install')
       }
       if (remoteUrl.protocol === 'http:' && !options.yes && process.stdin.isTTY && process.stdout.isTTY) {
         const confirmed = await promptResult(p.confirm({ message: 'HTTP 远端连接未加密，仍要继续？', initialValue: false }))
-        if (!confirmed) { p.cancel('已取消 Desktop 安装。'); return }
+        if (!confirmed) {
+          p.cancel('已取消 Desktop 安装。')
+          return
+        }
       }
     }
     if (!remoteUrl && options.shellArchive) throw new Error('本地 Desktop 安装不能使用 --shell-archive。')
     if (!options.yes && process.stdin.isTTY && process.stdout.isTTY) {
       const confirmed = await promptResult(p.confirm({ message: `安装 ${options.envelope} Desktop 到用户级目录？`, initialValue: true }))
-      if (!confirmed) { p.cancel('已取消 Desktop 安装。'); return }
+      if (!confirmed) {
+        p.cancel('已取消 Desktop 安装。')
+        return
+      }
     }
     let adminPassword: string | undefined
     // 远端 shell 没有 Product Installation Manifest，不能伪装成可执行的本地实例加入索引。
@@ -853,9 +865,18 @@ async function runContextEntry(): Promise<void> {
       p.outro(result.changed ? `更新完成：${result.manifest.appVersion}` : `已是最新版本：${result.manifest.appVersion}`)
       return
     }
-    if (action === 'runtime') { printJson({ managerRuntime: inspection.manifest.components.managerRuntime, applicationRuntime: inspection.manifest.components.applicationRuntime }); return }
-    if (action === 'tools') { printJson(inspection.manifest.components.tools); return }
-    if (action === 'instances') { printJson(await readManagerConfig()); return }
+    if (action === 'runtime') {
+      printJson({ managerRuntime: inspection.manifest.components.managerRuntime, applicationRuntime: inspection.manifest.components.applicationRuntime })
+      return
+    }
+    if (action === 'tools') {
+      printJson(inspection.manifest.components.tools)
+      return
+    }
+    if (action === 'instances') {
+      printJson(await readManagerConfig())
+      return
+    }
     await mutateInstallation(inspection.root, mutation => createAdmin(mutation.root, mutation.manifest))
     return
   }
@@ -886,7 +907,10 @@ async function runContextEntry(): Promise<void> {
     { value: 'discover', label: '查看发现的实例', disabled: found.candidates.length === 0 },
   ] }))
   if (action === 'manage') return runManagerTui(managerExecutable)
-  if (action === 'discover') { await handleDiscoveredCandidates(found.candidates); return }
+  if (action === 'discover') {
+    await handleDiscoveredCandidates(found.candidates)
+    return
+  }
   await runInstallGuide({ managerExecutable })
 }
 

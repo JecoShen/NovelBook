@@ -156,41 +156,41 @@ export type PublicToolResultDetailsDto
     }
   }
   | {
-      kind: 'request_user_input'
-      answers: Array<{
-        questionIndex?: number
-        text?: string
-        /** 原始回答正文未完整公开时为 true。 */
-        textOmitted?: boolean
-        selectedOptionIndex?: number
-        note?: string
-        /** 原始补充说明未完整公开时为 true。 */
-        noteOmitted?: boolean
-        ignored?: boolean
-      }>
-      omittedAnswers: number
-    }
-    | {
-      kind: 'switch_mode'
-      approved?: boolean
-      pending?: boolean
-      targetMode?: string
-    }
-    | {
-      kind: 'task'
-      value: PublicValuePreviewDto
-    }
-    | {
-      kind: 'agent'
-      sessionId?: number
-      profileKey?: string
-      status?: string
-      value: PublicValuePreviewDto
-    }
-    | {
-      kind: 'generic'
-      value: PublicValuePreviewDto
-    }
+    kind: 'request_user_input'
+    answers: Array<{
+      questionIndex?: number
+      text?: string
+      /** 原始回答正文未完整公开时为 true。 */
+      textOmitted?: boolean
+      selectedOptionIndex?: number
+      note?: string
+      /** 原始补充说明未完整公开时为 true。 */
+      noteOmitted?: boolean
+      ignored?: boolean
+    }>
+    omittedAnswers: number
+  }
+  | {
+    kind: 'switch_mode'
+    approved?: boolean
+    pending?: boolean
+    targetMode?: string
+  }
+  | {
+    kind: 'task'
+    value: PublicValuePreviewDto
+  }
+  | {
+    kind: 'agent'
+    sessionId?: number
+    profileKey?: string
+    status?: string
+    value: PublicValuePreviewDto
+  }
+  | {
+    kind: 'generic'
+    value: PublicValuePreviewDto
+  }
 
 /**
  * 工具执行和 durable toolResult 共用的公开结果投影。

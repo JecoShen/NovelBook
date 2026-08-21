@@ -674,9 +674,9 @@ function isLocalDraft(draft: Partial<WorldWorkbenchPreviewLocalDraft>): draft is
     && typeof draft.sidebarWidth === 'number'
     && typeof draft.inspectorVisible === 'boolean'
     && typeof draft.inspectorWidth === 'number'
-      && typeof draft.mutationEditorCollapsed === 'boolean'
-        && typeof draft.mutationEditorHeight === 'number'
-        && typeof draft.updatedAt === 'string'
+    && typeof draft.mutationEditorCollapsed === 'boolean'
+    && typeof draft.mutationEditorHeight === 'number'
+    && typeof draft.updatedAt === 'string'
 }
 
 /** 校验单条 triage 记录，避免 localStorage 中的旧结构污染 UI。 */

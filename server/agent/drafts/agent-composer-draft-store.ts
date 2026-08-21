@@ -146,7 +146,7 @@ function validDrafts(records: AgentComposerDraftRecord[], now: number): AgentCom
     && now - record.updatedAt <= MAX_DRAFT_AGE_MS
     && record.text.length > 0
     && UTF8_ENCODER.encode(record.text).byteLength <= MAX_DRAFT_BYTES
-      && !hasUnsafeImageTarget(record.text))
+    && !hasUnsafeImageTarget(record.text))
 }
 
 function recentDrafts(drafts: AgentComposerDraftRecord[]): AgentComposerDraftRecord[] {

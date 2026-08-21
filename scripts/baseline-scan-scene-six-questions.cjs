@@ -63,8 +63,14 @@ function main() {
       SCENE_SECTION_REGEX.lastIndex = 0
       const hasScene = SCENE_SECTION_REGEX.test(content)
 
-      if (hasScene) { volWith++; totalWithScene++ }
-      else { volWithout++; totalWithoutScene++ }
+      if (hasScene) {
+        volWith++
+        totalWithScene++
+      }
+      else {
+        volWithout++
+        totalWithoutScene++
+      }
 
       for (const q of SCENE_QUESTION_PATTERNS) {
         q.regex.lastIndex = 0

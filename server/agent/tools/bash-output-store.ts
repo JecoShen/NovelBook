@@ -318,9 +318,9 @@ function isMarker(value: unknown): value is LeaseMarker {
     && Number.isFinite(Date.parse(marker.createdAt))
     && Number.isFinite(Date.parse(marker.expiresAt))
     && typeof marker.bytes === 'number'
-      && Number.isInteger(marker.bytes)
-      && marker.bytes >= 0
-        && typeof marker.capped === 'boolean'
+    && Number.isInteger(marker.bytes)
+    && marker.bytes >= 0
+    && typeof marker.capped === 'boolean'
 }
 
 function isMissing(error: unknown): boolean {

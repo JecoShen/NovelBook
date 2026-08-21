@@ -40,29 +40,53 @@ export function resolveProfileRuntimeInheritance(
   ] satisfies ProfileRuntimeSettingsField[]).map(field => [field, 'harness'])) as ProfileRuntimeSettingsSources
   for (const layer of layers) {
     const patch = layer.patch
-    if (patch?.summarizer?.enabled !== undefined) { settings.summarizer.enabled = patch.summarizer.enabled; sources.summarizerEnabled = layer.source }
-    if (patch?.summarizer?.profileKey !== undefined) { settings.summarizer.profileKey = patch.summarizer.profileKey; sources.summarizerProfileKey = layer.source }
+    if (patch?.summarizer?.enabled !== undefined) {
+      settings.summarizer.enabled = patch.summarizer.enabled
+      sources.summarizerEnabled = layer.source
+    }
+    if (patch?.summarizer?.profileKey !== undefined) {
+      settings.summarizer.profileKey = patch.summarizer.profileKey
+      sources.summarizerProfileKey = layer.source
+    }
     if (patch?.summarizer?.interval !== undefined) {
       settings.summarizer.interval = patch.summarizer.interval
       sources.summarizerIntervalKind = layer.source
       sources.summarizerIntervalValue = layer.source
     }
-    if (patch?.summarizer?.maxDialogueContentTokens !== undefined) { settings.summarizer.maxDialogueContentTokens = patch.summarizer.maxDialogueContentTokens; sources.summarizerMaxTokens = layer.source }
-    if (patch?.compaction?.enabled !== undefined) { settings.compaction.enabled = patch.compaction.enabled; sources.compactionEnabled = layer.source }
+    if (patch?.summarizer?.maxDialogueContentTokens !== undefined) {
+      settings.summarizer.maxDialogueContentTokens = patch.summarizer.maxDialogueContentTokens
+      sources.summarizerMaxTokens = layer.source
+    }
+    if (patch?.compaction?.enabled !== undefined) {
+      settings.compaction.enabled = patch.compaction.enabled
+      sources.compactionEnabled = layer.source
+    }
     if (patch?.compaction?.trigger !== undefined) {
       settings.compaction.trigger = patch.compaction.trigger
       sources.compactionTriggerKind = layer.source
       sources.compactionTriggerValue = layer.source
     }
-    if (patch?.compaction?.reserveTokens !== undefined) { settings.compaction.reserveTokens = patch.compaction.reserveTokens; sources.compactionReserveTokens = layer.source }
+    if (patch?.compaction?.reserveTokens !== undefined) {
+      settings.compaction.reserveTokens = patch.compaction.reserveTokens
+      sources.compactionReserveTokens = layer.source
+    }
     if (patch?.compaction?.keepRecent !== undefined) {
       settings.compaction.keepRecent = patch.compaction.keepRecent
       sources.compactionKeepRecentKind = layer.source
       sources.compactionKeepRecentValue = layer.source
     }
-    if (patch?.compaction?.prompt !== undefined) { settings.compaction.prompt = patch.compaction.prompt; sources.compactionPrompt = layer.source }
-    if (patch?.compaction?.summaryPrefix !== undefined) { settings.compaction.summaryPrefix = patch.compaction.summaryPrefix; sources.compactionSummaryPrefix = layer.source }
-    if (patch?.fileChangeNotice?.diffMaxChars !== undefined) { settings.fileChangeNotice.diffMaxChars = patch.fileChangeNotice.diffMaxChars; sources.fileChangeDiffMaxChars = layer.source }
+    if (patch?.compaction?.prompt !== undefined) {
+      settings.compaction.prompt = patch.compaction.prompt
+      sources.compactionPrompt = layer.source
+    }
+    if (patch?.compaction?.summaryPrefix !== undefined) {
+      settings.compaction.summaryPrefix = patch.compaction.summaryPrefix
+      sources.compactionSummaryPrefix = layer.source
+    }
+    if (patch?.fileChangeNotice?.diffMaxChars !== undefined) {
+      settings.fileChangeNotice.diffMaxChars = patch.fileChangeNotice.diffMaxChars
+      sources.fileChangeDiffMaxChars = layer.source
+    }
   }
   return { settings, sources }
 }

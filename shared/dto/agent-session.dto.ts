@@ -665,49 +665,49 @@ export type AgentRuntimeStreamEventDto
     timestamp: number
     model: string
   }
-    | {
-      type: 'message_update'
-      messageId: string
-      update: AgentAssistantUpdateDto
+  | {
+    type: 'message_update'
+    messageId: string
+    update: AgentAssistantUpdateDto
+  }
+  | {
+    type: 'message_end'
+    messageId: string
+    stopReason: 'stop' | 'length' | 'toolUse' | 'error' | 'aborted'
+    usage: Usage
+    responseModel?: string
+    errorMessage?: string
+  }
+  | {
+    type: 'tool_execution_start'
+    toolCallId: string
+    toolName: string
+    args: PublicToolArgsDto
+  }
+  | {
+    type: 'tool_execution_update'
+    toolCallId: string
+    toolName: string
+    partialResult: PublicToolResultDto
+  }
+  | {
+    type: 'tool_execution_end'
+    toolCallId: string
+    toolName: string
+    result: PublicToolResultDto
+    isError: boolean
+  }
+  | {
+    type: 'tool.user-input-required'
+    toolCallId: string
+    toolName: string
+    args: PublicToolArgsDto
+    formSpec?: {
+      form: AgentUserInputFormDto
+      prompt?: string
+      layout?: 'dialog' | 'inline' | 'fullscreen'
     }
-    | {
-      type: 'message_end'
-      messageId: string
-      stopReason: 'stop' | 'length' | 'toolUse' | 'error' | 'aborted'
-      usage: Usage
-      responseModel?: string
-      errorMessage?: string
-    }
-    | {
-      type: 'tool_execution_start'
-      toolCallId: string
-      toolName: string
-      args: PublicToolArgsDto
-    }
-    | {
-      type: 'tool_execution_update'
-      toolCallId: string
-      toolName: string
-      partialResult: PublicToolResultDto
-    }
-    | {
-      type: 'tool_execution_end'
-      toolCallId: string
-      toolName: string
-      result: PublicToolResultDto
-      isError: boolean
-    }
-    | {
-      type: 'tool.user-input-required'
-      toolCallId: string
-      toolName: string
-      args: PublicToolArgsDto
-      formSpec?: {
-        form: AgentUserInputFormDto
-        prompt?: string
-        layout?: 'dialog' | 'inline' | 'fullscreen'
-      }
-    }
+  }
 
 export type AgentSessionControlEvent
   = | {
@@ -730,28 +730,28 @@ export type AgentSessionControlEvent
   | {
     type: 'session_attachments_changed'
   }
-    | {
-      type: 'session_entry'
-      entry: AgentChatEntryDto
-    }
-    | {
-      type: 'session_projection_invalidated'
-      reason: 'linked_agent_changed' | 'pending_plan_content_changed'
-    }
-    | {
-      type: 'session_state_changed'
-      state: AgentSessionLiveStateDto
-    }
-    | {
-      type: 'invocation_aborted'
-      /** 有界公开预览；完整原因可保留在内部 invocation lifecycle。 */
-      reason?: string
-    }
-    | {
-      type: 'client_variable_patch_requested'
-      /** 必须原样送达并获得 ack；Harness 在发布前强制执行 64 KiB 上限。 */
-      request: VariablePatchRequest
-    }
+  | {
+    type: 'session_entry'
+    entry: AgentChatEntryDto
+  }
+  | {
+    type: 'session_projection_invalidated'
+    reason: 'linked_agent_changed' | 'pending_plan_content_changed'
+  }
+  | {
+    type: 'session_state_changed'
+    state: AgentSessionLiveStateDto
+  }
+  | {
+    type: 'invocation_aborted'
+    /** 有界公开预览；完整原因可保留在内部 invocation lifecycle。 */
+    reason?: string
+  }
+  | {
+    type: 'client_variable_patch_requested'
+    /** 必须原样送达并获得 ack；Harness 在发布前强制执行 64 KiB 上限。 */
+    request: VariablePatchRequest
+  }
 
 export type AgentSessionEventDto
   = | {

@@ -1213,10 +1213,10 @@ function isManagedAssetBlacklisted(assetPath: string): boolean {
     || normalized === 'agent/variables/definitions.ts'
   // llmlint 独立仓开发资产不随系统 assets 同步到用户 workspace。
     || normalized.startsWith('agent/skills/llmlint/.git/')
-      || (parts[0] === 'agent' && parts[1] === 'skills' && parts[3] === 'node_modules')
-        || normalized.startsWith('agent/skills/llmlint/evals/')
-        || parts.includes('.compiled')
-        || parts.includes('.staging')
+    || (parts[0] === 'agent' && parts[1] === 'skills' && parts[3] === 'node_modules')
+    || normalized.startsWith('agent/skills/llmlint/evals/')
+    || parts.includes('.compiled')
+    || parts.includes('.staging')
 }
 
 async function assertReadableUserAssetsSyncAssetPath(assetPath: string): Promise<void> {

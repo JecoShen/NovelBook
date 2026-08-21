@@ -543,8 +543,8 @@ export class SnapshotCache<TKey, TNode, TIssue, TEvent> {
       && entry.subscribers.size === 0
       && entry.buildPromise === null
       && entry.timer === null
-          && entry.pendingEvents.size === 0
-            && entry.rawPendingEvents.size === 0
+      && entry.pendingEvents.size === 0
+      && entry.rawPendingEvents.size === 0
   }
 
   /** 关闭精确 entry incarnation；迟到 handle 不会按 key 误关重开的新 entry。 */

@@ -90,8 +90,8 @@ export function validateManagerOperation(input: unknown): ManagerGuiOperation {
         || typeof source !== 'object'
         || !['portable-archive', 'aggregate-depot', 'distribution-manifest', 'https-manifest'].includes(source.kind)
         || typeof source.value !== 'string'
-              || source.value.length === 0
-              || source.value.includes('\0')) {
+        || source.value.length === 0
+        || source.value.includes('\0')) {
         throw new Error('Manager GUI 安装参数无效。')
       }
       if (source.kind === 'https-manifest' && !source.value.startsWith('https://')) {

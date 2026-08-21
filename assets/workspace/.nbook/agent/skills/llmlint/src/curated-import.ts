@@ -563,7 +563,7 @@ function applyCuratedPatch(rule: LintRuleRecord): LintRuleRecord {
     || rule.id === 'cn.cliche.tongue-roll'
     || rule.id === 'cn.cliche.warm-palm-touch'
     || rule.id === 'cn.cliche.words-chewing'
-        || rule.id === 'cn.cliche.body-reaction.physiological-tears'
+    || rule.id === 'cn.cliche.body-reaction.physiological-tears'
   ) {
     return {
       ...rule,

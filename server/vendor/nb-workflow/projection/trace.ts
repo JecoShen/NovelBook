@@ -61,7 +61,10 @@ export function traceGraph(journal: ActivityRecord[]): TraceGraph {
   const plain: TraceNode[] = []
   for (const n of nodes) {
     const group = groupOf(n.path)
-    if (group === null) { plain.push(n); continue }
+    if (group === null) {
+      plain.push(n)
+      continue
+    }
     const list = groups.get(group) ?? []
     list.push(n)
     groups.set(group, list)

@@ -236,7 +236,7 @@ export function collectLegacyAgentComposerDrafts(storage: Storage, now = Date.no
         || value.updatedAt < 0
         || now - value.updatedAt > MAX_DRAFT_AGE_MS
         || UTF8_ENCODER.encode(value.text).byteLength > MAX_DRAFT_BYTES
-              || hasUnsafeImageTarget(value.text)) {
+        || hasUnsafeImageTarget(value.text)) {
         storage.removeItem(key)
         continue
       }

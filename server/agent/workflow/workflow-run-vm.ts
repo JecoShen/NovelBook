@@ -245,7 +245,10 @@ function buildChart(events: TimedEvent[], sessions: Map<number, SessionNaming>):
   const nodes = new Map<string, NodeState>()
   const nodeOf = (key: string, title?: string): NodeState => {
     let n = nodes.get(key)
-    if (!n) { n = { title: title ?? key, visits: 0, tokens: new Map(), workers: new Set() }; nodes.set(key, n) }
+    if (!n) {
+      n = { title: title ?? key, visits: 0, tokens: new Map(), workers: new Set() }
+      nodes.set(key, n)
+    }
     else if (title) n.title = title
     return n
   }
@@ -255,7 +258,11 @@ function buildChart(events: TimedEvent[], sessions: Map<number, SessionNaming>):
   let step = 0
   const edgeOf = (from: string, to: string, label?: string, stamp = true): EdgeState => {
     let e = edges.find(x => x.from === from && x.to === to)
-    if (!e) { e = { from, to, label, seqs: [] }; edges.push(e); if (stamp) e.seqs.push(++step) }
+    if (!e) {
+      e = { from, to, label, seqs: [] }
+      edges.push(e)
+      if (stamp) e.seqs.push(++step)
+    }
     else if (label) e.label = label
     return e
   }
@@ -451,7 +458,10 @@ function buildRelation(view: RunView, running: Map<string, RunningActivity>, ses
     }
     if (record.kind === 'agents.invoke' && typeof p.id === 'number') pushInvoke(p.id, p, false)
     if (record.kind === 'ask') {
-      if (!declared.has('U')) { declared.add('U'); nodes.push(`    U(["用户"])`) }
+      if (!declared.has('U')) {
+        declared.add('U')
+        nodes.push(`    U(["用户"])`)
+      }
       edges.push({ from: 'WF', to: 'U', label: safe(`已应答：${trunc(JSON.stringify(record.result), 14)}`), live: false })
     }
   }
@@ -461,7 +471,10 @@ function buildRelation(view: RunView, running: Map<string, RunningActivity>, ses
     if (typeof p.id === 'number') pushInvoke(p.id, p, true)
   }
   for (const ask of view.pendingAsks) {
-    if (!declared.has('U')) { declared.add('U'); nodes.push(`    U(["用户"])`) }
+    if (!declared.has('U')) {
+      declared.add('U')
+      nodes.push(`    U(["用户"])`)
+    }
     edges.push({ from: 'WF', to: 'U', label: safe(`🙋 ${ask.spec.title}`), live: true })
   }
 

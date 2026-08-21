@@ -94,28 +94,28 @@ function parseMeasurement(text: string, label: 'A' | 'B'): ProductRuntimeMeasure
     || !stringField(record.sourceDigest)
     || !stringField(record.treeDigest)
     || !stringField(record.shapeDigest)
-        || !stringField(record.measuredAt)
-        || !Number.isFinite(Date.parse(record.measuredAt))
-        || !objectField(record.runtime)
-        || !objectField(record.runtimeContract)
-        || !objectField(record.policy)
-        || !moduleClosure
-        || !nativeIslands
-        || nativeIslands.platform !== platform
-        || !Array.isArray(nativeIslands.islands)
-        || !Array.isArray(nativeIslands.opaqueImports)
-        || !Number.isSafeInteger(moduleClosure.roots)
-        || !Number.isSafeInteger(moduleClosure.modules)
-        || !Number.isSafeInteger(moduleClosure.references)
-        || !Number.isSafeInteger(moduleClosure.opaqueImports)
-        || !Array.isArray(moduleClosure.opaqueImportObservations)
-        || !Array.isArray(moduleClosure.packages)
-        || !Array.isArray(payloadFiles)
-        || payloadFiles.length !== inventory?.files
-        || !payloadFiles.every(validPayloadFile)
-        || !Number.isSafeInteger(inventory?.files)
-        || !Number.isSafeInteger(inventory?.bytes)
-        || !Array.isArray(inventory?.owners)
+    || !stringField(record.measuredAt)
+    || !Number.isFinite(Date.parse(record.measuredAt))
+    || !objectField(record.runtime)
+    || !objectField(record.runtimeContract)
+    || !objectField(record.policy)
+    || !moduleClosure
+    || !nativeIslands
+    || nativeIslands.platform !== platform
+    || !Array.isArray(nativeIslands.islands)
+    || !Array.isArray(nativeIslands.opaqueImports)
+    || !Number.isSafeInteger(moduleClosure.roots)
+    || !Number.isSafeInteger(moduleClosure.modules)
+    || !Number.isSafeInteger(moduleClosure.references)
+    || !Number.isSafeInteger(moduleClosure.opaqueImports)
+    || !Array.isArray(moduleClosure.opaqueImportObservations)
+    || !Array.isArray(moduleClosure.packages)
+    || !Array.isArray(payloadFiles)
+    || payloadFiles.length !== inventory?.files
+    || !payloadFiles.every(validPayloadFile)
+    || !Number.isSafeInteger(inventory?.files)
+    || !Number.isSafeInteger(inventory?.bytes)
+    || !Array.isArray(inventory?.owners)
   ) {
     throw new Error(`Product Runtime measurement ${label}身份或inventory无效。`)
   }

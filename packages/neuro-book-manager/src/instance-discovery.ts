@@ -84,8 +84,13 @@ export async function discoverInstances(roots: string[], registeredRoots: string
   const visited = new Set<string>()
   const visit = async (directory: string, depth: number): Promise<void> => {
     let canonical: string
-    try { canonical = await realpath(directory) }
-    catch (error) { warnings.push({ code: 'scan.unreadable', message: `无法读取搜索目录：${directory} (${error instanceof Error ? error.message : String(error)})` }); return }
+    try {
+      canonical = await realpath(directory)
+    }
+    catch (error) {
+      warnings.push({ code: 'scan.unreadable', message: `无法读取搜索目录：${directory} (${error instanceof Error ? error.message : String(error)})` })
+      return
+    }
     const key = rootKey(canonical)
     if (visited.has(key) || registered.has(key)) return
     visited.add(key)
@@ -99,8 +104,13 @@ export async function discoverInstances(roots: string[], registeredRoots: string
     }
     if (depth >= maxDepth) return
     let entries
-    try { entries = await readdir(canonical, { withFileTypes: true }) }
-    catch (error) { warnings.push({ code: 'scan.unreadable', message: `无法扫描目录：${canonical} (${error instanceof Error ? error.message : String(error)})` }); return }
+    try {
+      entries = await readdir(canonical, { withFileTypes: true })
+    }
+    catch (error) {
+      warnings.push({ code: 'scan.unreadable', message: `无法扫描目录：${canonical} (${error instanceof Error ? error.message : String(error)})` })
+      return
+    }
     for (const entry of entries) {
       if (!entry.isDirectory() || SKIPPED_DIRECTORIES.has(entry.name) || entry.name.startsWith('.')) continue
       await visit(join(canonical, entry.name), depth + 1)
@@ -156,7 +166,9 @@ async function inspectNeuroBookGit(root: string, blockers: InspectionIssue[], al
 }
 
 async function cheapNeuroBookIdentity(root: string): Promise<boolean> {
-  try { return (JSON.parse(await readFile(join(root, 'package.json'), 'utf8')) as { name?: string }).name === 'neuro-book' }
+  try {
+    return (JSON.parse(await readFile(join(root, 'package.json'), 'utf8')) as { name?: string }).name === 'neuro-book'
+  }
   catch { return false }
 }
 
@@ -191,5 +203,10 @@ async function inspectCommand(command: string, args = ['--version']): Promise<Co
   return { available: true, version }
 }
 
-function rootKey(path: string): string { const absolute = resolve(path); return process.platform === 'win32' ? absolute.toLocaleLowerCase('en-US') : absolute }
-function normalizeRepository(repository: string): string { return repository.trim().replace(/^git@github\.com:/u, 'https://github.com/').replace(/^ssh:\/\/git@github\.com\//u, 'https://github.com/').replace(/\.git$/u, '').replace(/\/$/u, '').toLowerCase() }
+function rootKey(path: string): string {
+  const absolute = resolve(path)
+  return process.platform === 'win32' ? absolute.toLocaleLowerCase('en-US') : absolute
+}
+function normalizeRepository(repository: string): string {
+  return repository.trim().replace(/^git@github\.com:/u, 'https://github.com/').replace(/^ssh:\/\/git@github\.com\//u, 'https://github.com/').replace(/\.git$/u, '').replace(/\/$/u, '').toLowerCase()
+}

@@ -263,8 +263,8 @@ function assertReceiptMatchesManifest(receipt: ProductRuntimeVerificationReceipt
     || receipt.lockfileSha256 !== expected.lockfileSha256
     || receipt.builderContractVersion !== expected.builderContractVersion
     || receipt.treeDigest !== expected.treeDigest
-        || receipt.shapeDigest !== expected.shapeDigest
-        || !runtimeContractMatches
+    || receipt.shapeDigest !== expected.shapeDigest
+    || !runtimeContractMatches
   ) {
     throw new Error('Product Runtime verification receipt 与镜像 manifest 不一致。')
   }

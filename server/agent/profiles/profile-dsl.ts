@@ -1412,9 +1412,9 @@ function materializeProfileDslNode(node: ProfileDslNode): Exclude<ProfileDslNode
     || concrete.kind === 'ToolResult'
     || concrete.kind === 'Reminder'
     || concrete.kind === 'Watch'
-        || concrete.kind === 'If'
-        || concrete.kind === 'ModeSlot'
-        || concrete.kind === 'Fragment'
+    || concrete.kind === 'If'
+    || concrete.kind === 'ModeSlot'
+    || concrete.kind === 'Fragment'
   ) {
     return {
       ...concrete,
