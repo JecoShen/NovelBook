@@ -508,7 +508,7 @@ async function waitForSupervisor(
     let readyVersion = ''
     let settled = false
     let backgroundFailureReported = false
-    const timer: ReturnType<typeof setTimeout> | undefined
+    let timer: ReturnType<typeof setTimeout> | undefined
     const finish = (error?: Error): void => {
       if (settled) return
       if (error) {
