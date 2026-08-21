@@ -84,6 +84,7 @@ describe('Agent Session Store HMR registry', () => {
       assertHealthy: vi.fn(),
       compromised: new Promise<never>(() => undefined),
     }
+    // eslint-disable-next-line prefer-const
     let entry!: RuntimeEntry
     let finishTransition!: () => void
     const transition = new Promise<void>((resolvePromise) => {
@@ -130,6 +131,7 @@ describe('Agent Session Store HMR registry', () => {
       assertHealthy: vi.fn(),
       compromised: new Promise<never>(() => undefined),
     }
+    // eslint-disable-next-line prefer-const
     let entry!: RuntimeEntry
     let finishTransition!: () => void
     const transition = new Promise<void>((resolvePromise) => {

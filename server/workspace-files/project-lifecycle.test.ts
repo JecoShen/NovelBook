@@ -1280,6 +1280,7 @@ describe('ProjectLifecycle', () => {
   it('ensure已经发布snapshot并释放锁后遇到close仍返回已提交结果', async () => {
     const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'nbook-project-lifecycle-'))
     roots.push(workspaceRoot)
+    // eslint-disable-next-line prefer-const
     let lifecycle: ProjectLifecycle
     class CloseAfterCommittedEnsureLocks extends ProjectLockModule {
       override async acquireMutation() {
@@ -2205,6 +2206,7 @@ describe('ProjectLifecycle', () => {
   it('create已经发布snapshot并释放锁后遇到close仍返回已提交结果', async () => {
     const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'nbook-project-lifecycle-'))
     roots.push(workspaceRoot)
+    // eslint-disable-next-line prefer-const
     let lifecycle: ProjectLifecycle
     class CloseAfterCommittedCreateLocks extends ProjectLockModule {
       override async acquireMutation() {
@@ -2699,6 +2701,7 @@ describe('ProjectLifecycle', () => {
       'kind: novel\ntitle: Delete Committed Before Close\nsummary: ""\n',
       'utf8',
     )
+    // eslint-disable-next-line prefer-const
     let lifecycle: ProjectLifecycle
     class CloseAfterCommittedDeleteLocks extends ProjectLockModule {
       override async acquireMutation() {
@@ -4203,6 +4206,7 @@ describe('ProjectLifecycle', () => {
     const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'nbook-project-lifecycle-'))
     roots.push(workspaceRoot)
     await mkdir(path.join(workspaceRoot, 'close-before-fulfillment'))
+    // eslint-disable-next-line prefer-const
     let lifecycle: ProjectLifecycle
     class CloseBeforeFulfillmentLocks extends ProjectLockModule {
       override async acquireMutation() {

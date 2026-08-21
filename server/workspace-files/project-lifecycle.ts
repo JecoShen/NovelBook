@@ -2073,9 +2073,8 @@ export class ProjectLifecycle {
     if (this.readInFlight) {
       return this.readInFlight
     }
-    let trackedPromise: Promise<ProjectDiscoveryState>
     const scanPromise = this.readStateWithMutation(operation)
-    trackedPromise = scanPromise.finally(() => {
+    const trackedPromise = scanPromise.finally(() => {
       if (this.readInFlight === trackedPromise) {
         this.readInFlight = null
       }

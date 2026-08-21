@@ -289,7 +289,7 @@ describe('SnapshotCache generation 与事件归并', () => {
 
   it('连续失效达到 maxBuildAttempts 后返回 typed unstable error 并保留 dirty', async () => {
     let buildCount = 0
-    let cache!: SnapshotCache<string, ReturnType<typeof buildResult>['nodes'][number], string, TestEvent>
+    const cache!: SnapshotCache<string, ReturnType<typeof buildResult>['nodes'][number], string, TestEvent>
     const options = cacheOptions(async () => {
       buildCount += 1
       queueMicrotask(() => cache.invalidate('alpha', { path: `change-${buildCount}`, kind: 'change' }))

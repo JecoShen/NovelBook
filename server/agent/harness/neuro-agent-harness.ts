@@ -747,8 +747,7 @@ export class NeuroAgentHarness {
 
   /** 登记一个fire-and-forget任务，并确保失败不会形成未处理Promise。 */
   private startBackgroundTask(kind: string, task: Promise<void>): void {
-    let tracked: Promise<void>
-    tracked = task
+    const tracked = task
       .catch((error: unknown) => {
         void appLogger.error('agent.background.error', {
           kind,
