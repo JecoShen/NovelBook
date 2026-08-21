@@ -77,7 +77,7 @@ export function productRuntimeCompatibilityPlugin(): Plugin {
         }
         const bindingNames = definition.exportNames.join(', ')
         const missingFunctions = definition.exportNames
-          .map(name => `typeof ${name} !== \"function\"`)
+          .map(name => `typeof ${name} !== "function"`)
           .join(' || ')
         return {
           loader: 'js',

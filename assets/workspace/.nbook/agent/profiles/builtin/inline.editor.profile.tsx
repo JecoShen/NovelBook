@@ -1,8 +1,6 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import type { Static } from 'nbook/profile-sdk'
-import { defineAgentProfile, InlineEditorInitialSchema, InlineEditorOutputSchema, InlineEditorPayloadSchema, builtin, toolset, AppendingSet, If, Message, ProfilePrompt, System, profileText } from 'nbook/profile-sdk'
-import type { ProfilePrepareContext } from 'nbook/profile-sdk'
+import { defineAgentProfile, InlineEditorInitialSchema, InlineEditorOutputSchema, InlineEditorPayloadSchema, builtin, toolset, AppendingSet, If, Message, ProfilePrompt, System, profileText, type Static, type ProfilePrepareContext } from 'nbook/profile-sdk'
 
 export const profileManifest = {
   key: 'inline.editor',

@@ -548,7 +548,7 @@ function assertProductArchiveShape(entries: ZipArchiveEntry[]): void {
 function assertWindowsArchivePath(archivePath: string): void {
   const reservedNames = new Set(['con', 'prn', 'aux', 'nul', ...Array.from({ length: 9 }, (_, index) => `com${index + 1}`), ...Array.from({ length: 9 }, (_, index) => `lpt${index + 1}`)])
   for (const segment of archivePath.split('/')) {
-    if (segment.endsWith('.') || segment.endsWith(' ') || /[\u0000-\u001f<>"|?*:]/u.test(segment)) {
+    if (segment.endsWith('.') || segment.endsWith(' ') || /[\p{Cc}<>"|?*:]/u.test(segment)) {
       throw new Error(`ZIP archive 包含 Windows 不可移植路径：${archivePath}`)
     }
     const baseName = segment.split('.')[0]!.toLowerCase()

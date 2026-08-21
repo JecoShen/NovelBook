@@ -475,7 +475,7 @@ export function normalizeProductRuntimeOwners(input: readonly ProductRuntimeImag
   if (input.length === 0) throw new Error('Product Runtime Image 至少需要一个 owner。')
   const names = new Set<string>()
   return input.map((owner) => {
-    if (!owner.name.trim() || owner.name !== owner.name.trim() || /[\u0000-\u001f]/u.test(owner.name)) {
+    if (!owner.name.trim() || owner.name !== owner.name.trim() || /[\p{Cc}]/u.test(owner.name)) {
       throw new Error(`Product Runtime Image owner 名称无效：${JSON.stringify(owner.name)}`)
     }
     if (names.has(owner.name)) throw new Error(`Product Runtime Image owner 名称重复：${owner.name}`)
@@ -838,7 +838,7 @@ export function assertProductRuntimeContainedPath(root: string, target: string, 
 
 /** 平台身份只接受 Manager 穷举的平台集合。 */
 export function assertProductRuntimePlatform(platform: string): asserts platform is ProductPlatform {
-  if (!platform.trim() || platform !== platform.trim() || /[\u0000-\u001f]/u.test(platform)
+  if (!platform.trim() || platform !== platform.trim() || /[\p{Cc}]/u.test(platform)
     || !PRODUCT_PLATFORMS.some(candidate => candidate === platform)) {
     throw new Error(`Product Runtime Image platform 无效：${JSON.stringify(platform)}`)
   }
@@ -863,7 +863,7 @@ function assertExpectedIdentity(identity: ProductRuntimeExpectedIdentity): void 
     }
   }
   if (identity.builderContractVersion !== undefined
-    && (!identity.builderContractVersion.trim() || /[\u0000-\u001f]/u.test(identity.builderContractVersion))) {
+    && (!identity.builderContractVersion.trim() || /[\p{Cc}]/u.test(identity.builderContractVersion))) {
     throw new Error('Product Runtime Image expected builderContractVersion 无效。')
   }
 }

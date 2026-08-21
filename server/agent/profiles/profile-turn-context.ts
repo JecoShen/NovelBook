@@ -277,7 +277,7 @@ function workspaceReference(path: string): string {
 
 /** 转义 Markdown link label 与删除路径提示中的结构字符。 */
 function escapeMarkdownLabel(path: string): string {
-  return path.replace(/([\\\[\]])/gu, '\\$1')
+  return path.replace(/([\\[\]])/gu, '\\$1')
 }
 
 /** 选择不会被 diff 正文中的反引号提前闭合的 Markdown fence。 */

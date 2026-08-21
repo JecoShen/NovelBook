@@ -185,7 +185,7 @@ export function normalizeProjectRoot(input: string): WorkspaceRelativePath {
   if (input === '.' || input === '..' || input.toLocaleLowerCase('en-US') === '.nbook') {
     throw new ProjectLifecycleError('INVALID_PROJECT_ROOT', 'projectRoot 使用了保留目录名')
   }
-  if (/[<>:"|?*\u0000-\u001F\u007F]/u.test(input)) {
+  if (/[<>:"|?*\p{Cc}]/u.test(input)) {
     throw new ProjectLifecycleError('INVALID_PROJECT_ROOT', 'projectRoot 包含跨平台文件名不允许的字符')
   }
   if (/[. ]$/u.test(input)) {

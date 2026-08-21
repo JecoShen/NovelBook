@@ -1,7 +1,6 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import { Type, type Static } from 'nbook/profile-sdk'
-import { defineAgentProfile, builtin, plotReadBindings, plotWriteBindings, toolset, LeaderDefaultInitialSchema, LeaderDefaultOutputSchema,
+import { Type, defineAgentProfile, builtin, plotReadBindings, plotWriteBindings, toolset, LeaderDefaultInitialSchema, LeaderDefaultOutputSchema,
   AgentCatalog,
   AppendingSet,
   FileChangeNotice,
@@ -19,8 +18,7 @@ import { defineAgentProfile, builtin, plotReadBindings, plotWriteBindings, tools
   System,
   TaskReminder,
   WorkflowCatalog,
-  WorkspaceFocusReminder, profileText, defineLowCodeForm, profileHomeResource } from 'nbook/profile-sdk'
-import { defineProfileHome, type ProfileHomeFacade } from 'nbook/profile-sdk'
+  WorkspaceFocusReminder, profileText, defineLowCodeForm, profileHomeResource, defineProfileHome, type Static, type ProfileHomeFacade } from 'nbook/profile-sdk'
 
 export const profileManifest = {
   key: 'leader.default',

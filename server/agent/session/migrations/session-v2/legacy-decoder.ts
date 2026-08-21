@@ -1057,7 +1057,7 @@ function isValidProjectRoot(value: string): boolean {
     && value !== '.'
     && value !== '..'
     && value.toLocaleLowerCase('en-US') !== '.nbook'
-    && !/[<>:"|?*\u0000-\u001F\u007F]/u.test(value)
+    && !/[<>:"|?*\p{Cc}]/u.test(value)
     && !/[. ]$/u.test(value)
     && !/^(?:con|prn|aux|nul|com[1-9\u00B9\u00B2\u00B3]|lpt[1-9\u00B9\u00B2\u00B3])(?:\..*)?$/iu.test(value)
 }

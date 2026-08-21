@@ -16,7 +16,7 @@ export const ProjectRootDtoSchema = z.string()
   .refine(value => !value.includes('/') && !value.includes('\\'), 'projectRoot 必须是一级目录名')
   .refine(value => value !== '.' && value !== '..', 'projectRoot 不能使用相对路径段')
   .refine(value => value.toLocaleLowerCase('en-US') !== '.nbook', 'projectRoot 使用了保留目录名')
-  .refine(value => !/[<>:"|?*\u0000-\u001F\u007F]/u.test(value), 'projectRoot 包含跨平台文件名不允许的字符')
+  .refine(value => !/[<>:"|?*\p{Cc}]/u.test(value), 'projectRoot 包含跨平台文件名不允许的字符')
   .refine(value => !/[. ]$/u.test(value), 'projectRoot 不能以点或空格结尾')
   .refine(value => !WINDOWS_DEVICE_NAME_PATTERN.test(value), 'projectRoot 不能使用 Windows 保留设备名')
 

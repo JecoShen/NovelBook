@@ -1,11 +1,6 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import { Type } from 'nbook/profile-sdk'
-import type { Static } from 'nbook/profile-sdk'
-import { defineAgentProfile } from 'nbook/profile-sdk'
-import { builtin, toolset } from 'nbook/profile-sdk'
-import { AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder } from 'nbook/profile-sdk'
-import { profileText } from 'nbook/profile-sdk'
+import { Type, defineAgentProfile, builtin, toolset, AgentCatalog, AppendingSet, HistorySet, Import, LinkedAgentsReminder, Message, ModelContext, ProfilePrompt, System, WorkspaceFocusReminder, profileText, type Static } from 'nbook/profile-sdk'
 
 export const profileManifest = {
   key: 'world.engine',

@@ -12,7 +12,7 @@ const SENSITIVE_VALUE_LABEL = 'api[-_ ]?key|apikey|password|token|secret|credent
 export function redactSensitiveText(input: string): string {
   return input
     .replace(new RegExp(`(["'](?:${SENSITIVE_LABEL})["']\\s*:\\s*["'])[^"']*(["'])`, 'giu'), `$1${REDACTED}$2`)
-    .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+\/=:-]+/giu, `$1 ${REDACTED}`)
+    .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=:-]+/giu, `$1 ${REDACTED}`)
     .replace(/(\bauthorization\s*[:=]\s*)(?!(?:Bearer|Basic)\b)[^\s,;}]+/giu, `$1${REDACTED}`)
     .replace(new RegExp(`\\b(cookie|set-cookie)\\s*[:=]\\s*[^\\r\\n]+`, 'giu'), `$1=${REDACTED}`)
     .replace(new RegExp(`(\\b(?:${SENSITIVE_VALUE_LABEL})\\s*[:=]\\s*)(?:"[^"]*"|'[^']*'|[^\\s,;}]+)`, 'giu'), `$1${REDACTED}`)

@@ -32,7 +32,7 @@ describe('Source Dev launcher process lifecycle', () => {
       await writeFile(join(sourceRoot, 'package.json'), `${JSON.stringify({
         private: true,
         type: 'module',
-        scripts: { 'dev:runtime': `bun \"${fixturePath.replaceAll('\\', '/')}\"` },
+        scripts: { 'dev:runtime': `bun "${fixturePath.replaceAll('\\', '/')}"` },
       }, null, 2)}\n`, 'utf8')
 
       launcher = spawn(process.platform === 'win32' ? 'bun.exe' : 'bun', [launcherPath], {

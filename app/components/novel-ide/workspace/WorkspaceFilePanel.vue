@@ -543,7 +543,7 @@ function buildLorebookEntryContent(filePath: string, entryType: LorebookEntryTyp
     ? `character:\n    logline: ""\n    profile: {}\n    story: {}\n    meta:\n        pinned: false\n        primaryContext: null\n`
     : ''
   const subtypeBlock = entryType === 'character' ? 'subtype: person\n' : ''
-  return `---\ntitle: ${JSON.stringify(title)}\ntype: ${entryType}\n${subtypeBlock}status: draft\naliases: []\ntags: []\nsummary: \"\"\nrefs: []\nretrieval:\n    enabled: true\n    trigger: null\ngovernance:\n    source: manual\n    review: proposed\n${characterBlock}---\n\n`
+  return `---\ntitle: ${JSON.stringify(title)}\ntype: ${entryType}\n${subtypeBlock}status: draft\naliases: []\ntags: []\nsummary: ""\nrefs: []\nretrieval:\n    enabled: true\n    trigger: null\ngovernance:\n    source: manual\n    review: proposed\n${characterBlock}---\n\n`
 }
 
 function splitName(fileName: string): { stem: string, extension: string } {

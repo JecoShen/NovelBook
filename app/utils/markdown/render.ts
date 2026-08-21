@@ -161,7 +161,7 @@ function ensureMarked(): void {
         level: 'inline',
         start(src: string) {
           const bracketedIndex = src.indexOf('[[')
-          const lineIndex = src.search(/[\w@~.-][\w@~./\\-]*[\/\\][\w@~./\\-]*#(?:L)?\d/u)
+          const lineIndex = src.search(/[\w@~.-][\w@~./\\-]*[/\\][\w@~./\\-]*#(?:L)?\d/u)
           if (bracketedIndex < 0) {
             return lineIndex < 0 ? undefined : lineIndex
           }

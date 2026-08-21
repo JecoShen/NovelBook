@@ -37,7 +37,7 @@ interface SearchRecord<TItem> {
   order: number
 }
 
-const PATH_SEPARATOR_PATTERN = /[\/\\\s:_\-：.]+/g
+const PATH_SEPARATOR_PATTERN = /[/\\\s:_\-：.]+/g
 
 /**
  * 构造 workspace 引用的候选路径。

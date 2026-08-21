@@ -1,5 +1,5 @@
 const PROJECT_COVER_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp'])
-const PROJECT_COVER_PORTABLE_NAME_PATTERN = /^[^<>:"|?*\u0000-\u001F\u007F]+$/u
+const PROJECT_COVER_PORTABLE_NAME_PATTERN = /^[^<>:"|?*\p{Cc}]+$/u
 const WINDOWS_DEVICE_NAME_PATTERN = /^(?:con|prn|aux|nul|com[1-9\u00B9\u00B2\u00B3]|lpt[1-9\u00B9\u00B2\u00B3])(?:\..*)?$/iu
 
 /**

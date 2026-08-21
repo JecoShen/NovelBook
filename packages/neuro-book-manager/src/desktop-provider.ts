@@ -197,7 +197,7 @@ async function readDiscoveredModelIds(response: Response): Promise<string[]> {
     .map(item => isRecord(item) && typeof item.id === 'string' ? item.id.trim() : '')
     .filter(id => id.length > 0
       && id.length <= 256
-      && !/[\u0000-\u001f\u007f]/u.test(id))
+      && !/[\p{Cc}]/u.test(id))
   return [...new Set(ids)].slice(0, 100)
 }
 

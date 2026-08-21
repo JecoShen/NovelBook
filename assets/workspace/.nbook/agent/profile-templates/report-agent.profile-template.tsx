@@ -1,10 +1,6 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import { Type } from 'nbook/profile-sdk'
-import type { Static } from 'nbook/profile-sdk'
-import { defineAgentProfile } from 'nbook/profile-sdk'
-import { builtin, toolset } from 'nbook/profile-sdk'
-import { ProfilePrompt, System } from 'nbook/profile-sdk'
+import { Type, defineAgentProfile, builtin, toolset, ProfilePrompt, System, type Static } from 'nbook/profile-sdk'
 
 export const profileManifest = {
   key: '__PROFILE_KEY__',

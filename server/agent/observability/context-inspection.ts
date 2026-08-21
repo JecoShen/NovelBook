@@ -3,8 +3,7 @@
  *
  * 只做形状转换与 provider 缓存语义判定，不碰 IO、不读 config。
  */
-import type { JsonValue } from 'nbook/server/agent/messages/types'
-import type { Model } from 'nbook/server/agent/messages/types'
+import type { JsonValue, Model } from 'nbook/server/agent/messages/types'
 import type { PiTraceIndexEntry } from 'nbook/server/agent/observability/pi-request-recorder'
 import type { CacheRetention } from 'nbook/server/agent/observability/context-diagnostics'
 import type { AgentContextInspectionDto, AgentContextTimelineEntryDto } from 'nbook/shared/dto/agent-context-inspection.dto'

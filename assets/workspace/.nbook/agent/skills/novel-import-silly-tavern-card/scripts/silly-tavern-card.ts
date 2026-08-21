@@ -158,12 +158,12 @@ const DYNAMIC_MARKERS: Array<{ key: string, pattern: RegExp, category: EntryCate
   { key: 'render', pattern: /\[RENDER:[^\]]+\]|@@render_(?:before|after)|@@iframe|@@message_formatting/i, category: 'dynamic-prompt' },
 ]
 const COMMENT_PATTERN_RULES: Array<{ category: EntryCategory, pattern: RegExp, reason: string }> = [
-  { category: 'species', pattern: /(?:^|[-_【\[\s])(?:种族|智慧生物|种族概览|种族血脉)(?:[-_】\]\s]|$)|DLC-扩展-.*种族-/u, reason: 'comment 命中种族命名模式。' },
-  { category: 'character', pattern: /DLC-角色-|角色卡DLC|(?:^|[-_【\[\s])(?:角色|人物|NPC)(?:[-_】\]\s]|$)/u, reason: 'comment 命中角色命名模式。' },
-  { category: 'location', pattern: /城镇-|地块-|冒险区域-|封印区|内城区|外环区|中城区|圣都-|(?:^|[-_【\[\s])(?:地点|地区|区域|城市|建筑|房间)(?:[-_】\]\s]|$)/u, reason: 'comment 命中地点层级命名模式。' },
-  { category: 'faction', pattern: /政治与社会|总览$|文化$|势力概览|组织概览|(?:^|[-_【\[\s])(?:势力|组织|阵营|公会|教会)(?:[-_】\]\s]|$)/u, reason: 'comment 命中势力/组织命名模式。' },
+  { category: 'species', pattern: /(?:^|[-_【[\s])(?:种族|智慧生物|种族概览|种族血脉)(?:[-_】\]\s]|$)|DLC-扩展-.*种族-/u, reason: 'comment 命中种族命名模式。' },
+  { category: 'character', pattern: /DLC-角色-|角色卡DLC|(?:^|[-_【[\s])(?:角色|人物|NPC)(?:[-_】\]\s]|$)/u, reason: 'comment 命中角色命名模式。' },
+  { category: 'location', pattern: /城镇-|地块-|冒险区域-|封印区|内城区|外环区|中城区|圣都-|(?:^|[-_【[\s])(?:地点|地区|区域|城市|建筑|房间)(?:[-_】\]\s]|$)/u, reason: 'comment 命中地点层级命名模式。' },
+  { category: 'faction', pattern: /政治与社会|总览$|文化$|势力概览|组织概览|(?:^|[-_【[\s])(?:势力|组织|阵营|公会|教会)(?:[-_】\]\s]|$)/u, reason: 'comment 命中势力/组织命名模式。' },
   { category: 'system', pattern: /命定系统-|核心数值|状态规则|经验值|好感度|复活机制|战斗生产|品质效果|登神长阶|经济价格|角色生成|随机池|生产制作|战斗协议/u, reason: 'comment 命中系统/玩法命名模式。' },
-  { category: 'event', pattern: /DLC-事件-.*(?:入口|本体)\b|(?:^|[-_【\[\s])(?:事件|剧情|任务|主线|支线|历史|传说)(?:[-_】\]\s]|$)/u, reason: 'comment 命中事件/剧情命名模式。' },
+  { category: 'event', pattern: /DLC-事件-.*(?:入口|本体)\b|(?:^|[-_【[\s])(?:事件|剧情|任务|主线|支线|历史|传说)(?:[-_】\]\s]|$)/u, reason: 'comment 命中事件/剧情命名模式。' },
 ]
 const SEMANTIC_RULES: Array<{ category: EntryCategory, pattern: RegExp, reason: string }> = [
   { category: 'character', pattern: /(^|[-_【\s])(?:角色|人物|NPC|主角|女主|男主|学生|老师|人设|角色卡|DLC-角色)(?:[-_】\s]|$)|背景故事|关键经历|性格|外貌|口癖|关系网/u, reason: '命中角色/人物设定特征。' },
@@ -750,7 +750,7 @@ function resolveLorebookImportPath(workspaceRoot: string, root: string, fileSlug
 
 function locationPathSegments(comment: string): string[] {
   const normalized = comment
-    .replace(/^[【\[]|[】\]]$/gu, '')
+    .replace(/^[【[]|[】\]]$/gu, '')
     .replace(/\([^)]*\)\s*$/u, '')
     .trim()
   const parts = normalized.split('-').map(part => part.trim()).filter(Boolean)
