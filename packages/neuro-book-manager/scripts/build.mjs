@@ -1,3 +1,4 @@
+/* global Bun */
 import { copyFile, mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
