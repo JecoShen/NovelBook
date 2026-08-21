@@ -796,8 +796,8 @@ onMounted(restoreLocalDraft)
 </script>
 
 <template>
-  <!-- World Engine Workbench mock preview route -->
   <div class="world-engine-workbench-preview world-engine-workbench-theme flex h-screen flex-col overflow-hidden bg-[var(--we-bg-canvas)] text-[var(--we-text-main)]">
+    <!-- World Engine Workbench mock preview route -->
     <header class="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--we-border)] bg-[var(--we-bg-panel)] px-4 shadow-[0_1px_0_color-mix(in_srgb,var(--shadow-color)_4%,transparent)]">
       <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--we-accent-border)] bg-[var(--we-accent-soft)] text-[12px] font-bold text-[var(--we-accent)]">
         WE

@@ -74,11 +74,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- 登录页外壳 -->
   <div
     ref="themeHostRef"
     class="auth-page min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300"
   >
+    <!-- 登录页外壳 -->
     <div class="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-10">
       <div class="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-panel)] p-6 shadow-2xl">
         <div class="mb-6">

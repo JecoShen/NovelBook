@@ -296,7 +296,7 @@ async function listLorebookIndexFiles(workspace: string): Promise<string[]> {
 }
 
 async function listIndexFiles(rootPath: string): Promise<string[]> {
-  let entries: string[] = []
+  let entries: string[]
   try {
     entries = await readdir(rootPath)
   }

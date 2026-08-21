@@ -91,7 +91,7 @@ function findMatchingCloseEnd(src: string, tag: string, searchFrom: number): num
  * 返回 null 表示不是可捕获形态（交还给后续 tokenizer / marked 原生处理）。
  */
 function captureUnknownHtml(src: string, knownTags: Set<string>, requireLineEnd: boolean): string | null {
-  let captured: string | null = null
+  let captured: string | null
   const selfClosing = SELF_CLOSING_PATTERN.exec(src)
   if (selfClosing) {
     captured = knownTags.has(selfClosing[1]!.toLowerCase()) ? null : selfClosing[0]

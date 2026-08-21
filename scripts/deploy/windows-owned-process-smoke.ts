@@ -37,7 +37,7 @@ if (!delegatedRoot) {
     stdout: 'inherit',
     stderr: 'inherit',
   })
-  let exitCode = 1
+  let exitCode
   try {
     exitCode = await worker.exited
   }
@@ -146,7 +146,7 @@ async function verifyTermination(
   ])
   if (reason === 'abort') controller.abort()
 
-  let message = ''
+  let message
   try {
     await execution
     throw new Error(`${reason}没有拒绝Bash执行。`)

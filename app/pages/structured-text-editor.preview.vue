@@ -155,11 +155,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- 结构化文本编辑器独立预览页 -->
   <div
     ref="themeHostRef"
     class="structured-editor-preview-page min-h-screen bg-[var(--bg-main)] text-[var(--text-main)]"
   >
+    <!-- 结构化文本编辑器独立预览页 -->
     <header class="border-b border-[var(--border-color)] bg-[var(--toolbar-bg)]/95 backdrop-blur">
       <div class="mx-auto flex max-w-[1440px] flex-col gap-5 px-5 py-5 xl:flex-row xl:items-end xl:justify-between">
         <div>

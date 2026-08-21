@@ -408,11 +408,11 @@ watch(formalProjectSession.state, (next, previous) => {
 </script>
 
 <template>
-  <!-- Workflow 正式入口与 demo 共存的预览页。 -->
   <div
     ref="themeHostRef"
     class="workflow-preview-page min-h-screen bg-[var(--bg-main)] text-[var(--text-main)]"
   >
+    <!-- Workflow 正式入口与 demo 共存的预览页。 -->
     <!-- 页面头部 -->
     <header class="border-b border-[var(--border-color)] bg-[var(--toolbar-bg)]/95 backdrop-blur">
       <div class="mx-auto flex max-w-[1500px] flex-col gap-4 px-5 py-5 xl:flex-row xl:items-end xl:justify-between">

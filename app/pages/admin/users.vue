@@ -215,11 +215,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- 管理员用户后台 -->
   <div
     ref="themeHostRef"
     class="admin-page min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300"
   >
+    <!-- 管理员用户后台 -->
     <div class="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-6 py-6">
       <header class="flex items-center justify-between gap-4 border-b border-[var(--border-color)] pb-4">
         <div>

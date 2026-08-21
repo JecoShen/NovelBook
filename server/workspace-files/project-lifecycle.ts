@@ -1079,7 +1079,7 @@ export class ProjectLifecycle {
     let occupancy: ProjectOccupancyHandle | null = null
     let committedResult: ProjectMetadataUpdateResult | null = null
     let prepared: Awaited<ReturnType<typeof prepare>> | null = null
-    let manifestChanged = false
+    let manifestChanged
     try {
       operation.assertActive()
       if (access.kind === 'acquire') {
@@ -1656,7 +1656,7 @@ export class ProjectLifecycle {
     const { root: stagingRoot, token: publishedToken } = staging
     const targetRoot = absoluteFsPath(path.join(this.workspaceRoot, ref.projectRoot))
     let published = false
-    let publishedWorkspace: ResolvedProjectWorkspace | null = null
+    let publishedWorkspace: ResolvedProjectWorkspace | null
     let phase: ProjectLifecycleTransactionPhase = 'publish-root'
     /** 在发布前解析当前target；只有明确PROJECT_NOT_FOUND才表示当前可继续发布。 */
     const resolveExisting = async (): Promise<ResolvedProjectWorkspace | null> => {

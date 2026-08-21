@@ -7499,7 +7499,7 @@ export class NeuroAgentHarness {
      */
   private async sessionContextUsage(snapshot: SessionSnapshot, context: NeuroSessionContext): Promise<AgentSessionContextUsageDto> {
     const usedTokens = estimateStoredContextTokens(context.messages).tokens
-    let limitTokens: number | null = null
+    let limitTokens: number | null
     try {
       const config = await loadEffectiveConfig(resolveNonInvocationConfigTarget(snapshot.metadata, this.workspaceRoot))
       const model = this.resolveEffectiveSessionModel(config, context) ?? this.modelResolver(config, context.profileKey)

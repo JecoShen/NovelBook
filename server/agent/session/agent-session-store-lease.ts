@@ -409,8 +409,8 @@ async function leaseHeldError(path: string, cause: unknown): Promise<AgentSessio
 
 /** 同步调用方使用相同诊断结构。 */
 function leaseHeldErrorSync(path: string, cause: unknown): AgentSessionStoreLeaseHeldError {
-  let owner: AgentSessionStoreLeaseOwner | null = null
-  let heartbeatAt: string | null = null
+  let owner: AgentSessionStoreLeaseOwner | null
+  let heartbeatAt: string | null
   try {
     owner = parseOwner(readFileSync(path, 'utf8'))
   }

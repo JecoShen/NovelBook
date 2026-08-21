@@ -123,7 +123,7 @@ export async function rollbackAgentAttachmentMigration(
         runId,
         resume: true,
       }, assertHealthy)
-      manifest = await requiredManifest(paths)
+      await requiredManifest(paths)
     }
 
     await ensureRollbackLock(rootWorkspace, paths, runId, assertHealthy)

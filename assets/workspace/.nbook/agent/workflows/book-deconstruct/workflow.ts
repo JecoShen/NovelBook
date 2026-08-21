@@ -61,7 +61,7 @@ export default {
     const isFile = book.endsWith('.md')
     /** 番茄导入 metadata；null = 无 metadata（单文件输入，或目录下 metadata.json 缺失/解析失败） */
     let metadata = null
-    let raw = ''
+    let raw
     if (isFile) {
       try {
         raw = await wf.workspace.read(book)

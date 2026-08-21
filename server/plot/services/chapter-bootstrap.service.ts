@@ -97,9 +97,9 @@ export class ChapterBootstrapService {
       const identity = chapterIdentityFromPath(node.path)
       const parentVolumePath = findParentVolumePath(node.path, actIdByVolumePath)
       const actId = parentVolumePath === null ? null : actIdByVolumePath.get(parentVolumePath) ?? null
-      let chapter = await this.chapterRepository.findChapterByName(story.id, identity.name)
+      const chapter = await this.chapterRepository.findChapterByName(story.id, identity.name)
       if (!chapter) {
-        chapter = await this.chapterRepository.createChapter({
+        await this.chapterRepository.createChapter({
           storyId: story.id,
           actId,
           sortOrder: index,
@@ -120,7 +120,7 @@ export class ChapterBootstrapService {
           patch.sortOrder = index
         }
         if (Object.keys(patch).length > 0) {
-          chapter = await this.chapterRepository.updateChapter(chapter.id, patch)
+          await this.chapterRepository.updateChapter(chapter.id, patch)
         }
       }
 

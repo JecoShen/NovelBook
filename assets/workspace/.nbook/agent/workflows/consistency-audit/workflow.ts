@@ -78,7 +78,7 @@ export default {
     let chapterPaths = parsePaths(args?.chapterPaths)
     if (chapterPaths.length === 0) {
       // 兜底：从 manuscript/index.md 提取章节路径；提取不出任何路径就在创建任何 agent 前失败
-      let indexText = ''
+      let indexText
       try {
         indexText = await wf.workspace.read('manuscript/index.md')
       }
@@ -108,7 +108,7 @@ export default {
     // 逐章读正文：章节路径是显式输入，读不到直接失败，不做容错
     const chapters = []
     for (const path of chapterPaths) {
-      let text = ''
+      let text
       try {
         text = await wf.workspace.read(path)
       }

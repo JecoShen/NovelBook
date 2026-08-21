@@ -62,7 +62,7 @@ const fmt = (ms: number) => (ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math
       </div>
     </div>
     <div class="mt-1 pl-30 text-[10px] text-[var(--text-muted)]">
-      0 ─ {{ fmt(total) }}　蓝=已完成　橙（呼吸）=进行中　绿⚡=缓存命中
+      0 ─ {{ fmt(total) }}&emsp;蓝=已完成&emsp;橙（呼吸）=进行中&emsp;绿⚡=缓存命中
     </div>
   </div>
 </template>

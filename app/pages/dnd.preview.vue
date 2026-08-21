@@ -252,8 +252,8 @@ const resetSnapshots = (): void => {
 </script>
 
 <template>
-  <!-- DND 预览页根容器 -->
   <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)] text-slate-900">
+    <!-- DND 预览页根容器 -->
     <!-- 页面头部 -->
     <header class="mx-auto max-w-[1440px] px-6 pb-4 pt-8 lg:px-8">
       <div class="rounded-[36px] border border-white/80 bg-white/78 px-6 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">

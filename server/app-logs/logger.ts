@@ -318,7 +318,7 @@ export class AppFileLogger {
   }
 
   private rotateIfNeededSync(nextBytes: number): void {
-    let size = 0
+    let size
     try {
       size = fsSync.statSync(this.currentFilePath).size
     }

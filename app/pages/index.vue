@@ -2494,12 +2494,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!-- IDE 页面根容器 -->
   <div
     ref="themeHostRef"
     class="novel-ide-page ide-shell flex h-screen overflow-hidden bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300"
     :data-workbench-layout-mode="layoutMode"
   >
+    <!-- IDE 页面根容器 -->
     <!-- Project 激活事务期间阻止旧数据面继续编辑。 -->
     <div
       v-if="projectTransitionActive"

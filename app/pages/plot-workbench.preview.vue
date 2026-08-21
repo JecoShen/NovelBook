@@ -21,11 +21,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- 剧情工作台 Dialog 独立预览页 -->
   <div
     ref="themeHostRef"
     class="plot-workbench-preview-page min-h-screen bg-[var(--bg-main)] text-[var(--text-main)]"
   >
+    <!-- 剧情工作台 Dialog 独立预览页 -->
     <!-- 页面头部 -->
     <header class="border-b border-[var(--border-color)] bg-[var(--toolbar-bg)]/95 backdrop-blur">
       <div class="mx-auto flex max-w-[1600px] flex-col gap-5 px-5 py-5 xl:flex-row xl:items-end xl:justify-between">

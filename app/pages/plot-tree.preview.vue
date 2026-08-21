@@ -21,11 +21,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- PlotTree 独立测试页 -->
   <div
     ref="themeHostRef"
     class="plot-tree-preview-page min-h-screen bg-[var(--bg-main)] text-[var(--text-main)]"
   >
+    <!-- PlotTree 独立测试页 -->
     <!-- 页面头部 -->
     <header class="border-b border-[var(--border-color)] bg-[var(--toolbar-bg)]/95 backdrop-blur">
       <div class="mx-auto flex max-w-[1900px] flex-col gap-5 px-5 py-5 xl:flex-row xl:items-end xl:justify-between">

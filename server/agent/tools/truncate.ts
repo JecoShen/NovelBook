@@ -97,7 +97,6 @@ export function truncateTail(content: string, options: TruncationOptions = {}): 
       if (outputLines.length === 0) {
         const truncated = truncateStringToBytesFromEnd(line, maxBytes)
         outputLines.unshift(truncated)
-        outputBytes = Buffer.byteLength(truncated, 'utf-8')
         lastLinePartial = true
       }
       break

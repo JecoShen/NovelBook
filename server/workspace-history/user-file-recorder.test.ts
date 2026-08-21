@@ -52,12 +52,11 @@ describe('user file recorder', () => {
 
   it('旧 capture 在 close/reopen 后分别 fail-open，且不查询新 generation', async () => {
     const oldReady = readyProject(1)
-    const newReady = readyProject(2)
     const oldHistory = { generation: 1 }
     const newHistory = { generation: 2 }
     const oldIndex = { mutate: vi.fn() }
     const newIndex = { mutate: vi.fn() }
-    let current = oldReady
+    const current = oldReady
     mocks.requireReadyModuleHandle.mockImplementation((ready: ReadyProjectSessionRef, token: { name: string }) => {
       const generationHandles = ready === oldReady
         ? { history: oldHistory, fileIndex: oldIndex }
@@ -66,7 +65,6 @@ describe('user file recorder', () => {
     })
     const { captureUserProjectFileWrite, recordUserProjectFileWrite } = await import('nbook/server/workspace-history/user-file-recorder')
     const capture = captureUserProjectFileWrite(current, 'simulation/subjects/heroine/memory.jsonl')
-    current = newReady
     mocks.recordProjectWrite.mockRejectedValueOnce(new Error('old history closed'))
     await expect(recordUserProjectFileWrite({ capture, before: 'before', after: 'after' })).resolves.toBeUndefined()
 

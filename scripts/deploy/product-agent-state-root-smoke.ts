@@ -68,7 +68,7 @@ await writeFile(path.join(projectWorkspaceRoot, 'project.yaml'), [
 
 const faux = createSmokeModels()
 const harness = createSmokeHarness(runtimePaths, faux)
-let sessionId: number | null = null
+let sessionId: number | null
 
 try {
   registerSmokeProfile(harness)

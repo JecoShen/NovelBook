@@ -34,7 +34,7 @@ if (!delegatedRoot) {
     stdout: 'inherit',
     stderr: 'inherit',
   })
-  let exitCode = 1
+  let exitCode
   try {
     exitCode = await worker.exited
   }

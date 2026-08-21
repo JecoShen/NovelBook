@@ -13,11 +13,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- TSX Profile 可视化编辑器独立调试页 -->
   <div
     ref="themeHostRef"
     class="h-screen min-h-0 overflow-hidden"
   >
+    <!-- TSX Profile 可视化编辑器独立调试页 -->
     <ProfileTemplateVisualEditor
       mode="user-profile"
       preferred-template="builtin/leader.assets.profile.tsx"

@@ -29,11 +29,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- 模型设置预览页 -->
   <div
     ref="themeHostRef"
     class="model-settings-preview-page min-h-screen bg-[var(--bg-main)] text-[var(--text-main)]"
   >
+    <!-- 模型设置预览页 -->
     <!-- 页面头部 -->
     <header class="border-b border-[var(--border-color)] bg-[var(--toolbar-bg)]/95 backdrop-blur">
       <div class="mx-auto flex max-w-[1800px] flex-col gap-5 px-5 py-5 xl:flex-row xl:items-end xl:justify-between">

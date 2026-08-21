@@ -63,7 +63,7 @@ export class ProjectCoverStore {
       return Object.freeze({ path: relativePath, hash, created: false, cleanupIssues: Object.freeze([]) })
     }
 
-    let created = false
+    let created
     try {
       const handle = await fs.open(temporary, 'wx')
       try {

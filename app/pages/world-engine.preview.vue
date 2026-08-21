@@ -1179,8 +1179,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- World Engine 调试页 -->
   <div class="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)]">
+    <!-- World Engine 调试页 -->
     <!-- 页面头部 -->
     <header class="border-b border-[var(--border-color)] bg-[var(--toolbar-bg)]">
       <div class="mx-auto flex max-w-[1760px] flex-col gap-4 px-5 py-5 lg:flex-row lg:items-end lg:justify-between">

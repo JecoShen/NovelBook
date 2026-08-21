@@ -115,7 +115,7 @@ export async function updateInstallation(input: UpdateOptions): Promise<UpdateRe
     await ensureDirectory(staging)
     journal = await setOperationEffect(journal, pathCreateEffect(stagingRelative, 'applied'))
     let stagedWorktree: string | null = null
-    let gitTarget: GitUpdateTarget | null = null
+    let gitTarget: GitUpdateTarget | null
     let healthLaunch: ApplicationLaunch | null = null
     const createdComponents: string[] = []
     try {

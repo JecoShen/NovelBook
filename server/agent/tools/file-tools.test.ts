@@ -901,7 +901,7 @@ describe('v3 file tools', () => {
 
   it('bash 优先使用 user-assets rg 配置', async () => {
     const userConfigPath = resolve(workspaceRoot, '.nbook', 'agent', 'config', 'ripgreprc')
-    let original: string | null = null
+    let original: string | null
     try {
       original = await readFile(userConfigPath, 'utf-8')
     }
