@@ -10,8 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select', sessionId: number): void
-  (e: 'refresh'): void
-  (e: 'close'): void
+  (e: 'refresh' | 'close'): void
 }>()
 
 const totalRelations = computed(() => props.ownedAgents.length + props.linkedByAgents.length)

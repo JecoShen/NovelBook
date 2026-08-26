@@ -18,12 +18,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:width', value: number): void
-  (e: 'select', sessionId: number): void
-  (e: 'create'): void
-  (e: 'archive', session: AgentSessionSummaryDto): void
-  (e: 'rename', session: AgentSessionSummaryDto): void
-  (e: 'refresh'): void
+  (e: 'update:width' | 'select', payload: number): void
+  (e: 'create' | 'refresh'): void
+  (e: 'archive' | 'rename', session: AgentSessionSummaryDto): void
 }>()
 
 const searchQuery = ref('')

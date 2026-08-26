@@ -53,8 +53,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'update:height', value: number): void
-  (e: 'close'): void
-  (e: 'refresh'): void
+  (e: 'close' | 'refresh'): void
 }>()
 
 const store = useNovelIdeStore()

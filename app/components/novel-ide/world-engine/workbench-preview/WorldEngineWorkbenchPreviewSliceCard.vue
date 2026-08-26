@@ -34,13 +34,9 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'select', sliceId: string): void
-  (e: 'focusSubject', subjectId: string): void
+  (e: 'select' | 'focusSubject' | 'filterSubject' | 'insertSliceBefore' | 'insertSliceAfter', sliceId: string): void
   (e: 'focusReviewIssue', item: WorldWorkbenchPreviewReviewQueueItem): void
-  (e: 'filterSubject', subjectId: string): void
   (e: 'openSubjectFileProposals', sliceId: string, subjectId: string): void
-  (e: 'insertSliceBefore', sliceId: string): void
-  (e: 'insertSliceAfter', sliceId: string): void
 }>()
 
 const maxVisiblePatchesPerSubject = 6

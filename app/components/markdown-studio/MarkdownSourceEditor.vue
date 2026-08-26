@@ -40,11 +40,8 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'change', value: string): void
-  (e: 'focus'): void
-  (e: 'blur'): void
-  (e: 'save-request'): void
+  (e: 'focus' | 'blur' | 'save-request' | 'shift-tab'): void
   (e: 'submit', payload?: { ctrlKey?: boolean, metaKey?: boolean }): void
-  (e: 'shift-tab'): void
   (e: 'update-temporary-font-size', value: number): void
 }>()
 const { t } = useI18n()

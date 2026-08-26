@@ -31,8 +31,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
-  (e: 'save-request'): void
-  (e: 'ready'): void
+  (e: 'save-request' | 'ready'): void
 }>()
 
 const rootRef = ref<HTMLDivElement | null>(null)

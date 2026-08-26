@@ -111,9 +111,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'close'): void
+  (e: 'close' | 'open-history-inbox'): void
   (e: 'open-reference', target: string): void
-  (e: 'open-history-inbox'): void
 }>()
 
 const inputText = ref('')

@@ -16,8 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:mode', value: StructuredTextMode): void
-  (e: 'toggle'): void
-  (e: 'copy'): void
+  (e: 'toggle' | 'copy'): void
 }>()
 
 const roleIconClass = computed(() => {

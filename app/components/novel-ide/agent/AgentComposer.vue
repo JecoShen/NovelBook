@@ -68,27 +68,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:inputText', value: string): void
-  (e: 'update:pendingResolutionDraft', value: AgentPendingResolutionDraft): void
-  (e: 'update:sessionModelPopoverOpen', value: boolean): void
-  (e: 'update:sessionModelDraft', value: AgentSessionModelDraft): void
-  (e: 'update-session-model-selection', value: string | null): void
-  (e: 'submit-user-input'): void
-  (e: 'cancel-user-input'): void
-  (e: 'resync-user-input'): void
-  /** 打开上下文检查面板（Task 126）；宿主持有开关状态。 */
-  (e: 'open-context-inspector'): void
-  (e: 'send'): void
-  (e: 'steer'): void
-  (e: 'followup'): void
-  (e: 'stop'): void
-  (e: 'cycle-mode'): void
-  (e: 'toggle-session-model-popover'): void
-  (e: 'apply-session-model-settings'): void
-  (e: 'reset-session-model-settings'): void
-  (e: 'reconnect-events'): void
-  (e: 'refresh-history'): void
-  (e: 'open-history-inbox'): void
+  (e: 'update:inputText' | 'update:pendingResolutionDraft' | 'update:sessionModelPopoverOpen' | 'update:sessionModelDraft' | 'update-session-model-selection', value: string | AgentPendingResolutionDraft | boolean | AgentSessionModelDraft | string | null): void
+  (e: 'submit-user-input' | 'cancel-user-input' | 'resync-user-input' | 'open-context-inspector' | 'send' | 'steer' | 'followup' | 'stop' | 'cycle-mode' | 'toggle-session-model-popover' | 'apply-session-model-settings' | 'reset-session-model-settings' | 'reconnect-events' | 'refresh-history' | 'open-history-inbox'): void
   (e: 'open-workspace-file', path: string): void
   (e: 'attachment-registered', item: AgentSessionAttachmentItemDto): void
   (e: 'availability-action', action: AgentComposerAvailabilityAction): void

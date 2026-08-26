@@ -12,9 +12,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'toggle', volumeId: string): void
+  (e: 'toggle' | 'prepareChapterDrag', id: string): void
   (e: 'selectChapter', value: ChapterSelectionInput): void
-  (e: 'prepareChapterDrag', chapterId: string): void
 }>()
 
 const volumeRef = ref<HTMLElement | null>(null)

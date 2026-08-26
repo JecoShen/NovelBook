@@ -23,14 +23,8 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (event: 'select-tab', path: string): void
-  (event: 'open-path', path: string): void
-  (event: 'open-files'): void
-  (event: 'create-chapter'): void
-  (event: 'create-markdown-file'): void
-  (event: 'create-lorebook-entry'): void
-  (event: 'open-agent-panel'): void
-  (event: 'open-profile-workbench'): void
+  (event: 'select-tab' | 'open-path', path: string): void
+  (event: 'open-files' | 'create-chapter' | 'create-markdown-file' | 'create-lorebook-entry' | 'open-agent-panel' | 'open-profile-workbench'): void
 }>()
 
 const { t } = useI18n()

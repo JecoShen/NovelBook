@@ -21,16 +21,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'open-home'): void
+  (event: 'open-home' | 'open-world-engine' | 'open-trace-viewer' | 'open-history-inbox' | 'toggle-agent-panel' | 'open-settings' | 'open-profile' | 'open-admin' | 'logout'): void
   (event: 'open-tab', value: NovelIdeTab): void
-  (event: 'open-world-engine'): void
-  (event: 'open-trace-viewer'): void
-  (event: 'open-history-inbox'): void
-  (event: 'toggle-agent-panel'): void
-  (event: 'open-settings'): void
-  (event: 'open-profile'): void
-  (event: 'open-admin'): void
-  (event: 'logout'): void
 }>()
 
 const { t } = useI18n()

@@ -49,22 +49,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
-  (e: 'update:expanded', value: boolean): void
+  (e: 'update:expanded' | 'update:sessionModelPopoverOpen', value: boolean): void
   (e: 'update:task', value: InlineEditTask): void
-  (e: 'send'): void
-  (e: 'stop'): void
-  (e: 'height-change', value: number): void
-  (e: 'clear-reference', index: number): void
+  (e: 'send' | 'stop' | 'create-session' | 'open-session-chat' | 'toggle-session-model-popover' | 'apply-session-model-settings' | 'reset-session-model-settings'): void
+  (e: 'height-change' | 'clear-reference' | 'select-session', value: number): void
   (e: 'hover-reference', reference: InlineEditReference | null): void
-  (e: 'select-session', sessionId: number): void
-  (e: 'create-session'): void
-  (e: 'open-session-chat'): void
   (e: 'update-session-model-selection', value: string | null): void
   (e: 'update:sessionModelDraft', value: AgentSessionModelDraft): void
-  (e: 'update:sessionModelPopoverOpen', value: boolean): void
-  (e: 'toggle-session-model-popover'): void
-  (e: 'apply-session-model-settings'): void
-  (e: 'reset-session-model-settings'): void
 }>()
 
 const rootRef = ref<HTMLDivElement | null>(null)

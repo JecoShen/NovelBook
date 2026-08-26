@@ -14,15 +14,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'toggle-group', group: string): void
-  (e: 'check-all'): void
-  (e: 'cancel-checks'): void
-  (e: 'check-model', model: ModelSettingsModelDraft): void
-  (e: 'cancel-model-check', model: ModelSettingsModelDraft): void
-  (e: 'edit-model', model: ModelSettingsModelDraft): void
-  (e: 'disable-model', model: ModelSettingsModelDraft): void
-  (e: 'delete-model', model: ModelSettingsModelDraft): void
-  (e: 'open-discovery'): void
-  (e: 'open-library'): void
+  (e: 'check-all' | 'cancel-checks' | 'open-discovery' | 'open-library'): void
+  (e: 'check-model' | 'cancel-model-check' | 'edit-model' | 'disable-model' | 'delete-model', model: ModelSettingsModelDraft): void
 }>()
 
 const { t } = useI18n()

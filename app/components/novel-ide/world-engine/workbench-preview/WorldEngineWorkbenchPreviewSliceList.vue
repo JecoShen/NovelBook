@@ -70,17 +70,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'selectSlice', sliceId: string): void
-  (e: 'focusSubject', subjectId: string): void
+  (e: 'selectSlice' | 'focusSubject' | 'filterSubject' | 'removeSubjectFilter' | 'insertSliceBefore' | 'insertSliceAfter' | 'updateSliceKindFilter' | 'updateSliceSearch', sliceId: string): void
   (e: 'focusReviewIssue', item: WorldWorkbenchPreviewReviewQueueItem): void
-  (e: 'filterSubject', subjectId: string): void
   (e: 'clearSubjectFilter'): void
-  (e: 'removeSubjectFilter', subjectId: string): void
-  (e: 'insertSliceBefore', sliceId: string): void
-  (e: 'insertSliceAfter', sliceId: string): void
   (e: 'updateSliceHealthFilter', filter: WorldWorkbenchPreviewSliceHealthFilter): void
-  (e: 'updateSliceKindFilter', filter: string): void
-  (e: 'updateSliceSearch', value: string): void
   (e: 'updateSubjectFilterMode', mode: WorldWorkbenchPreviewSubjectFilterMode): void
 }>()
 

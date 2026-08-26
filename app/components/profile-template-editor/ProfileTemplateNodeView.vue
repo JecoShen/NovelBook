@@ -16,10 +16,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select', id: string): void
-  (e: 'prepareDrag', id: string): void
-  (e: 'duplicate', id: string): void
-  (e: 'delete', id: string): void
+  (e: 'select' | 'prepareDrag' | 'duplicate' | 'delete', id: string): void
 }>()
 
 const collapsed = ref(false)

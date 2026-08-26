@@ -28,8 +28,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
-  (e: 'cancel'): void
-  (e: 'save'): void
+  (e: 'cancel' | 'save'): void
   (e: 'attachment-registered', item: AgentSessionAttachmentItemDto): void
 }>()
 

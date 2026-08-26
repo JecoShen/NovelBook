@@ -16,8 +16,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'selectChapter', chapterId: string): void
-  (e: 'selectScene', sceneId: string): void
+  (e: 'selectChapter' | 'selectScene', id: string): void
 }>()
 
 /**

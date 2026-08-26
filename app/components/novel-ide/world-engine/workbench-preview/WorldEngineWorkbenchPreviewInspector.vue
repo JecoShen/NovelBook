@@ -66,11 +66,9 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'close'): void
+  (e: 'close' | 'requestFullSnapshot'): void
   (e: 'commitSubjectEventProposal', proposal: WorldWorkbenchSubjectFileProposal): void
-  (e: 'focusSubject', subjectId: string): void
-  (e: 'openWorkspacePath', path: string): void
-  (e: 'requestFullSnapshot'): void
+  (e: 'focusSubject' | 'openWorkspacePath', payload: string): void
   (e: 'updateMetadataDrafts', drafts: WorldWorkbenchPreviewMetadataDraftSummary[]): void
   (e: 'update:width', value: number): void
   (e: 'applyPatch', patch: WorldWorkbenchPreviewSlicePatch): void

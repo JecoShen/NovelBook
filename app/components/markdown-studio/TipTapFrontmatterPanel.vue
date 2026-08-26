@@ -16,13 +16,8 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
-  (e: 'update:hasFrontmatter', value: boolean): void
-  (e: 'update:open', value: boolean): void
-  (e: 'add'): void
-  (e: 'remove'): void
-  (e: 'focus'): void
-  (e: 'blur'): void
-  (e: 'save-request'): void
+  (e: 'update:hasFrontmatter' | 'update:open', value: boolean): void
+  (e: 'add' | 'remove' | 'focus' | 'blur' | 'save-request'): void
   (e: 'open-profile', kind: FrontmatterProfileKind): void
 }>()
 const { t } = useI18n()

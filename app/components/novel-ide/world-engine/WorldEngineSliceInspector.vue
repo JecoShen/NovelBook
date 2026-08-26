@@ -13,9 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select-subject', subjectId: string): void
-  (e: 'query-at-slice'): void
-  (e: 'query-slice-subjects'): void
-  (e: 'delete-slice'): void
+  (e: 'query-at-slice' | 'query-slice-subjects' | 'delete-slice'): void
 }>()
 
 const selectedSlicePatches = computed(() => props.selectedSlice?.patches ?? [])

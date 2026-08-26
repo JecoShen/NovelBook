@@ -62,18 +62,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'selectThread', threadId: string): void
-  (e: 'selectScene', sceneId: string): void
-  (e: 'createThread'): void
-  (e: 'toggleThreadPin', threadId: string): void
-  (e: 'toggleThreadMain', threadId: string): void
-  (e: 'deleteThread', threadId: string): void
-  (e: 'createScene', threadId: string): void
-  (e: 'autoSortScenes', sceneIds: string[]): void
-  (e: 'reorderScenes', sceneIds: string[]): void
+  (e: 'selectThread' | 'selectScene' | 'toggleThreadPin' | 'toggleThreadMain' | 'deleteThread' | 'createScene', threadId: string): void
+  (e: 'createThread' | 'openWorldEngine'): void
+  (e: 'autoSortScenes' | 'reorderScenes', sceneIds: string[]): void
   (e: 'updateThread', threadId: string, patch: Partial<PlotThreadPanelThread>): void
   (e: 'updateScene', sceneId: string, patch: Partial<PlotThreadPanelScene>): void
-  (e: 'openWorldEngine'): void
   // 账本 tab(承诺/决策)UI 写操作成功的转发信号:宿主刷新剧情树计数,sceneIds 为需强刷详情缓存的场景。
   (e: 'planningMutated', payload: { sceneIds?: string[] }): void
 }>()

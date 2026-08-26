@@ -58,8 +58,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:height', value: number): void
-  (e: 'close'): void
-  (e: 'refresh'): void
+  (e: 'close' | 'refresh'): void
 }>()
 
 const store = useNovelIdeStore()

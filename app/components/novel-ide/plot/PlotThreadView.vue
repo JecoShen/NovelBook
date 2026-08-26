@@ -16,9 +16,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'selectThread', threadId: string): void
-  (e: 'selectScene', sceneId: string): void
-  (e: 'jumpChapter', chapterId: string): void
+  (e: 'selectThread' | 'selectScene' | 'jumpChapter', payload: string): void
 }>()
 
 /**

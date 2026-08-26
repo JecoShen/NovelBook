@@ -38,9 +38,7 @@ defineOptions({
 
 const emit = defineEmits<{
   (e: 'update:width', value: number): void
-  (e: 'close'): void
-  (e: 'openWorldEngine'): void
-  (e: 'openHome'): void
+  (e: 'close' | 'openWorldEngine' | 'openHome'): void
   (e: 'switchWorkspace', value: string): void
 }>()
 

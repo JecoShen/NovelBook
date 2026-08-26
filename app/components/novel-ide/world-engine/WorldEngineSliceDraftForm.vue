@@ -17,13 +17,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:time', value: string): void
-  (e: 'update:title', value: string): void
-  (e: 'update:kind', value: string): void
-  (e: 'update:summary', value: string): void
-  (e: 'update:mutations', value: string): void
-  (e: 'submit'): void
-  (e: 'submit-and-continue'): void
+  (e: 'update:time' | 'update:title' | 'update:kind' | 'update:summary' | 'update:mutations', value: string): void
+  (e: 'submit' | 'submit-and-continue'): void
 }>()
 
 /** 读取原生输入事件中的字符串值。 */

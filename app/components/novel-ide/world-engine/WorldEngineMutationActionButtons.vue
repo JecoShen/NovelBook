@@ -11,10 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'add-mutation', mode: 'append' | 'replace'): void
-  (e: 'insert-after-selected-mutation'): void
-  (e: 'duplicate-selected-mutation'): void
-  (e: 'replace-selected-mutation'): void
-  (e: 'delete-selected-mutation'): void
+  (e: 'insert-after-selected-mutation' | 'duplicate-selected-mutation' | 'replace-selected-mutation' | 'delete-selected-mutation'): void
 }>()
 
 /** 执行按钮动作；优先走函数 prop，避免嵌套组件事件在真实 Dialog 中丢失。 */

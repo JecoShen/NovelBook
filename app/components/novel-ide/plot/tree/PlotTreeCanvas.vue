@@ -57,8 +57,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'selectThread', threadId: string | null): void
-  (e: 'selectScene', sceneId: string | null): void
+  (e: 'selectThread' | 'selectScene', id: string | null): void
   (e: 'update:graph', graph: PlotTreeGraph): void
 }>()
 

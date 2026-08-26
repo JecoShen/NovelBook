@@ -40,8 +40,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'edit'): void
+  (e: 'close' | 'edit'): void
   (e: 'updateScene', payload: PlotThreadQuickSceneUpdate): void
   (e: 'focusPromise', promiseId: string): void
 }>()

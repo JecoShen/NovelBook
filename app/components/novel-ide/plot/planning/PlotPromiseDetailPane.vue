@@ -24,13 +24,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'edit'): void
-  (e: 'addBeat'): void
+  (e: 'edit' | 'addBeat' | 'delete'): void
   // 生命周期转换目标状态:fulfilled=兑现 / abandoned=放弃 / open=重开。
   (e: 'changeStatus', status: StoryPromiseStatusDto): void
-  (e: 'delete'): void
-  (e: 'removeBeat', sceneId: string): void
-  (e: 'selectScene', sceneId: string): void
+  (e: 'removeBeat' | 'selectScene', sceneId: string): void
 }>()
 
 // 章 id → 「序号 标题」显示名。

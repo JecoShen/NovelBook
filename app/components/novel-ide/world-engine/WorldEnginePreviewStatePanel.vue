@@ -61,8 +61,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'refresh'): void
   (e: 'load-subject', subject: PreviewSubject): void
-  (e: 'load-slice', sliceId: string): void
-  (e: 'delete-slice', sliceId: string): void
+  (e: 'load-slice' | 'delete-slice', sliceId: string): void
 }>()
 
 function formatSlicePatches(patches: PreviewSliceMutation[] | undefined): string {

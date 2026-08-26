@@ -45,17 +45,10 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'append'): void
-  (e: 'delete', index: number): void
-  (e: 'duplicate', index: number): void
+  (e: 'append' | 'reset' | 'save' | 'submit'): void
+  (e: 'delete' | 'duplicate', index: number): void
   (e: 'move', index: number, direction: 'up' | 'down'): void
-  (e: 'reset'): void
-  (e: 'save'): void
-  (e: 'submit'): void
-  (e: 'update-op', index: number, value: string): void
-  (e: 'update-path', index: number, value: string): void
-  (e: 'update-summary', index: number, value: string): void
-  (e: 'update-value', index: number, value: string): void
+  (e: 'update-op' | 'update-path' | 'update-summary' | 'update-value', index: number, value: string): void
 }>()
 
 /** 将 op 列表转成项目通用 select 的选项。 */

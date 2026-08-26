@@ -18,8 +18,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select', sceneId: string): void
-  (e: 'openEditor', sceneId: string): void
+  (e: 'select' | 'openEditor', sceneId: string): void
   (e: 'openMenu', payload: { sceneId: string, event: MouseEvent }): void
 }>()
 

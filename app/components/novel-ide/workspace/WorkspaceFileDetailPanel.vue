@@ -35,9 +35,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:height', value: number): void
-  (e: 'close'): void
-  (e: 'create-index'): void
-  (e: 'convert-file-to-directory'): void
+  (e: 'close' | 'create-index' | 'convert-file-to-directory'): void
 }>()
 
 const store = useNovelIdeStore()

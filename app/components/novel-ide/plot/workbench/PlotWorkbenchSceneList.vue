@@ -31,11 +31,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'selectScene', sceneId: string): void
-  (e: 'editScene', sceneId: string): void
-  (e: 'createScene', threadId: string): void
-  (e: 'autoSortScenes', sceneIds: string[]): void
-  (e: 'reorderScenes', sceneIds: string[]): void
+  (e: 'selectScene' | 'editScene' | 'createScene', id: string): void
+  (e: 'autoSortScenes' | 'reorderScenes', sceneIds: string[]): void
 }>()
 
 const dndSensors = [

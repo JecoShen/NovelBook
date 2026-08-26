@@ -61,12 +61,11 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'close'): void
+  (e: 'close' | 'openWorldEngine'): void
   (e: 'updateThread', threadId: string, patch: Partial<PlotThreadPanelThread>): void
   (e: 'updateScene', sceneId: string, patch: Partial<PlotThreadPanelScene>): void
   (e: 'updateRefs', refs: WorkbenchManualRef[]): void
   (e: 'focusPromise', promiseId: string): void
-  (e: 'openWorldEngine'): void
 }>()
 
 const activeRefId = ref<string | null>(null)

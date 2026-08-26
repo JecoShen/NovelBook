@@ -88,10 +88,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'update:mode', value: StructuredTextMode): void
   (e: 'submit', payload?: { ctrlKey?: boolean, metaKey?: boolean }): void
-  (e: 'shift-tab'): void
-  (e: 'focus'): void
-  (e: 'blur'): void
-  (e: 'save-request'): void
+  (e: 'shift-tab' | 'focus' | 'blur' | 'save-request'): void
 }>()
 
 const novelIdeStore = useNovelIdeStore()

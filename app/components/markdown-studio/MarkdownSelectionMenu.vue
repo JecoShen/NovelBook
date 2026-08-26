@@ -27,12 +27,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'insert-reference'): void
-  (e: 'insert-image'): void
-  (e: 'add-comment'): void
-  (e: 'add-ruby'): void
-  (e: 'add-bilingual'): void
-  (e: 'add-ai-reference'): void
+  (e: 'insert-reference' | 'insert-image' | 'add-comment' | 'add-ruby' | 'add-bilingual' | 'add-ai-reference'): void
 }>()
 
 const { prompt } = useDialog()

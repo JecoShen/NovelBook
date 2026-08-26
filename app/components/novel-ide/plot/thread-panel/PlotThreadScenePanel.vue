@@ -38,14 +38,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'selectThread', threadId: string): void
-  (e: 'selectScene', sceneId: string): void
-  (e: 'createScene'): void
-  (e: 'editThread'): void
-  (e: 'editScene', sceneId: string): void
-  (e: 'openThreadMenu', event: MouseEvent): void
+  (e: 'selectThread' | 'selectScene' | 'editScene', payload: string): void
+  (e: 'createScene' | 'editThread'): void
+  (e: 'openThreadMenu' | 'openRootMenu', event: MouseEvent): void
   (e: 'openSceneMenu', payload: { sceneId: string, event: MouseEvent }): void
-  (e: 'openRootMenu', event: MouseEvent): void
   (e: 'reorderScenes', sceneIds: string[]): void
 }>()
 

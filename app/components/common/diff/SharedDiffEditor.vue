@@ -27,8 +27,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'ready'): void
-  (e: 'layout'): void
+  (e: 'ready' | 'layout'): void
 }>()
 
 const rootRef = ref<HTMLDivElement | null>(null)

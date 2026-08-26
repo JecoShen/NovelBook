@@ -12,8 +12,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select-slice', sliceId: string): void
-  (e: 'edit-slice', sliceId: string): void
+  (e: 'select-slice' | 'edit-slice', sliceId: string): void
 }>()
 
 const timelineOnlySelectedSubject = ref(false)

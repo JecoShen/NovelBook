@@ -37,10 +37,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'update:selectedThreadId', value: string): void
-  (e: 'update:variableSearch', value: string): void
+  (e: 'update:selectedThreadId' | 'update:variableSearch' | 'toggle-variable-group', value: string): void
   (e: 'refresh-preview'): void
-  (e: 'toggle-variable-group', group: string): void
 }>()
 </script>
 

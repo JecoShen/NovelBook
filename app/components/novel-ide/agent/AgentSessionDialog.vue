@@ -32,11 +32,8 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'select', sessionId: number): void
   (e: 'create', profileKey?: string): void
-  (e: 'archive', session: AgentSessionSummaryDto): void
-  (e: 'restore', session: AgentSessionSummaryDto): void
-  (e: 'rename', session: AgentSessionSummaryDto): void
-  (e: 'refresh', query: AgentSessionListQueryDto): void
-  (e: 'loadMore', query: AgentSessionListQueryDto): void
+  (e: 'archive' | 'restore' | 'rename', session: AgentSessionSummaryDto): void
+  (e: 'refresh' | 'loadMore', query: AgentSessionListQueryDto): void
 }>()
 
 const sessionSearch = ref('')

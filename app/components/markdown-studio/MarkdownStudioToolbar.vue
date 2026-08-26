@@ -19,14 +19,11 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'select-tab', path: string): void
-  (e: 'close-tab', path: string): void
+  (e: 'select-tab' | 'close-tab' | 'keep-tab', path: string): void
   (e: 'set-pin', path: string, pinned: boolean): void
-  (e: 'keep-tab', path: string): void
   (e: 'move-tab', path: string, targetPath: string | null, targetPinned: boolean, position: TabDropPosition): void
   (e: 'set-view-mode', mode: WorkspaceEditorViewMode): void
-  (e: 'toggle-comment-view'): void
-  (e: 'more'): void
+  (e: 'toggle-comment-view' | 'more'): void
 }>()
 
 const { t } = useI18n()

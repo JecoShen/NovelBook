@@ -103,8 +103,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'confirm'): void
-  (e: 'cancel'): void
+  (e: 'confirm' | 'cancel'): void
   (e: 'request-close', reason: 'overlay' | 'cancel' | 'close-button' | 'esc'): void
 }>()
 const instance = getCurrentInstance()

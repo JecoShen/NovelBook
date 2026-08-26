@@ -36,10 +36,7 @@ const emit = defineEmits<{
   (e: 'add-builder-mutation', mode: 'append' | 'replace'): void
   (e: 'update-mutation-load-index', value: string): void
   (e: 'load-mutation', index: number): void
-  (e: 'insert-after-selected-mutation'): void
-  (e: 'duplicate-selected-mutation'): void
-  (e: 'replace-selected-mutation'): void
-  (e: 'delete-selected-mutation'): void
+  (e: 'insert-after-selected-mutation' | 'duplicate-selected-mutation' | 'replace-selected-mutation' | 'delete-selected-mutation'): void
   (e: 'move-selected-mutation', direction: 'up' | 'down'): void
 }>()
 

@@ -13,9 +13,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (event: 'open-profile'): void
-  (event: 'open-admin'): void
-  (event: 'logout'): void
+  (event: 'open-profile' | 'open-admin' | 'logout'): void
 }>()
 
 const { t } = useI18n()

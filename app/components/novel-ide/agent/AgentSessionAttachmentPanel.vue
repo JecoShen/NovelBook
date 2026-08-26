@@ -15,10 +15,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  (e: 'load-more' | 'close'): void
   (e: 'update:search', value: string): void
-  (e: 'load-more'): void
   (e: 'insert', item: AgentSessionAttachmentItemDto): void
-  (e: 'close'): void
 }>()
 const { t } = useI18n()
 const previewItem = ref<AgentSessionAttachmentItemDto | null>(null)

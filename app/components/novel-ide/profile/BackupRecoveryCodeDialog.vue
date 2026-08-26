@@ -23,8 +23,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void
-  (event: 'confirmed', keyId: string): void
-  (event: 'imported', keyId: string): void
+  (event: 'confirmed' | 'imported', keyId: string): void
   (event: 'cancelled'): void
 }>()
 

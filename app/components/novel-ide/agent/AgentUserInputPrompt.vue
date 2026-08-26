@@ -34,9 +34,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:draft', value: AgentPendingResolutionDraft): void
-  (e: 'submit'): void
-  (e: 'cancel'): void
-  (e: 'resync'): void
+  (e: 'submit' | 'cancel' | 'resync'): void
 }>()
 
 const { t } = useI18n()

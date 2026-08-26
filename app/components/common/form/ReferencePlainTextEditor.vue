@@ -57,15 +57,10 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
+  (e: 'update:modelValue' | 'pending-image-retry' | 'pending-image-remove', value: string): void
   (e: 'submit', payload?: { ctrlKey?: boolean, metaKey?: boolean }): void
-  (e: 'shift-tab'): void
-  (e: 'focus'): void
-  (e: 'blur'): void
+  (e: 'shift-tab' | 'focus' | 'blur' | 'image-files-blocked'): void
   (e: 'image-files', payload: { files: File[], position?: number }): void
-  (e: 'image-files-blocked'): void
-  (e: 'pending-image-retry', uploadId: string): void
-  (e: 'pending-image-remove', uploadId: string): void
   (e: 'image-document', nodes: ComposerImageNode[]): void
 }>()
 

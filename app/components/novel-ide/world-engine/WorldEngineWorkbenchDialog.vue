@@ -93,10 +93,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'hasUnsavedDraftsChange', value: boolean): void
+  (e: 'update:modelValue' | 'hasUnsavedDraftsChange' | 'savingChange', value: boolean): void
   (e: 'openWorkspacePath', path: string): void
-  (e: 'savingChange', value: boolean): void
 }>()
 
 const router = useRouter()

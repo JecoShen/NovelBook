@@ -17,10 +17,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select', value: string): void
-  (e: 'prepare-drag', value: string): void
-  (e: 'duplicate', value: string): void
-  (e: 'delete', value: string): void
+  (e: 'select' | 'prepare-drag' | 'duplicate' | 'delete', value: string): void
   (e: 'add-message'): void
 }>()
 </script>

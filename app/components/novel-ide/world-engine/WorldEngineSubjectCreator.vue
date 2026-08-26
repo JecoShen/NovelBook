@@ -17,8 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'created', payload: { subject: WorldSubjectDto, issues: WorldIssueDto[] }): void
-  (e: 'error', message: string): void
-  (e: 'notice', message: string): void
+  (e: 'error' | 'notice', message: string): void
 }>()
 
 const form = reactive({

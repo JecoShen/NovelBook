@@ -63,11 +63,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'dirtyChange', dirty: boolean): void
-  (e: 'savingChange', saving: boolean): void
+  (e: 'dirtyChange' | 'savingChange', value: boolean): void
   (e: 'saved', payload: { result: SliceWriteResultDto, time: string, editing: boolean, continueAfterSave: boolean, contextSubjectId: string, mutations: WorldSlicePatchDto[] }): void
-  (e: 'error', message: string): void
-  (e: 'notice', message: string): void
+  (e: 'error' | 'notice', message: string): void
 }>()
 const initialSubjectId = props.selectedSubjectId || props.subjects[0]?.id || 'world'
 const initialMutation = defaultMutationForPreviewSubject(props.schema?.subjectTypes ?? [], props.subjects, initialSubjectId)

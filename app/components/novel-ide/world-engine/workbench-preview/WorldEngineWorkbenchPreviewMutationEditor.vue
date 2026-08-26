@@ -141,12 +141,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'clearMutationFocus'): void
-  (e: 'focusSubject', subjectId: string): void
+  (e: 'clearMutationFocus' | 'toggleCollapsed'): void
+  (e: 'focusSubject' | 'selectSlice', payload: string): void
   (e: 'focusReviewIssue', item: WorldWorkbenchPreviewReviewQueueItem): void
-  (e: 'toggleCollapsed'): void
   (e: 'update:height', value: number): void
-  (e: 'selectSlice', sliceId: string): void
   (e: 'updateIssueTriage', patch: WorldWorkbenchPreviewIssueTriagePatch): void
   (e: 'updateMutationPatches', patch: WorldWorkbenchPreviewMutationListPatch): void
   (e: 'updateMutationValue', patch: WorldWorkbenchPreviewMutationValuePatch): void

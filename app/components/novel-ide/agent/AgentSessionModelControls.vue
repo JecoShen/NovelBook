@@ -30,9 +30,7 @@ const emit = defineEmits<{
   (e: 'update:sessionModelPopoverOpen', value: boolean): void
   (e: 'update:sessionModelDraft', value: AgentSessionModelDraft): void
   (e: 'update-session-model-selection', value: string | null): void
-  (e: 'toggle-session-model-popover'): void
-  (e: 'apply-session-model-settings'): void
-  (e: 'reset-session-model-settings'): void
+  (e: 'toggle-session-model-popover' | 'apply-session-model-settings' | 'reset-session-model-settings'): void
 }>()
 
 const controlsRef = ref<HTMLElement | null>(null)

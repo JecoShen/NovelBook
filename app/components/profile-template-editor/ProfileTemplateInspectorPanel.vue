@@ -52,15 +52,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:activeTab', value: InspectorTab): void
-  (e: 'update:variableSearch', value: string): void
-  (e: 'collapse'): void
-  (e: 'source-change', value: string): void
-  (e: 'source-save-request'): void
+  (e: 'update:variableSearch' | 'source-change' | 'update-text' | 'toggle-variable-group', value: string): void
+  (e: 'collapse' | 'source-save-request' | 'commit-message-text'): void
   (e: 'update-prop', key: string, value: ProfileTemplatePropValue): void
   (e: 'update-expression-prop', key: string, value: string): void
-  (e: 'update-text', value: string): void
-  (e: 'commit-message-text'): void
-  (e: 'toggle-variable-group', group: string): void
   (e: 'save-schema', payload: { schemaName: ProfileSchemaName, fields: AgentProfileSchemaFieldDto[] }): void
 }>()
 

@@ -6,10 +6,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'addThread'): void
-  (e: 'addOrphanScene'): void
-  (e: 'autoLayout'): void
-  (e: 'fitView'): void
+  (e: 'addThread' | 'addOrphanScene' | 'autoLayout' | 'fitView'): void
 }>()
 
 /**

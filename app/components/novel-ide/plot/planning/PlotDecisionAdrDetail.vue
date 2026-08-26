@@ -17,10 +17,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  // 跨 tab 跳转:宿主负责切回线程规划 tab 并选中该场。
-  (e: 'selectScene', sceneId: string): void
-  // tab 内跳转:选中取代者决策。
-  (e: 'selectDecision', decisionId: string): void
+  // 跨 tab 跳转:宿主负责切回线程规划 tab 并选中该场;tab 内跳转:选中取代者决策。
+  (e: 'selectScene' | 'selectDecision', id: string): void
 }>()
 
 // 分段标题的统一样式(小型大写字距标签)。

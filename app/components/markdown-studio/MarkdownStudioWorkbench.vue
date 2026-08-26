@@ -52,24 +52,13 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'update:content', value: string): void
-  (e: 'select-tab', path: string): void
-  (e: 'close-tab', path: string): void
+  (e: 'update:content' | 'select-tab' | 'close-tab' | 'keep-tab' | 'open-path', value: string): void
   (e: 'set-pin', path: string, pinned: boolean): void
-  (e: 'keep-tab', path: string): void
   (e: 'move-tab', path: string, targetPath: string | null, targetPinned: boolean, position: 'before' | 'after'): void
   (e: 'set-view-mode', mode: WorkspaceEditorViewMode): void
-  (e: 'save-request'): void
+  (e: 'save-request' | 'open-files' | 'create-chapter' | 'create-markdown-file' | 'create-lorebook-entry' | 'open-agent-panel' | 'open-profile-workbench' | 'more'): void
   (e: 'open-frontmatter-profile', kind: FrontmatterProfileKind): void
   (e: 'update-monaco-temporary-font-size', value: number): void
-  (e: 'open-path', path: string): void
-  (e: 'open-files'): void
-  (e: 'create-chapter'): void
-  (e: 'create-markdown-file'): void
-  (e: 'create-lorebook-entry'): void
-  (e: 'open-agent-panel'): void
-  (e: 'open-profile-workbench'): void
-  (e: 'more'): void
   (e: 'inline-ai-reference', reference: InlineEditReference): void
 }>()
 

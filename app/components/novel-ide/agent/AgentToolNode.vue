@@ -10,8 +10,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'toggle'): void
-  (e: 'copy'): void
+  (e: 'toggle' | 'copy'): void
 }>()
 
 const renderConfig = computed(() => resolveToolRenderConfig(props.toolCall))

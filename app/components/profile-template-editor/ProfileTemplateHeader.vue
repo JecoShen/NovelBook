@@ -32,17 +32,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:selectedTemplate', value: string): void
-  (e: 'undo'): void
-  (e: 'redo'): void
-  (e: 'preview'): void
-  (e: 'validate'): void
-  (e: 'compile'): void
-  (e: 'compileAll'): void
-  (e: 'restore'): void
-  (e: 'create'): void
-  (e: 'run'): void
-  (e: 'save'): void
-  (e: 'close'): void
+  (e: 'undo' | 'redo' | 'preview' | 'validate' | 'compile' | 'compileAll' | 'restore' | 'create' | 'run' | 'save' | 'close'): void
 }>()
 </script>
 

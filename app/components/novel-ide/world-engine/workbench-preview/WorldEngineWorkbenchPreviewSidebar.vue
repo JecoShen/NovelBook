@@ -34,10 +34,8 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (e: 'update:selectedSubjectIds', value: string[]): void
   (e: 'update:width', value: number): void
-  (e: 'clearSubjectContext'): void
-  (e: 'focusSubjectContext', subjectId: string): void
-  (e: 'toggleCollapsed'): void
-  (e: 'openWorkspacePath', path: string): void
+  (e: 'clearSubjectContext' | 'toggleCollapsed'): void
+  (e: 'focusSubjectContext' | 'openWorkspacePath', payload: string): void
 }>()
 
 type SubjectReviewFilter = 'all' | 'active' | 'open' | 'done' | 'draft'

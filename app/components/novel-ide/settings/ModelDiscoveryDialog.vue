@@ -18,12 +18,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'update:searchQuery', value: string): void
+  (e: 'update:searchQuery' | 'toggle-group', value: string): void
   (e: 'update-manual-field', field: keyof ManualModelDraft, value: string): void
-  (e: 'discover'): void
-  (e: 'toggle-group', group: string): void
+  (e: 'discover' | 'add-manual'): void
   (e: 'toggle-model', model: DiscoveryListModel): void
-  (e: 'add-manual'): void
 }>()
 
 const { t } = useI18n()

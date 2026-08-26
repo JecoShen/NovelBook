@@ -25,8 +25,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:expandedPaths', value: string[]): void
-  (e: 'select', node: WorkspaceFileNodeDto): void
-  (e: 'open', node: WorkspaceFileNodeDto): void
+  (e: 'select' | 'open', node: WorkspaceFileNodeDto): void
   (e: 'move', payload: WorkspaceFileMovePayload): void
   (e: 'node-contextmenu', node: WorkspaceFileNodeDto, event: MouseEvent): void
   (e: 'root-contextmenu', event: MouseEvent): void

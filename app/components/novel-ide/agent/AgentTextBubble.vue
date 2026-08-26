@@ -47,17 +47,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'copy', message: AgentMessage): void
-  (e: 'start-edit', message: AgentMessage): void
-  (e: 'cancel-edit', message: AgentMessage): void
+  (e: 'copy' | 'start-edit' | 'cancel-edit' | 'retry' | 'branch-from-here' | 'resend-unknown' | 'dismiss-unknown', message: AgentMessage): void
   (e: 'save-edit', payload: { message: AgentMessage, content: string }): void
-  (e: 'retry', message: AgentMessage): void
-  /** 从这条消息新开一条分支；只移动 active leaf，不删除任何历史。 */
-  (e: 'branch-from-here', message: AgentMessage): void
   (e: 'cycle-branch', payload: { messageId: string, direction: -1 | 1 }): void
   (e: 'attachment-registered', item: AgentSessionAttachmentItemDto): void
-  (e: 'resend-unknown', message: AgentMessage): void
-  (e: 'dismiss-unknown', message: AgentMessage): void
 }>()
 
 const { isCollapsed: isThinkingCollapsed, toggle: toggleThinking } = useCollapsible(true)

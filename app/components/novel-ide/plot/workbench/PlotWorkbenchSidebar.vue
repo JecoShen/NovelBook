@@ -21,14 +21,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:search', value: string): void
+  (e: 'update:search' | 'selectThread' | 'editThread' | 'toggleThreadPin' | 'toggleThreadMain' | 'deleteThread', value: string): void
   (e: 'update:mode', value: ThreadFilterMode): void
-  (e: 'selectThread', threadId: string): void
-  (e: 'editThread', threadId: string): void
   (e: 'createThread'): void
-  (e: 'toggleThreadPin', threadId: string): void
-  (e: 'toggleThreadMain', threadId: string): void
-  (e: 'deleteThread', threadId: string): void
 }>()
 
 const modeItems: Array<{ value: ThreadFilterMode, label: string }> = [

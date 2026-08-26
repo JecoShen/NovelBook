@@ -7,9 +7,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select', index: number): void
+  (e: 'select' | 'delete', index: number): void
   (e: 'update', index: number, body: string): void
-  (e: 'delete', index: number): void
   (e: 'close'): void
 }>()
 const { t } = useI18n()

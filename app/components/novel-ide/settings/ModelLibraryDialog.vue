@@ -13,8 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'update:searchQuery', value: string): void
-  (e: 'toggle-group', group: string): void
+  (e: 'update:searchQuery' | 'toggle-group', value: string): void
   (e: 'toggle-model', model: ModelLibraryEntryDto): void
 }>()
 

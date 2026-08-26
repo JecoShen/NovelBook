@@ -32,8 +32,7 @@ const emit = defineEmits<{
   (event: 'update:settingsValues', value: LowCodeJsonObject): void
   (event: 'update:settingsOverridePaths', value: string[]): void
   (event: 'update:settingsResourceMutations', value: LowCodeResourceMutationDto[]): void
-  (event: 'reset'): void
-  (event: 'reset-home'): void
+  (event: 'reset' | 'reset-home'): void
 }>()
 
 const { t } = useI18n()

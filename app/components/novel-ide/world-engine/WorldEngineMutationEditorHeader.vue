@@ -9,9 +9,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'load-selected-slice'): void
-  (e: 'clear-edit-mode'): void
-  (e: 'discard-draft-and-load-selected-slice'): void
+  (e: 'load-selected-slice' | 'clear-edit-mode' | 'discard-draft-and-load-selected-slice'): void
 }>()
 </script>
 

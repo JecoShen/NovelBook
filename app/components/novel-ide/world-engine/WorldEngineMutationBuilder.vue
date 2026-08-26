@@ -50,14 +50,9 @@ const emit = defineEmits<{
   (e: 'update-builder-field', field: keyof MutationBuilderModel, value: string): void
   (e: 'update-object-row', index: number, patch: Partial<ObjectBuilderRow>): void
   (e: 'update-mutation-load-index', value: string): void
-  (e: 'add-object-row'): void
-  (e: 'remove-object-row', index: number): void
-  (e: 'load-mutation', index: number): void
+  (e: 'add-object-row' | 'insert-after-selected-mutation' | 'duplicate-selected-mutation' | 'replace-selected-mutation' | 'delete-selected-mutation'): void
+  (e: 'remove-object-row' | 'load-mutation', index: number): void
   (e: 'add-mutation', mode: 'append' | 'replace'): void
-  (e: 'insert-after-selected-mutation'): void
-  (e: 'duplicate-selected-mutation'): void
-  (e: 'replace-selected-mutation'): void
-  (e: 'delete-selected-mutation'): void
   (e: 'move-selected-mutation', direction: 'up' | 'down'): void
 }>()
 

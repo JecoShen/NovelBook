@@ -27,8 +27,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'update:activeKey', value: string): void
-  (event: 'update:search', value: string): void
+  (event: 'update:activeKey' | 'update:search', value: string): void
 }>()
 
 const { t } = useI18n()

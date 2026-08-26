@@ -19,9 +19,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:searchQuery', value: string): void
+  (e: 'update:searchQuery' | 'selectThread', value: string): void
   (e: 'selectPhase', phaseId: string | null): void
-  (e: 'selectThread', threadId: string): void
 }>()
 
 /**
