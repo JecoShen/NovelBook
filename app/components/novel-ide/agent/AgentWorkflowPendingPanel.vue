@@ -105,7 +105,7 @@ async function pollRun(runId: string): Promise<void> {
       nextSubmitted.delete(runId)
       submittedRuns.value = nextSubmitted
       const nextSignatures = { ...submittedAskSignatures.value }
-      delete nextSignatures[runId]
+      Reflect.deleteProperty(nextSignatures, runId)
       submittedAskSignatures.value = nextSignatures
     }
     nextPollDelay = next.view.status === 'waiting' ? 2000 : 500

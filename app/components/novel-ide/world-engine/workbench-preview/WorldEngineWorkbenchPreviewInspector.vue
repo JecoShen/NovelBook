@@ -167,7 +167,7 @@ const metadataDraftSummaries = computed<WorldWorkbenchPreviewMetadataDraftSummar
 function syncDraft(): void {
   const savedDraft = metadataDrafts[props.slice.id]
   if (savedDraft && metadataPatchMatchesSlice(savedDraft, props.slice)) {
-    delete metadataDrafts[props.slice.id]
+    Reflect.deleteProperty(metadataDrafts, props.slice.id)
     draft.time = props.slice.time
     draft.title = props.slice.title
     draft.summary = props.slice.summary
@@ -189,7 +189,7 @@ function metadataPatchMatchesSlice(patch: WorldWorkbenchPreviewSlicePatch, slice
 function persistMetadataDraft(sliceId: string, baseline: WorldWorkbenchPreviewSlicePatch): void {
   const dirty = draft.time !== baseline.time || draft.title !== baseline.title || draft.summary !== baseline.summary || draft.kind !== baseline.kind
   if (!dirty) {
-    delete metadataDrafts[sliceId]
+    Reflect.deleteProperty(metadataDrafts, sliceId)
     return
   }
   metadataDrafts[sliceId] = {
@@ -213,21 +213,21 @@ function resetDraft(): void {
   if (props.busy) {
     return
   }
-  delete metadataDrafts[props.slice.id]
+  Reflect.deleteProperty(metadataDrafts, props.slice.id)
   syncDraft()
 }
 
 /** 重置 mock 世界时清空所有 metadata 草稿缓存。 */
 function resetMetadataDrafts(): void {
   for (const sliceId of Object.keys(metadataDrafts)) {
-    delete metadataDrafts[sliceId]
+    Reflect.deleteProperty(metadataDrafts, sliceId)
   }
   syncDraft()
 }
 
 /** 清理某个 slice 的内部 metadata 草稿；删除 slice 时由真实 Dialog 精确触发。 */
 function discardMetadataDraftForSlice(sliceId: string): void {
-  delete metadataDrafts[sliceId]
+  Reflect.deleteProperty(metadataDrafts, sliceId)
   if (props.slice.id === sliceId) {
     syncDraft()
   }

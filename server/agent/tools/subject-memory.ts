@@ -264,7 +264,7 @@ function removeValue(document: unknown, pointer: string): unknown {
     return clone
   }
   if (isRecord(parent) && key in parent) {
-    delete parent[key]
+    Reflect.deleteProperty(parent, key)
     return clone
   }
   throw new Error(`JSON Pointer 不可删除：${pointer}`)

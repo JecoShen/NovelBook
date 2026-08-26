@@ -580,7 +580,7 @@ describe('llmlint', () => {
     await writeCuratedSourceFixture(sourceRoot)
     const key = 'vocabulary.body\t\t头颅'
     const original = CURATED_RULE_SLUGS[key]
-    delete CURATED_RULE_SLUGS[key]
+    Reflect.deleteProperty(CURATED_RULE_SLUGS, key)
 
     try {
       await expect(importCuratedRulesets({

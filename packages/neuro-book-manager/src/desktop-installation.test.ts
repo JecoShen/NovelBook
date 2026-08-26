@@ -1472,7 +1472,7 @@ async function createAggregateDesktopDepot(
       archive: { bytes: portableBytes.byteLength, sha256: `sha256:${digest(portableBytes)}` },
     })}\n`),
   }
-  if (options.omitEntry) delete entries[options.omitEntry]
+  if (options.omitEntry) Reflect.deleteProperty(entries, options.omitEntry)
   Object.assign(entries, options.extraEntries ?? {})
 
   const archivePath = join(root, DESKTOP_AGGREGATE_DEPOT_ARCHIVE)

@@ -460,7 +460,7 @@ export const useNovelIdeStore = defineStore('novelIde', () => {
       return
     }
     const nextSessions = { ...workspaceSessions.value }
-    delete nextSessions[key]
+    Reflect.deleteProperty(nextSessions, key)
     workspaceSessions.value = nextSessions
   }
 
@@ -573,7 +573,7 @@ export const useNovelIdeStore = defineStore('novelIde', () => {
       const nextBuffers = { ...workspaceBuffers.value }
       for (const tab of workspaceTabs.value) {
         if (tab.preview && !tab.dirty && tab.path !== path) {
-          delete nextBuffers[tab.path]
+          Reflect.deleteProperty(nextBuffers, tab.path)
         }
       }
       workspaceBuffers.value = nextBuffers
@@ -703,7 +703,7 @@ export const useNovelIdeStore = defineStore('novelIde', () => {
      */
   const removeWorkspaceTabState = (filePath: string): void => {
     const nextBuffers = { ...workspaceBuffers.value }
-    delete nextBuffers[filePath]
+    Reflect.deleteProperty(nextBuffers, filePath)
     workspaceBuffers.value = nextBuffers
     workspaceTabs.value = workspaceTabs.value.filter(tab => tab.path !== filePath)
     if (activeWorkspaceTabPath.value === filePath) {
@@ -1264,14 +1264,14 @@ export const useNovelIdeStore = defineStore('novelIde', () => {
     const nextBuffers = { ...workspaceBuffers.value }
     for (const path of Object.keys(nextBuffers)) {
       if (normalizeWorkspaceFilePath(path) === normalizedPath || normalizeWorkspaceFilePath(path).startsWith(`${normalizedPath}/`)) {
-        delete nextBuffers[path]
+        Reflect.deleteProperty(nextBuffers, path)
       }
     }
     workspaceBuffers.value = nextBuffers
     const nextMonacoOverrides = { ...monacoFontSizeOverridesByPath.value }
     for (const path of Object.keys(nextMonacoOverrides)) {
       if (normalizeWorkspaceFilePath(path) === normalizedPath || normalizeWorkspaceFilePath(path).startsWith(`${normalizedPath}/`)) {
-        delete nextMonacoOverrides[path]
+        Reflect.deleteProperty(nextMonacoOverrides, path)
       }
     }
     monacoFontSizeOverridesByPath.value = nextMonacoOverrides
@@ -1304,10 +1304,10 @@ export const useNovelIdeStore = defineStore('novelIde', () => {
     }
 
     const nextBuffers = { ...workspaceBuffers.value }
-    delete nextBuffers[filePath]
+    Reflect.deleteProperty(nextBuffers, filePath)
     workspaceBuffers.value = nextBuffers
     const nextMonacoOverrides = { ...monacoFontSizeOverridesByPath.value }
-    delete nextMonacoOverrides[filePath]
+    Reflect.deleteProperty(nextMonacoOverrides, filePath)
     monacoFontSizeOverridesByPath.value = nextMonacoOverrides
     const nextTabs = workspaceTabs.value.filter(tab => tab.path !== filePath)
     workspaceTabs.value = nextTabs
@@ -1677,7 +1677,7 @@ export const useNovelIdeStore = defineStore('novelIde', () => {
     }
 
     const nextStacks = { ...detailUndoStacks.value }
-    delete nextStacks[key]
+    Reflect.deleteProperty(nextStacks, key)
     detailUndoStacks.value = nextStacks
   }
 

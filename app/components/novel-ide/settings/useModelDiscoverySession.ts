@@ -289,11 +289,11 @@ export function useModelDiscoverySession(options: ModelDiscoverySessionOptions) 
     const next = { ...discoveredModels.value }
     for (const [localKey, entry] of Object.entries(next)) {
       if (entry.providerId === providerId) {
-        delete next[localKey]
+        Reflect.deleteProperty(next, localKey)
       }
     }
     discoveredModels.value = next
-    delete manualDrafts.value[providerId]
+    Reflect.deleteProperty(manualDrafts.value, providerId)
   }
 
   /** 清空临时发现会话；保存成功时可以保留当前结果。 */

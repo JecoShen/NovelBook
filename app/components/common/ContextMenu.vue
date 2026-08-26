@@ -154,7 +154,7 @@ const setItemRef = (index: number, element: Element | ComponentPublicInstance | 
     itemRefs.value[index] = element
     return
   }
-  delete itemRefs.value[index]
+  Reflect.deleteProperty(itemRefs.value, index)
 }
 
 /**

@@ -204,7 +204,7 @@ async function writeProjectManifest(projectRoot: string): Promise<void> {
 /** 恢复单个运行时环境变量。 */
 function restoreEnv(name: 'NEURO_BOOK_APPLICATION_ROOT' | 'NEURO_BOOK_STATE_ROOT', value: string | undefined): void {
   if (value === undefined) {
-    delete process.env[name]
+    Reflect.deleteProperty(process.env, name)
     return
   }
   process.env[name] = value

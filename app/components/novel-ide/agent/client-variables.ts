@@ -238,7 +238,7 @@ function removeValue(parent: JsonValue, key: string): void {
   if (!parent || typeof parent !== 'object') {
     throw new Error(translate('agent.clientVariables.targetNotContainer', `JSON Patch target 不是 object/array：${key}`, { key }))
   }
-  delete parent[key]
+  Reflect.deleteProperty(parent, key)
 }
 
 function readArrayIndex(segment: string, length: number): number {

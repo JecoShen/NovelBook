@@ -1041,7 +1041,7 @@ function syncValueDrafts(): void {
     if (!hasValueDraft(key) || valueDraftIdentities[key] !== identity || valueDrafts[key] === value) {
       valueDrafts[key] = value
       valueDraftIdentities[key] = identity
-      delete valueDraftErrors[key]
+      Reflect.deleteProperty(valueDraftErrors, key)
     }
   }
   discardStaleValueDraftRows(props.slice.id, currentKeys)
@@ -1050,13 +1050,13 @@ function syncValueDrafts(): void {
 /** 重置 mock 数据时清空所有跨 slice value 草稿。 */
 function resetAllValueDrafts(): void {
   for (const key of Object.keys(valueDrafts)) {
-    delete valueDrafts[key]
+    Reflect.deleteProperty(valueDrafts, key)
   }
   for (const key of Object.keys(valueDraftErrors)) {
-    delete valueDraftErrors[key]
+    Reflect.deleteProperty(valueDraftErrors, key)
   }
   for (const key of Object.keys(valueDraftIdentities)) {
-    delete valueDraftIdentities[key]
+    Reflect.deleteProperty(valueDraftIdentities, key)
   }
   syncValueDrafts()
 }
@@ -1066,17 +1066,17 @@ function discardValueDraftsForSlice(sliceId: string): void {
   const prefix = `${sliceId}:`
   for (const key of Object.keys(valueDrafts)) {
     if (key.startsWith(prefix)) {
-      delete valueDrafts[key]
+      Reflect.deleteProperty(valueDrafts, key)
     }
   }
   for (const key of Object.keys(valueDraftErrors)) {
     if (key.startsWith(prefix)) {
-      delete valueDraftErrors[key]
+      Reflect.deleteProperty(valueDraftErrors, key)
     }
   }
   for (const key of Object.keys(valueDraftIdentities)) {
     if (key.startsWith(prefix)) {
-      delete valueDraftIdentities[key]
+      Reflect.deleteProperty(valueDraftIdentities, key)
     }
   }
   if (props.slice.id === sliceId) {
@@ -1103,7 +1103,7 @@ function applyValueDraft(index: number): void {
     valueDraftErrors[key] = parsed.error
     return
   }
-  delete valueDraftErrors[key]
+  Reflect.deleteProperty(valueDraftErrors, key)
   emit('updateMutationValue', {
     sliceId: props.slice.id,
     mutationIndex: index,
@@ -1123,7 +1123,7 @@ function resetValueDraft(index: number): void {
   const key = valueDraftKey(index)
   valueDrafts[key] = formatValue(mutation.value)
   valueDraftIdentities[key] = mutationDraftIdentity(mutation)
-  delete valueDraftErrors[key]
+  Reflect.deleteProperty(valueDraftErrors, key)
 }
 
 /** 批量应用当前切片下所有已修改 value 草稿；若任一行解析失败，则全部停留在草稿态。 */
@@ -1164,7 +1164,7 @@ function parseDirtyValueDrafts(): ParsedValueDraft[] | null {
       hasError = true
       continue
     }
-    delete valueDraftErrors[key]
+    Reflect.deleteProperty(valueDraftErrors, key)
     parsedDrafts.push({
       index: row.index,
       value: parsed.value,
@@ -1222,9 +1222,9 @@ function discardStaleValueDraftRows(sliceId: string, currentKeys: Set<string>): 
   ])
   for (const key of keys) {
     if (key.startsWith(prefix) && !currentKeys.has(key)) {
-      delete valueDrafts[key]
-      delete valueDraftErrors[key]
-      delete valueDraftIdentities[key]
+      Reflect.deleteProperty(valueDrafts, key)
+      Reflect.deleteProperty(valueDraftErrors, key)
+      Reflect.deleteProperty(valueDraftIdentities, key)
     }
   }
 }

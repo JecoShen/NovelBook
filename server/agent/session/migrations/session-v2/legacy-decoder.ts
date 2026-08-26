@@ -630,7 +630,7 @@ function migrateNestedProjectIdentity(
   }
   for (const key of ['workspaceRoot', 'workspaceKey', 'projectPath'] as const) {
     if (value[key] !== undefined) {
-      delete value[key]
+      Reflect.deleteProperty(value, key)
       context.stats.rewrittenPaths += 1
     }
   }
@@ -694,7 +694,7 @@ function migrateProfileState(value: JsonObject | null, context: MigrationContext
   }
   for (const reminder of PROFILE_REMINDERS_TO_RESET) {
     if (reminders[reminder] !== undefined) {
-      delete reminders[reminder]
+      Reflect.deleteProperty(reminders, reminder)
       context.stats.resetProfileReminders += 1
     }
   }

@@ -94,7 +94,7 @@ export function useModelCheckSession(options: ModelCheckSessionOptions) {
       if (!batch || batch.modelKeys.some(modelKey => Boolean(controllers.value[modelKey]))) {
         continue
       }
-      delete next[batchProviderKey]
+      Reflect.deleteProperty(next, batchProviderKey)
       changed = true
     }
     if (changed) {
@@ -108,7 +108,7 @@ export function useModelCheckSession(options: ModelCheckSessionOptions) {
       return
     }
     const next = { ...batches.value }
-    delete next[provider.localKey]
+    Reflect.deleteProperty(next, provider.localKey)
     batches.value = next
   }
 
@@ -187,7 +187,7 @@ export function useModelCheckSession(options: ModelCheckSessionOptions) {
     finally {
       if (controllers.value[modelKey]?.controller === controller) {
         const next = { ...controllers.value }
-        delete next[modelKey]
+        Reflect.deleteProperty(next, modelKey)
         controllers.value = next
         clearSettledBatches()
       }

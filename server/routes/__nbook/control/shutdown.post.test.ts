@@ -19,7 +19,7 @@ describe('POST /__nbook/control/shutdown', () => {
   })
 
   afterEach(() => {
-    delete process.env[PRODUCT_SHUTDOWN_TOKEN_ENVIRONMENT]
+    Reflect.deleteProperty(process.env, PRODUCT_SHUTDOWN_TOKEN_ENVIRONMENT)
     restoreEnvironment('HOST', originalHost)
     restoreEnvironment('NITRO_HOST', originalNitroHost)
   })
@@ -54,7 +54,7 @@ describe('POST /__nbook/control/shutdown', () => {
   })
 
   it('token 未注入时关闭控制面', async () => {
-    delete process.env[PRODUCT_SHUTDOWN_TOKEN_ENVIRONMENT]
+    Reflect.deleteProperty(process.env, PRODUCT_SHUTDOWN_TOKEN_ENVIRONMENT)
 
     expect(capture(() => shutdownHandler(event('127.0.0.1', 'Bearer launch-secret') as never)))
       .toMatchObject({ statusCode: 503 })
@@ -98,7 +98,7 @@ function event(remoteAddress: string | undefined, authorization?: string) {
 
 function restoreEnvironment(name: 'HOST' | 'NITRO_HOST', value: string | undefined): void {
   if (value === undefined) {
-    delete process.env[name]
+    Reflect.deleteProperty(process.env, name)
   }
   else {
     process.env[name] = value

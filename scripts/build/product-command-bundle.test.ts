@@ -49,7 +49,7 @@ describe('Product command metafile', () => {
     const commandRoot = resolve('.agent', 'tmp', 'product-command-metafile', 'commands')
     const metafile = buildMetafile(commandRoot)
     const [firstOutput, definition] = Object.entries(metafile.outputs)[0]!
-    delete metafile.outputs[firstOutput]
+    Reflect.deleteProperty(metafile.outputs, firstOutput)
     metafile.outputs[resolve(commandRoot, '..', 'escaped.mjs')] = definition
 
     expect(() => resolveProductCommandEntries(metafile, commandRoot))
@@ -60,7 +60,7 @@ describe('Product command metafile', () => {
     const commandRoot = resolve('.agent', 'tmp', 'product-command-metafile-relative-escape', 'commands')
     const metafile = buildMetafile(commandRoot, true)
     const [firstOutput, definition] = Object.entries(metafile.outputs)[0]!
-    delete metafile.outputs[firstOutput]
+    Reflect.deleteProperty(metafile.outputs, firstOutput)
     metafile.outputs['../escaped.mjs'] = definition
 
     expect(() => resolveProductCommandEntries(metafile, commandRoot))

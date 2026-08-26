@@ -100,7 +100,7 @@ function removeValue(parent: JsonValue, key: string): void {
   if (!parent || typeof parent !== 'object') {
     throw new Error(`JSON Patch target 不是 object/array：${key}`)
   }
-  delete parent[key]
+  Reflect.deleteProperty(parent, key)
 }
 
 function readArrayIndex(segment: string, length: number): number {

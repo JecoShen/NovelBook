@@ -309,7 +309,7 @@ function desktopUacClientEnvironment(input: NodeJS.ProcessEnv | undefined): Node
     NBOOK_MANAGER_ELEVATED: undefined,
   }
   for (const key of Object.keys(environment)) {
-    if (key.startsWith('NBOOK_DESKTOP_DEV_')) delete environment[key]
+    if (key.startsWith('NBOOK_DESKTOP_DEV_')) Reflect.deleteProperty(environment, key)
   }
   return environment
 }

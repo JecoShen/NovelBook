@@ -29,7 +29,7 @@ describe('database locks', () => {
 
 function restoreEnv(name: 'DATABASE_KIND' | 'DATABASE_URL', value: string | undefined): void {
   if (value === undefined) {
-    delete process.env[name]
+    Reflect.deleteProperty(process.env, name)
     return
   }
   process.env[name] = value

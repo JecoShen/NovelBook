@@ -1385,7 +1385,7 @@ function unsetPath(state: Record<string, JsonValue>, attr: string): void {
     current = current[part] ?? null
   }
   if (isObject(current)) {
-    delete current[leaf]
+    Reflect.deleteProperty(current, leaf)
   }
 }
 

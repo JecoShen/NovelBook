@@ -88,7 +88,7 @@ describe('Test Workspace Fixture 所有权', () => {
     }
     finally {
       if (previous === undefined) {
-        delete process.env[TEST_SYSTEM_ASSETS_SNAPSHOT_ENV]
+        Reflect.deleteProperty(process.env, TEST_SYSTEM_ASSETS_SNAPSHOT_ENV)
       }
       else {
         process.env[TEST_SYSTEM_ASSETS_SNAPSHOT_ENV] = previous

@@ -109,7 +109,7 @@ function restoreEnv(
   value: string | undefined,
 ): void {
   if (value === undefined) {
-    delete process.env[name]
+    Reflect.deleteProperty(process.env, name)
     return
   }
   process.env[name] = value

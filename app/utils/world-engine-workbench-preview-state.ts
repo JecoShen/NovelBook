@@ -217,7 +217,7 @@ function deletePointerPath(attrs: JsonObjectValue, path: string): void {
   }
   const last = parts[parts.length - 1]
   if (isJsonObject(cursor) && last) {
-    delete cursor[last]
+    Reflect.deleteProperty(cursor, last)
     return
   }
   if (Array.isArray(cursor) && last) {

@@ -28,7 +28,7 @@ describe('requireBridgeAuth', () => {
   })
 
   afterEach(() => {
-    delete process.env[PRODUCT_BRIDGE_TOKEN_ENVIRONMENT]
+    Reflect.deleteProperty(process.env, PRODUCT_BRIDGE_TOKEN_ENVIRONMENT)
   })
 
   it('loopback + 正确 token → 静默通过', async () => {
@@ -46,7 +46,7 @@ describe('requireBridgeAuth', () => {
   })
 
   it('env 未设 → 503 BRIDGE_DISABLED（默认关闭）', async () => {
-    delete process.env[PRODUCT_BRIDGE_TOKEN_ENVIRONMENT]
+    Reflect.deleteProperty(process.env, PRODUCT_BRIDGE_TOKEN_ENVIRONMENT)
     const requireBridgeAuth = await loadRequireBridgeAuth()
     await expect((async () => requireBridgeAuth(event))()).rejects.toMatchObject({
       statusCode: 503,

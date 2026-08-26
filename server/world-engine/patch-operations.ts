@@ -215,7 +215,7 @@ function applyRemove(
   }
 
   if (isObject(parent)) {
-    delete parent[lastKey]
+    Reflect.deleteProperty(parent, lastKey)
     return null
   }
 
@@ -254,7 +254,7 @@ function applyReplace(
       }
     }
     for (const key of Object.keys(state)) {
-      delete state[key]
+      Reflect.deleteProperty(state, key)
     }
     Object.assign(state, value)
     return null

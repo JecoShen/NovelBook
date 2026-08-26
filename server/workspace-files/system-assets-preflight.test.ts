@@ -93,7 +93,7 @@ describe('Product system assets preflight', () => {
 /** 恢复测试前的进程环境，避免影响同进程其他 RuntimePaths 用例。 */
 function restoreEnv(key: 'NEURO_BOOK_APPLICATION_ROOT' | 'NEURO_BOOK_STATE_ROOT', value: string | undefined): void {
   if (value === undefined) {
-    delete process.env[key]
+    Reflect.deleteProperty(process.env, key)
     return
   }
   process.env[key] = value

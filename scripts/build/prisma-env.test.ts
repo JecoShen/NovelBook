@@ -35,6 +35,6 @@ describe('Prisma CLI State Root', () => {
 })
 
 function restoreEnv(name: 'NEURO_BOOK_STATE_ROOT' | 'DATABASE_KIND' | 'DATABASE_URL', value: string | undefined): void {
-  if (value === undefined) delete process.env[name]
+  if (value === undefined) Reflect.deleteProperty(process.env, name)
   else process.env[name] = value
 }

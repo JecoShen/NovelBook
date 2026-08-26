@@ -96,7 +96,7 @@ function setRefCardRef(el: any, id: string) {
     refCardRefs.value[id] = el.$el || el
   }
   else {
-    delete refCardRefs.value[id]
+    Reflect.deleteProperty(refCardRefs.value, id)
   }
 }
 

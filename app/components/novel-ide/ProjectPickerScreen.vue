@@ -199,7 +199,7 @@ const recoverSession = async (session: AgentSessionSummaryDto, workspaceRoot: bo
     recoveryOffset.value = Math.max(0, recoveryOffset.value - 1)
     recoveryTotal.value = Math.max(0, recoveryTotal.value - 1)
     const nextTargets = { ...recoveryTargets.value }
-    delete nextTargets[session.sessionId]
+    Reflect.deleteProperty(nextTargets, session.sessionId)
     recoveryTargets.value = nextTargets
     notification.success('会话归属已确认', { title: '会话可以继续使用' })
   }

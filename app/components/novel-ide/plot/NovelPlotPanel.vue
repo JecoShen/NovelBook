@@ -1523,7 +1523,7 @@ async function deleteThread(threadId: string): Promise<void> {
     method: 'DELETE',
   }))
 
-  delete threadDetailMap.value[threadId]
+  Reflect.deleteProperty(threadDetailMap.value, threadId)
   await loadPlotTree()
   await loadPlotWorkbench(true)
 }
@@ -1541,7 +1541,7 @@ async function deleteScene(sceneId: string): Promise<void> {
     method: 'DELETE',
   }))
 
-  delete sceneDetailMap.value[sceneId]
+  Reflect.deleteProperty(sceneDetailMap.value, sceneId)
   await loadPlotTree({
     preferredThreadId: fallbackThreadId,
   })

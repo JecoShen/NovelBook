@@ -116,7 +116,7 @@ export function deleteLowCodePath(source: LowCodeJsonObject, path: string): LowC
     current = current[segment]
   }
   if (current && typeof current === 'object' && !Array.isArray(current)) {
-    delete current[segments[segments.length - 1]!]
+    Reflect.deleteProperty(current, segments[segments.length - 1]!)
   }
   return next
 }

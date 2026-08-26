@@ -376,7 +376,7 @@ async function stateRoot(): Promise<string> {
 }
 
 function restoreEnv(name: string, value: string | undefined): void {
-  if (value === undefined) delete process.env[name]
+  if (value === undefined) Reflect.deleteProperty(process.env, name)
   else process.env[name] = value
 }
 

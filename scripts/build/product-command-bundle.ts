@@ -166,7 +166,7 @@ export async function pruneEmptyProductCommandChunks(
   for (const [emptyOutputName] of emptyOutputs) {
     const { outputPath } = resolveCommandOutput(emptyOutputName, commandRoot)
     await rm(outputPath, { force: true })
-    delete metafile.outputs[emptyOutputName]
+    Reflect.deleteProperty(metafile.outputs, emptyOutputName)
   }
 }
 

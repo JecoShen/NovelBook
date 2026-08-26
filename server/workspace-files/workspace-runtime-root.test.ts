@@ -49,6 +49,6 @@ describe('Workspace runtime root', () => {
 
 /** 恢复测试前的进程环境。 */
 function restoreEnv(name: 'NEURO_BOOK_APPLICATION_ROOT' | 'NEURO_BOOK_STATE_ROOT', value: string | undefined): void {
-  if (value === undefined) delete process.env[name]
+  if (value === undefined) Reflect.deleteProperty(process.env, name)
   else process.env[name] = value
 }

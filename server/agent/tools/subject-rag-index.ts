@@ -673,9 +673,9 @@ export async function clearSubjectRagDirty(
       if (sourceHash !== indexedSourceHash) {
         return
       }
-      delete subjectState[sourceType]
+      Reflect.deleteProperty(subjectState, sourceType)
       if (Object.keys(subjectState).length === 0) {
-        delete state[subject.absolutePath]
+        Reflect.deleteProperty(state, subject.absolutePath)
       }
       await writeJsonFile(subject.ragStatePath, state)
     })
