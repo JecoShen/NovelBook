@@ -97,7 +97,7 @@ export async function discoverInstances(roots: string[], registeredRoots: string
     const hasManifest = existsSync(join(canonical, '.deploy', 'installation.json'))
     const hasGit = existsSync(join(canonical, '.git'))
     const hasPortableState = existsSync(join(canonical, 'data', 'config.yaml')) && existsSync(join(canonical, 'data', 'workspace'))
-    if (hasManifest || hasPortableState || hasGit && await cheapNeuroBookIdentity(canonical)) {
+    if (hasManifest || hasPortableState || (hasGit && await cheapNeuroBookIdentity(canonical))) {
       const inspection = await inspectInstance(canonical)
       if (inspection.kind !== 'unrelated') candidates.set(rootKey(inspection.root), inspection)
       return

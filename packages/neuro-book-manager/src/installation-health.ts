@@ -193,7 +193,7 @@ export async function inspectInstallationService(root: string, manifest: Install
     }
     if (container.status !== 'running') {
       const normallyStopped = container.status === 'created'
-        || container.status === 'exited' && (container.exitCode === 0 || container.exitCode === 143)
+        || (container.status === 'exited' && (container.exitCode === 0 || container.exitCode === 143))
       return {
         kind: 'container',
         status: normallyStopped ? 'stopped' : 'degraded',

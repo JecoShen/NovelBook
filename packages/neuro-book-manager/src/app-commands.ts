@@ -116,7 +116,7 @@ export function productExitErrorMessage(
 
 /** 统一判断Application是否以可接受的结果结束；容器ready-only completion允许null/null。 */
 export function assertProductExit(result: ProductExitResult, fallback: string): void {
-  if (result.signal !== null || result.code !== null && result.code !== 0) {
+  if (result.signal !== null || (result.code !== null && result.code !== 0)) {
     throw new Error(productExitErrorMessage(result, fallback))
   }
 }

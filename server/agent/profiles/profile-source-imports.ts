@@ -34,7 +34,7 @@ export function profileSourceModuleSpecifiers(source: string): string[] {
     }
     for (let cursor = index + 1; cursor < tokens.length; cursor += 1) {
       const current = tokens[cursor]
-      if (!current || current.kind === 'punctuation' && current.value === ';') {
+      if (!current || (current.kind === 'punctuation' && current.value === ';')) {
         break
       }
       if (current.kind === 'identifier' && (current.value === 'import' || current.value === 'export')) {

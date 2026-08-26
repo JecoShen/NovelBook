@@ -217,7 +217,7 @@ function createSubjectMemoryUpdateTool(): NeuroAgentTool {
         }
       }
 
-      if (result.updated.length === 0 && currentMemories.length === 0 || JSON.stringify(result.updated) === JSON.stringify(currentMemories)) {
+      if ((result.updated.length === 0 && currentMemories.length === 0) || JSON.stringify(result.updated) === JSON.stringify(currentMemories)) {
         return {
           content: [{ type: 'text', text: 'subject_memory_update 完成：memory.jsonl 无需更新。' }],
           details: normalizeToolResultDetails({

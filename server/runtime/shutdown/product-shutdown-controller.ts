@@ -74,8 +74,8 @@ export class ProductShutdownController {
   /** 在控制路由返回 202 后异步关闭资源并退出 Product 进程。 */
   requestProcessExit(exitCode = 0): void {
     if (exitCode === PRODUCT_RUNTIME_EXIT_CODE_AGENT_SESSION_STORE_LEASE_COMPROMISED
-      || this.requestedExitCode !== PRODUCT_RUNTIME_EXIT_CODE_AGENT_SESSION_STORE_LEASE_COMPROMISED
-      && exitCode !== 0) {
+      || (this.requestedExitCode !== PRODUCT_RUNTIME_EXIT_CODE_AGENT_SESSION_STORE_LEASE_COMPROMISED
+        && exitCode !== 0)) {
       this.requestedExitCode = exitCode
     }
     // compromised 不依赖 HTTP 响应，调用方必须从本次调用返回后立即看到 draining。

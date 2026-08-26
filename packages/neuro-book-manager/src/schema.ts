@@ -547,7 +547,7 @@ function assertOperationEffect(journal: OperationJournal, effect: OperationJourn
       throw new Error(`未确认身份的candidate-container不能标记为已停止：${journalPath}`)
     }
     const manifest = journal.nextManifest ?? journal.previousManifest
-    if (!manifest || manifest.profile !== 'ghcr' && manifest.profile !== 'source-docker') {
+    if (!manifest || (manifest.profile !== 'ghcr' && manifest.profile !== 'source-docker')) {
       throw new Error(`candidate-container只能用于容器Profile：${journalPath}`)
     }
   }
@@ -770,7 +770,7 @@ function assertOperationRootLocators(roots: InstallationRootLocators): void {
 
 function assertInstallationSemantics(manifest: InstallationManifest): void {
   const { source, product, applicationRuntime, tools } = manifest.components
-  if (source.revision !== manifest.sourceRevision || product && product.revision !== manifest.sourceRevision) {
+  if (source.revision !== manifest.sourceRevision || (product && product.revision !== manifest.sourceRevision)) {
     throw new Error('Installation Source/Product revision 与 sourceRevision 不一致。')
   }
   assertRootLocatorsSemantics(manifest.profile, manifest.roots)

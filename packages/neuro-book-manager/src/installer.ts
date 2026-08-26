@@ -456,8 +456,8 @@ async function prepareInstallation(
     })
     journal = await setOperationEffect(journal, { kind: 'component-switch', state: 'applied', owner: 'product' })
   }
-  if (options.profile === 'source-docker' && product?.provider === 'container'
-    || options.profile === 'ghcr' && product?.provider === 'container' && product.digest) {
+  if ((options.profile === 'source-docker' && product?.provider === 'container')
+    || (options.profile === 'ghcr' && product?.provider === 'container' && product.digest)) {
     const finalCompose = join(paths.deploy, 'docker-compose.generated.yml')
     const composeCreated = !await pathExists(finalCompose)
     const previousCompose = composeCreated ? undefined : join(backup, 'docker-compose.generated.yml')

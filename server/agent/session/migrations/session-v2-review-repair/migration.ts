@@ -81,7 +81,7 @@ export async function rollbackSessionV2ReviewRepair(
     let manifest = await requiredManifest(paths)
     const rollbackInProgress = manifest.status === 'rollback_running'
       || manifest.status === 'rolled_back'
-      || manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running'
+      || (manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running')
     if (!rollbackInProgress && manifest.status !== 'report_written') {
       if (manifest.status === 'failed') {
         if (!manifest.resumeStatus) throw new Error('repair failed manifest 缺少 resumeStatus')
@@ -169,7 +169,7 @@ async function resumeApply(
   const manifest = await requiredManifest(paths)
   if (manifest.status === 'report_written') return reportFromManifest(manifest, 'complete')
   if (manifest.status === 'rollback_running' || manifest.status === 'rolled_back'
-    || manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running') {
+    || (manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running')) {
     throw new Error(`Session v2 review repair ${runId} 已进入 rollback`)
   }
   if (manifest.status === 'failed') {

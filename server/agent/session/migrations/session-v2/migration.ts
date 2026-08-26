@@ -145,7 +145,7 @@ export async function rollbackSessionSchemaV2Migration(
     }
 
     const rollbackInProgress = manifest.status === 'rollback_running'
-      || manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running'
+      || (manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running')
     if (!rollbackInProgress && manifest.status !== 'report_written') {
       await publishSentinel(rootWorkspace, paths, manifest, 'applying', undefined, assertHealthy)
       if (manifest.status === 'failed') {
@@ -238,7 +238,7 @@ async function resumeApply(
   const paths = migrationPaths(rootWorkspace, validatedRunId(sentinel.runId))
   const manifest = await recoveryManifest(rootWorkspace, paths, sentinel)
   if (manifest.status === 'rollback_running' || manifest.status === 'rolled_back'
-    || manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running') {
+    || (manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running')) {
     throw new Error(`Session migration run ${manifest.runId}已经进入rollback，只能继续rollback`)
   }
   await publishSentinel(rootWorkspace, paths, manifest, 'applying', options.observer, assertHealthy)

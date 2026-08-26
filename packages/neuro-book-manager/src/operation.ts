@@ -328,8 +328,8 @@ async function cleanupCommittedEffects(journal: OperationJournal, includeRetired
       }
       continue
     }
-    const shouldRemove = effect.kind === 'path-create' && (effect.owner === 'staging' || effect.owner === 'backup')
-      || includeRetired && effect.kind === 'path-retire'
+    const shouldRemove = (effect.kind === 'path-create' && (effect.owner === 'staging' || effect.owner === 'backup'))
+      || (includeRetired && effect.kind === 'path-retire')
     if (includeRetired && effect.kind === 'docker-image' && effect.previousImage && !effect.previousImageRetired) {
       try {
         await removeDockerImage(requiredContainerEngine(journal), journal.root, effect.previousImage)
@@ -361,7 +361,7 @@ async function cleanupCommittedEffects(journal: OperationJournal, includeRetired
     }
     try {
       await removePath(operationEffectTarget(journal, effect))
-      changed = changed || effect.cleanupError !== undefined || effect.kind === 'path-retire' && effect.state !== 'applied'
+      changed = changed || effect.cleanupError !== undefined || (effect.kind === 'path-retire' && effect.state !== 'applied')
       effects.push(effect.kind === 'path-retire' ? { ...effect, state: 'applied', cleanupError: undefined } : { ...effect, cleanupError: undefined })
     }
     catch (error) {

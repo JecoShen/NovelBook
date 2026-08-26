@@ -405,7 +405,7 @@ async function applySessionStep(rootWorkspace: string, runId: string) {
     const sentinel = await readAgentSessionStoreSentinel(rootWorkspace)
     if (sentinel.state === 'complete') {
       if (sentinel.targetSchemaVersion === AGENT_SESSION_SCHEMA_VERSION
-        || sentinel.sourceSchemaVersion === AGENT_SESSION_SCHEMA_VERSION && sentinel.targetSchemaVersion === 1) {
+        || (sentinel.sourceSchemaVersion === AGENT_SESSION_SCHEMA_VERSION && sentinel.targetSchemaVersion === 1)) {
         return runSessionSchemaV2Migration({ rootWorkspace, mode: 'apply', runId })
       }
       throw new Error(`Session schema ${sentinel.sourceSchemaVersion}->${sentinel.targetSchemaVersion} 无法升级。`)

@@ -115,7 +115,7 @@ export async function rollbackAgentAttachmentMigration(
     }
     const rollbackInProgress = manifest.status === 'rollback_running'
       || manifest.status === 'rolled_back'
-      || manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running'
+      || (manifest.status === 'failed' && manifest.resumeStatus === 'rollback_running')
     if (!rollbackInProgress && manifest.status !== 'report_written') {
       await resumeApply(rootWorkspace, {
         rootWorkspace,

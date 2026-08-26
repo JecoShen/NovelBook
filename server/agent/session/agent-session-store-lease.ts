@@ -77,10 +77,10 @@ export function isAgentSessionStoreLeaseCompromisedError(
   error: unknown,
 ): error is AgentSessionStoreLeaseCompromisedError {
   return error instanceof AgentSessionStoreLeaseCompromisedError
-    || typeof error === 'object'
-    && error !== null
-    && 'code' in error
-    && error.code === 'AGENT_SESSION_STORE_LEASE_COMPROMISED'
+    || (typeof error === 'object'
+      && error !== null
+      && 'code' in error
+      && error.code === 'AGENT_SESSION_STORE_LEASE_COMPROMISED')
 }
 
 /** Session Store 已被另一进程占用；owner 只用于诊断，不授予终止或抢锁权限。 */
@@ -444,10 +444,10 @@ function parseOwner(text: string): AgentSessionStoreLeaseOwner | null {
     || owner.schema !== AGENT_SESSION_STORE_LEASE_OWNER_SCHEMA
     || typeof owner.leaseId !== 'string'
     || !CANONICAL_UUID_PATTERN.test(owner.leaseId)
-    || owner.kind !== 'runtime' && owner.kind !== 'migration'
+    || (owner.kind !== 'runtime' && owner.kind !== 'migration')
     || typeof owner.pid !== 'number' || !Number.isSafeInteger(owner.pid) || owner.pid <= 0
     || typeof owner.acquiredAt !== 'string' || Number.isNaN(Date.parse(owner.acquiredAt))
-    || owner.runtime !== 'bun' && owner.runtime !== 'node'
+    || (owner.runtime !== 'bun' && owner.runtime !== 'node')
     || typeof owner.runtimeVersion !== 'string' || owner.runtimeVersion.length === 0) {
     return null
   }

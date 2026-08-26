@@ -140,5 +140,5 @@ function isUncPath(input: string): boolean {
 /** 比较规范化绝对路径，避免字符串前缀把相邻目录误判为子目录。 */
 function isInside(root: string, target: string): boolean {
   const relativePath = path.relative(root, target)
-  return relativePath === '' || relativePath !== '..' && !relativePath.startsWith(`..${path.sep}`) && !path.isAbsolute(relativePath)
+  return relativePath === '' || (relativePath !== '..' && !relativePath.startsWith(`..${path.sep}`) && !path.isAbsolute(relativePath))
 }
