@@ -1240,7 +1240,7 @@ onMounted(() => {
     <main class="mx-auto grid max-w-[1760px] gap-4 px-5 py-5 xl:grid-cols-[340px_minmax(0,1fr)_420px]">
       <!-- Project 与 Schema -->
       <WorldEnginePreviewProjectPanel
-        :create-project-form="createProjectForm"
+        v-model:create-project-form="createProjectForm"
         :selected-project="selectedProject"
         :schema="schema"
         :schema-types="schemaTypes"
@@ -1275,9 +1275,9 @@ onMounted(() => {
 
       <!-- 写入与查询 -->
       <WorldEnginePreviewActions
-        :subject-form="subjectForm"
-        :slice-form="sliceForm"
-        :query-form="queryForm"
+        v-model:subject-form="subjectForm"
+        v-model:slice-form="sliceForm"
+        v-model:query-form="queryForm"
         :schema-types="schemaTypes"
         :selected-type-attrs="selectedTypeAttrs"
         :project-ready="projectReady"

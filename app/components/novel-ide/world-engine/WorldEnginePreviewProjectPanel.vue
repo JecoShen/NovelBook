@@ -19,7 +19,6 @@ type PreviewSchemaProjection = {
 }
 
 const props = defineProps<{
-  createProjectForm: PreviewProjectForm
   selectedProject: PreviewProjectOption | null
   schema: PreviewSchemaProjection | null
   schemaTypes: WorldPreviewSchemaType[]
@@ -31,9 +30,10 @@ const props = defineProps<{
   createRecovery: string
 }>()
 
+const createProjectForm = defineModel<PreviewProjectForm>('createProjectForm', { required: true })
+
 const emit = defineEmits<{
-  (e: 'create-project'): void
-  (e: 'retry-create-recovery'): void
+  (e: 'create-project' | 'retry-create-recovery'): void
   (e: 'fill-mutation', typeName: string, attr: WorldPreviewSchemaAttr): void
 }>()
 

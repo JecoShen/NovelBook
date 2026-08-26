@@ -37,8 +37,6 @@ type JsonFieldKey = 'compat' | 'headers' | 'thinkingLevelMap'
 type JsonFieldState = 'empty' | 'valid' | 'invalid'
 
 const props = defineProps<{
-  modelValue: boolean
-  editingModel: ModelDraft | null
   activeProvider: ProviderDraft | null
   /** 当前模型在 NeuroBook Model Library 中的标准资料；未命中时为空。 */
   libraryModel: ModelLibraryEntryDto | null
@@ -54,15 +52,13 @@ const props = defineProps<{
   modelReasoningDisplayLabel: (model: ModelDraft) => string
 }>()
 
+const modelValue = defineModel<boolean>('modelValue', { default: false })
+const editingModel = defineModel<ModelDraft | null>('editingModel', { default: null })
+
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'model-id-change'): void
+  (e: 'model-id-change' | 'confirm'): void
   (e: 'toggle-model-input', model: ModelDraft, inputKind: ModelInputKind): void
-  (e: 'reset-model-input', model: ModelDraft): void
-  (e: 'reset-model-cost', model: ModelDraft): void
-  (e: 'enable-model-cost', model: ModelDraft): void
-  (e: 'reapply-library', model: ModelDraft): void
-  (e: 'confirm'): void
+  (e: 'reset-model-input' | 'reset-model-cost' | 'enable-model-cost' | 'reapply-library', model: ModelDraft): void
 }>()
 
 const { t } = useI18n()
@@ -97,7 +93,7 @@ const costFields = computed<Array<{ key: keyof Pick<ModelCostDraft, 'input' | 'o
 ])
 
 const costValidationError = computed(() => {
-  const model = props.editingModel
+  const model = editingModel.value
   if (!model || !hasModelCostOverride(model.cost)) {
     return ''
   }
@@ -111,7 +107,7 @@ const costValidationError = computed(() => {
 })
 
 /** 打开新模型时从基础信息页开始，切换模型时避免残留上一次的 JSON 字段。 */
-watch(() => [props.modelValue, props.editingModel?.localKey] as const, ([visible]) => {
+watch(() => [modelValue.value, editingModel.value?.localKey] as const, ([visible]) => {
   if (visible) {
     activeTab.value = 'identity'
     activeJsonFieldKey.value = 'compat'
@@ -120,21 +116,22 @@ watch(() => [props.modelValue, props.editingModel?.localKey] as const, ([visible
 
 /** 回写 JSON 编辑器的文本或结构化结果；tree/table 模式不能静默丢弃对象更新。 */
 function updateJsonField(key: JsonFieldKey, value: unknown): void {
-  if (!props.editingModel) {
+  const current = editingModel.value
+  if (!current) {
     return
   }
   if (typeof value === 'string') {
-    props.editingModel[key] = value
+    editingModel.value = { ...current, [key]: value }
     return
   }
   if (value === null || typeof value === 'object') {
-    props.editingModel[key] = value === null ? '' : JSON.stringify(value, null, 2)
+    editingModel.value = { ...current, [key]: value === null ? '' : JSON.stringify(value, null, 2) }
   }
 }
 
 /** 在页签列表中显示 JSON 字段的即时状态，不提前修改用户正在输入的内容。 */
 function jsonFieldState(key: JsonFieldKey): JsonFieldState {
-  const value = props.editingModel?.[key].trim() ?? ''
+  const value = editingModel.value?.[key].trim() ?? ''
   if (!value) {
     return 'empty'
   }
@@ -159,13 +156,33 @@ function jsonFieldStateLabel(key: JsonFieldKey): string {
 
 /** 新增一档长上下文价格，默认复制基础价格以减少漏填。 */
 function addCostTier(model: ModelDraft): void {
-  model.cost.tiers.push({
-    inputTokensAbove: '',
-    input: model.cost.input,
-    output: model.cost.output,
-    cacheRead: model.cost.cacheRead,
-    cacheWrite: model.cost.cacheWrite,
-  })
+  const next: ModelCostDraft = {
+    ...model.cost,
+    tiers: [
+      ...model.cost.tiers,
+      {
+        inputTokensAbove: '',
+        input: model.cost.input,
+        output: model.cost.output,
+        cacheRead: model.cost.cacheRead,
+        cacheWrite: model.cost.cacheWrite,
+      },
+    ],
+  }
+  editingModel.value = { ...model, cost: next }
+}
+
+/** 移除指定 index 的长上下文价格档位，通过 defineModel 自动 emit 给父。 */
+function removeCostTier(index: number): void {
+  const model = editingModel.value
+  if (!model) {
+    return
+  }
+  const next: ModelCostDraft = {
+    ...model.cost,
+    tiers: model.cost.tiers.filter((_, i) => i !== index),
+  }
+  editingModel.value = { ...model, cost: next }
 }
 
 /** 判断当前模型是否记录了价格。 */
@@ -175,14 +192,14 @@ function modelCostSourceLabel(model: ModelDraft): string {
 
 /** 关闭模型编辑弹窗。 */
 function updateOpen(value: boolean): void {
-  emit('update:modelValue', value)
+  modelValue.value = value
 }
 </script>
 
 <template>
   <!-- 模型编辑 Dialog：摘要、页签和内容区各自承担单一职责。 -->
   <Dialog
-    :model-value="props.modelValue"
+    :model-value="modelValue"
     :title="t('settings.panels.modelEdit.title')"
     width="min(980px, calc(100vw - 24px))"
     height="min(760px, calc(100vh - 24px))"
@@ -195,7 +212,7 @@ function updateOpen(value: boolean): void {
     @update:model-value="updateOpen"
   >
     <div
-      v-if="props.editingModel"
+      v-if="editingModel"
       class="flex min-h-0 flex-1 flex-col bg-[var(--bg-panel)]"
     >
       <!-- 模型摘要：跨页签固定显示当前对象和来源。 -->
@@ -204,10 +221,10 @@ function updateOpen(value: boolean): void {
           <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-bg)] text-[var(--accent-text)]"><span class="i-lucide-cpu h-5 w-5" /></span>
           <div class="min-w-0">
             <div class="truncate text-sm font-semibold text-[var(--text-main)]">
-              {{ props.editingModel.name || props.editingModel.id || t("settings.panels.modelEdit.untitled") }}
+              {{ editingModel.name || editingModel.id || t("settings.panels.modelEdit.untitled") }}
             </div>
             <div class="truncate font-mono text-[11px] text-[var(--text-muted)]">
-              {{ props.editingModel.id || t("settings.panels.modelEdit.modelId") }}
+              {{ editingModel.id || t("settings.panels.modelEdit.modelId") }}
             </div>
           </div>
         </div>
@@ -271,14 +288,14 @@ function updateOpen(value: boolean): void {
               <div class="space-y-1.5 sm:col-span-2">
                 <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.modelName") }}</label>
                 <FormInput
-                  v-model="props.editingModel.name"
+                  v-model="editingModel.name"
                   :placeholder="t('settings.panels.modelEdit.modelName')"
                 />
               </div>
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.modelId") }}</label>
                 <FormInput
-                  v-model="props.editingModel.id"
+                  v-model="editingModel.id"
                   :placeholder="t('settings.panels.modelEdit.modelId')"
                   @update:model-value="emit('model-id-change')"
                 />
@@ -286,8 +303,8 @@ function updateOpen(value: boolean): void {
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.group") }}</label>
                 <FormInput
-                  v-model="props.editingModel.group"
-                  :placeholder="t('settings.panels.modelEdit.defaultDerived', { group: props.deriveGroup(props.editingModel.id) })"
+                  v-model="editingModel.group"
+                  :placeholder="t('settings.panels.modelEdit.defaultDerived', { group: props.deriveGroup(editingModel.id) })"
                 />
               </div>
             </div>
@@ -305,7 +322,7 @@ function updateOpen(value: boolean): void {
             <div class="space-y-2">
               <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.apiFormat") }}</label>
               <FormSelect
-                v-model="props.editingModel.api"
+                v-model="editingModel.api"
                 :options="props.modelApiOptions"
               />
             </div>
@@ -320,7 +337,7 @@ function updateOpen(value: boolean): void {
                 <button
                   type="button"
                   class="mt-2 inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--accent-main)] px-2.5 text-[11px] font-medium text-[var(--accent-text)] transition-colors hover:bg-[var(--accent-bg)]"
-                  @click="emit('reapply-library', props.editingModel)"
+                  @click="emit('reapply-library', editingModel)"
                 >
                   <span class="i-lucide-refresh-cw h-3.5 w-3.5" />{{ t("settings.panels.modelEdit.reapplyLibrary") }}
                 </button>
@@ -361,12 +378,12 @@ function updateOpen(value: boolean): void {
               </div>
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-3">
-                  <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.contextWindow") }}</label><span class="text-[10px] text-[var(--text-muted)]">{{ t("settings.panels.modelEdit.emptyLabel", { value: props.modelContextWindowDefaultLabel(props.editingModel) }) }}</span>
+                  <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.contextWindow") }}</label><span class="text-[10px] text-[var(--text-muted)]">{{ t("settings.panels.modelEdit.emptyLabel", { value: props.modelContextWindowDefaultLabel(editingModel) }) }}</span>
                 </div>
                 <FormInput
-                  v-model="props.editingModel.contextWindowTokens"
+                  v-model="editingModel.contextWindowTokens"
                   type="number"
-                  :placeholder="props.modelContextWindowDefaultLabel(props.editingModel)"
+                  :placeholder="props.modelContextWindowDefaultLabel(editingModel)"
                 />
                 <p class="text-[11px] leading-5 text-[var(--text-muted)]">
                   {{ t("settings.panels.modelEdit.contextWindowDescription") }}
@@ -374,12 +391,12 @@ function updateOpen(value: boolean): void {
               </div>
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-3">
-                  <label class="text-xs font-semibold text-[var(--text-secondary)]">Max Tokens</label><span class="text-[10px] text-[var(--text-muted)]">{{ t("settings.panels.modelEdit.emptyLabel", { value: props.modelMaxTokensDefaultLabel(props.editingModel) }) }}</span>
+                  <label class="text-xs font-semibold text-[var(--text-secondary)]">Max Tokens</label><span class="text-[10px] text-[var(--text-muted)]">{{ t("settings.panels.modelEdit.emptyLabel", { value: props.modelMaxTokensDefaultLabel(editingModel) }) }}</span>
                 </div>
                 <FormInput
-                  v-model="props.editingModel.maxTokens"
+                  v-model="editingModel.maxTokens"
                   type="number"
-                  :placeholder="props.modelMaxTokensDefaultLabel(props.editingModel)"
+                  :placeholder="props.modelMaxTokensDefaultLabel(editingModel)"
                 />
                 <p class="text-[11px] leading-5 text-[var(--text-muted)]">
                   {{ t("settings.panels.modelEdit.maxTokensDescription") }}
@@ -393,7 +410,7 @@ function updateOpen(value: boolean): void {
               </div>
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-3">
-                  <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.inputCapability") }}</label><span class="text-[10px] text-[var(--text-muted)]">{{ t("settings.panels.modelEdit.currentLabel", { value: props.modelInputDisplayLabel(props.editingModel) }) }}</span>
+                  <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.inputCapability") }}</label><span class="text-[10px] text-[var(--text-muted)]">{{ t("settings.panels.modelEdit.currentLabel", { value: props.modelInputDisplayLabel(editingModel) }) }}</span>
                 </div>
                 <div class="grid grid-cols-2 gap-1 rounded-lg border border-[var(--border-color)] p-1">
                   <button
@@ -401,9 +418,9 @@ function updateOpen(value: boolean): void {
                     :key="option.value"
                     type="button"
                     class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors"
-                    :class="props.modelInputEnabled(props.editingModel, option.value) ? 'bg-[var(--accent-bg)] text-[var(--accent-text)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'"
+                    :class="props.modelInputEnabled(editingModel, option.value) ? 'bg-[var(--accent-bg)] text-[var(--accent-text)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'"
                     :title="t('settings.panels.modelEdit.inputTitle', { label: option.label })"
-                    @click="emit('toggle-model-input', props.editingModel, option.value)"
+                    @click="emit('toggle-model-input', editingModel, option.value)"
                   >
                     <span
                       class="h-3.5 w-3.5"
@@ -414,10 +431,10 @@ function updateOpen(value: boolean): void {
               </div>
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-3">
-                  <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.reasoningCapability") }}</label><span class="text-[10px] text-[var(--text-muted)]">{{ t("settings.panels.modelEdit.currentLabel", { value: props.modelReasoningDisplayLabel(props.editingModel) }) }}</span>
+                  <label class="text-xs font-semibold text-[var(--text-secondary)]">{{ t("settings.panels.modelEdit.reasoningCapability") }}</label><span class="text-[10px] text-[var(--text-muted)]">{{ t("settings.panels.modelEdit.currentLabel", { value: props.modelReasoningDisplayLabel(editingModel) }) }}</span>
                 </div>
                 <FormSelect
-                  v-model="props.editingModel.reasoning"
+                  v-model="editingModel.reasoning"
                   :options="reasoningOptions"
                 />
                 <p class="text-[11px] leading-5 text-[var(--text-muted)]">
@@ -483,7 +500,7 @@ function updateOpen(value: boolean): void {
               <JsonViewer
                 :key="activeJsonField.key"
                 class="min-h-0 min-w-0 flex-1"
-                :value="props.editingModel[activeJsonField.key]"
+                :value="editingModel[activeJsonField.key]"
                 :mode="Mode.text"
                 :read-only="false"
                 :status-bar="true"
@@ -509,11 +526,11 @@ function updateOpen(value: boolean): void {
             </div>
             <span
               class="rounded-md border border-[var(--border-color)] px-2 py-1 text-[10px]"
-              :class="hasModelCostOverride(props.editingModel.cost) ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)]'"
-            >{{ modelCostSourceLabel(props.editingModel) }}</span>
+              :class="hasModelCostOverride(editingModel.cost) ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)]'"
+            >{{ modelCostSourceLabel(editingModel) }}</span>
           </div>
           <div
-            v-if="!hasModelCostOverride(props.editingModel.cost)"
+            v-if="!hasModelCostOverride(editingModel.cost)"
             class="border-l-2 border-[var(--border-color)] pl-4"
           >
             <p class="text-xs leading-5 text-[var(--text-muted)]">
@@ -522,7 +539,7 @@ function updateOpen(value: boolean): void {
             <button
               type="button"
               class="mt-3 inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--accent-main)] px-2.5 text-[11px] font-medium text-[var(--accent-text)] transition-colors hover:bg-[var(--accent-bg)]"
-              @click="emit('enable-model-cost', props.editingModel)"
+              @click="emit('enable-model-cost', editingModel)"
             >
               <span class="i-lucide-pencil h-3.5 w-3.5" />{{ t("settings.panels.modelEdit.enableCostOverride") }}
             </button>
@@ -535,7 +552,7 @@ function updateOpen(value: boolean): void {
                 class="space-y-1.5"
               >
                 <label class="text-xs font-medium text-[var(--text-secondary)]">{{ field.label }}</label><FormInput
-                  v-model="props.editingModel.cost[field.key]"
+                  v-model="editingModel.cost[field.key]"
                   type="number"
                   min="0"
                   step="0.000001"
@@ -550,13 +567,13 @@ function updateOpen(value: boolean): void {
                 </h4><button
                   type="button"
                   class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-2.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]"
-                  @click="addCostTier(props.editingModel)"
+                  @click="addCostTier(editingModel)"
                 >
                   <span class="i-lucide-plus h-3.5 w-3.5" />{{ t("settings.panels.modelEdit.addCostTier") }}
                 </button>
               </div>
               <div
-                v-for="(tier, index) in props.editingModel.cost.tiers"
+                v-for="(tier, index) in editingModel.cost.tiers"
                 :key="index"
                 class="space-y-3 border-b border-[var(--border-color)] pb-4 last:border-b-0"
               >
@@ -565,7 +582,7 @@ function updateOpen(value: boolean): void {
                     type="button"
                     class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--status-danger)] transition-colors hover:bg-[var(--status-danger-bg)]"
                     :title="t('settings.panels.modelEdit.removeCostTier')"
-                    @click="props.editingModel.cost.tiers.splice(index, 1)"
+                    @click="removeCostTier(index)"
                   >
                     <span class="i-lucide-trash-2 h-3.5 w-3.5" />
                   </button>
@@ -603,7 +620,7 @@ function updateOpen(value: boolean): void {
                   type="button"
                   class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-2.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]"
                   :title="t('settings.panels.modelEdit.clearCostTitle')"
-                  @click="emit('reset-model-cost', props.editingModel)"
+                  @click="emit('reset-model-cost', editingModel)"
                 >
                   <span class="i-lucide-rotate-ccw h-3.5 w-3.5" />{{ t("settings.panels.modelEdit.clear") }}
                 </button>

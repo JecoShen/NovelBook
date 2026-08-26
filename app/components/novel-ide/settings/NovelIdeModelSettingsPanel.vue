@@ -860,7 +860,7 @@ defineExpose({ dirty, loading, saving, saveSettings, restoreSettings })
 
   <NovelIdeModelEditDialog
     v-model="modelEditDialogOpen"
-    :editing-model="editingModel"
+    v-model:editing-model="editingModel"
     :active-provider="activeProvider"
     :library-model="editingLibraryModel"
     :missing-fields="editingModelMissingFields"

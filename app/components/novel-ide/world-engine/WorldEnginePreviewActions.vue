@@ -39,9 +39,6 @@ type PreviewSubjectOption = {
 }
 
 const props = defineProps<{
-  subjectForm: PreviewSubjectForm
-  sliceForm: PreviewSliceForm
-  queryForm: PreviewQueryForm
   schemaTypes: WorldPreviewSchemaType[]
   selectedTypeAttrs: WorldPreviewSchemaAttr[]
   projectReady: boolean
@@ -64,29 +61,26 @@ const props = defineProps<{
   canUseSelectedMutation: boolean
 }>()
 
+const subjectForm = defineModel<PreviewSubjectForm>('subjectForm', { required: true })
+const sliceForm = defineModel<PreviewSliceForm>('sliceForm', { required: true })
+const queryForm = defineModel<PreviewQueryForm>('queryForm', { required: true })
+
 const emit = defineEmits<{
-  (e: 'create-subject'): void
-  (e: 'clear-slice-edit-mode'): void
+  (e: 'create-subject' | 'clear-slice-edit-mode' | 'insert-after-selected-mutation' | 'duplicate-selected-mutation' | 'replace-selected-mutation' | 'delete-selected-mutation' | 'write-slice' | 'query-state'): void
   (e: 'update-builder-field', field: keyof PreviewMutationBuilderModel, value: string): void
   (e: 'add-builder-mutation', mode: 'append' | 'replace'): void
   (e: 'update-mutation-load-index', value: string): void
   (e: 'load-mutation', index: number): void
-  (e: 'insert-after-selected-mutation'): void
-  (e: 'duplicate-selected-mutation'): void
-  (e: 'replace-selected-mutation'): void
-  (e: 'delete-selected-mutation'): void
   (e: 'move-selected-mutation', direction: 'up' | 'down'): void
-  (e: 'write-slice'): void
-  (e: 'query-state'): void
 }>()
 
 const subjectIdAlreadyExists = computed(() => {
-  const subjectId = props.subjectForm.id.trim()
+  const subjectId = subjectForm.value.id.trim()
   return Boolean(subjectId) && props.subjects.some(subject => subject.id === subjectId)
 })
-const canCreateSubject = computed(() => props.projectReady && !props.loadingWorld && !props.actionBusy && props.subjectForm.id.trim() && props.subjectForm.type.trim() && props.subjectForm.time.trim() && !subjectIdAlreadyExists.value)
-const canWriteSlice = computed(() => props.projectReady && !props.loadingWorld && !props.actionBusy && props.sliceForm.time.trim())
-const canQueryState = computed(() => props.projectReady && !props.loadingWorld && !props.actionBusy && (props.queryForm.subjectIds.trim() || props.queryForm.type.trim()))
+const canCreateSubject = computed(() => props.projectReady && !props.loadingWorld && !props.actionBusy && subjectForm.value.id.trim() && subjectForm.value.type.trim() && subjectForm.value.time.trim() && !subjectIdAlreadyExists.value)
+const canWriteSlice = computed(() => props.projectReady && !props.loadingWorld && !props.actionBusy && sliceForm.value.time.trim())
+const canQueryState = computed(() => props.projectReady && !props.loadingWorld && !props.actionBusy && (queryForm.value.subjectIds.trim() || queryForm.value.type.trim()))
 </script>
 
 <template>
