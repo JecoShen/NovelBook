@@ -225,6 +225,7 @@ async function assertDevServerAlive(): Promise<void> {
     throw new Error(
       `dev server 探活失败（GET ${BASE_URL}/api/app/version）：${error instanceof Error ? error.message : String(error)}。\n`
       + '请先执行 bun run dev 启动开发服务器，或检查 AGENT_HTTP_BASE_URL 是否指向正确端口。',
+      { cause: error },
     )
   }
 }

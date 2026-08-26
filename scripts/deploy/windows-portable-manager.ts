@@ -616,7 +616,7 @@ function parseSourcePackage(text: string): { version: string } {
     value = JSON.parse(text) as unknown
   }
   catch (error) {
-    throw new Error(`Source package.json 不是有效 JSON：${String(error)}`)
+    throw new Error(`Source package.json 不是有效 JSON：${String(error)}`, { cause: error })
   }
   if (!isJsonObject(value) || value.name !== 'neuro-book' || typeof value.version !== 'string' || !value.version) {
     throw new Error('Source archive package.json 缺少 NeuroBook name/version 身份。')
@@ -640,7 +640,7 @@ function parseRuntimeImageIdentity(text: string): {
     value = JSON.parse(text) as unknown
   }
   catch (error) {
-    throw new Error(`Product runtime-image.json 不是有效 JSON：${String(error)}`)
+    throw new Error(`Product runtime-image.json 不是有效 JSON：${String(error)}`, { cause: error })
   }
   if (!isJsonObject(value)
     || typeof value.version !== 'string'

@@ -420,7 +420,7 @@ describe('useAgentSessionStream', () => {
     const session = useAgentSession()
     const activeSessionId = ref<number | null>(1)
     session.applyRecovery(recovery(1, 1))
-    const blocked = deferred<void>()
+    const blocked = deferred<undefined>()
     const stream = useAgentSessionStream({
       session,
       activeSessionId,

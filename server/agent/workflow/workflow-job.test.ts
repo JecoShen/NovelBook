@@ -101,7 +101,7 @@ describe('spawnWorkflowJob cancellation', () => {
     const config = createDefaultEffectiveConfig()
     const initial = deferred<RunView>()
     const resumed = deferred<RunView>()
-    const terminal = deferred<void>()
+    const terminal = deferred<undefined>()
     const definition: WorkflowDefinition = {
       key: 'project-waiting',
       run: async () => null,

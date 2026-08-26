@@ -143,7 +143,7 @@ export class SessionMigrationJournal<
       parsed = JSON.parse(rawManifest)
     }
     catch (error) {
-      throw new Error(`migration manifest 损坏：${errorMessage(error)}`)
+      throw new Error(`migration manifest 损坏：${errorMessage(error)}`, { cause: error })
     }
     const checkpoint = this.parseManifest(parsed, paths)
     await this.assertManifestPathOwnership(paths, checkpoint)
@@ -385,7 +385,7 @@ export class SessionMigrationJournal<
         text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
       }
       catch (error) {
-        throw new Error(`migration journal UTF-8 损坏：${errorMessage(error)}`)
+        throw new Error(`migration journal UTF-8 损坏：${errorMessage(error)}`, { cause: error })
       }
       return text.slice(0, -1).split('\n')
         .map((line, index) => this.parseJournalLine(line, index + 1))
@@ -405,13 +405,13 @@ export class SessionMigrationJournal<
       value = JSON.parse(line)
     }
     catch (error) {
-      throw new Error(`migration journal 第 ${String(lineNumber)} 条损坏：${errorMessage(error)}`)
+      throw new Error(`migration journal 第 ${String(lineNumber)} 条损坏：${errorMessage(error)}`, { cause: error })
     }
     try {
       return this.validateRecord(value)
     }
     catch (error) {
-      throw new Error(`migration journal 第 ${String(lineNumber)} 条无效：${errorMessage(error)}`)
+      throw new Error(`migration journal 第 ${String(lineNumber)} 条无效：${errorMessage(error)}`, { cause: error })
     }
   }
 

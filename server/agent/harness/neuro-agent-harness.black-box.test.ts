@@ -198,7 +198,7 @@ async function waitUntil(predicate: () => boolean | Promise<boolean>, label: str
 
 /** 等待已返回 Provider 的 Promise continuation 排空，不绑定真实墙钟时长。 */
 async function nextEventLoopTurn(): Promise<void> {
-  const turn = Promise.withResolvers<void>()
+  const turn = Promise.withResolvers<undefined>()
   setImmediate(turn.resolve)
   await turn.promise
 }
@@ -1296,9 +1296,9 @@ describe('NeuroAgentHarness black-box contract', () => {
     const profileKey = registerPlainProfile(harness, {
       key: 'test.blackbox.forced-running-abort',
     })
-    const providerStarted = Promise.withResolvers<void>()
-    const providerGate = Promise.withResolvers<void>()
-    const providerReturned = Promise.withResolvers<void>()
+    const providerStarted = Promise.withResolvers<undefined>()
+    const providerGate = Promise.withResolvers<undefined>()
+    const providerReturned = Promise.withResolvers<undefined>()
     faux.setResponses([
       async () => {
         providerStarted.resolve()
@@ -1354,9 +1354,9 @@ describe('NeuroAgentHarness black-box contract', () => {
     const profileKey = registerPlainProfile(harness, {
       key: 'test.blackbox.exact-signal-abort',
     })
-    const providerStarted = Promise.withResolvers<void>()
-    const providerGate = Promise.withResolvers<void>()
-    const providerReturned = Promise.withResolvers<void>()
+    const providerStarted = Promise.withResolvers<undefined>()
+    const providerGate = Promise.withResolvers<undefined>()
+    const providerReturned = Promise.withResolvers<undefined>()
     faux.setResponses([
       async () => {
         providerStarted.resolve()

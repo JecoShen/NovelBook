@@ -102,7 +102,7 @@ export type ProjectManifestInspection
 /** Manifest persistence对真实文件系统边界使用的最小Adapter。 */
 export type ProjectManifestAdapter = {
   access(filePath: string): Promise<void>
-  mkdir(filePath: string, options: { readonly recursive: boolean }): Promise<string | undefined | void>
+  mkdir(filePath: string, options: { readonly recursive: boolean }): Promise<string | undefined>
   open(filePath: string, flags: 'wx'): Promise<FileHandle>
   readFile(filePath: string): Promise<Buffer>
   rename(oldPath: string, newPath: string): Promise<void>

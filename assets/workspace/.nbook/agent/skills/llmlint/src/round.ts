@@ -155,7 +155,7 @@ export function loadLedger(cwd: string): Ledger | null {
     parsed = JSON.parse(readFileSync(filePath, 'utf-8')) as unknown
   }
   catch (error) {
-    throw new Error(`${filePath} 不是合法 JSON：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${filePath} 不是合法 JSON：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   const ledger = readObject(parsed, '台账', LEDGER_KEYS)
   if (ledger.version !== LEDGER_VERSION) {

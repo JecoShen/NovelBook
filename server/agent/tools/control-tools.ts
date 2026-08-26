@@ -202,7 +202,7 @@ export function createReportResultTool(parameters: TSchema, options: {
         }
         catch (error) {
           const message = error instanceof Error ? error.message : String(error)
-          throw new Error(`report_result.data 校验失败：${message}`)
+          throw new Error(`report_result.data 校验失败：${message}`, { cause: error })
         }
       }
       return {

@@ -68,7 +68,7 @@ export async function openSqliteVecDatabase(input: {
       database.close()
     }
     catch (closeError) {
-      throw new AggregateError([error, closeError], 'SQLite 初始化失败，且释放数据库 handle 时再次失败。')
+      throw new AggregateError([error, closeError], 'SQLite 初始化失败，且释放数据库 handle 时再次失败。', { cause: closeError })
     }
     throw error
   }

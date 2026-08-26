@@ -249,6 +249,7 @@ export async function installDesktopFromLocalDepot(options: DesktopLocalDepot): 
       throw new AggregateError(
         [error, ...rollbackErrors],
         'Desktop 安装失败，且一个或多个本事务路径无法完整回滚。',
+        { cause: error },
       )
     }
     throw error
@@ -875,7 +876,7 @@ async function readUserPath(): Promise<UserPathValue> {
     result = await runCaptureResult('reg.exe', ['QUERY', 'HKCU\\Environment', '/v', 'Path'])
   }
   catch (error) {
-    throw new Error(`读取用户 PATH 失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`读取用户 PATH 失败：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   if (result.signal || result.exitCode !== 0) {
     const output = `${result.stdout}\n${result.stderr}`
@@ -917,7 +918,7 @@ async function readWindowsInstallLocation(hive: 'HKCU' | 'HKLM'): Promise<string
     result = await runCaptureResult('reg.exe', ['QUERY', key, '/v', 'InstallLocation'])
   }
   catch (error) {
-    throw new Error(`读取 ${hive} Desktop 卸载项失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`读取 ${hive} Desktop 卸载项失败：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   if (result.signal) {
     throw new Error(`读取 ${hive} Desktop 卸载项被信号中断：${result.signal}`)
@@ -1206,7 +1207,7 @@ async function resolveSystemProvider(
     result = await runCaptureResult(command, ['--version'])
   }
   catch (error) {
-    throw new Error(`${label} 不可用，请先安装并加入 PATH：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${label} 不可用，请先安装并加入 PATH：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   if (result.exitCode !== 0 || result.signal) {
     throw new Error(`${label} 不可用，请先安装并加入 PATH：${result.stderr.trim() || '版本检查失败'}`)
@@ -1295,7 +1296,7 @@ async function ensureTrackedDirectory(
   }
   catch (error) {
     if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'EEXIST') {
-      throw new Error(`Desktop 用户 Root 在安装事务期间被其它进程创建；拒绝接管：${path}`)
+      throw new Error(`Desktop 用户 Root 在安装事务期间被其它进程创建；拒绝接管：${path}`, { cause: error })
     }
     throw error
   }
@@ -1385,7 +1386,7 @@ async function assertInstallationScopeWritable(root: string, scope: 'user' | 'ma
     await rm(probe, { force: true })
   }
   catch (error) {
-    throw new Error(`全局安装需要管理员权限写入 ${parent}；请使用提升权限的 Manager GUI 重试。原因：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`全局安装需要管理员权限写入 ${parent}；请使用提升权限的 Manager GUI 重试。原因：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
 }
 

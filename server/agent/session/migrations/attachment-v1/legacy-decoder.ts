@@ -35,7 +35,7 @@ export function decodeLegacySession(input: { sourcePath: string, text: string })
       parsed = JSON.parse(line) as JsonNode
     }
     catch (error) {
-      throw new Error(`${input.sourcePath}:${String(index + 1)} JSON 无法解析：${errorMessage(error)}`)
+      throw new Error(`${input.sourcePath}:${String(index + 1)} JSON 无法解析：${errorMessage(error)}`, { cause: error })
     }
     if (!isObject(parsed)) {
       throw new Error(`${input.sourcePath}:${String(index + 1)} record 必须是对象`)
@@ -51,7 +51,7 @@ export function decodeLegacySession(input: { sourcePath: string, text: string })
       result = migrateRecord(parsed, attachments, referenced)
     }
     catch (error) {
-      throw new Error(`${input.sourcePath}:${String(index + 1)} ${errorMessage(error)}`)
+      throw new Error(`${input.sourcePath}:${String(index + 1)} ${errorMessage(error)}`, { cause: error })
     }
     images += result.images
     bytes += result.bytes
@@ -330,7 +330,7 @@ function validateStoredRecords(records: JsonObject[], sourcePath: string): void 
           parseStoredMessage(entry.message)
         }
         catch (error) {
-          throw new Error(`${sourcePath}: 迁移后 stored message 无效：${errorMessage(error)}`)
+          throw new Error(`${sourcePath}: 迁移后 stored message 无效：${errorMessage(error)}`, { cause: error })
         }
       }
       if (entry.type === 'custom' && entry.key === FOLLOW_UP_QUEUE_KEY) {
@@ -338,7 +338,7 @@ function validateStoredRecords(records: JsonObject[], sourcePath: string): void 
           parseFollowUpQueue(entry.value)
         }
         catch (error) {
-          throw new Error(`${sourcePath}: 迁移后 follow-up queue 无效：${errorMessage(error)}`)
+          throw new Error(`${sourcePath}: 迁移后 follow-up queue 无效：${errorMessage(error)}`, { cause: error })
         }
       }
     }

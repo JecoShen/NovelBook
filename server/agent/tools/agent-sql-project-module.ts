@@ -552,7 +552,7 @@ async function executeWithClient(client: ProjectAgentSqlClient, normalized: stri
     return toExecuteSqlResult(normalized, rows, result.rowsAffected || rows.length)
   }
   catch (error) {
-    throw new Error(buildAgentSqlErrorMessage(error))
+    throw new Error(buildAgentSqlErrorMessage(error), { cause: error })
   }
 }
 

@@ -150,10 +150,10 @@ export class PassportJobManager {
       catch (error) {
         const fetchError = error as FetchError<{ message?: string, data?: { error?: string } }>
         if (fetchError?.data?.data?.error === 'quota_exceeded') {
-          throw new Error('云端备份配额不足：请在官方站或下方列表删除旧备份后重试')
+          throw new Error('云端备份配额不足：请在官方站或下方列表删除旧备份后重试', { cause: error })
         }
         if (fetchError?.data?.data?.error === 'storage_capacity_exceeded') {
-          throw new Error('官方站存储空间不足，请删除旧文件或稍后重试')
+          throw new Error('官方站存储空间不足，请删除旧文件或稍后重试', { cause: error })
         }
         throw error
       }

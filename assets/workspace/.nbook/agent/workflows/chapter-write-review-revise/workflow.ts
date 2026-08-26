@@ -131,7 +131,7 @@ export default {
         body = await wf.workspace.read(chapterPath)
       }
       catch (error) {
-        throw new Error(`读取章节正文失败：${chapterPath}（${error instanceof Error ? error.message : String(error)}）`)
+        throw new Error(`读取章节正文失败：${chapterPath}（${error instanceof Error ? error.message : String(error)}）`, { cause: error })
       }
       if (!body.trim()) {
         throw new Error(`章节正文为空：${chapterPath}，writer 可能没有写入目标文件`)
@@ -229,7 +229,7 @@ export default {
       finalBody = await wf.workspace.read(chapterPath)
     }
     catch (error) {
-      throw new Error(`定稿读取章节正文失败：${chapterPath}（${error instanceof Error ? error.message : String(error)}）`)
+      throw new Error(`定稿读取章节正文失败：${chapterPath}（${error instanceof Error ? error.message : String(error)}）`, { cause: error })
     }
     wf.chart.node('final', '定稿完成')
     wf.chart.move(currentNode, 'final', { label: converged ? '已收敛' : '达到轮数上限' })

@@ -223,7 +223,7 @@ async function assertDirectory(filePath: string, message: string): Promise<void>
   }
   catch (error) {
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
-      throw new Error(`${message}：${displayPath(filePath)}`)
+      throw new Error(`${message}：${displayPath(filePath)}`, { cause: error })
     }
     throw error
   }

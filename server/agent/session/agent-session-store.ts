@@ -245,6 +245,7 @@ export async function acquireReadyAgentSessionStore(rootWorkspace: string): Prom
       throw new AggregateError(
         [asError(error), asError(releaseError)],
         'Agent Session Store启动失败且lease清理不完整。',
+        { cause: releaseError },
       )
     }
     throw error

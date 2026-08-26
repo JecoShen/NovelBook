@@ -671,7 +671,7 @@ function parseManifest(text: string): ProductRuntimeImageManifest {
     value = JSON.parse(text)
   }
   catch (error) {
-    throw new Error(`Product Runtime Image manifest 不是有效 JSON：${String(error)}`)
+    throw new Error(`Product Runtime Image manifest 不是有效 JSON：${String(error)}`, { cause: error })
   }
   const record = plainObject(value, 'runtime-image manifest')
   assertExactKeys(record, [
@@ -791,7 +791,7 @@ function parseReadyMarker(text: string): ReadyMarker {
     value = JSON.parse(text)
   }
   catch (error) {
-    throw new Error(`Product Runtime Image ready marker 不是有效 JSON：${String(error)}`)
+    throw new Error(`Product Runtime Image ready marker 不是有效 JSON：${String(error)}`, { cause: error })
   }
   const marker = plainObject(value, 'runtime-image ready marker')
   assertExactKeys(marker, ['schema', 'imageId', 'manifestSha256'], 'runtime-image ready marker')

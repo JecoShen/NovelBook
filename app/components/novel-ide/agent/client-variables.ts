@@ -9,7 +9,7 @@ type RuntimeI18n = {
   t: (key: string, params?: { [key: string]: string | number }) => string
 }
 
-type ClientVariableSetterResult = void | boolean | Promise<void | boolean>
+type ClientVariableSetterResult = undefined | boolean | Promise<undefined | boolean>
 type ClientVariablePatchOptions = {
   setActivePanel?: (value: NovelIdeTab | null) => ClientVariableSetterResult
   setTheme?: (value: string) => ClientVariableSetterResult

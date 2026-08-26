@@ -176,7 +176,7 @@ function parseRecords(sourcePath: string, text: string): JsonObject[] {
       value = JSON.parse(line) as JsonNode
     }
     catch (error) {
-      throw new Error(`${sourcePath}:${String(index + 1)} JSON 无法解析：${errorMessage(error)}`)
+      throw new Error(`${sourcePath}:${String(index + 1)} JSON 无法解析：${errorMessage(error)}`, { cause: error })
     }
     const record = objectValue(value)
     if (!record) {
@@ -1444,7 +1444,7 @@ function validateTarget(records: JsonObject[], context: MigrationContext): void 
         parseStoredMessage(entry.message)
       }
       catch (error) {
-        throw new Error(`${context.sourcePath}: target stored message 无效：${errorMessage(error)}`)
+        throw new Error(`${context.sourcePath}: target stored message 无效：${errorMessage(error)}`, { cause: error })
       }
     }
     if (entry.type === 'custom' && entry.key === FOLLOW_UP_QUEUE_KEY && entry.value !== null) {
@@ -1452,7 +1452,7 @@ function validateTarget(records: JsonObject[], context: MigrationContext): void 
         parseFollowUpQueue(entry.value)
       }
       catch (error) {
-        throw new Error(`${context.sourcePath}: target follow-up queue 无效：${errorMessage(error)}`)
+        throw new Error(`${context.sourcePath}: target follow-up queue 无效：${errorMessage(error)}`, { cause: error })
       }
     }
   }

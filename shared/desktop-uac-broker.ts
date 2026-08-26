@@ -104,7 +104,7 @@ export function parseDesktopUacBrokerLine(line: string): DesktopUacBrokerControl
     value = JSON.parse(line) as unknown
   }
   catch (error) {
-    throw new Error(`Desktop UAC Broker 控制消息不是有效 JSON：${String(error)}`)
+    throw new Error(`Desktop UAC Broker 控制消息不是有效 JSON：${String(error)}`, { cause: error })
   }
   if (!isObject(value)) throw new Error('Desktop UAC Broker 控制消息必须是对象。')
   const root = value as Record<string, unknown>

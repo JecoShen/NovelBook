@@ -95,7 +95,7 @@ async function requestJson(baseUrl: string, pathname: string): Promise<unknown> 
   }
   catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
-    throw new Error(`无法连接 NovelScope：${baseUrl}。请确认本地服务已启动。${detail}`)
+    throw new Error(`无法连接 NovelScope：${baseUrl}。请确认本地服务已启动。${detail}`, { cause: error })
   }
   if (!response.ok) {
     throw new Error(`NovelScope 请求失败（HTTP ${response.status}）：${await responseError(response)}`)

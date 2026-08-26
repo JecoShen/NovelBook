@@ -191,7 +191,7 @@ function readRuntimeRoots(root: string): { state: string, cache: string, desktop
   catch (error) {
     if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
       if (existsSync(join(root, 'desktop', 'desktop-installation.json')) || isCanonicalInstalledRoot(root)) {
-        throw new Error('Installed Desktop 缺少 runtime-locators.json，请通过 Manager Repair 修复。')
+        throw new Error('Installed Desktop 缺少 runtime-locators.json，请通过 Manager Repair 修复。', { cause: error })
       }
       return { state: join(root, 'data'), cache: join(root, '.cache'), desktop: join(root, 'data', '.desktop') }
     }

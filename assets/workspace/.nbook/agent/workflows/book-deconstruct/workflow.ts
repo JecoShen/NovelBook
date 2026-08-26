@@ -67,7 +67,7 @@ export default {
         raw = await wf.workspace.read(book)
       }
       catch (error) {
-        throw new Error(`书稿读取失败：${book}（${error instanceof Error ? error.message : String(error)}）`)
+        throw new Error(`书稿读取失败：${book}（${error instanceof Error ? error.message : String(error)}）`, { cause: error })
       }
     }
     else {
@@ -84,7 +84,7 @@ export default {
         raw = await wf.workspace.read(`${book}/full.md`)
       }
       catch (error) {
-        throw new Error(`书稿读取失败：${book}/full.md（${error instanceof Error ? error.message : String(error)}）`)
+        throw new Error(`书稿读取失败：${book}/full.md（${error instanceof Error ? error.message : String(error)}）`, { cause: error })
       }
     }
     if (!raw.trim()) throw new Error(`书稿为空：${book}`)

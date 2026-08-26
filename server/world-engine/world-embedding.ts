@@ -95,7 +95,7 @@ async function embedTextBatch(model: WorldEmbeddingModel, texts: string[]): Prom
   }
   catch (error) {
     if (isAbortError(error)) {
-      throw new Error(`embedding 请求超时：model=${model.modelId} timeoutMs=${model.timeoutMs} url=${url}`)
+      throw new Error(`embedding 请求超时：model=${model.modelId} timeoutMs=${model.timeoutMs} url=${url}`, { cause: error })
     }
     throw error
   }

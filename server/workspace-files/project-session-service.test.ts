@@ -250,8 +250,8 @@ describe('ProjectSessionService', () => {
     const workspaceRoot = testAbsoluteFsPath('project-session-service', 'workspace-root')
     const prepared = preparedProject(workspaceRoot, 'publication-order')
     const ref = prepared.workspace.ref
-    const listEntered = deferred<void>()
-    const releaseList = deferred<void>()
+    const listEntered = deferred<undefined>()
+    const releaseList = deferred<undefined>()
     const lifecycle = controlLifecycle(prepared, {
       readProjects: vi.fn(async () => {
         listEntered.resolve(undefined)
@@ -295,8 +295,8 @@ describe('ProjectSessionService', () => {
     ]))
     const workspaceRoot = testAbsoluteFsPath('project-session-service', 'workspace-root')
     const prepared = preparedProject(workspaceRoot, 'shutdown-abort')
-    const updateEntered = deferred<void>()
-    const abortUpdate = deferred<void>()
+    const updateEntered = deferred<undefined>()
+    const abortUpdate = deferred<undefined>()
     const lifecycle = controlLifecycle(prepared, {
       updateMetadata: vi.fn(async () => {
         updateEntered.resolve(undefined)
@@ -324,7 +324,7 @@ describe('ProjectSessionService', () => {
   })
 
   it('opening required Module等待AbortSignal时，显式close从handoff直接取消generation', async () => {
-    const moduleStarted = deferred<void>()
+    const moduleStarted = deferred<undefined>()
     restores.push(replaceProjectModulesForTest([
       immediateModule('database'),
       {
@@ -421,10 +421,10 @@ describe('ProjectSessionService', () => {
     const workspaceRoot = testAbsoluteFsPath('project-session-service', 'workspace-root')
     const prepared = preparedProject(workspaceRoot, 'maintenance-data-plane')
     const runtime = new ProjectSessionRuntime()
-    const updateEntered = deferred<void>()
-    const releaseUpdate = deferred<void>()
-    const sweepEntered = deferred<void>()
-    const releaseSweep = deferred<void>()
+    const updateEntered = deferred<undefined>()
+    const releaseUpdate = deferred<undefined>()
+    const sweepEntered = deferred<undefined>()
+    const releaseSweep = deferred<undefined>()
     const lifecycle = controlLifecycle(prepared, {
       updateMetadata: vi.fn(async (input, access) => {
         if (!access || access.kind !== 'borrowed') {

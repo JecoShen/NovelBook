@@ -1448,7 +1448,7 @@ async function replaceFileWithRollback(sourcePath: string, targetPath: string): 
       catch (restoreError) {
         const replaceMessage = error instanceof Error ? error.message : String(error)
         const restoreMessage = restoreError instanceof Error ? restoreError.message : String(restoreError)
-        throw new Error(`替换文件失败，且恢复备份失败。备份已保留在 ${backupPath}。replace error: ${replaceMessage}; restore error: ${restoreMessage}`)
+        throw new Error(`替换文件失败，且恢复备份失败。备份已保留在 ${backupPath}。replace error: ${replaceMessage}; restore error: ${restoreMessage}`, { cause: restoreError })
       }
     }
     else if (!hadOriginal) {

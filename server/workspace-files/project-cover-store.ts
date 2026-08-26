@@ -92,7 +92,7 @@ export class ProjectCoverStore {
         await fs.rm(temporary, { force: true })
       }
       catch (cleanupError) {
-        throw new AggregateError([cause, cleanupError], 'Project 封面发布失败且 transaction temp 未清理')
+        throw new AggregateError([cause, cleanupError], 'Project 封面发布失败且 transaction temp 未清理', { cause: cleanupError })
       }
       throw cause
     }

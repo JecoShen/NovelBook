@@ -523,7 +523,7 @@ export class AgentProfileCatalog implements ProfileReleaseRegistrySink {
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      throw new Error(`profile ${profile.manifest.key} initial 校验失败：${message}`)
+      throw new Error(`profile ${profile.manifest.key} initial 校验失败：${message}`, { cause: error })
     }
   }
 

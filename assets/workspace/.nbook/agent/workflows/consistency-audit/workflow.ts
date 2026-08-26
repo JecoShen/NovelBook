@@ -113,7 +113,7 @@ export default {
         text = await wf.workspace.read(path)
       }
       catch (error) {
-        throw new Error(`章节读取失败：${path}（${error instanceof Error ? error.message : String(error)}）`)
+        throw new Error(`章节读取失败：${path}（${error instanceof Error ? error.message : String(error)}）`, { cause: error })
       }
       if (!text.trim()) throw new Error(`章节正文为空：${path}`)
       chapters.push({ path, text: text.slice(0, 8000) })

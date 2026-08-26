@@ -397,7 +397,7 @@ export async function removeFixtureTree(root: string): Promise<void> {
         throw new AggregateError([error, restoreError], `fixture root 清理失败且无法恢复owner marker：${root}`)
       })
     }
-    throw new AggregateError([error], `fixture root 清理存在失败项：${root}`)
+    throw new AggregateError([error], `fixture root 清理存在失败项：${root}`, { cause: error })
   }
 }
 

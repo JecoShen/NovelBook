@@ -168,7 +168,7 @@ async function readRuntimeImageIdentity(imageRoot) {
     value = JSON.parse(await readFile(resolve(imageRoot, 'runtime-image.json'), 'utf8'))
   }
   catch (error) {
-    throw new Error(`Product Runtime Image manifest 无法读取：${String(error)}`)
+    throw new Error(`Product Runtime Image manifest 无法读取：${String(error)}`, { cause: error })
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Product Runtime Image manifest 必须是对象。')
@@ -233,7 +233,7 @@ async function resolveCurrentStage() {
     value = JSON.parse(await readFile(ACCEPTANCE_POINTER, 'utf8'))
   }
   catch (error) {
-    throw new Error(`没有可用 Product 验收实例，请先运行 bun run product:stage：${String(error)}`)
+    throw new Error(`没有可用 Product 验收实例，请先运行 bun run product:stage：${String(error)}`, { cause: error })
   }
   if (!value || typeof value !== 'object' || Array.isArray(value) || typeof value.path !== 'string') {
     throw new Error('Product 验收实例 pointer 无效。')
@@ -270,7 +270,7 @@ async function readOwner(stageRoot) {
     value = JSON.parse(await readFile(resolve(stageRoot, OWNER_FILE), 'utf8'))
   }
   catch (error) {
-    throw new Error(`Product 验收实例 owner 无法读取：${String(error)}`)
+    throw new Error(`Product 验收实例 owner 无法读取：${String(error)}`, { cause: error })
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Product 验收实例 owner 无效。')

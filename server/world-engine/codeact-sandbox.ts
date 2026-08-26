@@ -140,7 +140,7 @@ export async function executeCodeAct(
     if (error instanceof Error) {
       throw error
     }
-    throw new Error(String(error))
+    throw new Error(String(error), { cause: error })
   }
 }
 

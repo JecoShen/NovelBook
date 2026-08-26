@@ -536,7 +536,7 @@ export function parseReleaseBuild(text: string): ReleaseBuild {
     value = JSON.parse(text) as unknown
   }
   catch (error) {
-    throw new Error('Release build metadata 不是有效 JSON：' + String(error))
+    throw new Error('Release build metadata 不是有效 JSON：' + String(error), { cause: error })
   }
   const record = plainObject(value, 'Release build metadata')
   const baseKeys = ['schema', 'kind', 'buildId', 'version', 'revision', 'dirty', 'lockfileSha256']

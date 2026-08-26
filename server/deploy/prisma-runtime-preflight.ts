@@ -144,7 +144,7 @@ async function runPreflightCommand(
     if (error instanceof Error && error.message.startsWith(`${label} `)) {
       throw error
     }
-    throw new Error(`${label} 失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${label} 失败：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
 }
 

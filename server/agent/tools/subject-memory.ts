@@ -169,7 +169,7 @@ function parseJsonl(content: string, filePath: string): unknown[] {
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      throw new Error(`${filePath}:${index + 1} 不是合法 JSON：${message}`)
+      throw new Error(`${filePath}:${index + 1} 不是合法 JSON：${message}`, { cause: error })
     }
   })
   return values

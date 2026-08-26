@@ -102,7 +102,7 @@ export async function relativeRealPathInside(
       }
       const parent = path.dirname(existingPath)
       if (parent === existingPath) {
-        throw new Error(`找不到可验证的目标父目录：${target}`)
+        throw new Error(`找不到可验证的目标父目录：${target}`, { cause: error })
       }
       missingSegments.unshift(path.basename(existingPath))
       existingPath = parent as AbsoluteFsPath

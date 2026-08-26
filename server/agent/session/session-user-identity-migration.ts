@@ -47,7 +47,7 @@ export async function migrateSessionUserIdentities(filePath: string): Promise<Se
   }
   catch (error) {
     await rm(temporaryPath, { force: true })
-    throw new Error(`Session 用户身份迁移失败（${filePath}）：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`Session 用户身份迁移失败（${filePath}）：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   return result
 }
@@ -284,7 +284,7 @@ function parseJsonl(source: string): Array<{ record: unknown, newline: string }>
       result.push({ record: JSON.parse(line) as unknown, newline })
     }
     catch (error) {
-      throw new Error(`Session JSONL 第${String(index / 2 + 1)}行不是有效 JSON：${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`Session JSONL 第${String(index / 2 + 1)}行不是有效 JSON：${error instanceof Error ? error.message : String(error)}`, { cause: error })
     }
   }
   return result

@@ -80,6 +80,7 @@ export function requireInstalledManifest(
   catch (error) {
     throw new Error(
       `Installed Desktop Installation Manifest 无法读取，请通过 Manager Repair 修复：${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     )
   }
   let manifest: DesktopInstallationManifest
@@ -89,6 +90,7 @@ export function requireInstalledManifest(
   catch (error) {
     throw new Error(
       `Installed Desktop Installation Manifest 无效，请通过 Manager Repair 修复：${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     )
   }
   const expectedRoot = manifest.installationScope === 'machine'

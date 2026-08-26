@@ -97,13 +97,13 @@ export function loadUserSettings(): UserSettings {
     parsed = JSON.parse(readFileSync(filePath, 'utf-8')) as unknown
   }
   catch (error) {
-    throw new Error(`${filePath} 不是合法 settings.json：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${filePath} 不是合法 settings.json：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   try {
     return normalizeSettings(parsed)
   }
   catch (error) {
-    throw new Error(`${filePath} 配置非法：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${filePath} 配置非法：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
 }
 

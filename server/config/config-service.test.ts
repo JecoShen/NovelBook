@@ -55,7 +55,7 @@ describe('config service', { timeout: 30_000 }, () => {
         await isolatedAssets.dispose()
       }
       catch (disposeError) {
-        throw new AggregateError([error, disposeError], 'Config test suite 初始化与 fixture 清理均失败')
+        throw new AggregateError([error, disposeError], 'Config test suite 初始化与 fixture 清理均失败', { cause: disposeError })
       }
       finally {
         restoreStateRoot()

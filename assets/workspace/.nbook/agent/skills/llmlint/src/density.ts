@@ -77,7 +77,7 @@ function collectHits(ctx: ScanContext, view: string, rule: DensityRuleRecord, wi
       regex = new RegExp(pattern.target, ensureGlobalFlags(pattern.flags))
     }
     catch (error) {
-      throw new Error(`规则 ${rule.id} 的密度 pattern 无效: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`规则 ${rule.id} 的密度 pattern 无效: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
     }
     let match: RegExpExecArray | null
     while ((match = regex.exec(view)) !== null) {

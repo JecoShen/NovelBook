@@ -307,6 +307,7 @@ export async function recoverFailedOperation(
     throw new AggregateError(
       [failure, recoveryError],
       'Manager 操作失败，自动恢复也未完成；已保留 Operation Journal、staging 与 backup。',
+      { cause: recoveryError },
     )
   }
 }

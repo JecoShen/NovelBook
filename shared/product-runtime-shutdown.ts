@@ -75,6 +75,7 @@ export async function shutdownNativeProduct(
     throw new AggregateError(
       [asError(gracefulFailure), asError(forceFailure)],
       'Product graceful shutdown 与强制收口均失败',
+      { cause: forceFailure },
     )
   }
   return 'forced'

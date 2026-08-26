@@ -67,7 +67,7 @@ function outputSchemaFromInitial(initial: JsonValue | null): TSchema | undefined
     Compile(schema)
   }
   catch (error) {
-    throw new Error(`adhoc.outputSchema 无法编译：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`adhoc.outputSchema 无法编译：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   return schema as TSchema
 }

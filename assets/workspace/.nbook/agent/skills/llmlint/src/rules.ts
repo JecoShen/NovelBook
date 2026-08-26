@@ -340,7 +340,7 @@ async function readJson(filePath: string, sourceLabel: string): Promise<unknown>
   }
   catch (error) {
     if (error instanceof SyntaxError) {
-      throw new Error(`${sourceLabel} 不是合法 JSON：${error.message}`)
+      throw new Error(`${sourceLabel} 不是合法 JSON：${error.message}`, { cause: error })
     }
     throw error
   }

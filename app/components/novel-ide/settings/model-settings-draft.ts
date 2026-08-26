@@ -513,7 +513,7 @@ function parseJsonObject(value: string, label: string): Record<string, unknown> 
     return parsed as Record<string, unknown>
   }
   catch (error) {
-    throw new Error(`${label} JSON 无效：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${label} JSON 无效：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
 }
 

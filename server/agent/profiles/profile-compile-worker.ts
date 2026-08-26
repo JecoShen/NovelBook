@@ -775,7 +775,7 @@ function resolvePackageUrl(requireRoot: string, specifier: string, productRuntim
   catch (error) {
     if (productRuntime) {
       const message = error instanceof Error ? error.message : String(error)
-      throw new Error(`Product runtime 缺少 tsx vendor：无法从 .output/server/node_modules 解析 ${specifier}。请确认 product:stage 已复制 tsx。原始错误：${message}`)
+      throw new Error(`Product runtime 缺少 tsx vendor：无法从 .output/server/node_modules 解析 ${specifier}。请确认 product:stage 已复制 tsx。原始错误：${message}`, { cause: error })
     }
     throw error
   }

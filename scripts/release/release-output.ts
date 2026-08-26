@@ -248,7 +248,7 @@ function parsePackageVersion(text: string, source: string): string {
     value = JSON.parse(text) as unknown
   }
   catch (error) {
-    throw new Error(`${source} 不是有效 JSON：${String(error)}`)
+    throw new Error(`${source} 不是有效 JSON：${String(error)}`, { cause: error })
   }
   if (!value || typeof value !== 'object' || Array.isArray(value) || !('version' in value)
     || typeof value.version !== 'string' || !value.version) {

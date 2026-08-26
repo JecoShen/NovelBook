@@ -836,7 +836,7 @@ async function showGuide(options: GlobalOptions): Promise<void> {
       verdicts = parseRuleVerdicts(readFileSync(profilePath, 'utf-8'))
     }
     catch (error) {
-      throw new Error(`profile 报告解析失败: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`profile 报告解析失败: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
     }
   }
   // guide 只有 markdown 一种形态：产物本身就是要贴进提示词的散文，JSON 包装没有消费者。

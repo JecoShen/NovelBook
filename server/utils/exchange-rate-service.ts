@@ -101,7 +101,7 @@ export class ExchangeRateService {
       if (previous) {
         return this.publicResult(previous, true)
       }
-      throw new Error(`刷新 USD/CNY 汇率失败：${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`刷新 USD/CNY 汇率失败：${error instanceof Error ? error.message : String(error)}`, { cause: error })
     }
   }
 

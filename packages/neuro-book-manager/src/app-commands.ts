@@ -164,6 +164,7 @@ export async function terminateFailedLaunch(launch: ApplicationLaunch, failure: 
     throw new AggregateError(
       [failure, terminationError],
       'Manager 操作失败，且候选 Application 无法确认终止；已保留 Operation Journal，未执行状态回滚。',
+      { cause: terminationError },
     )
   }
 }

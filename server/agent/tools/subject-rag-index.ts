@@ -554,7 +554,7 @@ async function embedTextBatch(model: RagEmbeddingModel, texts: string[]): Promis
   }
   catch (error) {
     if (isAbortError(error)) {
-      throw new Error(`embedding 请求超时：model=${model.modelId} timeoutMs=${String(model.timeoutMs ?? 0)} url=${url}`)
+      throw new Error(`embedding 请求超时：model=${model.modelId} timeoutMs=${String(model.timeoutMs ?? 0)} url=${url}`, { cause: error })
     }
     throw error
   }

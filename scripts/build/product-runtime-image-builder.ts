@@ -710,7 +710,7 @@ function packageVersion(text: string, source: string): string {
     value = JSON.parse(text)
   }
   catch (error) {
-    throw new Error(`${source} 不是有效 JSON：${String(error)}`)
+    throw new Error(`${source} 不是有效 JSON：${String(error)}`, { cause: error })
   }
   const record = plainObject(value, source)
   if (typeof record.version !== 'string' || !record.version) {
@@ -737,7 +737,7 @@ async function runCapture(command: string, args: string[], cwd: string): Promise
     return result.stdout
   }
   catch (error) {
-    throw new Error(`执行 ${command} ${args.join(' ')} 失败：${String(error)}`)
+    throw new Error(`执行 ${command} ${args.join(' ')} 失败：${String(error)}`, { cause: error })
   }
 }
 

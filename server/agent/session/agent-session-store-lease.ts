@@ -197,10 +197,12 @@ export function acquireAgentSessionStoreLeaseSync(
       release()
     }
     catch (releaseError) {
-      throw new AggregateError(
+      const aggregate = new AggregateError(
         [asError(error), asError(releaseError)],
         'Session Store lease owner写入失败且锁未能释放。',
       )
+      ;(aggregate as Error & { cause?: unknown }).cause = error
+      throw aggregate
     }
     throw error
   }
@@ -279,10 +281,12 @@ async function writeLeaseOwner(
       await lease.release()
     }
     catch (releaseError) {
-      throw new AggregateError(
+      const aggregate = new AggregateError(
         [asError(error), asError(releaseError)],
         'Session Store lease owner写入失败且锁未能释放。',
       )
+      ;(aggregate as Error & { cause?: unknown }).cause = error
+      throw aggregate
     }
     throw error
   }

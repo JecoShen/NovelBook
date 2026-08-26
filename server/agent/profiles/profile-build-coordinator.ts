@@ -296,7 +296,7 @@ export class ProfileBuildCoordinator implements AgentProfileBuildCoordinatorPort
         await this.input.catalog.refreshRuntimeRegistry('profile_build_failed')
       }
       catch (refreshError) {
-        throw new AggregateError([error, refreshError], 'Profile 构建失败且 Registry 恢复失败')
+        throw new AggregateError([error, refreshError], 'Profile 构建失败且 Registry 恢复失败', { cause: refreshError })
       }
       throw error
     }

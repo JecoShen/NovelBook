@@ -96,7 +96,7 @@ export async function migrateSessionJsonlModels(
   }
   catch (error) {
     await rm(temporaryPath, { force: true })
-    throw new Error(`Session model脱敏迁移失败（${filePath}）：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`Session model脱敏迁移失败（${filePath}）：${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   return { changed: true, modelChanges, artifacts, removedArtifacts, usedMappings: [...usedMappings] }
 }
@@ -128,7 +128,7 @@ function parseJsonl(source: string): Array<{ record: unknown, newline: string }>
       result.push({ record: JSON.parse(line) as unknown, newline })
     }
     catch (error) {
-      throw new Error(`Session JSONL第${String(index / 2 + 1)}行不是有效JSON：${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`Session JSONL第${String(index / 2 + 1)}行不是有效JSON：${error instanceof Error ? error.message : String(error)}`, { cause: error })
     }
   }
   return result

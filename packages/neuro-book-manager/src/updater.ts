@@ -290,7 +290,7 @@ export async function updateInstallation(input: UpdateOptions): Promise<UpdateRe
             })
           }
           catch (error) {
-            throw new Error(`Source Dev 已 fast-forward 到 ${gitTarget.targetRevision}，但依赖安装失败。Operation journal 已保留；修复网络或 lockfile 问题后重新执行 update。\n${String(error)}`)
+            throw new Error(`Source Dev 已 fast-forward 到 ${gitTarget.targetRevision}，但依赖安装失败。Operation journal 已保留；修复网络或 lockfile 问题后重新执行 update。\n${String(error)}`, { cause: error })
           }
         }
       }

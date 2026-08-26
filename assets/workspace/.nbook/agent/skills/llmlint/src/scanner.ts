@@ -36,7 +36,7 @@ export function scanWithContext(ctx: ScanContext, rules: RegexRuleRecord[]): Iss
         regex = new RegExp(target, ensureGlobalFlags(rule.detector.flags))
       }
       catch (error) {
-        throw new Error(`规则 ${rule.id} 的正则无效: ${error instanceof Error ? error.message : String(error)}`)
+        throw new Error(`规则 ${rule.id} 的正则无效: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
       }
 
       let match: RegExpExecArray | null
