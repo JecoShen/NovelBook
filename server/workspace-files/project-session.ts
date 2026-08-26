@@ -46,7 +46,7 @@ import 'nbook/server/agent/tools/agent-sql-project-module'
 export { isProjectNotOpenError, PROJECT_GRACE_MS, ProjectNotOpenError }
 export type { ProjectOpener, ProjectOperationStart, ReadyProjectSessionRef }
 
-const MAINTENANCE_INTERVAL_MS = 30_000
+const MAINTENANCE_INTERVAL_MS = 300_000 // 5min project session maintenance interval
 
 type ProjectSessionGlobalState = {
   lifecycle: ProjectLifecycle | null
