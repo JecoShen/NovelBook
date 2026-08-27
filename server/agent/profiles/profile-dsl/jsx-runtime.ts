@@ -58,36 +58,34 @@ export function createElement(type: keyof typeof components | typeof Fragment | 
   return component(props as never)
 }
 
-export namespace JSX {
-  export type Element = ProfileDslNode
-  export interface IntrinsicElements {
-    ProfilePrompt: Parameters<typeof dsl.ProfilePrompt>[0]
-    System: Parameters<typeof dsl.System>[0]
-    HistorySet: Parameters<typeof dsl.HistorySet>[0]
-    ModelContext: Parameters<typeof dsl.ModelContext>[0]
-    AppendingSet: Parameters<typeof dsl.AppendingSet>[0]
-    FileChangeNotice: Parameters<typeof dsl.FileChangeNotice>[0]
-    Message: Parameters<typeof dsl.Message>[0]
-    AIMessage: Parameters<typeof dsl.AIMessage>[0]
-    ToolCall: Parameters<typeof dsl.ToolCall>[0]
-    ToolResult: Parameters<typeof dsl.ToolResult>[0]
-    Reminder: Parameters<typeof dsl.Reminder>[0]
-    Watch: Parameters<typeof dsl.Watch>[0]
-    If: Parameters<typeof dsl.If>[0]
-    SystemReminder: Parameters<typeof dsl.SystemReminder>[0]
-    LinkedAgentsSummary: Parameters<typeof dsl.LinkedAgentsSummary>[0]
-    LinkedAgentsReminder: Parameters<typeof dsl.LinkedAgentsReminder>[0]
-    WorkspaceFocusReminder: Parameters<typeof dsl.WorkspaceFocusReminder>[0]
-    ModeAvailabilityReminder: Parameters<typeof dsl.ModeAvailabilityReminder>[0]
-    TaskReminder: Parameters<typeof dsl.TaskReminder>[0]
-    ModeReminder: Parameters<typeof dsl.ModeReminder>[0]
-    ModeSlot: Parameters<typeof dsl.ModeSlot>[0]
-    MentionedSkillsReminder: Record<string, never>
-    AgentCatalog: Parameters<typeof dsl.AgentCatalog>[0]
-    SkillCatalog: Parameters<typeof dsl.SkillCatalog>[0]
-    WorkflowCatalog: Parameters<typeof dsl.WorkflowCatalog>[0]
-    ActivatedSkills: Parameters<typeof dsl.ActivatedSkills>[0]
-    SqlSchemaSummary: Parameters<typeof dsl.SqlSchemaSummary>[0]
-    Import: Parameters<typeof dsl.Import>[0]
-  }
+export type JsxElement = ProfileDslNode
+export interface JsxIntrinsicElements {
+  ProfilePrompt: Parameters<typeof dsl.ProfilePrompt>[0]
+  System: Parameters<typeof dsl.System>[0]
+  HistorySet: Parameters<typeof dsl.HistorySet>[0]
+  ModelContext: Parameters<typeof dsl.ModelContext>[0]
+  AppendingSet: Parameters<typeof dsl.AppendingSet>[0]
+  FileChangeNotice: Parameters<typeof dsl.FileChangeNotice>[0]
+  Message: Parameters<typeof dsl.Message>[0]
+  AIMessage: Parameters<typeof dsl.AIMessage>[0]
+  ToolCall: Parameters<typeof dsl.ToolCall>[0]
+  ToolResult: Parameters<typeof dsl.ToolResult>[0]
+  Reminder: Parameters<typeof dsl.Reminder>[0]
+  Watch: Parameters<typeof dsl.Watch>[0]
+  If: Parameters<typeof dsl.If>[0]
+  SystemReminder: Parameters<typeof dsl.SystemReminder>[0]
+  LinkedAgentsSummary: Parameters<typeof dsl.LinkedAgentsSummary>[0]
+  LinkedAgentsReminder: Parameters<typeof dsl.LinkedAgentsReminder>[0]
+  WorkspaceFocusReminder: Parameters<typeof dsl.WorkspaceFocusReminder>[0]
+  ModeAvailabilityReminder: Parameters<typeof dsl.ModeAvailabilityReminder>[0]
+  TaskReminder: Parameters<typeof dsl.TaskReminder>[0]
+  ModeReminder: Parameters<typeof dsl.ModeReminder>[0]
+  ModeSlot: Parameters<typeof dsl.ModeSlot>[0]
+  MentionedSkillsReminder: Record<string, never>
+  AgentCatalog: Parameters<typeof dsl.AgentCatalog>[0]
+  SkillCatalog: Parameters<typeof dsl.SkillCatalog>[0]
+  WorkflowCatalog: Parameters<typeof dsl.WorkflowCatalog>[0]
+  ActivatedSkills: Parameters<typeof dsl.ActivatedSkills>[0]
+  SqlSchemaSummary: Parameters<typeof dsl.SqlSchemaSummary>[0]
+  Import: Parameters<typeof dsl.Import>[0]
 }
