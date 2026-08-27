@@ -1,4 +1,6 @@
-# Task 125 文档站体验走查与内容补全
+> **📌 编号变更** — 本任务原占 `125`, 与 [Task 125-runtime-artifact-storage-lifecycle](../125-runtime-artifact-storage-lifecycle/README.md) 撞号. 改号 `149` 跟踪 (2026-08-27). 决断: 125-runtime-artifact-storage-lifecycle 留 125 (8 处 cross-ref: PROJECT-STATUS.md + ADR 0002 + 5 task README 全部指向它), 本任务让位 (0 外部 cross-ref). 详细论据见 commit message.
+
+# Task 149 文档站体验走查与内容补全
 
 ## 用户需求
 
