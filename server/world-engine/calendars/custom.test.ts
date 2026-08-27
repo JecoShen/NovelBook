@@ -83,7 +83,9 @@ describe('CustomCalendar', () => {
   test('format 必须返回字符串', () => {
     const calendar = new CustomCalendar({
       type: 'custom',
-      format: (instant: bigint) => 123 as any, // 返回数字而不是字符串
+      // 返回数字而不是字符串（故意违反类型契约，验证运行时会拦截）
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      format: (instant: bigint) => 123 as any,
       parse: (input: string) => BigInt(0),
     })
 
@@ -94,7 +96,9 @@ describe('CustomCalendar', () => {
     const calendar = new CustomCalendar({
       type: 'custom',
       format: (instant: bigint) => 'x',
-      parse: (input: string) => 123 as any, // 返回数字而不是 bigint
+      // 返回数字而不是 bigint（故意违反类型契约，验证运行时会拦截）
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      parse: (input: string) => 123 as any,
     })
 
     expect(() => calendar.parse('x')).toThrow(/必须返回 bigint/)

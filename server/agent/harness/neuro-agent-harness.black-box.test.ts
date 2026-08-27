@@ -51,6 +51,10 @@ type EventObserver = {
   stop(): Promise<void>
 }
 
+// 测试 helper 透传 runtime 配置 + test 扩展字段（allowedToolKeys 等），通过 spread 重组。
+// 类型契约由内部 defineRuntimeAgentProfile 调用保证；显式声明会强制列举所有字段，
+// 与测试只关心部分字段的实际用法不一致。
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function defineAgentProfile(profile: any): ReturnType<typeof defineRuntimeAgentProfile> {
   const {
     allowedToolKeys,

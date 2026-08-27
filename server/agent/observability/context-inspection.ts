@@ -44,7 +44,12 @@ export function timelineDto(entries: readonly PiTraceIndexEntry[]): AgentContext
  *
  * 保留期档位的解析顺序也对齐 pi：显式 `cacheRetention` > `PI_CACHE_RETENTION=long` > 默认 `short`。
  */
-export function resolveModelCacheRetention(model: Model<any>, requestOptions: Record<string, JsonValue>): CacheRetention {
+export function resolveModelCacheRetention(
+  // Model is parameterized by provider API; runtime accepts any provider.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  model: Model<any>,
+  requestOptions: Record<string, JsonValue>,
+): CacheRetention {
   const kind = resolveRetentionKind(requestOptions)
   const api = String(model.api)
   if (api === 'anthropic-messages' || api === 'bedrock-converse-stream') {

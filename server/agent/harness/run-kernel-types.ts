@@ -153,6 +153,8 @@ export type RunFrame = {
   currentProject: ReadyProjectSessionRef | null
   systemPrompt: string
   models: Models
+  // Model is parameterized by provider API; harness runtime accepts any provider.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: Model<any>
   apiKey?: string
   timeoutMs?: number | null
@@ -219,6 +221,8 @@ export type TurnSnapshot = {
   /** 与 modelMessages 前缀对应的分区归因（Task 126）；缺省表示本次调用无 profile prepare 归因。 */
   promptPrefix?: PromptPrefixAttribution
   models: Models
+  // Model is parameterized by provider API; harness runtime accepts any provider.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: Model<any>
   apiKey?: string
   timeoutMs?: number | null

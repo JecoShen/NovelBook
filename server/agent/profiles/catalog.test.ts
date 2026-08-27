@@ -32,6 +32,9 @@ import { messageText } from 'nbook/server/agent/messages/message-utils'
 import { createTestVariableAccessor } from 'nbook/server/agent/variables/test-utils'
 import { createTestRuntimeSession } from 'nbook/server/agent/profiles/test/runtime-session'
 
+// 测试 helper 透传 runtime 配置 + test 扩展字段（allowedToolKeys），通过 spread 重组。
+// 类型契约由内部 defineRuntimeAgentProfile 调用保证。
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function defineAgentProfile(profile: any): ReturnType<typeof defineRuntimeAgentProfile> {
   const {
     allowedToolKeys,

@@ -43,6 +43,15 @@ function mustTool(key: string): NeuroAgentTool {
 
 type WorldIssue = { code: string, subjectId?: string, attr?: string, message: string }
 type ExecuteWorldResult<TData> = { data: TData, issues: WorldIssue[] }
+type SeedPatch = {
+  subjectId: string
+  type?: 'world' | 'faction' | 'location' | 'character'
+  name?: string
+  path: string
+  op: 'append' | 'replace'
+  value: string | number | { text: string }
+  summary: string
+}
 
 const ERROR_ISSUE_CODES = new Set(['dangling-ref', 'broken-relative'])
 
@@ -67,7 +76,7 @@ function reset() {
 async function seed() {
   console.log('📝 写入勇者召唤故事线切面：\n')
 
-  const slices: Array<{ time: string, title: string, kind?: string, patches: any[] }> = [
+  const slices: Array<{ time: string, title: string, kind?: string, patches: SeedPatch[] }> = [
     // ========== Step 1: 纪元锚点 ==========
     {
       time: '复兴纪元1年1月1日 00:00',
@@ -219,7 +228,7 @@ async function seed() {
     },
   ]
 
-  const results: any[] = []
+  const results: ExecuteWorldResult<{ sliceId: string }>[] = []
   for (const slice of slices) {
     const result = await executeWorld<{ sliceId: string }>(`
             const slice = ${JSON.stringify(slice)};

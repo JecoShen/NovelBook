@@ -4,9 +4,12 @@ import { resolveCompactionTriggerTokens, type CompactionOptions } from 'nbook/se
 import type { Model } from 'nbook/server/agent/messages/types'
 import type { PiTraceIndexEntry } from 'nbook/server/agent/observability/pi-request-recorder'
 
+// Test stub: Model<any> is the harness-wide convention since tests cover multiple provider APIs.
+/* eslint-disable @typescript-eslint/no-explicit-any */
 function model(api: string): Model<any> {
   return { api, id: 'm1', provider: 'p' } as unknown as Model<any>
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 function options(partial: Partial<CompactionOptions> = {}): CompactionOptions {
   return {

@@ -1,10 +1,12 @@
 import { z } from 'zod'
 
 // 这里用 any 是为了避免和 profile-template.dto.ts 形成运行时循环；字段仍在本地 schema 中校验。
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const AgentProfilePromptNodeDtoSchema: z.ZodType<any> = z.lazy(() => z.object({
   id: z.string().trim().min(1),
   type: z.string().trim().min(1),
   props: z.record(z.string(), z.json()).default({}),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   children: z.array(AgentProfilePromptNodeDtoSchema as z.ZodType<any>).default([]),
   text: z.string().optional(),
   textKind: z.string().optional(),

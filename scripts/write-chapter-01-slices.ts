@@ -30,7 +30,15 @@ const context: ToolExecutionContext = {
   invocationId: 'chapter-01-slices',
 }
 
-async function writeSlice(slice: { time: string, title: string, kind?: string, patches: any[] }) {
+type Chapter01Patch = {
+  subjectId: string
+  path: string
+  op: 'append' | 'replace'
+  value: { text: string } | string
+  summary: string
+}
+
+async function writeSlice(slice: { time: string, title: string, kind?: string, patches: Chapter01Patch[] }) {
   if (!executeWorldTool?.executeWithContext) {
     throw new Error('缺少 World Engine 工具：execute_world')
   }

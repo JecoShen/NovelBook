@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, watch, type ComponentPublicInstance } from 'vue'
 import FormField from 'nbook/app/components/common/form/FormField.vue'
 import FormInput from 'nbook/app/components/common/form/FormInput.vue'
 import FormSelect from 'nbook/app/components/common/form/FormSelect.vue'
@@ -90,9 +90,10 @@ watch(() => [props.scene?.id, props.manualRefs], () => {
   manualRefsDraft.value = props.manualRefs.map(refItem => ({ ...refItem }))
 }, { immediate: true })
 
-function setRefCardRef(el: any, id: string) {
+function setRefCardRef(el: Element | ComponentPublicInstance | null, id: string) {
   if (el) {
-    refCardRefs.value[id] = el.$el || el
+    const domEl = '$el' in el ? el.$el as HTMLElement : el as HTMLElement
+    refCardRefs.value[id] = domEl
   }
   else {
     Reflect.deleteProperty(refCardRefs.value, id)

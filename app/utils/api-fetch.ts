@@ -4,5 +4,6 @@ export type ApiFetchOptions = {
 } & Record<string, unknown>
 
 export async function apiFetch<T>(request: string, options?: ApiFetchOptions): Promise<T> {
-  return await (globalThis.$fetch as any)(request, options as Parameters<typeof $fetch>[1]) as T
+  const fetcher = globalThis.$fetch as unknown as (...args: unknown[]) => Promise<unknown>
+  return await fetcher(request, options) as T
 }

@@ -16,7 +16,8 @@ declare module 'zod' {
 
 // 扩展 ZodArray 原型
 z.ZodArray.prototype.unique = function () {
-  // 使用 Zod 的元数据系统存储 unique 标记
+  // _def 是 Zod 内部字段，类型未对外暴露；此处扩展需要写回新字段
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (this as any)._def.unique = true
   return this
 }

@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { ProfilePrepareContext, ReadyProjectSessionRef } from 'nbook/profile-sdk'
+import type { NeuroAgentTool } from 'nbook/server/agent/tools/types'
 import { buildWriterPrompt } from './writer.profile'
 import type { Payload, Initial, Settings } from './writer.profile'
 import { invalidateLoreResolverIndex } from 'nbook/server/agent/lore/lore-resolver-cache'
@@ -183,7 +184,7 @@ describe('writer.profile.tsx — lore auto-injection', () => {
     const { createLoreResolverTools } = await import('nbook/server/agent/tools/lore-resolver-tools')
     const tools = createLoreResolverTools()
     const tool = tools[0]!
-    const ctx = { currentProject: project, session: {} } as any
+    const ctx = { currentProject: project, session: {} } as unknown as Parameters<NeuroAgentTool['executeWithContext']>[0]
     const result = await tool.executeWithContext(ctx, 'test-call-id', { extra_triggers: ['陆深', '飞鸟站'] })
     const content = (result as { content: Array<{ text: string }> }).content[0]?.text ?? ''
     expect(content).toContain('陆深')
@@ -193,7 +194,7 @@ describe('writer.profile.tsx — lore auto-injection', () => {
     const { createLoreResolverTools } = await import('nbook/server/agent/tools/lore-resolver-tools')
     const tools = createLoreResolverTools()
     const tool = tools[0]!
-    const ctx = { currentProject: null, session: {} } as any
+    const ctx = { currentProject: null, session: {} } as unknown as Parameters<NeuroAgentTool['executeWithContext']>[0]
     const result = await tool.executeWithContext(ctx, 'test-call-id', { extra_triggers: ['陆深'] })
     const content = (result as { content: Array<{ text: string }> }).content[0]?.text ?? ''
     // 友好提示而不是 throw

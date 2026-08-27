@@ -67,7 +67,12 @@ export class AgentAttachmentCodec {
      * 在单次 Provider 调用前临时 hydrate stored messages。
      * 同一 attachment ID 在本次调用内只读取和编码一次。
      */
-  async hydrateForProvider(messages: readonly StoredAgentMessage[], model: Model<any>): Promise<Message[]> {
+  async hydrateForProvider(
+    messages: readonly StoredAgentMessage[],
+    // Model is parameterized by provider API; runtime accepts any provider.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    model: Model<any>,
+  ): Promise<Message[]> {
     const supportsImage = model.input.includes('image')
     if (!supportsImage) {
       return storedMessagesForText(messages)

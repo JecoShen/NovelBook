@@ -44,6 +44,7 @@ describe('defineAgentRuntime', () => {
       initialSchema: Type.Object({}),
       tools: profileToolsFromKeys(['report_result']),
       // 故意绕过 TS 静态子集校验，覆盖运行时 profile loader 的错误路径。
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       toolKeys: ['read', 'report_result'] as any,
       prepare() {
         return {}

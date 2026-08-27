@@ -121,6 +121,8 @@ export interface RouteMetaEntry {
   /** Zod schema for response body (null to omit) */
   responseBody?: z.ZodType | null
   /** Query parameter definitions (workspace-files GET routes) */
+  // z.ZodObject 形参需保留 any 透传任意 shape（实际由 queryParams: 字段运行时校验）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   queryParams?: z.ZodObject<any> | null
 }
 
