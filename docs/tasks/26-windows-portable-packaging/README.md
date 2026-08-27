@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED** — 已被 [Task 105-unified-installation-manager](../105-unified-installation-manager/README.md) 取代 (Windows Product Launcher: 预构建 `app/` Product Payload + `runtime/bun/` + `launcher/` + 升级保留的 `data/`). 详细说明见下方 blockquote. 本 README 仅作历史存档, 不再更新.
+
 # Windows Portable Packaging
 
 > 本任务保留历史设计与验收记录；当前 Windows Portable 根布局、更新协议、PortableGit/bash 与 `data/` State Root 已由 Task 105 取代，后续实现只更新 Task 105。
