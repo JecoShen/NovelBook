@@ -233,6 +233,7 @@ export default defineConfig({
     'markdown-examples.md',
     'modules/**',
     'research/**',
+    'superpowers/**',
     'tasks/**',
     'writing-mode-world-engine-practice.md'
   ],
