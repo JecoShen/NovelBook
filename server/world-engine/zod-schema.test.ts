@@ -21,7 +21,8 @@ declare module 'zod' {
 }
 
 z.ZodArray.prototype.unique = function () {
-  (this as any)._def.unique = true
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(this as any)._def.unique = true
   return this
 }
 
@@ -275,12 +276,14 @@ describe('Phase 1: Zod Schema Layer', () => {
     test('.unique() 标记数组为 unique', () => {
       const schema = z.array(z.string()).unique()
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((schema as any)._def.unique).toBe(true)
     })
 
     test('非 unique 数组没有标记', () => {
       const schema = z.array(z.string())
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((schema as any)._def.unique).toBeUndefined()
     })
   })

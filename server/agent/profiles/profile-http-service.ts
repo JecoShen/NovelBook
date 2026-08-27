@@ -454,7 +454,10 @@ function systemPromptPreviewMessage(systemPrompt: string): AgentProfilePreparePr
 /**
  * Compaction policy 在工作台预览中作为独立配置卡片展示。
  */
-function compactionPreviewMessage(compaction: ProfileRuntimeSettings['compaction'], model: Model<any> | null): AgentProfilePreparePreviewDto['messages'][number] {
+function compactionPreviewMessage(compaction: ProfileRuntimeSettings['compaction'], model: Model<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+> | null): AgentProfilePreparePreviewDto['messages'][number] {
   const options = resolveCompactionOptions(compaction, model ?? PREVIEW_COMPACTION_MODEL)
   return {
     role: 'compaction',
@@ -487,7 +490,10 @@ const PREVIEW_COMPACTION_MODEL = {
   },
   contextWindow: 128_000,
   maxTokens: 8_000,
-} satisfies Model<any>
+} satisfies Model<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+>
 
 /**
  * 工作台变量面板先展示 profile schema 摘要。
@@ -563,7 +569,10 @@ async function createPreviewVariableRegistry(profile: AgentProfile, globalWorksp
 function resolvePreviewModel(
   config: Awaited<ReturnType<typeof loadPreviewEffectiveConfig>>,
   context: NeuroSessionContext,
-): Model<any> | null {
+): Model<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+> | null {
   try {
     return resolvePiModelFromConfig(config, context.profileKey, context.model
       ? { modelKey: `${context.model.providerConfigId}/${context.model.modelId}` }

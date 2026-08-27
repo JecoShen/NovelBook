@@ -35,6 +35,7 @@ describe('Patch Operations', () => {
       const issue = applyPatch(state, patch, null, new Set())
 
       expect(issue).toBeNull()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((state.equipment as any).head).toBe('subject://helmet-01')
     })
 
@@ -87,6 +88,7 @@ describe('Patch Operations', () => {
     })
 
     test('基准不是数值时报错', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = { hp: '100' as any }
       const patch: PatchInput = {
         subjectId: 'test',
@@ -130,7 +132,9 @@ describe('Patch Operations', () => {
       const issue = applyPatch(state, patch, null, new Set())
 
       expect(issue).toBeNull()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect('head' in (state.equipment as any)).toBe(false)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((state.equipment as any).chest).toBe('armor')
     })
 
@@ -328,6 +332,7 @@ describe('Patch Operations', () => {
       const issue = applyPatch(state, patch, null, new Set())
 
       expect(issue).toBeNull()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((state.equipment.armor as any).chest).toBe('subject://mythril-plate')
     })
 
@@ -395,6 +400,7 @@ describe('Patch Operations', () => {
       const issue = applyPatch(state, patch, null, new Set())
 
       expect(issue).toBeNull()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((state as any)['a/b']['c~d']).toBe(456)
     })
   })
@@ -445,6 +451,7 @@ describe('embedding 字段保护 (Decision #16)', () => {
     const patch: PatchInput = { subjectId: 'erina', op: 'replace', path: '/memory/s2', value: { text: '新' } }
     const issue = applyPatch(state, patch, { kind: 'object' }, new Set())
     expect(issue).toBeNull()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((state.memory as any).s2).toEqual({ text: '新' })
   })
 
@@ -453,6 +460,7 @@ describe('embedding 字段保护 (Decision #16)', () => {
     const patch: PatchInput = { subjectId: 'erina', op: 'append', path: '/events', value: { text: 'e2' } }
     const issue = applyPatch(state, patch, { kind: 'list', itemType: 'object', embedding: 'array' }, new Set())
     expect(issue).toBeNull()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((state.events as any).length).toBe(2)
   })
 })

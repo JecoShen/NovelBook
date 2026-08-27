@@ -67,6 +67,7 @@ export async function compactIfNeeded(input: {
   snapshot: SessionSnapshot
   messages: StoredMessageLike[]
   models: Models
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: Model<any>
   apiKey?: string
   timeoutMs?: number | null
@@ -117,6 +118,7 @@ export async function appendCompaction(input: {
   snapshot: SessionSnapshot
   messages: StoredMessageLike[]
   models: Models
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: Model<any>
   apiKey?: string
   timeoutMs?: number | null
@@ -187,7 +189,10 @@ export async function appendCompaction(input: {
 /**
  * 将 profile compaction plan 解析成当前模型下的执行策略。
  */
-export function resolveCompactionOptions(patch: ProfileCompactionRuntimePatch, model: Model<any>): CompactionOptions {
+export function resolveCompactionOptions(patch: ProfileCompactionRuntimePatch, model: Model<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+>): CompactionOptions {
   const plan = resolveProfileRuntimeSettings(undefined, { compaction: patch }).compaction
   const keepRecentTokens = plan.keepRecent.kind === 'percent'
     ? Math.max(1, Math.floor(model.contextWindow * plan.keepRecent.value))
@@ -250,6 +255,7 @@ export function resolveCompactionTriggerTokens(options: CompactionOptions, conte
 async function generateCompactionSummary(input: {
   messages: StoredMessageLike[]
   models: Models
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: Model<any>
   apiKey?: string
   timeoutMs?: number | null
