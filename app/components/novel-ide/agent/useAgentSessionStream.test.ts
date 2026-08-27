@@ -441,7 +441,7 @@ describe('useAgentSessionStream', () => {
     stream.stop()
     session.reset()
     session.applyRecovery(recovery(2, 9))
-    blocked.resolve()
+    blocked.resolve(undefined)
 
     await expect(started).resolves.toBeUndefined()
     expect(session.recoveryShell.value?.summary.sessionId).toBe(2)

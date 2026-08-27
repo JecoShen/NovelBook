@@ -27,7 +27,7 @@ type ManuscriptStatsSnapshot = {
   updatedAt: string
 }
 
-defineProps<{
+const props = defineProps<{
   node: WorkspaceFileNode | null
   issues: WorkspaceFileIssue[]
   height: number

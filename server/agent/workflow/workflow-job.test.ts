@@ -176,7 +176,7 @@ describe('spawnWorkflowJob cancellation', () => {
 
     markRunning?.()
     await expect(jobs.get(job.jobId)).resolves.toMatchObject({ status: 'running' })
-    terminal.resolve()
+    terminal.resolve(undefined)
     resumed.resolve(completedView)
     await jobs.waitIdle()
 

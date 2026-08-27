@@ -54,6 +54,7 @@ describe('client variable patch', () => {
     await expect(applyClientVariablePatch(replaceRequest('ide.theme', 'missing-theme'), buildState(), {
       setTheme: () => {
         called = true
+        return undefined
       },
     })).rejects.toThrow('client.ide.theme 只能写入')
     expect(called).toBe(false)

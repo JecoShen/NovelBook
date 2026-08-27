@@ -3072,7 +3072,7 @@ function saveLastSessionId(sessionId: number): void {
       @stop="void stopRun()"
       @cycle-mode="void cycleAgentMode()"
       @toggle-session-model-popover="toggleSessionModelPopover"
-      @update-session-model-selection="void updateSessionModelSelection($event)"
+      @update-session-model-selection="(value: string | AgentPendingResolutionDraft | boolean | AgentSessionModelDraft | null) => void updateSessionModelSelection(typeof value === 'string' ? value : null)"
       @apply-session-model-settings="void applySessionModelSettings()"
       @reset-session-model-settings="void resetSessionModelSettings()"
       @reconnect-events="void reconnectActiveSessionEvents()"
