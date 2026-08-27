@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED** — 已被 [Task 118-project-catalog-snapshot-path-integration](../118-project-catalog-snapshot-path-integration/README.md) 取代 (轻量 Project Lifecycle snapshot: 移除 `includeProjectPath` 当 filter / `listNovels()` 三层 5s 缓存 / Server-Timing marks). 详细说明见下方 blockquote. 本 README 仅作历史存档, 不再更新.
+
 # Task 83 Project List Performance
 
 > 当前合同已由 Task 118 的轻量 Project Lifecycle snapshot 取代。本文件保留历史性能诊断与当时的统计缓存方案，不能作为当前 `/api/projects` 行为的说明。
