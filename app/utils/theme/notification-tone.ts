@@ -95,6 +95,9 @@ const STATUS_BG_MIX_RATIO = 0.14
  * `sanitizeNotificationVars(vars, activeThemeAppearance)` 净化的快照以获得正确明暗回退。
  * 输出具体颜色值而不是 var(...) 引用：通知视口位于 .novel-ide-theme 宿主外，
  * 直接写 CSS 变量只会命中 :root 的 sepia fallback，无法跟随当前主题。
+ * WCAG AA 对比度保证仅覆盖 8 套内置主题（notification-tone.test.ts 锁定）。
+ * 自定义主题只经语法校验：若用户把 --text-main 与 --bg-panel 配成相近色，
+ * 本组件与全 IDE 其他消费点同样退化；对比度强制属主题编辑器合同，不在此处兜底。
  */
 export function resolveNotificationToneColor(tone: NotificationTone, vars: ThemeVars): NotificationToneColor {
   const safeVars = sanitizeNotificationVars(vars)
