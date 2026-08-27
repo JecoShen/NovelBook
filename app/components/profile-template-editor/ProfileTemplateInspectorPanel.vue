@@ -4,6 +4,7 @@ import FormInput from 'nbook/app/components/common/form/FormInput.vue'
 import FormSelect from 'nbook/app/components/common/form/FormSelect.vue'
 import FormTextarea from 'nbook/app/components/common/form/FormTextarea.vue'
 import StructuredTextEditor from 'nbook/app/components/common/form/StructuredTextEditor.vue'
+import Tooltip from 'nbook/app/components/common/Tooltip.vue'
 import ProfileTemplateSourcePanel from 'nbook/app/components/profile-template-editor/ProfileTemplateSourcePanel.vue'
 import ProfileTemplateVariableGroups from 'nbook/app/components/profile-template-editor/ProfileTemplateVariableGroups.vue'
 import type {
@@ -174,7 +175,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   <!-- 右侧属性检查器：属性、变量、运行时变量 -->
   <section class="panel flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden">
     <div class="mb-3 flex shrink-0 items-center gap-2 border-b border-[var(--border-color)]">
-      <div class="flex min-w-0 flex-1 overflow-x-auto custom-scrollbar">
+      <div class="flex min-w-0 flex-1 overflow-x-auto custom-scrollbar no-scrollbar">
         <button
           v-for="tab in props.tabs"
           :key="tab.value"
@@ -185,17 +186,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
           {{ tab.label }}
         </button>
       </div>
-      <button
-        type="button"
-        class="panel-icon-btn"
-        title="收起右侧面板"
-        @click="emit('collapse')"
+      <Tooltip
+        text="收起右侧面板"
+        placement="bottom"
       >
-        <span class="i-lucide-panel-right-close h-4 w-4" />
-      </button>
+        <button
+          type="button"
+          class="panel-icon-btn"
+          aria-label="收起右侧面板"
+          @click="emit('collapse')"
+        >
+          <span class="i-lucide-panel-right-close h-4 w-4" />
+        </button>
+      </Tooltip>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-auto pr-1 custom-scrollbar">
+    <div class="min-h-0 flex-1 overflow-auto pr-1 custom-scrollbar no-scrollbar">
       <div
         v-if="props.activeTab === 'source'"
         class="h-full min-h-[520px]"
@@ -494,6 +500,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 </template>
 
 <style scoped>
+.no-scrollbar {
+    scrollbar-width: none;
+    scrollbar-color: transparent transparent;
+    -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
 .panel {
     border: 1px solid var(--border-color);
     border-radius: 8px;
