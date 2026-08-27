@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED** — 本任务已被 [Task 11-portable-project-workspace](../11-portable-project-workspace/README.md) 取代. 当前真实状态是 SQLite-only, Postgres schema/adapter/pool/deploy 已移除. 详细说明见下方 "Current Truth / Superseded Notes" 章节. 本 README 仅作历史存档, 不再更新.
+
 # SQLite-first Database Runtime
 
 > Active task directory format: `NN-kebab-case-name/`. Archived tasks move to `docs/tasks/archived/<task-slug>/`.
