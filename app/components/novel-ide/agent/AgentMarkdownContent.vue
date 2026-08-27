@@ -115,11 +115,13 @@ const safeRenderedHtml = computed(() => clientSanitizer.value(renderedHtml.value
 </script>
 
 <template>
+  <!-- eslint-disable vue/no-v-html -->
   <div
     :class="['agent-markdown', `theme-${MARKDOWN_THEME}`, { 'is-reference-clickable': Boolean(props.openReference) }]"
     @click="handleReferenceClick"
     v-html="safeRenderedHtml"
   />
+  <!-- eslint-enable vue/no-v-html -->
 </template>
 
 <style>

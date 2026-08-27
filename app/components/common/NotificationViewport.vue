@@ -146,11 +146,13 @@ function badgeToneClass(item: NotificationItem): string {
                 >
                   {{ item.title }}
                 </div>
+                <!-- eslint-disable vue/no-v-html -->
                 <div
                   v-if="item.html"
                   class="mt-0.5 text-xs leading-5 text-white/90 [&_a]:underline [&_code]:rounded [&_code]:bg-black/20 [&_code]:px-1 [&_strong]:font-semibold"
                   v-html="safeItemHtml(item)"
                 />
+                <!-- eslint-enable vue/no-v-html -->
                 <div
                   v-else-if="item.message"
                   class="mt-0.5 text-xs leading-5 text-white/90"

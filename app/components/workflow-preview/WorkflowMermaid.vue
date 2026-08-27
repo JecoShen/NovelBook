@@ -30,10 +30,12 @@ const safeSvg = computed(() => result.value?.ok ? clientSanitizer.value(result.v
     class="workflow-mermaid overflow-auto rounded-lg border border-[var(--border-color)] p-3"
     :style="props.maxHeight ? { maxHeight: `${props.maxHeight}px` } : undefined"
   >
+    <!-- eslint-disable vue/no-v-html -->
     <div
       v-if="result?.ok"
       v-html="safeSvg"
     />
+    <!-- eslint-enable vue/no-v-html -->
     <div
       v-else-if="result"
       class="space-y-2"
