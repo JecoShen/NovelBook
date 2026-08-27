@@ -180,7 +180,7 @@ describe('SnapshotCache 基础读取与并发', () => {
     options.maxConcurrentBuilds = 1
     const cache = new SnapshotCache(options)
     await cache.read('alpha')
-    const mutationGate = deferred<void>()
+    const mutationGate = deferred<undefined>()
     let mutationStarted = false
     const mutation = cache.mutate('alpha', async () => {
       mutationStarted = true
@@ -220,7 +220,7 @@ describe('SnapshotCache 基础读取与并发', () => {
 
   it('close 等待活动 mutation settle，并取消同 key 排队 mutation', async () => {
     const cache = new SnapshotCache(cacheOptions(async () => buildResult(1)))
-    const activeGate = deferred<void>()
+    const activeGate = deferred<undefined>()
     let activeStarted = false
     const active = cache.mutate('alpha', async () => {
       activeStarted = true
@@ -870,7 +870,7 @@ describe('SnapshotCache 资源生命周期', () => {
   })
 
   it('closeAll 会等待已经开始的单 key watcher close', async () => {
-    const closeGate = deferred<void>()
+    const closeGate = deferred<undefined>()
     const options = cacheOptions(async () => buildResult(1))
     options.watcher = { open: () => ({ close: () => closeGate.promise }) }
     const cache = new SnapshotCache(options)
@@ -917,7 +917,7 @@ describe('SnapshotCache 资源生命周期', () => {
   })
 
   it('有限资源关闭期间拒绝新的 read/invalidate/subscribe', async () => {
-    const closeGate = deferred<void>()
+    const closeGate = deferred<undefined>()
     const options = cacheOptions(async () => buildResult(1))
     options.watcher = { open: () => ({ close: () => closeGate.promise }) }
     const cache = new SnapshotCache(options)
