@@ -15,6 +15,8 @@ function Ref(targetType: string) {
 
 // 扩展 ZodArray（与 world-engine/schema/index.ts 一致）
 declare module 'zod' {
+  // Type parameters T/Cardinality are required for interface declaration merging
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ZodArray<T extends z.ZodTypeAny, Cardinality extends z.ArrayCardinality = 'many'> {
     unique(): this
   }

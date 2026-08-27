@@ -47,7 +47,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('首写自动创建 subject，并应用 schema default 与 4-op patch', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     const result = await facade.writeSlice({
@@ -81,7 +81,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('同 instant 写入冲突提示合并 patches', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     await facade.writeSlice({
@@ -102,7 +102,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('editSlice 移动到已有 instant 时提示合并 patches', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     const first = await facade.writeSlice({
@@ -130,7 +130,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('createSubject 初始化撞上非 init slice 时提示显式合并初始化 patches', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     await facade.writeSlice({
@@ -150,7 +150,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('EmbeddingText 空容器 default 能初始化后继续写入单条内容', async () => {
-    const projectPath = await createProject(embeddingSchemaSource())
+    const _projectPath = await createProject(embeddingSchemaSource())
     const facade = createFacade()
 
     const result = await facade.writeSlice({
@@ -178,7 +178,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('EmbeddingText 非空整块 replace 仍被拒绝', async () => {
-    const projectPath = await createProject(embeddingSchemaSource())
+    const _projectPath = await createProject(embeddingSchemaSource())
     const facade = createFacade()
 
     const input = {
@@ -213,7 +213,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('EmbeddingText 单条写入拒绝手写 vector/model', async () => {
-    const projectPath = await createProject(embeddingSchemaSource())
+    const _projectPath = await createProject(embeddingSchemaSource())
     const facade = createFacade()
 
     await expect(facade.writeSlice({
@@ -234,7 +234,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('EmbeddingText 单条写入必须是唯一 text 非空字符串', async () => {
-    const projectPath = await createProject(embeddingSchemaSource())
+    const _projectPath = await createProject(embeddingSchemaSource())
     const facade = createFacade()
     const invalidEventValues: JsonValue[] = [
       {},
@@ -264,7 +264,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('EmbeddingText 拒绝通过内部路径绕过托管字段', async () => {
-    const projectPath = await createProject(embeddingSchemaSource())
+    const _projectPath = await createProject(embeddingSchemaSource())
     const facade = createFacade()
 
     await facade.writeSlice({
@@ -436,7 +436,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('collection append 去重，remove 可按值删除且幂等', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     await facade.writeSlice({
@@ -465,7 +465,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('编辑 collection remove 的 value 会重新计算下游 advisory', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     await facade.writeSlice({
@@ -511,7 +511,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('list 拒绝按值 remove，保持时间顺序语义', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     await expect(facade.writeSlice({
@@ -524,7 +524,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('queryState 支持内部全量查询，同时 attrs 投影和 listLimit 生效', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     await facade.writeSlice({
@@ -545,7 +545,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('编辑过去绝对 patch 会返回 base-shifted，删除基准后显形 broken-relative', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     const base = await facade.writeSlice({
@@ -593,10 +593,10 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('listSlices subject filter 支持 any/all，deleteSlice 会回退状态', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
-    const first = await facade.writeSlice({
+    const _first = await facade.writeSlice({
       instant: 10n,
       title: '艾莉娜登场',
       patches: [{ subjectId: 'erina', type: 'character', name: '艾莉娜', path: '/hp', op: 'replace', value: 100 }],
@@ -620,14 +620,14 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('语义搜索在请求 embedding 前拒绝没有 EmbeddingText 能力的 schema', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     await expect(facade.searchText('祭坛')).rejects.toThrow('没有声明 EmbeddingText 字段')
   })
 
   it('语义搜索拒绝未知 type 与非 EmbeddingText attr，不静默返回空结果', async () => {
-    const projectPath = await createProject(embeddingSchemaSource())
+    const _projectPath = await createProject(embeddingSchemaSource())
     const facade = createFacade()
 
     await expect(facade.searchText('祭坛', { types: ['unknown'] })).rejects.toThrow('schema 未声明 subject type：unknown')
@@ -637,7 +637,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('语义搜索校验 k/threshold，空查询也不绕过 scope 校验', async () => {
-    const projectPath = await createProject(embeddingSchemaSource())
+    const _projectPath = await createProject(embeddingSchemaSource())
     const facade = createFacade()
 
     await expect(facade.searchText('祭坛', { k: 0 })).rejects.toThrow('k 必须是安全正整数')
@@ -648,7 +648,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('删除 subject 的唯一切面后保留稳定身份', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     const written = await facade.writeSlice({
@@ -668,7 +668,7 @@ describe('WorldEngineFacade', { timeout: 30_000 }, () => {
   })
 
   it('calendar 可格式化和解析同一个 instant', async () => {
-    const projectPath = await createProject()
+    const _projectPath = await createProject()
     const facade = createFacade()
 
     const formatted = await facade.formatTime(3661n)

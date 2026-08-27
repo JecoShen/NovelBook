@@ -31,7 +31,7 @@ export function spawnPosixOwnedProcess(spec: OwnedProcessSpec, options: PosixAda
     stdio: [spec.stdin === 'inherit' ? 0 : spec.stdin === 'pipe' ? 'pipe' : 'ignore', spec.stdout ?? 'pipe', spec.stderr ?? 'pipe', 'ipc'],
   })
   let settled = false
-  let terminationReason: OwnedProcessTerminationReason | undefined
+  let _terminationReason: OwnedProcessTerminationReason | undefined
   let terminationPromise: Promise<OwnedProcessCompletion> | undefined
   let watchdog: NodeJS.Timeout | undefined
   let terminalMessage: Extract<SupervisorMessage, { kind: 'complete' | 'terminated' }> | undefined
@@ -96,7 +96,7 @@ export function spawnPosixOwnedProcess(spec: OwnedProcessSpec, options: PosixAda
     terminate(reason) {
       if (terminationPromise) return terminationPromise
       if (settled) return completion
-      terminationReason = reason
+      _terminationReason = reason
       terminationPromise = completion
       armWatchdog(`POSIX自有进程终止未在窗口内完成：reason=${reason}`, graceMs + hardKillWaitMs + 250)
       sendControl({ kind: 'terminate', reason })

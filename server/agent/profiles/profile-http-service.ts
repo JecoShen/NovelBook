@@ -644,20 +644,6 @@ function toProfileIssueDto(issue: AgentProfileIssue, profileKey: string, fileNam
   }
 }
 
-/**
- * 为旧三栏 UI 提供一个源码优先的 ProfilePrompt 可视化树。
- */
-function parseProfilePromptTree(source: string, fileName: string | null): ProfileTemplateNodeDto | null {
-  if (!fileName || !/\.(tsx|ts|jsx|js)$/.test(fileName)) {
-    return null
-  }
-  try {
-    return buildProfilePromptRoot(source)
-  }
-  catch {
-    return null
-  }
-}
 export function buildSystemPromptRoot(source: string): ProfileTemplateNodeDto | null {
   return buildProfilePromptRoot(source)
 }

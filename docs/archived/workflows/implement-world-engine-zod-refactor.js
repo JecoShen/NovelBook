@@ -13,11 +13,13 @@ export const meta = {
 // Phase 0: Plan - 理解任务范围
 phase('Plan')
 
+// eslint-disable-next-line no-unused-vars
 const taskDoc = await agent(
   'Read docs/tasks/67-world-engine-zod-schema-codeact/README.md and summarize: 1) Three phases and their deliverables 2) Key decisions (15 items) 3) Files to modify 4) Breaking changes',
   { phase: 'Plan', label: 'read-task' },
 )
 
+// eslint-disable-next-line no-unused-vars
 const existingCode = await agent(
   'Read server/world-engine/ directory structure and key files: types.ts, schema-loader.ts, world-engine.service.ts. Summarize current architecture and identify what needs to be replaced vs modified.',
   { phase: 'Plan', label: 'survey-code' },

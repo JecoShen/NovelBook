@@ -1,11 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
-import { basename, join, normalize, relative, resolve } from 'node:path'
+import { basename, join, normalize, relative } from 'node:path'
 import type { AgentEvent } from '@earendil-works/pi-agent-core'
 import { clampThinkingLevel, validateToolArguments } from '@earendil-works/pi-ai'
 import type { Models } from '@earendil-works/pi-ai'
-import { Value } from 'typebox/value'
-import type { AgentMessage, AgentToolCall, AgentUserMessageInput, AssistantMessage, JsonValue, Message, Model, ThinkingLevel, ToolResultMessage } from 'nbook/server/agent/messages/types'
+import type { AgentMessage, AgentToolCall, AgentUserMessageInput, AssistantMessage, JsonValue, Model, ThinkingLevel, ToolResultMessage } from 'nbook/server/agent/messages/types'
 import {
   createStoredTextToolResult,
   createStoredToolResultFromResult,
@@ -14,7 +13,7 @@ import {
   createToolResultFromResult,
   messageText,
 } from 'nbook/server/agent/messages/message-utils'
-import { storedMessageForText, storedMessageText } from 'nbook/server/agent/messages/stored-message-presentation'
+import { storedMessageText } from 'nbook/server/agent/messages/stored-message-presentation'
 import type {
   StoredAgentMessage,
   StoredAgentUserMessageInput,
@@ -38,7 +37,6 @@ import {
 } from 'nbook/server/agent/messages/stored-user-markdown'
 import { AgentInvocationPayloadError, AgentProfileCatalog, type AgentProfileRuntimeResolution } from 'nbook/server/agent/profiles/catalog'
 import { StableAttachmentSnapshotReader } from 'nbook/server/agent/attachments/stable-attachment-snapshot-reader'
-import { assertTypeBoxValue } from 'nbook/server/agent/profiles/schema-validation'
 import { defaultAgentProfile } from 'nbook/server/agent/profiles/default-profile'
 import { summarizerProfile } from 'nbook/server/agent/profiles/summarizer-profile'
 import { adhocAgentProfile } from 'nbook/server/agent/profiles/adhoc-profile'
@@ -191,7 +189,7 @@ import type { AgentInvokeCaller, AgentMessageIdentity } from 'nbook/server/agent
 import { AgentSessionEventHub, type AgentSessionEventSubscription } from 'nbook/server/agent/events/session-event-hub'
 import { createProfileVariableAccessor, normalizeClientState } from 'nbook/server/agent/variables/accessor'
 import { createVariableRegistryForProfile, createVariableRegistryForSession } from 'nbook/server/agent/variables/profile-registry'
-import type { ClientStateSnapshot, ProfileVariableAccessor, VariableInvocationState, VariableJsonPatchOperation, VariablePatchAck, VariablePatchRequest } from 'nbook/server/agent/variables/types'
+import type { ClientStateSnapshot, ProfileVariableAccessor, VariableInvocationState, VariablePatchAck, VariablePatchRequest } from 'nbook/server/agent/variables/types'
 import { appLogger } from 'nbook/server/app-logs/logger'
 import { PiRequestRecorder } from 'nbook/server/agent/observability/pi-request-recorder'
 import type { PiTraceCorrelation, PiTraceKind } from 'nbook/server/agent/observability/pi-request-recorder'
@@ -203,7 +201,6 @@ import { PiTraceReader } from 'nbook/server/agent/observability/pi-trace-reader'
 import type { AgentContextInspectionDto } from 'nbook/shared/dto/agent-context-inspection.dto'
 import type { PiTraceBinding, PiTraceSettings } from 'nbook/server/agent/observability/traced-provider'
 import type { ServerTimingSink } from 'nbook/server/utils/server-timing-sink'
-import { LowCodeFormDtoSchema } from 'nbook/shared/dto/low-code-form.dto'
 import { ProfileBuildCoordinator } from 'nbook/server/agent/profiles/profile-build-coordinator'
 import { providerErrorText } from 'nbook/server/agent/observability/provider-error-sanitizer'
 import { AttachmentStore } from 'nbook/server/agent/attachments/attachment-store'
@@ -213,7 +210,7 @@ import { SessionAttachmentAuthority } from 'nbook/server/agent/attachments/sessi
 import { estimateStoredContextTokens } from 'nbook/server/agent/messages/stored-message-tokens'
 import type { AttachmentId, AttachmentRef } from 'nbook/shared/dto/agent-attachment.dto'
 import { AttachmentError } from 'nbook/server/agent/attachments/types'
-import { attachmentIdFromMarkdownTarget, parseAgentImageMarkdown, serializeAgentImageMarkdown } from 'nbook/shared/agent/agent-image-markdown'
+import { attachmentIdFromMarkdownTarget, parseAgentImageMarkdown } from 'nbook/shared/agent/agent-image-markdown'
 import { AGENT_IMAGE_POLICY } from 'nbook/shared/agent/agent-image-policy'
 import { authorizeFileOperation } from 'nbook/server/workspace-files/authorized-file-operation'
 import { sessionInteraction } from 'nbook/shared/agent/session-interaction-policy'
@@ -8256,17 +8253,8 @@ function normalizeSessionAttachmentName(value: string | undefined, fallback: str
   return candidate ? candidate.slice(0, 255) : undefined
 }
 
-/** Node 文件错误只在本地边界读取 code，不把绝对路径写入公开错误。 */
-function isNodeErrorCode(error: unknown, code: string): boolean {
-  return error instanceof Error && 'code' in error && error.code === code
-}
-
 function isRecord(value: unknown): value is Record<string, JsonValue> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value))
-}
-
-function hasOwn(value: Record<string, unknown>, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(value, key)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -5,7 +5,7 @@ import { estimateStoredContextTokens, estimateStoredMessageTokens } from 'nbook/
 import type {
   StoredMessageLike,
 } from 'nbook/server/agent/messages/stored-message-presentation'
-import type { AgentMessage, AssistantMessage, JsonValue, Message, Model, ThinkingLevel, ToolResultMessage } from 'nbook/server/agent/messages/types'
+import type { AgentMessage, AssistantMessage, JsonValue, Model, ThinkingLevel, ToolResultMessage } from 'nbook/server/agent/messages/types'
 import {
   COMPACTION_PROMPT,
   COMPACTION_SUMMARY_PREFIX,

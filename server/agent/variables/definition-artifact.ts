@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir, readFile, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises'
-import { basename, dirname, join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { build, type Metafile } from 'esbuild'
 import { lock as lockFile, type LockOptions } from 'proper-lockfile'
@@ -14,7 +14,6 @@ import { runtimeArtifactBundlePlugin } from 'nbook/server/utils/runtime-artifact
 import {
   resolveRuntimeArtifactCompilerContext,
   normalizeRuntimeArtifactPath,
-  type RuntimeArtifactCompilerContext,
 } from 'nbook/server/utils/runtime-artifact-compiler-context'
 import {
   assertRuntimeArtifactAuthoringMetafile,

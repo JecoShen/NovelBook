@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { isAbsolute, resolve, join, relative } from 'node:path'
+import { isAbsolute, resolve, relative } from 'node:path'
 import type { AgentToolCall } from '@earendil-works/pi-agent-core'
 import type { AssistantMessage, JsonValue } from 'nbook/server/agent/messages/types'
 import type { StoredAgentMessage } from 'nbook/server/agent/messages/stored-types'
@@ -8,8 +8,7 @@ import { storedMessageText } from 'nbook/server/agent/messages/stored-message-pr
 import type { AgentCatalogItem, AgentProfile, ProfilePrepareContext, ProfileTurnPlan } from 'nbook/server/agent/profiles/types'
 import { planModeToolDirectory } from 'nbook/server/agent/plan-mode-directory'
 import { AGENT_MODE_STATE_KEY, AGENT_TASKS_STATE_KEY } from 'nbook/server/agent/session/custom-state-keys'
-import type { NeuroSessionContext, SessionEntryDraft } from 'nbook/server/agent/session/types'
-import type { ProfileVariablePathInput } from 'nbook/server/agent/variables/types'
+import type { NeuroSessionContext } from 'nbook/server/agent/session/types'
 import type { AgentMode } from 'nbook/shared/dto/agent-session.dto'
 import type { FileChangeAwareness } from 'nbook/server/agent/profiles/profile-turn-context'
 import { absoluteFsPath, resolveContainedFilePath } from 'nbook/server/runtime/paths/file-path'
@@ -21,7 +20,6 @@ import type {
   ProfileFileChangeNoticeNode,
   ProfileFragmentNode,
   ProfileIfNode,
-  ProfileImportAs,
   ProfileImportProps,
   ProfileMessageNode,
   ProfileModeSlotNode,
@@ -45,7 +43,6 @@ export type {
   ProfileFileChangeNoticeNode,
   ProfileFragmentNode,
   ProfileIfNode,
-  ProfileImportAs,
   ProfileImportProps,
   ProfileMessageNode,
   ProfileModeSlotNode,
@@ -1510,13 +1507,6 @@ async function readPath(context: ProfilePrepareContext<any>, path: string): Prom
   return context.vars.get(path)
 }
 
-function toJsonValue(value: unknown): JsonValue | undefined {
-  if (value === undefined) {
-    return undefined
-  }
-  return JSON.parse(JSON.stringify(value)) as JsonValue
-}
-
 function stableStringifyJsonValue(value: JsonValue | undefined): string {
   if (value === undefined) {
     return '__undefined__'
@@ -2050,11 +2040,6 @@ function mentionedSkillsReminderText(ctx: ProfilePrepareContext<any>): string {
     'If these skills are visible in the catalog, read the matching SKILL.md location from SkillCatalog before continuing.',
     'Use the original skill key exactly. Do not translate it into English, pinyin, or a new slug.',
   ].join('\n'))
-}
-
-function indentLines(text: string, spaces: number): string {
-  const prefix = ' '.repeat(spaces)
-  return text.split('\n').map(line => `${prefix}${line}`).join('\n')
 }
 
 function displaySkillLocation(skillPath: string): string {

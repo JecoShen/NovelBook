@@ -22,6 +22,8 @@ import { z } from 'zod'
 // ============================================================================
 
 declare module 'zod' {
+  // Type parameters T/Cardinality are required for interface declaration merging
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ZodArray<T extends z.ZodTypeAny, Cardinality extends z.ArrayCardinality = 'many'> {
     /**
          * 标记数组为无序集合（set 语义）。

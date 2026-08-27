@@ -7,7 +7,6 @@ import { HANDLER_REGISTRY } from './handler-rules'
 import { materializeRules } from './rule-registry'
 import type {
   ActiveRuleRecord,
-  BaseLintRuleRecord,
   DeclarativeRuleRecord,
   Fixability,
   HandlerRuleRecord,

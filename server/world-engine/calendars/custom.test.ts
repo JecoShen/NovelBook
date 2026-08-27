@@ -56,7 +56,7 @@ describe('CustomCalendar', () => {
     const calendar = new CustomCalendar({
       type: 'custom',
       format: (instant: bigint) => `时刻${instant}`,
-      parse: (input: string) => BigInt(0),
+      parse: (_input: string) => BigInt(0),
       projection: () => ({
         format: '时刻{instant}',
         examples: ['时刻0', '时刻1000'],
@@ -72,7 +72,7 @@ describe('CustomCalendar', () => {
     const calendar = new CustomCalendar({
       type: 'custom',
       format: (instant: bigint) => `时刻${instant}`,
-      parse: (input: string) => BigInt(0),
+      parse: (_input: string) => BigInt(0),
     })
 
     const proj = calendar.projection()
@@ -85,8 +85,8 @@ describe('CustomCalendar', () => {
       type: 'custom',
       // 返回数字而不是字符串（故意违反类型契约，验证运行时会拦截）
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      format: (instant: bigint) => 123 as any,
-      parse: (input: string) => BigInt(0),
+      format: (_instant: bigint) => 123 as any,
+      parse: (_input: string) => BigInt(0),
     })
 
     expect(() => calendar.format(BigInt(0))).toThrow(/必须返回字符串/)
@@ -95,10 +95,10 @@ describe('CustomCalendar', () => {
   test('parse 必须返回 bigint', () => {
     const calendar = new CustomCalendar({
       type: 'custom',
-      format: (instant: bigint) => 'x',
+      format: (_instant: bigint) => 'x',
       // 返回数字而不是 bigint（故意违反类型契约，验证运行时会拦截）
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      parse: (input: string) => 123 as any,
+      parse: (_input: string) => 123 as any,
     })
 
     expect(() => calendar.parse('x')).toThrow(/必须返回 bigint/)
@@ -107,10 +107,10 @@ describe('CustomCalendar', () => {
   test('format 抛错时应包装', () => {
     const calendar = new CustomCalendar({
       type: 'custom',
-      format: (instant: bigint) => {
+      format: (_instant: bigint) => {
         throw new Error('用户错误')
       },
-      parse: (input: string) => BigInt(0),
+      parse: (_input: string) => BigInt(0),
     })
 
     expect(() => calendar.format(BigInt(0))).toThrow(/用户错误/)
@@ -119,8 +119,8 @@ describe('CustomCalendar', () => {
   test('parse 抛错时应包装', () => {
     const calendar = new CustomCalendar({
       type: 'custom',
-      format: (instant: bigint) => 'x',
-      parse: (input: string) => {
+      format: (_instant: bigint) => 'x',
+      parse: (_input: string) => {
         throw new Error('解析失败')
       },
     })

@@ -1,6 +1,6 @@
 /** @jsxImportSource nbook/profile-sdk */
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { ProfilePrepareContext, ReadyProjectSessionRef } from 'nbook/profile-sdk'
