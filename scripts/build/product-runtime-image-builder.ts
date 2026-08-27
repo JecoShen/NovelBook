@@ -747,7 +747,7 @@ async function gitlessSourcePaths(projectRoot: string): Promise<string[]> {
   const paths: string[] = []
   const walk = async (directory: string, segments: string[]): Promise<void> => {
     for (const entry of (await readdir(directory, { withFileTypes: true })).sort((left, right) => compareText(left.name, right.name))) {
-      if (segments.length === 0 && GITLESS_SOURCE_EXCLUDES.has(entry.name)) continue
+      if (GITLESS_SOURCE_EXCLUDES.has(entry.name)) continue
       const nextSegments = [...segments, entry.name]
       const absolutePath = resolve(directory, entry.name)
       if (entry.isDirectory()) {
