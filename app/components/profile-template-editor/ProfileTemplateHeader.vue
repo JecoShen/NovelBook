@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import FormSelect from 'nbook/app/components/common/form/FormSelect.vue'
+import Tooltip from 'nbook/app/components/common/Tooltip.vue'
 import type { SelectOption } from 'nbook/app/components/profile-template-editor/profile-template-editor-ui'
 
 const props = defineProps<{
@@ -38,7 +39,7 @@ const emit = defineEmits<{
 
 <template>
   <!-- TSX Profile 顶部工具栏 -->
-  <header class="flex h-12 shrink-0 items-center gap-4 border-b border-[var(--border-color)] bg-[var(--bg-panel)] px-4">
+  <header class="flex min-h-12 shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--border-color)] bg-[var(--bg-panel)] px-4 py-2">
     <div class="flex min-w-0 items-center gap-3">
       <div class="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--accent-main)] text-xs font-semibold text-[var(--text-inverse)] shadow-sm">
         TS
@@ -63,107 +64,181 @@ const emit = defineEmits<{
       @update:model-value="emit('update:selectedTemplate', $event)"
     />
 
-    <div class="ml-auto flex items-center gap-2">
-      <span class="hidden items-center gap-1 text-xs text-[var(--status-success)] md:flex">
-        <span class="i-lucide-circle-check h-3.5 w-3.5" />
-        <span>{{ props.editorStatusText }}</span>
+    <div class="ml-auto flex max-w-full flex-wrap items-center gap-2">
+      <span class="hidden min-w-0 items-center gap-1 text-xs text-[var(--status-success)] md:flex">
+        <span class="i-lucide-circle-check h-3.5 w-3.5 shrink-0" />
+        <span class="min-w-0 truncate">{{ props.editorStatusText }}</span>
       </span>
       <div class="mx-2 hidden h-4 w-px bg-[var(--border-color)] lg:block" />
-      <button
-        class="icon-btn"
-        title="撤销 Ctrl+Z"
-        :disabled="!props.canUndo"
-        @click="emit('undo')"
+      <Tooltip
+        text="撤销 Ctrl+Z"
+        placement="bottom"
       >
-        <span class="i-lucide-undo-2 h-4 w-4" />
-      </button>
-      <button
-        class="icon-btn"
-        title="重做 Ctrl+Shift+Z"
-        :disabled="!props.canRedo"
-        @click="emit('redo')"
+        <button
+          type="button"
+          class="icon-btn disabled:pointer-events-none"
+          aria-label="撤销"
+          :disabled="!props.canUndo"
+          @click="emit('undo')"
+        >
+          <span class="i-lucide-undo-2 h-4 w-4" />
+        </button>
+      </Tooltip>
+      <Tooltip
+        text="重做 Ctrl+Shift+Z"
+        placement="bottom"
       >
-        <span class="i-lucide-redo-2 h-4 w-4" />
-      </button>
-      <button
-        class="toolbar-btn"
-        :disabled="props.previewing || !props.sourceText"
-        @click="emit('preview')"
+        <button
+          type="button"
+          class="icon-btn disabled:pointer-events-none"
+          aria-label="重做"
+          :disabled="!props.canRedo"
+          @click="emit('redo')"
+        >
+          <span class="i-lucide-redo-2 h-4 w-4" />
+        </button>
+      </Tooltip>
+      <Tooltip
+        text="预览"
+        placement="bottom"
       >
-        <span class="i-lucide-play h-3.5 w-3.5" />
-        <span>预览</span>
-      </button>
-      <button
+        <button
+          type="button"
+          class="toolbar-btn disabled:pointer-events-none"
+          aria-label="预览"
+          :disabled="props.previewing || !props.sourceText"
+          @click="emit('preview')"
+        >
+          <span class="i-lucide-play h-3.5 w-3.5" />
+          <span>预览</span>
+        </button>
+      </Tooltip>
+      <Tooltip
         v-if="!props.compileEnabled"
-        class="toolbar-btn"
-        :disabled="props.validating || !props.sourceText"
-        @click="emit('validate')"
+        :text="props.validateLabel ?? '验证'"
+        placement="bottom"
       >
-        <span class="i-lucide-badge-check h-3.5 w-3.5" />
-        <span>{{ props.validateLabel ?? "验证" }}</span>
-      </button>
-      <button
+        <button
+          type="button"
+          class="toolbar-btn disabled:pointer-events-none"
+          aria-label="验证"
+          :disabled="props.validating || !props.sourceText"
+          @click="emit('validate')"
+        >
+          <span class="i-lucide-badge-check h-3.5 w-3.5" />
+          <span>{{ props.validateLabel ?? "验证" }}</span>
+        </button>
+      </Tooltip>
+      <Tooltip
         v-if="props.compileEnabled"
-        class="toolbar-btn"
-        :disabled="props.compiling || props.compilingAll || props.saving || props.parsingSource || !props.sourceText"
-        @click="emit('compile')"
+        text="编译"
+        placement="bottom"
       >
-        <span class="i-lucide-hammer h-3.5 w-3.5" />
-        <span>编译</span>
-      </button>
-      <button
+        <button
+          type="button"
+          class="toolbar-btn disabled:pointer-events-none"
+          aria-label="编译"
+          :disabled="props.compiling || props.compilingAll || props.saving || props.parsingSource || !props.sourceText"
+          @click="emit('compile')"
+        >
+          <span class="i-lucide-hammer h-3.5 w-3.5" />
+          <span>编译</span>
+        </button>
+      </Tooltip>
+      <Tooltip
         v-if="props.compileAllEnabled"
-        class="toolbar-btn"
-        :disabled="props.compilingAll || props.compiling || props.saving"
-        @click="emit('compileAll')"
+        text="编译全部"
+        placement="bottom"
       >
-        <span class="i-lucide-package-check h-3.5 w-3.5" />
-        <span>编译全部</span>
-      </button>
-      <button
+        <button
+          type="button"
+          class="toolbar-btn disabled:pointer-events-none"
+          aria-label="编译全部"
+          :disabled="props.compilingAll || props.compiling || props.saving"
+          @click="emit('compileAll')"
+        >
+          <span class="i-lucide-package-check h-3.5 w-3.5" />
+          <span>编译全部</span>
+        </button>
+      </Tooltip>
+      <Tooltip
         v-if="props.restoreEnabled"
-        class="toolbar-btn"
-        :disabled="props.restoring || props.saving || !props.sourceText"
-        @click="emit('restore')"
+        text="恢复系统版本"
+        placement="bottom"
       >
-        <span class="i-lucide-rotate-ccw h-3.5 w-3.5" />
-        <span>恢复系统版本</span>
-      </button>
-      <button
+        <button
+          type="button"
+          class="toolbar-btn disabled:pointer-events-none"
+          aria-label="恢复系统版本"
+          :disabled="props.restoring || props.saving || !props.sourceText"
+          @click="emit('restore')"
+        >
+          <span class="i-lucide-rotate-ccw h-3.5 w-3.5" />
+          <span>恢复系统版本</span>
+        </button>
+      </Tooltip>
+      <Tooltip
         v-if="props.createEnabled"
-        class="toolbar-btn"
-        :disabled="props.saving"
-        @click="emit('create')"
+        text="新建"
+        placement="bottom"
       >
-        <span class="i-lucide-file-plus-2 h-3.5 w-3.5" />
-        <span>新建</span>
-      </button>
-      <button
+        <button
+          type="button"
+          class="toolbar-btn disabled:pointer-events-none"
+          aria-label="新建"
+          :disabled="props.saving"
+          @click="emit('create')"
+        >
+          <span class="i-lucide-file-plus-2 h-3.5 w-3.5" />
+          <span>新建</span>
+        </button>
+      </Tooltip>
+      <Tooltip
         v-if="props.runEnabled"
-        class="toolbar-btn"
-        :disabled="props.saving || props.issueCount > 0 || props.runDisabled"
-        @click="emit('run')"
+        text="创建 Session"
+        placement="bottom"
       >
-        <span class="i-lucide-message-circle-plus h-3.5 w-3.5" />
-        <span>创建 Session</span>
-      </button>
-      <button
-        class="toolbar-btn primary"
-        :disabled="props.saving || props.parsingSource || !props.sourceText || (!props.allowSaveWithIssues && props.issueCount > 0)"
-        @click="emit('save')"
+        <button
+          type="button"
+          class="toolbar-btn disabled:pointer-events-none"
+          aria-label="创建 Session"
+          :disabled="props.saving || props.issueCount > 0 || props.runDisabled"
+          @click="emit('run')"
+        >
+          <span class="i-lucide-message-circle-plus h-3.5 w-3.5" />
+          <span>创建 Session</span>
+        </button>
+      </Tooltip>
+      <Tooltip
+        text="保存"
+        placement="bottom"
       >
-        <span class="i-lucide-save h-3.5 w-3.5" />
-        <span>保存</span>
-        <span class="i-lucide-chevron-down h-3.5 w-3.5 opacity-80" />
-      </button>
-      <button
+        <button
+          type="button"
+          class="toolbar-btn primary disabled:pointer-events-none"
+          aria-label="保存"
+          :disabled="props.saving || props.parsingSource || !props.sourceText || (!props.allowSaveWithIssues && props.issueCount > 0)"
+          @click="emit('save')"
+        >
+          <span class="i-lucide-save h-3.5 w-3.5" />
+          <span>保存</span>
+          <span class="i-lucide-chevron-down h-3.5 w-3.5 opacity-80" />
+        </button>
+      </Tooltip>
+      <Tooltip
         v-if="props.closable"
-        class="icon-btn"
-        title="关闭"
-        @click="emit('close')"
+        text="关闭"
+        placement="bottom"
       >
-        <span class="i-lucide-x h-4 w-4" />
-      </button>
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label="关闭"
+          @click="emit('close')"
+        >
+          <span class="i-lucide-x h-4 w-4" />
+        </button>
+      </Tooltip>
     </div>
   </header>
 </template>
