@@ -12,6 +12,7 @@ import ProfileTemplateComponentLibraryPanel from 'nbook/app/components/profile-t
 import ProfileTemplateHeader from 'nbook/app/components/profile-template-editor/ProfileTemplateHeader.vue'
 import ProfileTemplateInspectorPanel from 'nbook/app/components/profile-template-editor/ProfileTemplateInspectorPanel.vue'
 import ProfileTemplatePreviewDialog from 'nbook/app/components/profile-template-editor/ProfileTemplatePreviewDialog.vue'
+import Tooltip from 'nbook/app/components/common/Tooltip.vue'
 import {
   componentGroupTabs,
   componentLibrary,
@@ -71,6 +72,7 @@ import {
   removeNodeById,
 } from 'nbook/app/components/profile-template-editor/profile-template-tree-utils'
 import { useIdeTheme } from 'nbook/app/composables/useIdeTheme'
+import { IDE_THEME_HOST_CLASS } from 'nbook/app/utils/theme/theme-tokens'
 import { useAgentSessionApi } from 'nbook/app/composables/useAgentSessionApi'
 import { useNotification } from 'nbook/app/composables/useNotification'
 import { useNovelIdeStore } from 'nbook/app/stores/novel-ide'
@@ -2161,7 +2163,11 @@ watch(selectedThreadId, async () => {
 })
 
 onMounted(async () => {
-  mountThemeHost(themeHostRef.value)
+  // 已处于既有主题宿主内（如工作台 Dialog 内嵌场景）时不重复创建嵌套宿主；
+  // 否则 Tooltip 等 fixed 浮层会被 Teleport 进 transform 容器内的嵌套宿主，fixed 定位基准失效。
+  if (!themeHostRef.value?.closest(`.${IDE_THEME_HOST_CLASS}`)) {
+    mountThemeHost(themeHostRef.value)
+  }
   keyboardListener = handleEditorKeydown
   window.addEventListener('keydown', keyboardListener)
   await Promise.all([
@@ -2238,7 +2244,7 @@ onBeforeUnmount(() => {
       @drag-end="handleNodeDragEnd"
     >
       <main
-        class="grid min-h-0 flex-1 gap-3 p-3"
+        class="grid min-h-0 min-w-0 flex-1 gap-3 overflow-hidden p-3"
         :class="[
           libraryPanelCollapsed ? 'grid-cols-[42px_minmax(560px,1fr)_minmax(360px,30vw)]' : 'grid-cols-[290px_minmax(560px,1fr)_minmax(360px,30vw)]',
           inspectorPanelCollapsed ? (libraryPanelCollapsed ? '!grid-cols-[42px_minmax(560px,1fr)_42px]' : '!grid-cols-[290px_minmax(560px,1fr)_42px]') : '',
@@ -2248,14 +2254,19 @@ onBeforeUnmount(() => {
           v-if="libraryPanelCollapsed"
           class="component-rail"
         >
-          <button
-            type="button"
-            class="rail-icon-btn"
-            title="展开组件库"
-            @click="libraryPanelCollapsed = false"
+          <Tooltip
+            text="展开组件库"
+            placement="right"
           >
-            <span class="i-lucide-panel-left-open h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              class="rail-icon-btn"
+              aria-label="展开组件库"
+              @click="libraryPanelCollapsed = false"
+            >
+              <span class="i-lucide-panel-left-open h-4 w-4" />
+            </button>
+          </Tooltip>
           <div class="rail-divider" />
           <div class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden pr-0.5 custom-scrollbar">
             <template
@@ -2312,7 +2323,7 @@ onBeforeUnmount(() => {
         <aside
           v-if="inspectorPanelCollapsed"
           class="panel-rail"
-          title="展开右侧面板"
+          aria-label="展开右侧面板"
           @click="inspectorPanelCollapsed = false"
         >
           <span class="i-lucide-panel-right-open h-4 w-4" />
