@@ -150,7 +150,7 @@ export async function compileProfileContext(
  */
 export async function compileProfileSystemPrompt(
   profile: Pick<AgentProfile, 'manifest'>,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: ProfilePrepareContext<any>,
   tree: ProfileDslNode,
 ): Promise<string | undefined> {

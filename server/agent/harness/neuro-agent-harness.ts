@@ -6828,7 +6828,7 @@ export class NeuroAgentHarness {
     config: Pick<EffectiveConfig, 'agent' | 'models'>,
     profileKey: string,
     override?: { modelKey?: string | null } | null,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Model<any> | null {
     try {
       return override ? this.modelResolver(config, profileKey, override) : this.modelResolver(config, profileKey)
@@ -6863,7 +6863,7 @@ export class NeuroAgentHarness {
     snapshot: SessionSnapshot,
     context: NeuroSessionContext,
     config: Pick<EffectiveConfig, 'agent' | 'models'>,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<{ snapshot: SessionSnapshot, context: NeuroSessionContext, model: Model<any> | null }> {
     const model = this.resolveEffectiveSessionModel(config, context)
     if (sessionModelsEqual(context.model, model)) {
