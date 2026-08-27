@@ -1,3 +1,5 @@
+/* global phase, agent, log */
+
 export const meta = {
   name: 'implement-world-engine-zod-refactor',
   description: 'Implement World Engine schema refactor: Zod + CodeAct + JSON Patch',
