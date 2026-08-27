@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED** — Variable 类型生成 / definition artifact / `ctx.vars` 保留; `<Variable>` / `<VariableSchema>` TSX helper + `builtin.variable` Profile 绑定 + Workbench 变量插入 2026-07-11 已暂时下线. 详细说明见下方 blockquote. 本 README 仅作历史存档, 不再更新.
+
 # Profile Variable Types
 
 > 2026-07-11 当前状态：变量类型生成、definition artifact、`ctx.vars` 与三个全局 Agent variable tools 继续保留；`Variable` / `VariableSchema` TSX helper、`builtin.variable` Profile 绑定和 Workbench 变量插入已暂时下线。Workbench 只读展示 schema/runtime 数据。本文其余内容保留类型系统建设历史。
