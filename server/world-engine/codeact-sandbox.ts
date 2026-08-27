@@ -29,7 +29,9 @@ export type WorldApi = {
   }
   /** Subject 状态读取与引用查询。 */
   subject: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get(id: string, options?: { deref?: boolean, derefDepth?: number }): Promise<any | null>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     gets(ids: string[]): Promise<Array<any | null>>
     list(type?: string): Promise<Array<{ id: string, type: string, name: string }>>
     findRefs(targetId: string, sourceType?: string): Promise<Array<{ subjectId: string, attr: string }>>
@@ -40,10 +42,15 @@ export type WorldApi = {
   }
   /** Timeline slice 读取与可选写入能力。readonly 模式不注入写方法。 */
   slice: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     list(options?: { from?: bigint, to?: bigint, limit?: number, withPatches?: boolean, subjectIds?: string[], subjectMode?: 'any' | 'all' }): Promise<any[]>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get(id: string): Promise<any>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     write?: (input: any) => Promise<{ sliceId: string, issues: any[] }>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     editPatches?: (sliceId: string, edits: any[], meta?: any) => Promise<{ sliceId: string, issues: any[] }>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete?: (sliceId: string) => Promise<{ issues: any[] }>
   }
 }
@@ -68,6 +75,7 @@ export async function executeCodeAct(
   code: string,
   worldApi: WorldApi,
   options: ExecuteCodeActOptions = {},
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   const timeout = options.timeout ?? 5000
   const maxResultSize = options.maxResultSize ?? 10 * 1024

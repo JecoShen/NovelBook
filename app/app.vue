@@ -10,10 +10,15 @@ provideWorkbenchChrome()
 if (import.meta.client) {
   const dialog = useDialog()
   const notification = useNotification()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   window.alert = dialog.alert as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   window.confirm = dialog.confirm as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   window.prompt = dialog.prompt as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).$dialog = dialog;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).$notify = notification
 }
 

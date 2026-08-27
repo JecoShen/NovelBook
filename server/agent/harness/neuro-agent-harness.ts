@@ -232,8 +232,10 @@ type HarnessOptions = ({
   workflows?: WorkflowCatalog
   jobs?: AgentJobManager
   tools?: AgentToolRegistry
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   modelResolver?: (config: Pick<EffectiveConfig, 'agent' | 'models'>, profileKey: string, override?: { modelKey?: string | null } | null) => Model<any>
   /** 为当前冻结配置创建或选择 Pi Models runtime。 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   runtimeResolver?: (config: Pick<EffectiveConfig, 'models'>, model: Model<any>) => Models
   eventHub?: AgentSessionEventHub
   /** 调试和测试时可强制 turn 内工具全串行；默认按 tool.executionMode 调度。 */
@@ -314,6 +316,7 @@ type PreparedRun = {
   /** messages 前缀的分区归因（Task 126 可观测）。 */
   promptPrefix: PromptPrefixAttribution
   models: Models
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: Model<any>
   apiKey?: string
   timeoutMs: number | null
@@ -537,7 +540,9 @@ export class NeuroAgentHarness {
   readonly sessionAttachments: SessionAttachmentAuthority
   private readonly attachmentSnapshotReader: StableAttachmentSnapshotReader
   private readonly writeExecutor: SessionWriteExecutor
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private readonly modelResolver: (config: Pick<EffectiveConfig, 'agent' | 'models'>, profileKey: string, override?: { modelKey?: string | null } | null) => Model<any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private readonly runtimeResolver: (config: Pick<EffectiveConfig, 'models'>, model: Model<any>) => Models
   private readonly toolExecution: ToolExecutionMode
   private readonly enableSessionSummarizer: boolean
@@ -1792,6 +1797,7 @@ export class NeuroAgentHarness {
     profile: AgentProfile
     sessionContextEnabled: boolean
     models: Models
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     model: Model<any>
     apiKey?: string
     timeoutMs: number | null
@@ -2024,6 +2030,7 @@ export class NeuroAgentHarness {
 
     let context = this.repo.reduce(snapshot)
     const config = await loadEffectiveConfig(this.configTargetForInvocation(input.invocationId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let model: Model<any>
     if (input.modelKey !== undefined) {
       // invocation override 是临时运行参数；禁止走 model_change 或 session reconcile 写回。
@@ -3184,6 +3191,7 @@ export class NeuroAgentHarness {
   /**
      * 解析 snapshot 显示用模型。若 session 绑定的模型已被删除，则回落到当前 profile/default。
      */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async snapshotModel(snapshot: SessionSnapshot, context: NeuroSessionContext): Promise<Model<any> | null> {
     try {
       const config = await loadEffectiveConfig(resolveNonInvocationConfigTarget(snapshot.metadata, this.workspaceRoot))
@@ -3197,6 +3205,7 @@ export class NeuroAgentHarness {
   /**
      * 创建 session 时尝试绑定当前解析出的具体模型；未配置模型时允许创建空 session。
      */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async resolveInitialSessionModel(snapshot: SessionSnapshot): Promise<Model<any> | null> {
     try {
       const config = await loadEffectiveConfig(resolveNonInvocationConfigTarget(snapshot.metadata, this.workspaceRoot))
@@ -4554,6 +4563,7 @@ export class NeuroAgentHarness {
     messages: StoredAgentMessage[]
     promptPrefix?: PromptPrefixAttribution
     models: Models
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     model: Model<any>
     apiKey?: string
     timeoutMs?: number | null
@@ -6061,6 +6071,7 @@ export class NeuroAgentHarness {
       const preparedToolCall = tool.prepareArguments
         ? {
             ...input.toolCall,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             arguments: tool.prepareArguments(input.toolCall.arguments) as Record<string, any>,
           }
         : input.toolCall
@@ -6798,6 +6809,7 @@ export class NeuroAgentHarness {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private modelSelectionKey(model: Model<any> | DurableSessionModelRef | null): string | null {
     if (!model) {
       return null
@@ -6819,6 +6831,7 @@ export class NeuroAgentHarness {
     config: Pick<EffectiveConfig, 'agent' | 'models'>,
     profileKey: string,
     override?: { modelKey?: string | null } | null,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Model<any> | null {
     try {
       return override ? this.modelResolver(config, profileKey, override) : this.modelResolver(config, profileKey)
@@ -6832,6 +6845,7 @@ export class NeuroAgentHarness {
      * 按session保存的selection key从当前配置重新解析完整metadata。
      * 已保存引用失效时严格阻断该Session；只有尚未绑定模型的Session才读取当前默认值。
      */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private resolveEffectiveSessionModel(config: Pick<EffectiveConfig, 'agent' | 'models'>, context: NeuroSessionContext): Model<any> | null {
     if (context.model === null) {
       return this.resolveConfiguredSessionModel(config, context.profileKey, null)
@@ -6852,6 +6866,7 @@ export class NeuroAgentHarness {
     snapshot: SessionSnapshot,
     context: NeuroSessionContext,
     config: Pick<EffectiveConfig, 'agent' | 'models'>,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<{ snapshot: SessionSnapshot, context: NeuroSessionContext, model: Model<any> | null }> {
     const model = this.resolveEffectiveSessionModel(config, context)
     if (sessionModelsEqual(context.model, model)) {
@@ -7060,6 +7075,7 @@ export class NeuroAgentHarness {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private providerOptions(config: Pick<EffectiveConfig, 'models'>, model: Model<any>): { timeoutMs: number | null, requestOptions: Record<string, JsonValue> } {
     const modelIdentity = model as unknown as { providerConfigId?: unknown }
     const providerConfigId = typeof modelIdentity.providerConfigId === 'string'
@@ -7081,6 +7097,7 @@ export class NeuroAgentHarness {
   private resolveThinkingLevel(
     context: ReturnType<JsonlSessionRepository['reduce']>,
     config: Pick<EffectiveConfig, 'agent'>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     model: Model<any>,
   ): ThinkingLevel {
     const requested = context.thinkingLevel
@@ -8252,6 +8269,7 @@ function hasOwn(value: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(value, key)
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function resolveAgentModelLogName(model: Model<any>): string {
   const record = typeof model === 'object' && model !== null ? model as unknown as Record<string, unknown> : {}
   for (const key of ['key', 'id', 'name', 'model']) {

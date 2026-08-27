@@ -44,6 +44,7 @@ export type WorldSliceSubjectFilterMode = 'any' | 'all'
 // ============================================================================
 
 /** Zod schema 注册表类型 */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ZodSchemaRegistry = Record<string, z.ZodObject<any>>
 
 /** 从 Zod schema 中提取的引用元数据：属性路径 -> 目标类型 */
@@ -593,6 +594,7 @@ export type WorldEmbeddingRow = {
  * // => { "location": "location", "equipment.weapon": "item" }
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function extractRefs(schema: z.ZodObject<any>, prefix = ''): ZodSchemaRefs {
   const refs: ZodSchemaRefs = {}
   const shape = schema.shape
@@ -613,10 +615,12 @@ function extractRefsFromField(field: z.ZodTypeAny, path: string, refs: ZodSchema
 
   // 解包 ZodOptional / ZodNullable / ZodDefault
   while (true) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const typeName = (currentField as any)._def?.typeName || (currentField as any)._def?.type
     if (typeName === 'ZodOptional' || typeName === 'optional'
       || typeName === 'ZodNullable' || typeName === 'nullable'
       || typeName === 'ZodDefault' || typeName === 'default') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       currentField = (currentField as any)._def.innerType
     }
     else {
@@ -625,6 +629,7 @@ function extractRefsFromField(field: z.ZodTypeAny, path: string, refs: ZodSchema
   }
 
   // 检查 description 中的 ref 标记
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const description = (currentField as any).description
   if (typeof description === 'string') {
     const match = description.match(/^ref:(\w+)/)
@@ -635,10 +640,12 @@ function extractRefsFromField(field: z.ZodTypeAny, path: string, refs: ZodSchema
   }
 
   // 递归处理复合类型
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const typeName = (currentField as any)._def?.typeName || (currentField as any)._def?.type
 
   // ZodObject：递归处理 properties
   if (typeName === 'ZodObject' || typeName === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const shape = (currentField as z.ZodObject<any>).shape
     for (const [key, childField] of Object.entries(shape)) {
       extractRefsFromField(childField as z.ZodTypeAny, `${path}.${key}`, refs)
@@ -648,9 +655,11 @@ function extractRefsFromField(field: z.ZodTypeAny, path: string, refs: ZodSchema
 
   // ZodArray：递归处理 items
   if (typeName === 'ZodArray' || typeName === 'array') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items = (currentField as any)._def.element || (currentField as any)._def.type || (currentField as any).element
     // 数组元素不展开路径，因为运行时是索引访问
     // 但需要检查元素是否为 ref
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const itemDescription = (items as any).description
     if (typeof itemDescription === 'string') {
       const match = itemDescription.match(/^ref:(\w+)/)
@@ -697,6 +706,7 @@ function extractRefsFromField(field: z.ZodTypeAny, path: string, refs: ZodSchema
  * // => Set(["skills"])
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function extractUniqueArrays(schema: z.ZodObject<any>, prefix = ''): ZodSchemaUniqueArrays {
   const uniqueArrays = new Set<string>()
   const shape = schema.shape
@@ -717,10 +727,12 @@ function extractUniqueArraysFromField(field: z.ZodTypeAny, path: string, uniqueA
 
   // 解包 ZodOptional / ZodNullable / ZodDefault
   while (true) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const typeName = (currentField as any)._def?.typeName || (currentField as any)._def?.type
     if (typeName === 'ZodOptional' || typeName === 'optional'
       || typeName === 'ZodNullable' || typeName === 'nullable'
       || typeName === 'ZodDefault' || typeName === 'default') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       currentField = (currentField as any)._def.innerType
     }
     else {
@@ -728,10 +740,12 @@ function extractUniqueArraysFromField(field: z.ZodTypeAny, path: string, uniqueA
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const typeName = (currentField as any)._def?.typeName || (currentField as any)._def?.type
 
   // ZodArray：检查 unique 标记
   if (typeName === 'ZodArray' || typeName === 'array') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const isUnique = (currentField as any)._def.unique === true
     if (isUnique) {
       uniqueArrays.add(path)
@@ -741,6 +755,7 @@ function extractUniqueArraysFromField(field: z.ZodTypeAny, path: string, uniqueA
 
   // ZodObject：递归处理 properties
   if (typeName === 'ZodObject' || typeName === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const shape = (currentField as z.ZodObject<any>).shape
     for (const [key, childField] of Object.entries(shape)) {
       extractUniqueArraysFromField(childField as z.ZodTypeAny, `${path}.${key}`, uniqueArrays)
@@ -766,6 +781,7 @@ function extractUniqueArraysFromField(field: z.ZodTypeAny, path: string, uniqueA
  * // => { hp: 100, location: undefined }
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function collectZodDefaults(schema: z.ZodObject<any>, prefix = ''): Record<string, JsonValue | undefined> {
   const defaults: Record<string, JsonValue | undefined> = {}
   const shape = schema.shape
@@ -785,20 +801,25 @@ export function collectZodDefaults(schema: z.ZodObject<any>, prefix = ''): Recor
 function extractDefaultValue(field: z.ZodTypeAny): JsonValue | undefined {
   let currentField = field
   let hasDefault = false
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let defaultValue: any = undefined
 
   // 解包 ZodOptional / ZodNullable / ZodDefault
   while (true) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const typeName = (currentField as any)._def?.typeName || (currentField as any)._def?.type
 
     if (typeName === 'ZodDefault' || typeName === 'default') {
       hasDefault = true
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const defaultFn = (currentField as any)._def.defaultValue
       defaultValue = typeof defaultFn === 'function' ? defaultFn() : defaultFn
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       currentField = (currentField as any)._def.innerType
     }
     else if (typeName === 'ZodOptional' || typeName === 'optional'
       || typeName === 'ZodNullable' || typeName === 'nullable') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       currentField = (currentField as any)._def.innerType
     }
     else {

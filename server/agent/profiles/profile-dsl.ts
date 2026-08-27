@@ -65,6 +65,7 @@ export type {
 type RenderZone = 'root' | 'system' | 'history' | 'model' | 'appending' | 'message' | 'assistant' | 'reminder' | 'watch'
 
 type CompileState = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: ProfilePrepareContext<any>
   profileKey: string
   currentRuntimeState: ProfileRuntimeState
@@ -114,6 +115,7 @@ const PROFILE_STATE_KEY_PREFIX = 'profileState.'
  */
 export async function compileProfileContext(
   profile: Pick<AgentProfile, 'manifest'>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: ProfilePrepareContext<any>,
   tree: ProfileDslNode,
 ): Promise<ProfileTurnPlan> {
@@ -151,6 +153,7 @@ export async function compileProfileContext(
  */
 export async function compileProfileSystemPrompt(
   profile: Pick<AgentProfile, 'manifest'>,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: ProfilePrepareContext<any>,
   tree: ProfileDslNode,
 ): Promise<string | undefined> {
@@ -341,6 +344,7 @@ export function Reminder(props: {
   when?: boolean
   watchPath?: string
   watchValue?: JsonValue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   watch?: (ctx: ProfilePrepareContext<any>) => JsonValue | undefined | Promise<JsonValue | undefined>
   render?: (change: ReminderChange) => ProfileDslChild | Promise<ProfileDslChild>
   repeatEveryTurns?: number
@@ -394,6 +398,7 @@ export function If(props: { condition?: boolean, children?: ProfileDslChild | Pr
  * Skill catalog string fragment。mode 只切换默认文案中与运行位置相关的行：
  * userAssets 供 cwd=Workspace Root .nbook 的 profile 使用，其余原则两种 mode 共享同一份文本。
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function SkillCatalog(props: { mode?: 'workspace' | 'userAssets', text?: string | ((ctx: ProfilePrepareContext<any>) => string | Promise<string>) }): ProfileStringFragmentNode {
   return {
     kind: 'StringFragment',
@@ -405,6 +410,7 @@ export function SkillCatalog(props: { mode?: 'workspace' | 'userAssets', text?: 
 /**
  * Agent catalog string fragment。用于向模型展示可创建/调用的 profile 与 schema 摘要。
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function AgentCatalog(props: { text?: string | ((ctx: ProfilePrepareContext<any>) => string | Promise<string>) }): ProfileStringFragmentNode {
   return {
     kind: 'StringFragment',
@@ -417,6 +423,7 @@ export function AgentCatalog(props: { text?: string | ((ctx: ProfilePrepareConte
  * Workflow catalog string fragment（Task 111）。列出可运行的 workflow 索引与使用纪律；
  * API 细节不进 prompt（渐进式加载：编写指南在 reference/agent/workflow/，需要时用 read 工具读取）。
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function WorkflowCatalog(props: { text?: string | ((ctx: ProfilePrepareContext<any>) => string | Promise<string>) }): ProfileStringFragmentNode {
   return {
     kind: 'StringFragment',
@@ -428,6 +435,7 @@ export function WorkflowCatalog(props: { text?: string | ((ctx: ProfilePrepareCo
 /**
  * Activated skills string fragment。
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ActivatedSkills(props: { text?: string | ((ctx: ProfilePrepareContext<any>) => string | Promise<string>) }): ProfileStringFragmentNode {
   return {
     kind: 'StringFragment',
@@ -439,6 +447,7 @@ export function ActivatedSkills(props: { text?: string | ((ctx: ProfilePrepareCo
 /**
  * Agent SQL schema 摘要 string fragment。profile 作者决定注入到 System、ModelContext 或其他 string 节点。
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function SqlSchemaSummary(props: { text?: string | ((ctx: ProfilePrepareContext<any>) => string | Promise<string>) }): ProfileStringFragmentNode {
   return {
     kind: 'StringFragment',
@@ -1150,6 +1159,7 @@ async function withScopeLabel<T>(state: CompileState, label: string, render: () 
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function renderImportedContext(props: ProfileImportProps, context: ProfilePrepareContext<any>): Promise<string> {
   if (props.as && props.as !== 'text') {
     throw new Error(`Import.as 第一版只支持 text：${props.as}`)
@@ -1205,6 +1215,7 @@ function isAllowedImportPath(path: string): boolean {
     || path.startsWith('workspace/') // 放开 Project 运行态文件（如 subject soul.md）Import；细粒度权限以后再收
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function readImportFile(path: string, required: boolean, context: ProfilePrepareContext<any>): Promise<{ exists: true, text: string } | { exists: false }> {
   const target = path.startsWith('workspace/')
     ? resolveContainedFilePath(absoluteFsPath(context.session.workspaceRoot), path.slice('workspace/'.length))
@@ -1354,6 +1365,7 @@ async function renderStringChildren(state: CompileState, zone: RenderZone, child
   return parts.join('').trim()
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function renderStandaloneString(context: ProfilePrepareContext<any>, children: ProfileDslChild[]): Promise<string> {
   const state: CompileState = {
     context,
@@ -1493,6 +1505,7 @@ function assertAllowedWatchPath(path: string | undefined, label: string): void {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function readPath(context: ProfilePrepareContext<any>, path: string): Promise<JsonValue | undefined> {
   return context.vars.get(path)
 }
@@ -1693,6 +1706,7 @@ function readRecord(value: unknown): Record<string, unknown> {
     : {}
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function readCurrentProjectWorkspace(ctx: ProfilePrepareContext<any>): Promise<string> {
   const value = ctx.invocation?.clientState?.studio?.workspace
   const projectWorkspace = typeof value === 'string' && value.trim()
@@ -1701,6 +1715,7 @@ async function readCurrentProjectWorkspace(ctx: ProfilePrepareContext<any>): Pro
   return projectWorkspace ? normalizeDisplayPath(projectWorkspace) : ''
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function readWorkspaceFocus(ctx: ProfilePrepareContext<any>): Promise<JsonValue> {
   const selectedFilePath = ctx.invocation?.clientState?.studio?.selectedFilePath
   return {
@@ -1784,6 +1799,7 @@ function linkedAgentItemsText(session: NeuroSessionContext): string {
     .join('\n')
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function readTaskList(ctx: ProfilePrepareContext<any>, stateKey = AGENT_TASKS_STATE_KEY): {
   title?: string
   steps: Array<{ id: string, text: string, status: string, note?: string }>
@@ -2008,6 +2024,7 @@ function renderModeReminderText(kind: ModeSlotKind, workDirectory: string, toolD
   ].join('\n'))
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function renderModeSlotText(ctx: ProfilePrepareContext<any>, children: ProfileDslChild[], workDirectory: string): Promise<string> {
   const body = await renderStandaloneString(ctx, [
     `Thread work directory: ${workDirectory}\n`,
@@ -2016,6 +2033,7 @@ async function renderModeSlotText(ctx: ProfilePrepareContext<any>, children: Pro
   return body.trim() ? systemReminder(body) : ''
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mentionedSkillsReminderText(ctx: ProfilePrepareContext<any>): string {
   const latestUser = ctx.runtime?.pendingUserMessage
     ?? [...ctx.session.messages].reverse().find(message => message.role === 'user')
@@ -2043,6 +2061,7 @@ function displaySkillLocation(skillPath: string): string {
   return resolve(skillPath)
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function defaultSkillCatalogText(ctx: ProfilePrepareContext<any>, mode: 'workspace' | 'userAssets' = 'workspace'): Promise<string> {
   if (ctx.skills.length === 0) {
     return ''
@@ -2089,6 +2108,7 @@ async function defaultSkillCatalogText(ctx: ProfilePrepareContext<any>, mode: 'w
   ].join('\n')
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function defaultAgentCatalogText(ctx: ProfilePrepareContext<any>): Promise<string> {
   const profiles = ctx.catalog.profiles
     .filter(profile => profile.loadStatus === 'loaded' && profile.creationMode === 'public')
@@ -2108,6 +2128,7 @@ async function defaultAgentCatalogText(ctx: ProfilePrepareContext<any>): Promise
   ].join('\n')
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function defaultWorkflowCatalogText(ctx: ProfilePrepareContext<any>): Promise<string> {
   const workflows = ctx.workflows ?? []
   const visibleModels = ctx.agentVisibleModels ?? []
@@ -2150,6 +2171,7 @@ async function defaultWorkflowCatalogText(ctx: ProfilePrepareContext<any>): Prom
   ].join('\n')
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function defaultActivatedSkillsText(ctx: ProfilePrepareContext<any>): Promise<string> {
   const latestUser = ctx.runtime?.pendingUserMessage
     ?? [...ctx.session.messages].reverse().find(message => message.role === 'user')
@@ -2165,6 +2187,7 @@ async function defaultActivatedSkillsText(ctx: ProfilePrepareContext<any>): Prom
   ].join('\n'))
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function defaultSqlSchemaSummaryText(ctx: ProfilePrepareContext<any>): Promise<string> {
   try {
     // SQL schema 摘要经宿主注入获得；artifact 依赖图不允许携带 project-session / @libsql。
