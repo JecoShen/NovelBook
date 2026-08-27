@@ -15,7 +15,6 @@ import type {
   ProfileHomeDefinition,
   ProfileHomeFacade,
   ProfileHomeListItem,
-  ProfileHomeScope,
   ProfileHomeWriteMode,
   ProfileHomeWriteResult,
   ProfileJsonValue,

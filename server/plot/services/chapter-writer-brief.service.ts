@@ -17,7 +17,6 @@ import type {
   ChapterWriterBriefSceneDto,
   ChapterWriterBriefStatus,
   SceneWorldContextDto,
-  StoryChapterDto,
   StoryDecisionDto,
   StoryPromiseBeatKindDto,
 } from 'nbook/shared/dto/plot.dto'

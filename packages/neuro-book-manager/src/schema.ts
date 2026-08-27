@@ -2,7 +2,7 @@ import { Type } from 'typebox'
 import type { Static, TSchema } from 'typebox'
 import { Value } from 'typebox/value'
 import { valid } from 'semver'
-import { isAbsolute, join, resolve } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
 
 import { PRODUCT_ASSET_NAMES } from '#manager/platform'
 import { installationPaths } from '#manager/paths'

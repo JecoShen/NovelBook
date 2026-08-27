@@ -1,5 +1,4 @@
 import { getResponseHeader, setResponseHeader, type H3Event } from 'h3'
-import type { ServerTimingSink } from 'nbook/server/utils/server-timing-sink'
 
 type ServerTimingMark = {
   name: string

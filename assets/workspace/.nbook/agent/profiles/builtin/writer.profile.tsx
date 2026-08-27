@@ -6,7 +6,6 @@ import { isAbsolute, join, posix } from 'node:path'
 import { Type, type ProfilePrepareContext, type ReadyProjectSessionRef, type Static } from 'nbook/profile-sdk'
 import { defineAgentProfile, builtin, plotReadBindings, pluginTool, toolset, WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema, AppendingSet, FileChangeNotice, HistorySet, If, Import, Message, ProfilePrompt, System, profileText, defineLowCodeForm, profileHomeResource, defineProfileHome } from 'nbook/profile-sdk'
 import { DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey, DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey, DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords } from 'nbook/profile-sdk/writing'
-import type { AbsoluteFsPath } from 'nbook/profile-sdk/runtime-paths'
 import { resolveForChapter, renderInjectedMarkdown } from 'nbook/profile-sdk/lore'
 import type { ReadyProjectSessionRef as ServerReadyProjectSessionRef } from 'nbook/profile-sdk/lore'
 
@@ -287,13 +286,6 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
   const adultStylePrompt = ctx.settings.adultStylePrompt.trim()
   const inputContext = await renderInputContext(ctx)
   const chapterLoreContext = await renderChapterLoreContext(ctx) // ★ I-1: lore 注入
-  const chapterLoreBlock = chapterLoreContext.length > 0
-    ? profileText`
-<chapter_lore_context>
-${chapterLoreContext}
-</chapter_lore_context>
-`
-    : ''
   return (
     <ProfilePrompt>
       <System>

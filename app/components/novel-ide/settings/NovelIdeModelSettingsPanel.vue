@@ -325,10 +325,6 @@ function displayModelApiSource(model: ModelDraft): string {
   return model.api.trim() ? t('settings.panels.models.modelApiSourceModel') : t('settings.panels.models.modelApiSourceMissing')
 }
 
-function modelApiInheritLabel(model: ModelDraft): string {
-  return model.api.trim() || t('settings.panels.modelEdit.requiredForCustomModel')
-}
-
 function modelInputDisplayLabel(model: ModelDraft): string {
   return (parseModelInput(model.input) ?? []).map(item => modelInputOptions.value.find(option => option.value === item)?.label ?? item).join(' / ')
 }

@@ -6,7 +6,7 @@
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { resolveRuntimeWorkspaceRoot } from 'nbook/server/workspace-files/workspace-runtime-root'
 import { PROJECT_DATABASE_MODULE_TOKEN } from 'nbook/server/workspace-files/project-database-module'

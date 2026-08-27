@@ -224,7 +224,6 @@ function blockWorkbenchActionBusy(message = 'World Engine 工作台正在同步�
 
 const workbenchSchema = computed(() => schema.value ?? emptySchema)
 const selectedSlice = computed(() => slices.value.find(slice => slice.id === selectedSliceId.value) ?? null)
-const selectedSliceIndex = computed(() => selectedSlice.value ? slices.value.findIndex(slice => slice.id === selectedSlice.value?.id) : -1)
 const subjectNameMap = computed(() => new Map(subjects.value.map(subject => [subject.id, subject.name || subject.id])))
 const worldSubjectIdSet = computed(() => new Set(worldSubjects.value.map(subject => subject.id)))
 const previewHref = computed(() => router.resolve(`/world-engine.preview?${new URLSearchParams({ projectRoot: props.projectRoot }).toString()}`).href)

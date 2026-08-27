@@ -8,7 +8,6 @@ import {
   rollbackAppSqliteMigrationStep,
 } from 'nbook/server/runtime/application-state-migration/app-sqlite-step'
 import {
-  applicationStateCatalog,
   historicalStepRunId,
   parseMigrationApplicationStateJournal,
   parseMigrationApplicationStateSentinel,

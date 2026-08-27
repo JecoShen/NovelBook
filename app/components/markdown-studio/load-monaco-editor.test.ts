@@ -7,8 +7,8 @@ describe('loadMonacoEditor', () => {
   })
 
   it('为 json language 分配 JSON worker', () => {
-    class EditorWorker {}
-    class JsonWorker {}
+    const EditorWorker = function EditorWorker() {} as unknown as { new(): object }
+    const JsonWorker = function JsonWorker() {} as unknown as { new(): object }
 
     vi.stubGlobal('MonacoEnvironment', undefined)
     ensureMonacoEnvironment({

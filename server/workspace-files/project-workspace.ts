@@ -9,7 +9,7 @@ import {
   type ProjectWorkspaceRef,
 } from 'nbook/server/workspace-files/project-identity'
 import { collectReleasedSqliteHandles } from 'nbook/server/workspace-files/sqlite-handle-release'
-import { PROJECT_MANIFEST_FILE, readProjectManifest, type ProjectManifest } from 'nbook/server/workspace-files/project-manifest'
+import { PROJECT_MANIFEST_FILE, type ProjectManifest } from 'nbook/server/workspace-files/project-manifest'
 
 // manifest 读取与类型在 project-manifest.ts（纯模块，可进 profile artifact）；re-export 保持 API 不变。
 export { PROJECT_MANIFEST_FILE, readProjectManifest, readProjectManifestIssue, readProjectManifestIssueFromRoot, type ProjectManifest } from 'nbook/server/workspace-files/project-manifest'

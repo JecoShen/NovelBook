@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useClientSanitizer } from 'nbook/app/composables/useClientSanitizer'
 import { useNotification, type NotificationItem, type NotificationPosition } from 'nbook/app/composables/useNotification'
 
 const props = withDefaults(defineProps<{ desktop?: boolean }>(), {
@@ -37,6 +39,11 @@ const groupedNotifications = computed<NotificationGroup[]>(() => {
 
   return [...groupMap.values()]
 })
+
+const clientSanitizer = useClientSanitizer()
+function safeItemHtml(item: NotificationItem): string {
+  return item.html ? clientSanitizer.value(item.html) : ''
+}
 
 function positionClass(position: NotificationPosition): string {
   if (position === 'top-left') {
@@ -142,7 +149,7 @@ function badgeToneClass(item: NotificationItem): string {
                 <div
                   v-if="item.html"
                   class="mt-0.5 text-xs leading-5 text-white/90 [&_a]:underline [&_code]:rounded [&_code]:bg-black/20 [&_code]:px-1 [&_strong]:font-semibold"
-                  v-html="item.html"
+                  v-html="safeItemHtml(item)"
                 />
                 <div
                   v-else-if="item.message"

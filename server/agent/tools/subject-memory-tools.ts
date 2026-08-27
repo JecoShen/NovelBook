@@ -20,7 +20,6 @@ import {
   serializeSubjectEventsJsonl,
   serializeSubjectMemoriesJsonl,
   type JsonPatchOperation,
-  type SubjectEvent,
   type SubjectMemory,
 } from 'nbook/server/agent/tools/subject-memory'
 import {

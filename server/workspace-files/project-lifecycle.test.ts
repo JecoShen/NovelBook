@@ -1605,7 +1605,7 @@ describe('ProjectLifecycle', () => {
     roots.push(workspaceRoot)
     const projectName = 'Create-Final-Case'
     const externalName = 'create-final-case'
-    const projectRoot = path.join(workspaceRoot, projectName)
+    const _projectRoot = path.join(workspaceRoot, projectName)
     const externalRoot = path.join(workspaceRoot, externalName)
     const externalSentinel = path.join(externalRoot, 'external.txt')
     let directoryReadCount = 0

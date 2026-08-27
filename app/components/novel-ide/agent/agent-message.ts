@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { AgentMessage as PiAgentMessage, AgentToolCall as PiAgentToolCall, AssistantMessage as PiAssistantMessage, JsonValue, Message as PiMessage, ToolResultMessage, Usage } from 'nbook/server/agent/messages/types'
+import type { AgentToolCall as PiAgentToolCall, AssistantMessage as PiAssistantMessage, JsonValue, Usage } from 'nbook/server/agent/messages/types'
 import type { AgentActiveInvocationDto, AgentAssistantUpdateDto, AgentRuntimeStreamEventDto, AgentPendingApprovalDto, AgentPendingUserInputDto, AgentMode } from 'nbook/shared/dto/agent-session.dto'
 import { AgentModeSchema } from 'nbook/shared/dto/agent-session.dto'
 import type { AgentChatEntryDto, PublicTextPreviewDto, PublicToolArgsDto, PublicToolResultDto, PublicValuePreviewDto } from 'nbook/shared/dto/agent-public-event.dto'
@@ -1035,44 +1035,6 @@ const toolCallsFromContent = (content: RuntimeAssistantContent, assistantMessage
   return toolCalls.length ? toolCalls : undefined
 }
 
-const messageContentText = (message: PiMessage): string => {
-  if (typeof message.content === 'string') {
-    return message.content
-  }
-  return message.content.filter(block => block.type === 'text').map(block => block.text).join('\n')
-}
-
-const customMessageText = (message: Record<string, unknown>): string => {
-  const content = message.content
-  if (typeof content === 'string') {
-    return content
-  }
-  if (Array.isArray(content)) {
-    return content
-      .filter((block): block is { type?: string, text?: string } => Boolean(block) && typeof block === 'object')
-      .filter(block => block.type === 'text')
-      .map(block => block.text ?? '')
-      .join('\n')
-  }
-  const details = message.details
-  if (typeof details === 'string') {
-    return details
-  }
-  try {
-    return JSON.stringify(message, null, 2)
-  }
-  catch {
-    return String(message.role ?? 'custom message')
-  }
-}
-
-const resolveLiveMessageId = (message: PiAgentMessage): string => {
-  if (message.role === 'toolResult') {
-    return `tool-result:${message.toolCallId}:${String(message.timestamp)}`
-  }
-  return `${message.role}:${String(message.timestamp)}`
-}
-
 const toLocalToolCall = (toolCall: PiAgentToolCall, index: number, assistantMessageId: string): AgentToolCall => {
   const argsText = formatToolArgs(toolCall.arguments)
   return {
@@ -1181,34 +1143,6 @@ const markInterruptedToolCalls = (
       }
     })
   }
-}
-
-const upsertToolResult = (assistant: AgentMessage, toolResult: ToolResultMessage): void => {
-  const toolCalls = [...(assistant.toolCalls ?? [])]
-  const index = toolCalls.findIndex(toolCall => toolCall.id === toolResult.toolCallId)
-  const result = messageContentText(toolResult)
-  const nextToolCall: AgentToolCall = {
-    id: toolResult.toolCallId,
-    assistantMessageId: assistant.id,
-    index: index >= 0 ? toolCalls[index]!.index : toolCalls.length,
-    name: toolResult.toolName,
-    argsText: index >= 0 ? toolCalls[index]!.argsText : '',
-    argsJson: index >= 0 ? toolCalls[index]!.argsJson : undefined,
-    status: toolResult.isError ? 'error' : 'success',
-    error: toolResult.isError ? result : undefined,
-    result,
-    resultData: jsonValue(toolResult.details),
-  }
-  if (index >= 0) {
-    toolCalls[index] = {
-      ...toolCalls[index],
-      ...nextToolCall,
-    }
-  }
-  else {
-    toolCalls.push(nextToolCall)
-  }
-  assistant.toolCalls = toolCalls.sort((left, right) => left.index - right.index)
 }
 
 const updateToolCall = (messages: AgentMessage[], toolCallId: string, patch: Partial<AgentToolCall>): AgentMessage[] => {
@@ -1375,34 +1309,7 @@ const publicToolResultDetails = (result: PublicToolResultDto): JsonValue | undef
       }
 }
 
-/**
- * 将持久化 tool details 收窄为真正 JSON 值，避免 UI 状态长期持有 unknown。
- * 非 JSON 字段按 JSON.stringify 的语义忽略，循环引用不会进入公开状态。
- */
-const jsonValue = (value: unknown, seen = new WeakSet<object>()): JsonValue | undefined => {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
-    return value
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : undefined
-  }
-  if (typeof value !== 'object' || seen.has(value)) {
-    return undefined
-  }
-  seen.add(value)
-  try {
-    if (Array.isArray(value)) {
-      return value.map(item => jsonValue(item, seen) ?? null)
-    }
-    const entries = Object.entries(value)
-      .map(([key, item]) => [key, jsonValue(item, seen)] as const)
-      .filter((entry): entry is readonly [string, JsonValue] => entry[1] !== undefined)
-    return Object.fromEntries(entries)
-  }
-  finally {
-    seen.delete(value)
-  }
-}
+
 
 /** 将任意工具参数值解析为 AgentMode；非法/缺失时返回 undefined。复用 shared schema 避免手写枚举漂移。 */
 const parseAgentMode = (value: unknown): AgentMode | undefined => {

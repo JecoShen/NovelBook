@@ -49,18 +49,22 @@ console.log('rule'.padEnd(60), 'count'.padStart(7), 'files'.padStart(7), '  clas
 for (const [rule, info] of sorted) {
   const total = info.errors + info.warnings
   // 简单 class 提示
-  let cls = ''
-  if (rule.startsWith('@stylistic/')) cls = 'stylistic'
+  let cls
+  if (rule.startsWith('@stylistic/')) {
+    cls = 'stylistic'
+  }
   else if (rule.startsWith('@typescript-eslint/')) {
     if (/prefer-|no-var|no-with|no-debugger|init-declarations|no-empty/.test(rule)) cls = 'mechanical'
     else if (/no-unused|no-undef|no-shadow|no-redeclare|no-dupe/.test(rule)) cls = 'lint'
     else if (/no-unsafe|no-explicit-any|no-non-null-assertion|no-misused-promises/.test(rule)) cls = 'semantic'
     else cls = 'ts-other'
-  } else if (rule.startsWith('vue/')) {
+  }
+  else if (rule.startsWith('vue/')) {
     if (/attribute-hyphenation|attribute-order|self-closing|html-self-closing/.test(rule)) cls = 'stylistic'
     else if (/no-unused-components|no-unused-vars|require-default-prop/.test(rule)) cls = 'lint'
     else if (/no-mutating-props|no-async-in-computed-setup/.test(rule)) cls = 'semantic'
     else cls = 'vue-other'
-  } else cls = 'other'
+  }
+  else cls = 'other'
   console.log(rule.padEnd(60), String(total).padStart(7), String(info.files.size).padStart(7), '  ' + cls)
 }

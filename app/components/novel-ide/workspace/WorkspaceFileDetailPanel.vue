@@ -27,7 +27,7 @@ type ManuscriptStatsSnapshot = {
   updatedAt: string
 }
 
-const props = defineProps<{
+defineProps<{
   node: WorkspaceFileNode | null
   issues: WorkspaceFileIssue[]
   height: number
@@ -72,7 +72,6 @@ const isContentIndexFile = computed(() => Boolean(isMarkdownFile.value && props.
 const isManuscriptIndexFile = computed(() => Boolean(isContentIndexFile.value && props.node?.path.startsWith('manuscript/')))
 const isDirectoryWithoutIndex = computed(() => Boolean(props.node?.isDirectory && !props.node.hasIndex))
 const isContentDirectoryWithoutIndex = computed(() => Boolean(props.node?.isDirectory && !props.node.hasIndex && isWorkspaceContentScopePath(props.node.path)))
-const canEditFrontmatter = computed(() => Boolean(isContentIndexFile.value && !isManuscriptIndexFile.value && !localFrontmatterError.value && !props.node?.frontmatterError))
 const canCreateIndex = computed(() => Boolean(isContentDirectoryWithoutIndex.value))
 const canConvertFileToDirectory = computed(() => Boolean(
   props.node

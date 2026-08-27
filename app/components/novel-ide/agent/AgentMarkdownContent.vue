@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { inject, onUnmounted, ref, watch, type Ref } from 'vue'
+import { computed, inject, onUnmounted, ref, watch, type Ref } from 'vue'
+import { useClientSanitizer } from 'nbook/app/composables/useClientSanitizer'
 import { renderMarkdown } from 'nbook/app/utils/markdown/render'
 import { MARKDOWN_THEME } from 'nbook/app/config/markdown-theme'
 
@@ -108,13 +109,16 @@ watch([
 onUnmounted(() => {
   cancelScheduledRender()
 })
+
+const clientSanitizer = useClientSanitizer()
+const safeRenderedHtml = computed(() => clientSanitizer.value(renderedHtml.value))
 </script>
 
 <template>
   <div
     :class="['agent-markdown', `theme-${MARKDOWN_THEME}`, { 'is-reference-clickable': Boolean(props.openReference) }]"
     @click="handleReferenceClick"
-    v-html="renderedHtml"
+    v-html="safeRenderedHtml"
   />
 </template>
 

@@ -39,7 +39,6 @@ const JsonValueSchema: z.ZodType<unknown> = z.lazy(() => z.union([
   z.record(z.string(), JsonValueSchema),
 ]))
 
-const ConfigPathTextSchema = z.string().trim().min(1)
 const NullableModelKeySchema = z.string().trim().min(1).nullable().default(null)
 const EmbeddingDimensionsSchema = z.number().int().positive().nullable().default(null)
 const EmbeddingProviderSchema = z.enum(['openai-compatible'])

@@ -16,7 +16,6 @@ import {
   DEFAULT_MONACO_EDITOR_PREFERENCES,
   resolveDefaultWorkspaceViewMode,
   resolveWorkspaceEditorKind,
-  resolveWorkspaceFileExtension,
   type MarkdownEditorPreferences,
   type MonacoEditorPreferences,
   type WorkspaceEditorKind,

@@ -7,7 +7,6 @@ import { importInstallation, inspectImport } from '#manager/instance-import'
 import {
   forgetManagerInstance,
   readManagerConfig,
-  registerManagerInstance,
   setDefaultManagerInstance,
 } from '#manager/manager-config'
 import { doctor, installationStatus } from '#manager/maintenance'

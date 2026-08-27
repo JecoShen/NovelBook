@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import FormNumberInput from 'nbook/app/components/common/form/FormNumberInput.vue'
 import FormSelect from 'nbook/app/components/common/form/FormSelect.vue'
 import type { SelectOption } from 'nbook/app/components/common/form/FormSelect.vue'
 import type {
   SubjectStateDto,
-  WorkbenchJsonValue,
   WorldSlicePatchDto,
 } from 'nbook/app/components/novel-ide/world-engine/world-engine-workbench.types'
 import { formatWorkbenchPreviewValue } from 'nbook/app/utils/world-engine-workbench-preview-value'

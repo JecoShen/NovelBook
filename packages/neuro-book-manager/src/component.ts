@@ -5,7 +5,7 @@ import { dirname, join, relative } from 'node:path'
 import { downloadVerified, extractArchive } from '#manager/download'
 import { ensureDirectory, pathExists, removePath, safeTarget } from '#manager/files'
 import { verifyProductRuntimeImage } from '#manager/product'
-import type { ProductComponent, ProductPlatform, ProductReleaseAsset, ReleaseAsset, SourceComponent } from '#manager/types'
+import type { ProductComponent, ProductReleaseAsset, ReleaseAsset, SourceComponent } from '#manager/types'
 
 export type StagedReleaseSource = {
   component: Extract<SourceComponent, { provider: 'release' }>

@@ -6,12 +6,10 @@ import { AgentProfileCatalog } from 'nbook/server/agent/profiles/catalog'
 import { compileProfileArtifacts } from 'nbook/server/agent/profiles/profile-artifact-compiler'
 import { buildSystemPromptRoot } from 'nbook/server/agent/profiles/profile-http-service'
 import {
-  createProfileSource,
   createProfileSourceDraft,
   deleteProfileSource,
   listProfileFiles,
   listProfileTemplates,
-  readProfileSource,
   readProfileSourceDraft,
   saveProfileSource,
 } from 'nbook/server/agent/profiles/workbench-service'

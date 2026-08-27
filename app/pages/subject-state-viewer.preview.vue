@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import WorldEngineSubjectStateViewer from 'nbook/app/components/novel-ide/world-engine/WorldEngineSubjectStateViewer.vue'
 import type { WorldPreviewSchemaType } from 'nbook/app/utils/world-engine-preview'
 import type { SubjectStateDto } from 'nbook/app/components/novel-ide/world-engine/world-engine-workbench.types'

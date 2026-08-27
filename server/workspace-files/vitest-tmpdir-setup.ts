@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { randomBytes } from 'node:crypto'
 import { join } from 'node:path'

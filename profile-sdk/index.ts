@@ -131,7 +131,7 @@ export const agentRuntimeBuiltins: {
   runtimeOnlyTranscript<TInitial = ProfileJsonValue>() {
     return builtinRuntimeHook<TInitial>('runtimeOnlyTranscript', 'ingestTurn', { transcript: 'runtime_only' })
   },
-  reportResult<TInitial = ProfileJsonValue>() {
+  reportResult() {
     return {
       name: 'builtin.reportResult',
       stage: 'prepareRun',

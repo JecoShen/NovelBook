@@ -1572,13 +1572,3 @@ async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true })
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 4)}\n`, 'utf-8')
 }
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.access(filePath)
-    return true
-  }
-  catch {
-    return false
-  }
-}

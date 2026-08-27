@@ -59,14 +59,6 @@ const emit = defineEmits<{
   (e: 'save-schema', payload: { schemaName: ProfileSchemaName, fields: AgentProfileSchemaFieldDto[] }): void
 }>()
 
-const schemaTypeOptions = [
-  { value: 'string', label: 'string' },
-  { value: 'number', label: 'number' },
-  { value: 'boolean', label: 'boolean' },
-  { value: 'enum', label: 'enum' },
-  { value: 'array', label: 'array' },
-  { value: 'object', label: 'object' },
-]
 const fileChangeNoticeModeOptions = [
   { value: 'off', label: 'off' },
   { value: 'minimal', label: 'minimal' },
@@ -103,13 +95,6 @@ function resetSchemaDraft(): void {
   schemaFields.value = schema ? fieldsFromJsonSchema(schema) : []
 }
 
-/**
- * 判断当前 schema 是否允许低代码保存。
- */
-function canSaveSchema(): boolean {
-  const detail = currentSchemaDetail()
-  return Boolean(detail && detail.editMode === 'source')
-}
 
 function currentSchemaDetail(): AgentProfileDetailDto['initialSchema'] | undefined {
   if (!props.profileDetail) {
@@ -168,73 +153,14 @@ function readSchemaType(schema: Record<string, unknown>): AgentProfileSchemaFiel
 }
 
 /**
- * 新增 schema 字段。
- */
-function addSchemaField(): void {
-  schemaFields.value.push({
-    name: `field${schemaFields.value.length + 1}`,
-    type: 'string',
-    required: false,
-    description: '',
-    defaultValueText: '',
-    enumValuesText: '',
-    itemType: 'string',
-  })
-}
 
 /**
- * 删除 schema 字段。
- */
-function removeSchemaField(index: number): void {
-  schemaFields.value.splice(index, 1)
-}
 
 /**
- * 保存当前 schema 草稿。
- */
-function saveSchemaDraft(): void {
-  emit('save-schema', {
-    schemaName: editingSchemaName.value,
-    fields: schemaFields.value
-      .filter(field => field.name.trim())
-      .map(toSchemaFieldDto),
-  })
-}
-
-/**
- * 转成服务端 schema builder DTO。
- */
-function toSchemaFieldDto(field: SchemaFieldDraft): AgentProfileSchemaFieldDto {
-  const result: AgentProfileSchemaFieldDto = {
-    name: field.name.trim(),
-    type: field.type,
-    required: field.required,
-  }
-  if (field.description.trim()) {
-    result.description = field.description.trim()
-  }
-  if (field.defaultValueText.trim()) {
-    result.defaultValue = parseDefaultValue(field.defaultValueText)
-  }
-  if (field.type === 'enum') {
-    result.enumValues = field.enumValuesText.split('\n').map(item => item.trim()).filter(Boolean)
-  }
-  if (field.type === 'array') {
     result.itemType = field.itemType === 'array' ? 'string' : field.itemType
   }
   return result
 }
-
-/**
- * 解析默认值；简单裸字符串按字符串处理，合法 JSON 按 JSON 处理。
- */
-function parseDefaultValue(value: string): AgentProfileSchemaFieldDto['defaultValue'] {
-  try {
-    return JSON.parse(value)
-  }
-  catch {
-    return value
-  }
 }
 
 /**

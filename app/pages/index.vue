@@ -151,7 +151,6 @@ const {
   plotWorkbenchOpen,
 } = storeToRefs(novelIdeStore)
 const {
-  initializeWorkspace,
   loadWorkspaceTree,
   saveCurrentFile,
   saveDirtyWorkspaceFiles,
@@ -951,9 +950,10 @@ const saveCurrentWorkspaceFile = async (): Promise<void> => {
     if (saveQueued.value && !novelIdeStore.workspaceWriteConflict && selectedFileContent.value !== lastSyncedFileContent.value) {
       saveQueued.value = false
       await saveCurrentWorkspaceFile()
-      return
     }
-    saveQueued.value = false
+    else {
+      saveQueued.value = false
+    }
   }
 }
 
@@ -1531,23 +1531,6 @@ const runLayoutModeTransition = async (mutation: () => void): Promise<void> => {
 }
 
 /**
- * 切换主界面的 IDE / Agent layout mode。
- */
-const toggleAgentLayoutMode = async (): Promise<void> => {
-  if (layoutMode.value === 'agent') {
-    await runLayoutModeTransition(() => {
-      layoutMode.value = 'ide'
-    })
-    return
-  }
-  await runLayoutModeTransition(() => {
-    layoutMode.value = 'agent'
-  })
-  await nextTick()
-  await agentSurfaceRef.value?.ensureSessionReady()
-}
-
-/**
  * 打开右侧 Agent 面板并选择指定 Session。
  */
 async function showAgentSession(sessionId: number): Promise<void> {
@@ -1638,13 +1621,6 @@ const toggleAgentPanel = async (): Promise<void> => {
   if (!agentPanelOpen.value) return
   await nextTick()
   await agentSurfaceRef.value?.ensureSessionReady()
-}
-
-/**
- * 切换 Agent Mode 的右侧 Studio 区域。
- */
-const toggleAgentModeStudio = (): void => {
-  agentStudioPanelVisible.value = !agentStudioPanelVisible.value
 }
 
 /**
@@ -1819,27 +1795,6 @@ const openWorldEngineWorkbench = (): void => {
     return
   }
   worldEngineWorkbenchOpen.value = true
-}
-
-/**
- * 从主 IDE 打开当前 Project 的 Plot 工作台。
- */
-const openPlotWorkbench = async (): Promise<void> => {
-  if (isUserAssetsWorkspace.value) {
-    return
-  }
-
-  if (isAgentMode.value) {
-    await runLayoutModeTransition(() => {
-      layoutMode.value = 'ide'
-      activeLeftTab.value = 'plot'
-    })
-  }
-  else {
-    activeLeftTab.value = 'plot'
-  }
-
-  plotWorkbenchOpen.value = true
 }
 
 /**

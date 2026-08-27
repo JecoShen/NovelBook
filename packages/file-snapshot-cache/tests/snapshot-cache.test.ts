@@ -289,15 +289,16 @@ describe('SnapshotCache generation 与事件归并', () => {
 
   it('连续失效达到 maxBuildAttempts 后返回 typed unstable error 并保留 dirty', async () => {
     let buildCount = 0
-    const cache!: SnapshotCache<string, ReturnType<typeof buildResult>['nodes'][number], string, TestEvent>
+    const cacheRef: { current: SnapshotCache<string, ReturnType<typeof buildResult>['nodes'][number], string, TestEvent> | undefined } = { current: undefined }
     const options = cacheOptions(async () => {
       buildCount += 1
-      queueMicrotask(() => cache.invalidate('alpha', { path: `change-${buildCount}`, kind: 'change' }))
+      queueMicrotask(() => cacheRef.current?.invalidate('alpha', { path: `change-${buildCount}`, kind: 'change' }))
       await new Promise<void>(resolve => setImmediate(resolve))
       return buildResult(buildCount)
     })
     options.maxBuildAttempts = 2
-    cache = new SnapshotCache(options)
+    cacheRef.current = new SnapshotCache(options)
+    const cache = cacheRef.current
 
     await expect(cache.read('alpha')).rejects.toMatchObject({
       name: 'SnapshotUnstableError',

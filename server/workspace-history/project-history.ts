@@ -435,7 +435,7 @@ async function readFileForReconcile(
     signal?.throwIfAborted()
     return content
   }
-  catch (error) {
+  catch {
     if (signal?.aborted) {
       throw signal.reason
     }

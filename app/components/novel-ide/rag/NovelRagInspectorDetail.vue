@@ -5,7 +5,7 @@ import type {
   RagInspectorDetailSelection,
 } from 'nbook/app/components/novel-ide/rag/rag-inspector-workbench.types'
 
-const props = defineProps<{
+const _props = defineProps<{
   inspector: ProjectRagInspectorDto | null
   selectedSubject: ProjectRagSubjectSummaryDto | null
   selection: RagInspectorDetailSelection

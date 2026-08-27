@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { access, mkdir, readFile, rm, utimes, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {

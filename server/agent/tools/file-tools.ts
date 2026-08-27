@@ -7,7 +7,7 @@ import type { Static } from 'typebox'
 import { spawnOwnedProcess } from '@notnotype/owned-process'
 import { recordContextAccess } from 'nbook/server/agent/context-access/profile-context-access'
 import { detectImageMimeType, firstChangedLine } from 'nbook/server/agent/tools/file-tool-utils'
-import { formatSize, DEFAULT_MAX_BYTES, truncateHead, type TruncationResult } from 'nbook/server/agent/tools/truncate'
+import { formatSize, DEFAULT_MAX_BYTES, truncateHead } from 'nbook/server/agent/tools/truncate'
 import { OutputAccumulator } from 'nbook/server/agent/tools/output-accumulator'
 import {
   BashOutputStore,
@@ -68,25 +68,6 @@ type WriteInput = Static<typeof WriteSchema>
 type EditInput = Static<typeof EditSchema>
 type BashInput = Static<typeof BashSchema>
 
-type ReadDetails = {
-  truncation?: TruncationResult
-  path: string
-  startLine?: number
-  endLine?: number
-  totalLines?: number
-  nextOffset?: number
-}
-
-type EditDetails = {
-  diff: string
-  firstChangedLine?: number
-}
-
-type BashDetails = {
-  truncation?: TruncationResult
-  fullOutput?: BashOutputReference
-}
-
 const bashOutputStores = new Map<string, Promise<BashOutputStore>>()
 
 /**
@@ -120,7 +101,7 @@ function createReadTool(): NeuroAgentTool {
     executionMode: 'parallel',
     description: `Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to 2000 lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete. Text output includes line numbers automatically when offset/limit is used or output is truncated; pass lineNumbers=true to force them for short full-file reads. In a Project-bound session, cwd is the current Project Workspace, so use lorebook/..., manuscript/... or other Project-relative paths. Any absolute filesystem path can be used directly. For another managed Project, prefer workspace/<project>/... when Project identity, open gate, History, or Context Access matters. Use read to examine files instead of cat/head/tail/sed.`,
     parameters: ReadSchema,
-    async executeWithContext(context: ToolExecutionContext, _toolCallId: string, params: unknown, _userInput?: unknown, signal?: AbortSignal) {
+    async executeWithContext(context: ToolExecutionContext, _toolCallId: string, params: unknown, _userInput?: unknown, _signal?: AbortSignal) {
       const input = params as ReadInput
       if (isBashOutputLocator(input.path)) {
         const buffer = await (await bashOutputStore(context)).read(input.path)
@@ -220,7 +201,7 @@ function createWriteTool(): NeuroAgentTool {
     mutatesWorkspace: true,
     description: 'Create or overwrite a file. Automatically creates parent directories. Use write only for new files or complete rewrites, not targeted edits to existing files.',
     parameters: WriteSchema,
-    async executeWithContext(context: ToolExecutionContext, _toolCallId: string, params: unknown, _userInput?: unknown, signal?: AbortSignal) {
+    async executeWithContext(context: ToolExecutionContext, _toolCallId: string, params: unknown, _userInput?: unknown, _signal?: AbortSignal) {
       const input = params as WriteInput
       const target = await resolveToolFile(context, input.path, 'write')
       return runProjectFileMutation([target], async () => {
@@ -275,7 +256,7 @@ function createEditTool(): NeuroAgentTool {
       }
       return input as EditInput
     },
-    async executeWithContext(context: ToolExecutionContext, _toolCallId: string, params: unknown, _userInput?: unknown, signal?: AbortSignal) {
+    async executeWithContext(context: ToolExecutionContext, _toolCallId: string, params: unknown, _userInput?: unknown, _signal?: AbortSignal) {
       const input = params as EditInput
       if (!Array.isArray(input.edits) || input.edits.length === 0) {
         throw new Error('edits must contain at least one replacement.')
@@ -318,7 +299,7 @@ function createApplyPatchTool(): NeuroAgentTool {
     mutatesWorkspace: true,
     description: 'Use the `apply_patch` tool to edit files by passing a Codex apply_patch patch in the `patch` string field. Use it when a change is naturally cohesive in one verified patch. For multiple separate locations in one file, prefer one edit call with multiple entries in edits[].',
     parameters: ApplyPatchSchema,
-    async executeWithContext(context: ToolExecutionContext, _toolCallId: string, params: unknown, _userInput?: unknown, signal?: AbortSignal) {
+    async executeWithContext(context: ToolExecutionContext, _toolCallId: string, params: unknown, _userInput?: unknown, _signal?: AbortSignal) {
       const input = params as { patch: string }
       const targets: ResolvedFileTarget[] = []
       for (const targetPath of extractPatchTargetPaths(input.patch)) {

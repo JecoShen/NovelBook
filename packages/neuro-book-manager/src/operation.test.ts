@@ -400,7 +400,7 @@ describe('Operation recovery', () => {
     await mkdir(staging, { recursive: true })
     await mkdir(backup, { recursive: true })
     await writeFile(join(retired, 'rg.exe'), 'old', 'utf8')
-    const journal = await createOperation({
+    await createOperation({
       id: 'rolled-back-retired',
       action: 'update',
       root,
@@ -513,7 +513,7 @@ describe('Operation recovery', () => {
     const root = await operationRoot()
     await mkdir(join(root, '.output'), { recursive: true })
     await writeFile(join(root, '.output', 'new.txt'), 'new-product', 'utf8')
-    const journal = await createOperation({
+    await createOperation({
       id: 'fresh-product-switch-intent',
       action: 'install',
       root,
@@ -578,7 +578,7 @@ describe('Operation recovery', () => {
 
   it('Fresh Git checkout只要开始物化就在失败恢复时按ownership清理', async () => {
     const root = await operationRoot()
-    const journal = await createOperation({
+    await createOperation({
       id: 'fresh-checkout-intent',
       action: 'install',
       root,
@@ -885,7 +885,7 @@ describe('Operation recovery', () => {
     const root = await operationRoot()
     const image = sourceDockerImageName('a'.repeat(40), 'image-cleanup')
     docker.removeImage.mockRejectedValueOnce(new Error('image is in use'))
-    const journal = await createOperation({
+    await createOperation({
       id: 'image-cleanup',
       action: 'install',
       root,

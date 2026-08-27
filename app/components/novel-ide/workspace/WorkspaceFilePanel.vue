@@ -52,9 +52,7 @@ const createDialogKind = ref<WorkspaceCreateKind>('file')
 const createDialogDefaultPath = ref('')
 const creatingWorkspaceNode = ref(false)
 const WORKSPACE_EXPANDED_PATHS_STORAGE_KEY = 'nbook.workspaceFilePanel.expandedPaths'
-const LOREBOOK_ENTRY_TYPES = ['location', 'character', 'item', 'rule', 'note'] as const
-
-type LorebookEntryType = typeof LOREBOOK_ENTRY_TYPES[number]
+type LorebookEntryType = 'location' | 'character' | 'item' | 'rule' | 'note'
 
 const filteredNodes = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase('zh-CN')

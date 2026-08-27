@@ -1,7 +1,6 @@
 import type {
   LegacySessionClassification,
   SessionMigrationRecordedReviewReason,
-  SessionMigrationReviewReason,
   SessionSchemaV2MigrationStats,
 } from 'nbook/server/agent/session/migrations/session-v2/legacy-decoder'
 import type {

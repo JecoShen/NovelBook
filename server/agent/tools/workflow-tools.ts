@@ -144,20 +144,22 @@ export function createWorkflowTools() {
       })
 
       // 运行期心跳：把 runId 与最新状态图推给前端气泡（partial details，不进最终 truth）
-      const heartbeat = onUpdate ? setInterval(() => {
-        void (async () => {
-          try {
-            const state = await service.runState(runId, 0)
-            onUpdate({
-              content: [{ type: 'text', text: `workflow ${def.key} 运行中…` }],
-              details: normalizeToolResultDetails({ runId, workflowKey: def.key, status: 'running', chartMermaid: state.machineMermaid }),
-            })
-          }
-          catch {
-            // 心跳失败不影响 run 本身
-          }
-        })()
-      }, 1200) : null
+      const heartbeat = onUpdate
+        ? setInterval(() => {
+            void (async () => {
+              try {
+                const state = await service.runState(runId, 0)
+                onUpdate({
+                  content: [{ type: 'text', text: `workflow ${def.key} 运行中…` }],
+                  details: normalizeToolResultDetails({ runId, workflowKey: def.key, status: 'running', chartMermaid: state.machineMermaid }),
+                })
+              }
+              catch {
+                // 心跳失败不影响 run 本身
+              }
+            })()
+          }, 1200)
+        : null
 
       let view
       try {

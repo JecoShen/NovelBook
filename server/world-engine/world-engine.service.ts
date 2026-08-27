@@ -1371,24 +1371,6 @@ function setPath(state: Record<string, JsonValue>, attr: string, value: JsonValu
   current[leaf] = value
 }
 
-function unsetPath(state: Record<string, JsonValue>, attr: string): void {
-  const parts = pathParts(attr)
-  const leaf = parts.at(-1)
-  if (!leaf) {
-    throw createError({ statusCode: 400, message: 'attr 不能为空' })
-  }
-  let current: JsonValue = state
-  for (const part of parts.slice(0, -1)) {
-    if (!isObject(current)) {
-      return
-    }
-    current = current[part] ?? null
-  }
-  if (isObject(current)) {
-    Reflect.deleteProperty(current, leaf)
-  }
-}
-
 function decodeJson(input: string): JsonValue {
   return JSON.parse(input) as JsonValue
 }
@@ -1570,31 +1552,6 @@ function clearOrigin(originByAttr: Map<string, string>, attr: string): void {
       originByAttr.delete(key)
     }
   }
-}
-
-function remapCollectionOrigins(
-  originByAttr: Map<string, string>,
-  attr: string,
-  previousValue: JsonValue | typeof MISSING,
-  currentValue: JsonValue | typeof MISSING,
-): void {
-  if (!Array.isArray(previousValue) || !Array.isArray(currentValue)) {
-    return
-  }
-  const originByValue = new Map<string, string>()
-  previousValue.forEach((item, index) => {
-    const origin = originByAttr.get(`${attr}[${index}]`) ?? originByAttr.get(attr)
-    if (origin) {
-      originByValue.set(stableJson(item), origin)
-    }
-  })
-  clearOrigin(originByAttr, attr)
-  currentValue.forEach((item, index) => {
-    const origin = originByValue.get(stableJson(item))
-    if (origin) {
-      originByAttr.set(`${attr}[${index}]`, origin)
-    }
-  })
 }
 
 function findOriginSlice(originByAttr: Map<string, string>, attr: string): string | undefined {
@@ -1797,10 +1754,6 @@ function assertInstantRange(from: bigint | undefined, to: bigint | undefined): v
 
 function unique(input: string[]): string[] {
   return [...new Set(input)].sort((left, right) => left.localeCompare(right))
-}
-
-function uniqueInstants(input: bigint[]): bigint[] {
-  return [...new Set(input.map(item => item.toString()))].map(item => BigInt(item)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)
 }
 
 function orderSubjects<TSubject extends { id: string }>(subjects: TSubject[], ids: string[] | undefined): TSubject[] {

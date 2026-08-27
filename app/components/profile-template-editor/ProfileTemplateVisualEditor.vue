@@ -28,7 +28,6 @@ import type {
   ComponentLibraryItem,
   InspectorTab,
   PreviewVariableGroup,
-  PreviewVariableItem,
 } from 'nbook/app/components/profile-template-editor/profile-template-editor-ui'
 import {
   filterVariableGroups,
@@ -45,7 +44,6 @@ import {
 } from 'nbook/app/components/profile-template-editor/profile-template-form-utils'
 import {
   generateFullTemplateSource,
-  generatePreviewNodeSource,
   indentPreviewSource,
   publicRuntimeProps,
   renderPreviewNodeText,
@@ -53,7 +51,6 @@ import {
 import { resolveRefreshedTemplateSelection } from 'nbook/app/components/profile-template-editor/profile-template-selection-utils'
 import {
   canHaveChildren,
-  canInsertNodeIntoParent,
   canInsertNodeIntoParentInTree,
   cloneNode,
   cloneNodeWithNewIds,
@@ -73,7 +70,6 @@ import {
   removeNode,
   removeNodeById,
 } from 'nbook/app/components/profile-template-editor/profile-template-tree-utils'
-import { buildNovelIdeClientVariables } from 'nbook/app/components/novel-ide/agent/client-variables'
 import { useIdeTheme } from 'nbook/app/composables/useIdeTheme'
 import { useAgentSessionApi } from 'nbook/app/composables/useAgentSessionApi'
 import { useNotification } from 'nbook/app/composables/useNotification'
@@ -397,25 +393,6 @@ function createDefaultProfileForm(): NewProfileForm {
     description: '',
     prompt: '你是一个自定义 Agent。根据用户输入完成任务，必要时使用工具。',
   }
-}
-
-/**
- * 构造用于同步线程 scope 的 IDE 客户端变量。
- */
-function buildClientVariables() {
-  return buildNovelIdeClientVariables({
-    activePanel: novelIdeStore.activeLeftTab,
-    theme: theme.value,
-    novelId: novelIdeStore.currentProjectRoot,
-    workspace: novelIdeStore.currentWorkspaceRoot || null,
-    workspaceKind: novelIdeStore.workspaceKind,
-    selectedFilePath: novelIdeStore.selectedFilePath || null,
-    selectedStoryThreadId: novelIdeStore.selectedStoryThreadId,
-    selectedStorySceneId: novelIdeStore.selectedStorySceneId,
-    previousSelectedFilePath: null,
-    fileChangedSinceLastSend: false,
-    selectionVersion: 0,
-  })
 }
 
 /**

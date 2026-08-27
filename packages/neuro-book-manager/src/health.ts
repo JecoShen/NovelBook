@@ -1,6 +1,6 @@
-import { copyFile, readFile } from 'node:fs/promises'
+import { copyFile } from 'node:fs/promises'
 import { createConnection } from 'node:net'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 
 import { Database } from 'bun:sqlite'
 

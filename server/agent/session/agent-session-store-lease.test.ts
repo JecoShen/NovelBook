@@ -171,7 +171,7 @@ describe('Agent Session Store runtime lease', () => {
   it('live owner pid 仍存活时不清 lease, 抛 ELOCKED', async () => {
     // 与"sync与async owner共享同一物理lease"互补, 显式覆盖另一个活进程持锁场景。
     const root = await nextRoot()
-    const path = agentSessionStoreLeasePath(root)
+    // path is unused; root is sufficient
     const release = await acquireAgentSessionStoreLease(root, 'runtime')
     try {
       // 当前进程 (process.pid) 仍活着, 第二次 acquire 必须抛 ELOCKED 而不是接管。
@@ -268,7 +268,7 @@ describe('Agent Session Store runtime lease', () => {
     // 边界保护: 即使在 grace 期, live owner 永远不能被新进程抢锁。
     // 防止两个新进程同时启动 (例如手动 + 自动) 互相抢锁。
     const root = await nextRoot()
-    const path = agentSessionStoreLeasePath(root)
+    // path is unused; root is sufficient
     const release = await acquireAgentSessionStoreLease(root, 'runtime')
     try {
       // 当前进程持锁, 第二次 acquire 必须抛 ELOCKED (即使 mock uptime < 30s)

@@ -1,5 +1,5 @@
 import { readdir, rm } from 'node:fs/promises'
-import { join, relative, resolve, sep } from 'node:path'
+import { relative, resolve, sep } from 'node:path'
 
 import { verifyApplicationExecution } from '#manager/application-execution'
 import { removeDockerDeployment, stopDocker } from '#manager/docker'

@@ -11,7 +11,6 @@ import {
   removeProjectWorkspaceForTest,
 } from 'nbook/server/workspace-files/project-session-test-utils'
 import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-types'
-import { absoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 import {
   createIsolatedWorkspaceAssets,
   type IsolatedWorkspaceAssets,

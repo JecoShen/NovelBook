@@ -233,8 +233,8 @@ Return test results and new test file path.`,
     }
 );
 
-// Return summary
-return {
+// Return summary (archived workflow: top-level return not allowed in module, omitted)
+const summary = {
     phases: {
         phase1: schemaImpl,
         phase2: patchImpl,
@@ -255,3 +255,5 @@ return {
         ]
     }
 };
+
+export default { meta, summary };

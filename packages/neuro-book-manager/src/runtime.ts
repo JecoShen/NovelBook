@@ -3,7 +3,7 @@ import { chmod, copyFile, readdir } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 
 import { extractArchive, githubReleaseAsset } from '#manager/download'
-import { ensureDirectory, pathExists, removePath, sha256File, writeTextAtomic } from '#manager/files'
+import { ensureDirectory, pathExists, sha256File, writeTextAtomic } from '#manager/files'
 import {
   MANAGER_RUNTIME_PROJECTION_DIRECTORY,
   MANAGER_RUNTIME_PROJECTION_FILENAME,

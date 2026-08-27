@@ -55,7 +55,8 @@ function createTestWriterProfile() {
       'get_story_decision',
     ]),
     async prepare(ctx) {
-      const settings = ctx.settings ?? {}
+      // settings is unused; ctx.settings ?? {} is the original signature
+      const _settings = ctx.settings ?? {}
       const avoidWords = '禁止使用以下词汇：一丝、不容置疑、不易察觉、几不可察。\n禁止使用以下句式：他没有……，而是……；不是……，而是……。'
 
       return {
@@ -178,7 +179,7 @@ describe('Writer Agent invoke 集成测试', () => {
 
     // 获取 recovery 检查是否有系统提示
     const recovery = await harness.getSessionQuery(session.sessionId, { view: 'recovery' })
-    const recoveryStr = JSON.stringify(recovery)
+    const _recoveryStr = JSON.stringify(recovery)
 
     // 验证 Profile 已注册且可获取
     const catalogProfile = harness.profiles.get('writer')
@@ -240,7 +241,7 @@ describe('Writer Agent invoke 集成测试', () => {
         result: Type.String(),
         data: Type.Optional(Type.Object({})),
       }),
-      async execute(_toolCallId: string, params: unknown) {
+      async execute(_toolCallId: string, _params: unknown) {
         return {
           content: [{ type: 'text', text: '任务完成' }],
           details: { kind: 'report_result', status: 'completed' },

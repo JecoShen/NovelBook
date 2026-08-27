@@ -63,7 +63,7 @@ export const WorkspaceContentFrontmatterSchema = z.looseObject({
 /**
  * 返回指定内容节点类型对应的 Zod schema。
  */
-export function schemaForWorkspaceContentType(type: string | null | undefined): z.ZodType<Record<string, unknown>> {
+export function schemaForWorkspaceContentType(_type: string | null | undefined): z.ZodType<Record<string, unknown>> {
   return WorkspaceContentFrontmatterSchema as z.ZodType<Record<string, unknown>>
 }
 

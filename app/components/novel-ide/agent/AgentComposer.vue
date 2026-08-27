@@ -92,8 +92,8 @@ type ComposerAvailabilityView = {
 }
 
 /** 将 availability 映射成持续可见的状态说明与唯一可用操作。 */
-const availabilityView = computed<ComposerAvailabilityView | null>(() => {
-  switch (props.availability.status) {
+function buildAvailabilityView(availability: AgentComposerAvailability): ComposerAvailabilityView | null {
+  switch (availability.status) {
     case 'ready':
       return null
     case 'restoring':
@@ -119,14 +119,14 @@ const availabilityView = computed<ComposerAvailabilityView | null>(() => {
         icon: 'i-lucide-archive',
         message: t('agent.composer.archived'),
         tone: 'warning',
-        action: props.availability.canRestore ? 'restore-session' : null,
+        action: availability.canRestore ? 'restore-session' : null,
         actionIcon: 'i-lucide-archive-restore',
         actionLabel: t('agent.composer.restore'),
       }
     case 'profile-unavailable':
       return {
         icon: 'i-lucide-circle-alert',
-        message: props.availability.message || t('agent.composer.profileUnavailable'),
+        message: availability.message || t('agent.composer.profileUnavailable'),
         tone: 'danger',
         action: null,
         actionIcon: '',
@@ -144,7 +144,7 @@ const availabilityView = computed<ComposerAvailabilityView | null>(() => {
     case 'load-error':
       return {
         icon: 'i-lucide-cloud-alert',
-        message: props.availability.message || t('agent.composer.loadError'),
+        message: availability.message || t('agent.composer.loadError'),
         tone: 'danger',
         action: 'retry-session',
         actionIcon: 'i-lucide-refresh-cw',
@@ -160,7 +160,8 @@ const availabilityView = computed<ComposerAvailabilityView | null>(() => {
         actionLabel: '',
       }
   }
-})
+}
+const availabilityView = computed<ComposerAvailabilityView | null>(() => buildAvailabilityView(props.availability))
 
 /** restoring 在输入区原位呈现，其他不可用状态继续使用带操作的状态栏。 */
 const availabilityBannerView = computed(() => props.availability.status === 'restoring'

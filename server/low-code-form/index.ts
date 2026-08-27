@@ -16,7 +16,6 @@ import type { ProfileHomeFacade } from 'nbook/server/agent/profiles/profile-home
 import { defineResourcePreset, profileHomeResource, type ResourcePresetDefinition } from 'nbook/server/low-code-form/resource-preset'
 import type {
   LowCodeFieldDefinition,
-  LowCodeFieldOptionsProvider,
   LowCodeFormDefinition,
   LowCodeFormResolveContext as AuthoringLowCodeFormResolveContext,
 } from 'nbook/profile-sdk/contracts'

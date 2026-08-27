@@ -21,7 +21,7 @@ import { beginRound, computeRoundMetrics } from './round'
 import { contribute, listOutbox, outboxDir } from './contribute'
 import { buildReport } from './report'
 import { LLMLINT_VERSION } from './version'
-import type { ActiveRuleRecord, CheckFileEntry, CheckFilterInfo, DensityIssue, FixFileResult, Issue, LlmlintOutput, MaskedRange, RegexRuleRecord, Review, RuleDetectorKind, RuleLevel } from './types'
+import type { ActiveRuleRecord, CheckFileEntry, CheckFilterInfo, DensityIssue, FixFileResult, Issue, LlmlintOutput, MaskedRange, Review, RuleDetectorKind, RuleLevel } from './types'
 import type { SharingMode, SharingTier, UserSettings } from './user-state'
 
 type GlobalOptions = {
@@ -281,7 +281,7 @@ export async function runCli(argv: string[]): Promise<void> {
       }
     })
 
-  const report = program
+  program
     .command('report')
     .description('把 check + detect 的 JSON 合成审稿报告（静态分级 + 密度指纹 + 四象限交叉）')
     .option('--check <path>', 'check --format json 的输出文件（必需）')

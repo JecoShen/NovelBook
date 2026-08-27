@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { fauxAssistantMessage, fauxText, fauxToolCall } from '@earendil-works/pi-ai'
 import type { Context } from '@earendil-works/pi-ai'

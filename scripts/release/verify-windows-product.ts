@@ -177,7 +177,6 @@ export async function verifyWindowsProduct(
 
     await command(['command', 'workspace', 'project', 'create', 'product-smoke', '--title', 'Product Smoke', '--json'])
     const projectWorkspaceRoot = join(stateRoot, 'workspace', 'product-smoke')
-    const nodeRoot = join(projectWorkspaceRoot, 'manuscript', 'smoke-chapter')
     await commandAt(projectWorkspaceRoot, 'command', 'workspace', 'node', 'new', 'manuscript/smoke-chapter', '--type', 'chapter', '--title', 'Smoke Chapter')
     await commandAt(projectWorkspaceRoot, 'command', 'workspace', 'node', 'validate', 'manuscript/smoke-chapter', '--json')
     await assertMissingProductWorkspace(productRoot)

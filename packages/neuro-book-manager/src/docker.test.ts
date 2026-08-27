@@ -13,7 +13,6 @@ import {
   runDockerApplicationCommand,
   startDocker,
   stopDocker,
-  stopDockerContainer,
   writeDockerCompose,
   verifyContainerProductImage,
   verifyRunningDockerApplication,

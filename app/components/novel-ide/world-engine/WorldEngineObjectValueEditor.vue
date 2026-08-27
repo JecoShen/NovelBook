@@ -6,7 +6,7 @@ type ObjectBuilderRow = {
   enabled: boolean
 }
 
-const props = defineProps<{
+defineProps<{
   builderValue: string
   objectBuilderRows: ObjectBuilderRow[]
   objectHasFixedFields: boolean

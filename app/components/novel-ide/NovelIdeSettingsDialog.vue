@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import type { Ref } from 'vue'
 import type { SelectOption } from 'nbook/app/components/common/form/FormSelect.vue'
 import Dialog from 'nbook/app/components/common/Dialog.vue'
 import FormSelect from 'nbook/app/components/common/form/FormSelect.vue'
@@ -306,26 +307,17 @@ const versionLabel = computed(() => {
   return t('settings.version.generic', { version: appVersion.value.versionLabel })
 })
 
+const activeSavePanelBySection: Record<string, Ref<SettingsSavePanelExpose | null> | null> = {
+  'models': modelSettingsPanelRef,
+  'embedding': embeddingSettingsPanelRef,
+  'cost': costSettingsPanelRef,
+  'web-tools': webSettingsPanelRef,
+  'agent-profile-models': agentProfileModelSettingsPanelRef,
+  'observability': observabilitySettingsPanelRef,
+}
 const activeSavePanel = computed<SettingsSavePanelExpose | null>(() => {
-  switch (activeSection.value) {
-    case 'models':
-      return modelSettingsPanelRef.value
-    case 'embedding':
-      return embeddingSettingsPanelRef.value
-    case 'cost':
-      return costSettingsPanelRef.value
-    case 'web-tools':
-      return webSettingsPanelRef.value
-    case 'agent-profile-models':
-      return agentProfileModelSettingsPanelRef.value
-    case 'observability':
-      return observabilitySettingsPanelRef.value
-    case 'frontend':
-    case 'editor':
-    case 'security':
-    case 'desktop':
-      return null
-  }
+  const panelRef = activeSavePanelBySection[activeSection.value] ?? null
+  return panelRef?.value ?? null
 })
 const activeSaveDirty = computed(() => activeSavePanel.value?.dirty ?? false)
 const activeSaveLoading = computed(() => activeSavePanel.value?.loading ?? false)

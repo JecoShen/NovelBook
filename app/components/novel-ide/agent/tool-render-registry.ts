@@ -1,4 +1,4 @@
-import { defineAsyncComponent, markRaw, type Component } from 'vue'
+import { markRaw, type Component } from 'vue'
 import type { AgentToolCall } from 'nbook/app/components/novel-ide/agent/agent-message'
 import AgentEditFileBubble from 'nbook/app/components/novel-ide/agent/AgentEditFileBubble.vue'
 import AgentRequestUserInputBubble from 'nbook/app/components/novel-ide/agent/AgentRequestUserInputBubble.vue'

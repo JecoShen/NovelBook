@@ -74,11 +74,13 @@ function inheritOptionLabel(value: string): string {
 
 /** 数值字段留空时的占位提示。 */
 const emptyPlaceholder = computed(() => {
-  switch (props.inheritMode) {
-    case 'globalDefaults': return t('settings.panels.profileModels.emptyPlaceholder')
-    case 'projectDefaults': return t('settings.panels.profileModels.inheritGlobalPlaceholder')
-    case 'profile': return t('settings.panels.profileModels.defaultPlaceholder')
+  if (props.inheritMode === 'globalDefaults') {
+    return t('settings.panels.profileModels.emptyPlaceholder')
   }
+  if (props.inheritMode === 'projectDefaults') {
+    return t('settings.panels.profileModels.inheritGlobalPlaceholder')
+  }
+  return t('settings.panels.profileModels.defaultPlaceholder')
 })
 
 /** 模型下拉里"跟随默认"那一项的文案。 */

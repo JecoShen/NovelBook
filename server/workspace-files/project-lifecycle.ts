@@ -19,7 +19,6 @@ import {
   isProjectLifecycleError,
   isProjectRootCaseCollisionError,
   ProjectLifecycleError,
-  ProjectRootCaseCollisionError,
   projectWorkspaceRef,
   type ProjectLifecycleErrorCode,
   type ProjectWorkspaceRef,

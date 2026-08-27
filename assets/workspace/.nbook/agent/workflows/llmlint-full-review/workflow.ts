@@ -399,7 +399,6 @@ export default {
       if (!r.outputPath || r.skipped || r.error) {
         return { file: r.file, verdict: null, message: r.error ?? 'skipped' }
       }
-      const outBase = baseName(r.outputPath)
       const checkOut = `${roundDir}/check-output.json`
       const detectOut = `${roundDir}/detect-output.json`
       const detectPart = skipDetect ? '' : `\nbun "${skillRoot}/bin/llmlint.ts" detect "${r.outputPath}" --format json > "${detectOut}" 2>&1; echo "DETECT_EXIT=$?";`

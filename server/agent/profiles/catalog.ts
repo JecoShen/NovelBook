@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, readdir, stat } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import { basename, join, relative, resolve } from 'node:path'
 import { assertTypeBoxValue } from 'nbook/server/agent/profiles/schema-validation'
 import type { JsonValue } from 'nbook/server/agent/messages/types'

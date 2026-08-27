@@ -515,20 +515,6 @@ function releaseProductBuild(manifest: ProductRuntimeImageManifest): ReleaseProd
   }
 }
 
-/** Product 归档完成后按完整 image identity 再验一次，防止切换期间读取混合代次。 */
-function expectedProductIdentity(manifest: ProductRuntimeImageManifest): ProductRuntimeExpectedIdentity {
-  return {
-    version: manifest.version,
-    revision: manifest.revision,
-    dirty: manifest.dirty,
-    platform: manifest.platform,
-    imageId: manifest.imageId,
-    lockfileSha256: manifest.lockfileSha256,
-    sourceDigest: manifest.sourceDigest,
-    builderContractVersion: manifest.builderContractVersion,
-  }
-}
-
 /** 严格解析归档外部 JSON；unknown 是刻意的，因为文件在校验前不可信。 */
 export function parseReleaseBuild(text: string): ReleaseBuild {
   let value: unknown

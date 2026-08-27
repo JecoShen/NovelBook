@@ -49,11 +49,11 @@ else {
 // 测试 2: DTO 类型检查
 console.log('\n测试 2: DTO 类型定义')
 
-const snapshotExample: Partial<AgentSessionSnapshotDto> = {
+const _snapshotExample: Partial<AgentSessionSnapshotDto> = {
   pendingApprovals: [], // 应该是数组
 }
 
-const liveStateExample: Partial<AgentSessionLiveStateDto> = {
+const _liveStateExample: Partial<AgentSessionLiveStateDto> = {
   pendingApprovals: [], // 应该是数组
 }
 
@@ -63,7 +63,7 @@ console.log('  ✅ AgentSessionLiveStateDto.pendingApprovals 类型正确')
 // 测试 3: Continue API 支持批量 resolutions
 console.log('\n测试 3: Continue API 类型定义')
 
-const invokeExample: Partial<AgentInvokeRequestDto> = {
+const _invokeExample: Partial<AgentInvokeRequestDto> = {
   mode: 'continue',
   resolutions: [
     { kind: 'tool_approval', toolCallId: 'call_1', approved: true },

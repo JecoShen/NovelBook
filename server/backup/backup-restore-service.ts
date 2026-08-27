@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { once } from 'node:events'
-import { createReadStream, createWriteStream, mkdirSync, type WriteStream } from 'node:fs'
+import { createWriteStream, mkdirSync, type WriteStream } from 'node:fs'
 import { mkdir, readFile, rm } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { Readable } from 'node:stream'

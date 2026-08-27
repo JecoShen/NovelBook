@@ -232,10 +232,11 @@ async function submitRun(runId: string): Promise<void> {
     runErrors.value = { ...runErrors.value, [runId]: resolveApiErrorMessage(error, '继续 workflow 失败') }
   }
   finally {
-    if (disposed || observationAtStart !== observationRevision || revision !== (pollRevisions.get(runId) ?? 0)) return
-    const next = new Set(submittingRuns.value)
-    next.delete(runId)
-    submittingRuns.value = next
+    if (!disposed && observationAtStart === observationRevision && revision === (pollRevisions.get(runId) ?? 0)) {
+      const next = new Set(submittingRuns.value)
+      next.delete(runId)
+      submittingRuns.value = next
+    }
   }
 }
 
@@ -312,7 +313,7 @@ onBeforeUnmount(() => {
             v-else-if="ask.spec.kind === 'text'"
             type="text"
             class="mt-2 w-full rounded border border-[var(--border-color)] bg-[var(--bg-main)] px-2 py-1.5 text-sm text-[var(--text-main)]"
-            :value="runDrafts[readRunRef(job)!.runId]?.[ask.key] as string | undefined"
+            :value="(runDrafts[readRunRef(job)!.runId]?.[ask.key] as string | undefined)"
             :disabled="submittingRuns.has(readRunRef(job)!.runId) || submittedRuns.has(readRunRef(job)!.runId)"
             placeholder="输入应答…"
             @input="setDraft(readRunRef(job)!.runId, ask.key, ($event.target as HTMLInputElement).value)"

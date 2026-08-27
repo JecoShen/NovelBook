@@ -1,9 +1,6 @@
 import path from 'node:path'
 import type { AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
-import {
-  projectWorkspaceRef,
-  type ProjectWorkspaceRef,
-} from 'nbook/server/workspace-files/project-identity'
+import type { ProjectWorkspaceRef } from 'nbook/server/workspace-files/project-identity'
 import {
   ProjectLifecycle,
   type ProjectCandidateSnapshot,

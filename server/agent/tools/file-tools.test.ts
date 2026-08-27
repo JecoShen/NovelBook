@@ -333,7 +333,7 @@ describe('v3 file tools', () => {
   })
 
   it('Project-bound session 将相对路径解析到当前 Project Workspace', async () => {
-    const projectWorkspaceRoot = join(root, 'workspace', 'silver-dragon-hime')
+    const _projectWorkspaceRoot = join(root, 'workspace', 'silver-dragon-hime')
     const currentProject = await openManagedProject('silver-dragon-hime')
     const authorized = await authorizeFileOperation({
       workspaceRoot: absoluteFsPath(workspaceRoot),

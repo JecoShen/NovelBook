@@ -13,7 +13,6 @@ import {
   applyWorkspaceContentFrontmatterDefaults,
   schemaForWorkspaceContentType,
   WorkspaceContentStateFrontmatterSchema,
-  WORKSPACE_CONTENT_STATUSES,
 } from 'nbook/server/workspace-files/content-node-schema'
 import { isRuntimeGeneratedWorkspacePath } from 'nbook/server/workspace-files/runtime-generated-path'
 import type { WorkspaceIssueSummaryDto } from 'nbook/shared/dto/workspace-tree.dto'

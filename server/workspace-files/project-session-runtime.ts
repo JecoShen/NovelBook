@@ -7,7 +7,6 @@ import {
 import {
   isProjectLockCompromisedError,
   isProjectLockReleaseFailedError,
-  ProjectLockCompromisedError,
   ProjectLockReleaseFailedError,
 } from 'nbook/server/workspace-files/project-lock'
 import {

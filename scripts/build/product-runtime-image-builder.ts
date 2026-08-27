@@ -45,7 +45,6 @@ import {
   PRODUCT_RUNTIME_MAX_BYTES,
   PRODUCT_RUNTIME_MAX_FILES,
   sha256ProductRuntimeText as sha256Text,
-  type ProductRuntimeBuildPolicy,
   type ProductRuntimeExpectedIdentity,
   type ProductRuntimeGlobalBudget,
   type ProductRuntimeImageBudget,
@@ -53,7 +52,6 @@ import {
   type ProductRuntimeImageOwner,
   type ProductRuntimeFileRecord,
   type ProductRuntimeInspection,
-  type ProductRuntimeOwnerBaseline,
   type VerifiedProductRuntimeImage,
 } from 'nbook/shared/product-runtime-image-verifier'
 
@@ -769,10 +767,6 @@ async function gitlessSourcePaths(projectRoot: string): Promise<string[]> {
 }
 
 /** owner path 匹配完整路径段，避免 `server` 意外拥有 `server-old`。 */
-function pathOwnedBy(filePath: string, ownerPath: string): boolean {
-  return ownerPath === '.' || filePath === ownerPath || filePath.startsWith(`${ownerPath}/`)
-}
-
 /** operation ID 直接成为目录名，因此只接受稳定的单段 ASCII 标识。 */
 function assertOperationId(operationId: string): void {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(operationId) || operationId === '.' || operationId === '..') {
@@ -786,15 +780,6 @@ function plainObject(value: unknown, label: string): { [key: string]: unknown } 
     throw new Error(`Product Runtime Image ${label} 必须是 object。`)
   }
   return value as { [key: string]: unknown }
-}
-
-/** v1 manifest 使用精确字段集合，未知字段必须通过新 schema 演进。 */
-function assertExactKeys(record: { [key: string]: unknown }, expected: readonly string[], label: string): void {
-  const actual = Object.keys(record).sort()
-  const required = [...expected].sort()
-  if (actual.length !== required.length || actual.some((key, index) => key !== required[index])) {
-    throw new Error(`Product Runtime Image ${label} 字段集合无效。`)
-  }
 }
 
 /** 使用固定 UTF-16 code unit 顺序，避免 locale/ICU 改变跨机器 digest。 */

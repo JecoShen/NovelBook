@@ -55,5 +55,5 @@ function formatTypeBoxError(error: TypeBoxValueError): string[] {
 
 function joinPointer(basePath: string, field: string): string {
   const escaped = field.replaceAll('~', '~0').replaceAll('/', '~1')
-  return `${basePath}/${escaped}` || '/'
+  return `${basePath}/${escaped}`
 }

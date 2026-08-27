@@ -32,8 +32,6 @@ const RequestUserInputSchema = Type.Object({
   questions: Type.Array(RequestUserInputQuestionSchema, { minItems: 1, description: 'Questions to ask in one user-input request.' }),
 }, { additionalProperties: false })
 
-type RequestUserInputParams = Static<typeof RequestUserInputSchema>
-
 /**
  * switch_mode 工具参数（Task 90）。targetMode 为必填枚举；
  * planFilePath 仅在 plan→normal 切换时有意义，供审批 UI 预览计划文件。

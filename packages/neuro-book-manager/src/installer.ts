@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { copyFile, readFile, readdir, rename } from 'node:fs/promises'
-import { dirname, join, relative, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 
 import {
   applyJournaledApplicationMigrations,
@@ -61,7 +61,6 @@ import type {
   InstallProfile,
   InstallationComponents,
   InstallationManifest,
-  ManagerRuntimeComponent,
   OperationJournal,
   OperationPlan,
   ReleaseChannel,

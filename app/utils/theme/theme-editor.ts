@@ -2,7 +2,7 @@ import { colord } from 'colord'
 import { CORE_VAR_KEYS, deriveDefaults, type ThemeCoreVars } from 'nbook/app/utils/theme/derive'
 import { resolveTheme } from 'nbook/app/utils/theme/resolve-theme'
 import type { ThemeVars } from 'nbook/app/utils/theme/theme-tokens'
-import { themeVarNames, type CustomThemeDto, type ThemeAppearance, type ThemeVarName } from 'nbook/shared/theme/theme-vars'
+import { themeVarNames, type CustomThemeDto, type ThemeAppearance } from 'nbook/shared/theme/theme-vars'
 
 const CUSTOM_THEME_ID_PREFIX = 'custom-'
 

@@ -2,10 +2,7 @@ import type { TSchema } from 'typebox'
 import type { JsonValue } from 'nbook/server/agent/messages/types'
 import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-types'
 import type {
-  VariableDefinition,
   VariableNamespace,
-  VariableWriter,
-  VariableWriteMode,
 } from 'nbook/variable-sdk/contracts'
 
 export type { VariableDefinition, VariableNamespace, VariableWriter, VariableWriteMode } from 'nbook/variable-sdk/contracts'

@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs'
 import fs from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { builtinModules, createRequire } from 'node:module'
@@ -88,7 +87,7 @@ async function assertSingleFileConfig(
 }
 
 /** 解析源码级 import/export，包含 esbuild 会擦除的 `import type` 和 TS import type expression。 */
-function collectRejectedSpecifiers(source: string, compilerContext: RuntimeArtifactCompilerContext): string[] {
+function collectRejectedSpecifiers(source: string, _compilerContext: RuntimeArtifactCompilerContext): string[] {
   const sourceFile = ts.createSourceFile('world-engine-config.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
   const rejectedSpecifiers: string[] = []
   const collect = (specifier: string): void => {
@@ -142,7 +141,7 @@ function collectRejectedSpecifiers(source: string, compilerContext: RuntimeArtif
 /** 让 esbuild 解析入口文件，捕获运行时 import/export 的真实模块 specifier。 */
 async function collectBundledRejectedSpecifiers(
   filePath: string,
-  compilerContext: RuntimeArtifactCompilerContext,
+  _compilerContext: RuntimeArtifactCompilerContext,
 ): Promise<string[]> {
   const rejectedSpecifiers = new Set<string>()
   const plugin: Plugin = {
@@ -251,7 +250,7 @@ async function importHashedTypeScript<TModule extends object>(
   compilerContext: RuntimeArtifactCompilerContext,
   cachePath: string,
   content: Buffer,
-  hash: string,
+  _hash: string,
 ): Promise<TModule> {
   await fs.mkdir(path.dirname(cachePath), { recursive: true })
   await cleanupStaleTempFiles(path.dirname(cachePath), input.label)

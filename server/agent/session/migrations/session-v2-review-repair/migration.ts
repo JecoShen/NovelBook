@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { readFile, rm } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { acquireAgentSessionStoreExclusiveLease } from 'nbook/server/agent/session/agent-session-store'
 import { decodeSessionSchemaV1 } from 'nbook/server/agent/session/migrations/session-v2/legacy-decoder'

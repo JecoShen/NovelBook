@@ -6,7 +6,6 @@ import {
   buildLoreResolverIndex,
   invalidateLoreResolverIndex,
   setLoreCacheOptions,
-  type LoreResolverIndex,
 } from './lore-resolver-cache'
 import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-types'
 

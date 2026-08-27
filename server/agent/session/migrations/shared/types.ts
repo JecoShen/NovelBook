@@ -106,7 +106,7 @@ export type SessionMigrationJournalCodec<
   TSession extends SessionMigrationFileState<TSessionStatus>,
   TSessionStatus extends string,
   TRunStatus extends string,
-  TResumeStatus extends TRunStatus,
+  _TResumeStatus extends TRunStatus,
 > = {
   manifestVersion: TVersion
   status: SessionMigrationStatusMap<TSessionStatus, TRunStatus>

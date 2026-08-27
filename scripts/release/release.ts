@@ -677,7 +677,7 @@ function semverTagVersion(input: string): string | null {
 }
 
 /** 解析 release 版本。 */
-function parseReleaseVersion(version: string, label: string): ParsedVersion {
+function parseReleaseVersion(version: string, _label: string): ParsedVersion {
   const normalized = normalizeReleaseVersion(version)
   const [major, minor, patch] = normalized.split('.').map(item => Number(item))
   return { major, minor, patch }

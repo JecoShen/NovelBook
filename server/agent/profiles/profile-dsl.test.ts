@@ -507,7 +507,7 @@ describe('profile TSX DSL', () => {
           children: [
             AppendingSet({
               children: [
-                false && Reminder({ id: 'hidden', repeatEveryTurns: 1, children: Message({ children: 'hidden' }) }),
+                false as boolean && Reminder({ id: 'hidden', repeatEveryTurns: 1, children: Message({ children: 'hidden' }) }),
                 Message({ children: 'visible' }),
               ],
             }),

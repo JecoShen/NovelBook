@@ -30,7 +30,7 @@ import { formatCliError } from '#manager/error-message'
 import { parseProfile, profileNames } from '#manager/profiles'
 import { runManagerTui } from '#manager/tui'
 import { adoptSourceInstallation, assertAdoptionPreflight, inspectAdoptionPreflight } from '#manager/source-adoption'
-import type { InstallProfile, InstallationManifest, OfflineInspection, ReleaseChannel } from '#manager/types'
+import type { InstallationManifest, OfflineInspection, ReleaseChannel } from '#manager/types'
 import { resetDesktopLocalState, uninstallInstallation } from '#manager/uninstaller'
 import { repairDesktopInstallation, runDesktopSupervisor } from '#manager/desktop-supervisor'
 import { defaultDesktopInstallationRoot, inferWindowsDesktopInstallationScope, installDesktopFromLocalDepot, readDesktopInstallationManifest, removeWindowsDesktopRegistration, uninstallRemoteDesktopInstallation } from '#manager/desktop-installation'
@@ -180,7 +180,12 @@ instances.command('inspect')
   .option('--json', '输出JSON。', false)
   .action(async (path: string, options: { json: boolean }) => {
     const inspection = await inspectInstance(path)
-    options.json ? printJson(inspection) : printInspection(inspection)
+    if (options.json) {
+      printJson(inspection)
+    }
+    else {
+      printInspection(inspection)
+    }
   })
 instances.command('discover')
   .description('在有限搜索根内发现未登记实例。')
@@ -305,7 +310,7 @@ program.command('start')
   .option('--no-health-check', 'Windows Portable跳过HTTP健康检查和自动打开浏览器。')
   .option('--shutdown-on-stdin-end', '标准输入关闭时完整收口Product；供桌面宿主和自动验收使用。', false)
   .action(async (options: { healthCheck: boolean, shutdownOnStdinEnd: boolean }) => {
-    const { root, manifest } = await currentInstallation()
+    const { root } = await currentInstallation()
     const controller = options.shutdownOnStdinEnd ? new AbortController() : null
     const shutdown = (): void => controller?.abort()
     if (controller) {
@@ -333,7 +338,12 @@ program.command('status')
   .action(async (options: { json: boolean }) => {
     const { root, manifest } = await currentInstallation()
     const status = await installationStatus(root, manifest)
-    options.json ? printJson(status) : printObject(status)
+    if (options.json) {
+      printJson(status)
+    }
+    else {
+      printObject(status)
+    }
   })
 
 program.command('doctor')
@@ -342,7 +352,12 @@ program.command('doctor')
   .action(async (options: { json: boolean }) => {
     const { root, manifest } = await currentInstallation()
     const result = await doctor(root, manifest)
-    options.json ? printJson(result) : printObject(result)
+    if (options.json) {
+      printJson(result)
+    }
+    else {
+      printObject(result)
+    }
   })
 
 program.command('uninstall')
@@ -787,7 +802,7 @@ tools.command('install')
 tools.command('update')
   .argument('[tool]', 'rg 或 git；省略时更新全部 managed tools。')
   .action(async (tool?: string) => {
-    const { root, manifest } = await currentInstallation()
+    const { root } = await currentInstallation()
     if (tool) {
       assertTool(tool)
       await maintainTool(root, tool, managerExecutable)

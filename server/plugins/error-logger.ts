@@ -83,12 +83,10 @@ const sanitizeRequestError = (error: unknown, rawPath: string | null, safePath: 
 
 const scrubRequestPath = (text: string, rawPath: string, safePath: string): string => text.replaceAll(rawPath, safePath)
 
-// @ts-ignore
 export default defineNitroPlugin((nitroApp) => {
-  // @ts-ignore
-  nitroApp.hooks.hook('error', (error, context) => {
-    const event = context.event as RequestErrorEvent | undefined
-    const method = event?.method ?? 'UNKNOWN'
+  nitroApp.hooks.hook('error', (error, event) => {
+    const safeEvent = event as RequestErrorEvent | undefined
+    const method = safeEvent?.method ?? 'UNKNOWN'
     const path = resolveSafeRequestPath(event)
     const rawPath = resolveRawRequestPath(event)
     const errorMessage = resolveErrorMessage(error)

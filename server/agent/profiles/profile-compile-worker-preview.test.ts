@@ -1,9 +1,8 @@
-import { cp, mkdir, readFile, readdir, rm, stat } from 'node:fs/promises'
+import { cp, mkdir, readFile, rm, stat } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ProfileCompileWorkerService } from 'nbook/server/agent/profiles/profile-compile-worker'
 import { runProfileCompile } from 'nbook/server/agent/profiles/profile-compile-worker-runtime'
-import type { ProfileCompileWorkerResult } from 'nbook/server/agent/profiles/profile-compile-worker-types'
 import { withIsolatedWorkspaceAssets, type IsolatedWorkspaceAssets } from 'nbook/server/workspace-files/test-workspace-fixture'
 
 describe('profile compile worker preview 与 lifecycle', () => {
@@ -74,13 +73,6 @@ async function withProfileAssets(
     }
     await run(assets)
   })
-}
-
-/** 清理未发布的Profile staging目录。 */
-async function cleanupStagedResult(result: ProfileCompileWorkerResult): Promise<void> {
-  if (result.stagedRelease) {
-    await rm(result.stagedRelease.buildCompiledDir, { recursive: true, force: true })
-  }
 }
 
 /** 判断测试文件是否存在。 */

@@ -30,7 +30,6 @@ import {
   type DesktopMenuCommandId,
   type DesktopLaunchRequest,
   type DesktopStatus,
-  type DesktopSupervisorEvent,
 } from 'nbook/shared/desktop-contract'
 import { ElectronDiagnostics } from 'nbook/desktop/electron/src/diagnostics'
 import { DesktopLaunchRequestBuffer } from 'nbook/desktop/electron/src/launch-request-buffer'
@@ -508,7 +507,7 @@ async function waitForSupervisor(
     let readyVersion = ''
     let settled = false
     let backgroundFailureReported = false
-    let timer: ReturnType<typeof setTimeout> | undefined
+    let timer: ReturnType<typeof setTimeout> | null = null
     const finish = (error?: Error): void => {
       if (settled) return
       if (error) {

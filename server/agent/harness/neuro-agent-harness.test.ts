@@ -39,7 +39,7 @@ import { compileVariableDefinitions } from 'nbook/server/agent/variables/definit
 import type { VariablePatchAck, VariablePatchRequest } from 'nbook/server/agent/variables/types'
 import { closeAllProjects, openProject, projectOccupancy, ProjectNotOpenError, resetProjectSessionsForTest } from 'nbook/server/workspace-files/project-session'
 import { projectWorkspaceRef } from 'nbook/server/workspace-files/project-identity'
-import { closeProjectForTest, openProjectForTest } from 'nbook/server/workspace-files/project-session-test-utils'
+import { closeProjectForTest } from 'nbook/server/workspace-files/project-session-test-utils'
 import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-types'
 import { projectModuleToken, replaceProjectModulesForTest, type ProjectModule, type ProjectModuleHandle } from 'nbook/server/workspace-files/project-module'
 import { withWorkspaceRuntimeRootContextForTest } from 'nbook/server/workspace-files/workspace-runtime-root'
@@ -1178,7 +1178,7 @@ describe('NeuroAgentHarness', () => {
     }))
 
     const recovery = await harness.getSessionRecovery(created.sessionId)
-    const snapshot = await harness.repo.readSession(created.sessionId)
+    const _snapshot = await harness.repo.readSession(created.sessionId)
     const liveState = await harness.getSessionLiveState(created.sessionId)
 
     expect(recovery.summary.usage).toMatchObject({
@@ -1686,7 +1686,7 @@ describe('NeuroAgentHarness', () => {
       message: { text: 'try unauthorized input' },
     })
     const recovery = await harness.getSessionRecovery(created.sessionId)
-    const snapshot = await harness.repo.readSession(created.sessionId)
+    const _snapshot = await harness.repo.readSession(created.sessionId)
     const context = harness.repo.reduce(await harness.repo.readSession(created.sessionId))
     const denied = context.messages.find(message => message.role === 'toolResult' && message.toolCallId === 'ask-not-allowed')
 
@@ -6094,7 +6094,7 @@ describe('NeuroAgentHarness', () => {
     })
 
     const recovery = await harness.getSessionRecovery(created.sessionId)
-    const snapshot = await harness.repo.readSession(created.sessionId)
+    const _snapshot = await harness.repo.readSession(created.sessionId)
     const context = harness.repo.reduce(await harness.repo.readSession(created.sessionId))
     const modeState = context.customState[AGENT_MODE_STATE_KEY] as Record<string, unknown>
 
@@ -6195,7 +6195,7 @@ describe('NeuroAgentHarness', () => {
       message: { text: 'please write' },
     })
     const recovery = await harness.getSessionRecovery(created.sessionId)
-    const snapshot = await harness.repo.readSession(created.sessionId)
+    const _snapshot = await harness.repo.readSession(created.sessionId)
 
     // 注入的写审批必须在快照 pending 路径可被识别
     expect(waiting.status).toBe('waiting')
@@ -8524,7 +8524,7 @@ describe('NeuroAgentHarness', () => {
     expect(assistantText ? messageText(assistantText as never) : '').not.toContain('adjust while waiting')
     expect(context.messages.map(message => message.role)).toEqual(['user', 'assistant', 'toolResult', 'assistant'])
     const recovery = await harness.getSessionRecovery(created.sessionId)
-    const snapshot = await harness.repo.readSession(created.sessionId)
+    const _snapshot = await harness.repo.readSession(created.sessionId)
     expect(recovery.steerQueue).toEqual({ items: [], omittedItems: 0 })
   })
 
@@ -8546,7 +8546,7 @@ describe('NeuroAgentHarness', () => {
     })).rejects.toThrow('active_invocation_required')
 
     const recovery = await harness.getSessionRecovery(created.sessionId)
-    const snapshot = await harness.repo.readSession(created.sessionId)
+    const _snapshot = await harness.repo.readSession(created.sessionId)
     expect(recovery.steerQueue).toEqual({ items: [], omittedItems: 0 })
     expect(recovery.followUpQueue.items).toEqual([])
   })

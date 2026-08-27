@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useClientSanitizer } from 'nbook/app/composables/useClientSanitizer'
 import { renderMermaid, type MermaidRenderResult } from 'nbook/app/utils/workflow-preview/render-mermaid'
 
 const props = defineProps<{
@@ -18,6 +19,9 @@ watch(() => props.code, async (code) => {
     result.value = next
   }
 }, { immediate: true })
+
+const clientSanitizer = useClientSanitizer()
+const safeSvg = computed(() => result.value?.ok ? clientSanitizer.value(result.value.svg) : '')
 </script>
 
 <template>
@@ -28,7 +32,7 @@ watch(() => props.code, async (code) => {
   >
     <div
       v-if="result?.ok"
-      v-html="result.svg"
+      v-html="safeSvg"
     />
     <div
       v-else-if="result"

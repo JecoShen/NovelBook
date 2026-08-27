@@ -98,7 +98,7 @@ function resizeTextarea() {
   el.style.height = el.scrollHeight + 'px'
 }
 
-function handleNoteInput(e: Event) {
+function handleNoteInput(_e: Event) {
   resizeTextarea()
 }
 

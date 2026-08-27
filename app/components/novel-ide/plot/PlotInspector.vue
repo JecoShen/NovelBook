@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PlotPreviewFocus } from 'nbook/app/components/novel-ide/plot/plot-preview.types'
 
-const props = defineProps<{
+const _props = defineProps<{
   focus: PlotPreviewFocus | null
 }>()
 </script>

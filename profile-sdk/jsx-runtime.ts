@@ -59,9 +59,9 @@ export function createElement(
   return component(props as never)
 }
 
-export namespace JSX {
-  export type Element = ProfileDslNode
-  export interface IntrinsicElements {
+declare module 'nbook/profile-sdk/jsx-runtime' {
+  export type JsxElement = ProfileDslNode
+  export interface JsxIntrinsicElements {
     ProfilePrompt: Parameters<typeof profileSdk.ProfilePrompt>[0]
     System: Parameters<typeof profileSdk.System>[0]
     HistorySet: Parameters<typeof profileSdk.HistorySet>[0]

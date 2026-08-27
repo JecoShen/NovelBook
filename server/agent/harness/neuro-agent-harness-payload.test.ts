@@ -11,7 +11,7 @@ import { defineAgentProfile } from 'nbook/server/agent/profiles/define-agent-pro
 import { AgentProfileCatalog } from 'nbook/server/agent/profiles/catalog'
 import { profileToolsFromKeys } from 'nbook/server/agent/test/profile-tools'
 import { createStoredUserMessage } from 'nbook/server/agent/messages/message-utils'
-import type { JsonValue, Message as RuntimeMessage } from 'nbook/server/agent/messages/types'
+import type { JsonValue } from 'nbook/server/agent/messages/types'
 import type { StoredAgentMessage } from 'nbook/server/agent/messages/stored-types'
 import { storedMessageText } from 'nbook/server/agent/messages/stored-message-presentation'
 

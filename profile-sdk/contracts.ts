@@ -1,5 +1,5 @@
 import type { Static, TSchema } from 'typebox'
-import type { VariableDefinition, VariableJsonValue, VariableNamespace } from 'nbook/variable-sdk/contracts'
+import type { VariableDefinition, VariableNamespace } from 'nbook/variable-sdk/contracts'
 
 /** Profile SDK 可持久化的 JSON 值。 */
 export type ProfileJsonValue
@@ -475,7 +475,7 @@ export type AgentProfileDefinition<
   TPayloadSchema extends TSchema = TSchema,
   TOutputSchema extends TSchema = TSchema,
   TSettingsSchema extends TSchema | undefined = TSchema | undefined,
-  TSummarizerKey extends string = string,
+  _TSummarizerKey extends string = string,
   TTools extends ProfileTools = ProfileTools,
 > = {
   manifest: AgentProfileManifest

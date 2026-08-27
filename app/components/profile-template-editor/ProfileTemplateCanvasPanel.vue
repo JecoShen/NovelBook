@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ProfileTemplateDropZone from 'nbook/app/components/profile-template-editor/ProfileTemplateDropZone.vue'
 import ProfileTemplateNodeView from 'nbook/app/components/profile-template-editor/ProfileTemplateNodeView.vue'
 import type {
   ProfileTemplateNodeDto,

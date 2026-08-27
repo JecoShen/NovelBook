@@ -17,7 +17,6 @@ import {
   applySessionEntryToMessages,
   deriveMessagesFromChatEntries,
   formatTimestamp,
-  publicToolArgsJsonValue,
   reconcileMessages,
   toPendingUserInputSession,
   type AgentMessage,

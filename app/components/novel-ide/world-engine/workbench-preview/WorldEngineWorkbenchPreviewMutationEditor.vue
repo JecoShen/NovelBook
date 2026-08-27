@@ -198,7 +198,6 @@ const activeSubjectSummary = computed(() => {
   return subject ? `${subject.name || subject.id} · ${subject.type}` : activeSubjectId.value
 })
 const allMutationRows = computed<MutationEditorRow[]>(() => props.slice.mutations.map((mutation, index) => ({ index, mutation })))
-const activeSubjectMutationRows = computed<MutationEditorRow[]>(() => allMutationRows.value.filter(row => row.mutation.subjectId === activeSubjectId.value))
 const patchDraftRows = computed<MutationEditorRow[]>(() => patchDrafts.value.map((mutation, index) => ({ index, mutation })))
 const activeSubjectPatchDraftRows = computed<MutationEditorRow[]>(() => patchDraftRows.value.filter(row => row.mutation.subjectId === activeSubjectId.value))
 const activeSubjectPatchEditorRows = computed(() => activeSubjectPatchDraftRows.value.map(row => ({

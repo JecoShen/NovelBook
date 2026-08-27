@@ -1,5 +1,4 @@
 import { spawn } from 'node:child_process'
-import type { Readable } from 'node:stream'
 
 import { WINDOWS_SUPERVISOR_SOURCE } from '#owned-process/windows-supervisor-source'
 import { OwnedProcessError } from '#owned-process/types'

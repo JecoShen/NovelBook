@@ -19,8 +19,8 @@ import { readLucideIconClass } from 'nbook/app/utils/lucide-icons'
 
 const props = withDefaults(defineProps<{
   node: WorkspaceTreeNode
-  depth: number
-  indent: number
+  depth?: number
+  indent?: number
 }>(), {
   depth: 0,
   indent: 18,
@@ -129,7 +129,8 @@ const handleBeforeLeave = (element: Element): void => {
  */
 const handleLeave = (element: Element): void => {
   const htmlElement = element as HTMLElement
-  htmlElement.offsetHeight
+  // Force layout reflow before transitioning to closed state
+  void htmlElement.offsetHeight
   htmlElement.style.height = '0px'
   htmlElement.style.opacity = '0'
 }
@@ -157,7 +158,8 @@ const handleBeforeEnter = (element: Element): void => {
  */
 const handleEnter = (element: Element): void => {
   const htmlElement = element as HTMLElement
-  htmlElement.offsetHeight
+  // Force layout reflow before transitioning to open state
+  void htmlElement.offsetHeight
   htmlElement.style.height = `${htmlElement.scrollHeight}px`
   htmlElement.style.opacity = '1'
 }

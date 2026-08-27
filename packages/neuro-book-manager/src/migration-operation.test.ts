@@ -642,14 +642,6 @@ async function savedJournal(root: string, id: string) {
   }
 }
 
-async function savedOperation(root: string, id: string): Promise<{
-  effects: Array<{ kind: string, state: string, [key: string]: unknown }>
-}> {
-  return JSON.parse(await readFile(join(root, '.deploy', 'operations', `${id}.json`), 'utf8')) as {
-    effects: Array<{ kind: string, state: string, [key: string]: unknown }>
-  }
-}
-
 async function onlyOperation(root: string): Promise<{
   effects: Array<{ kind: string, state: string, [key: string]: unknown }>
   phase?: string

@@ -414,22 +414,23 @@ function prepareDrag(): void {
         class="node-children"
         :data-empty="props.node.children.length === 0 || undefined"
       >
-        <ProfileTemplateNodeView
-          v-for="(child, childIndex) in props.node.children"
-          v-if="props.node.children.length > 0"
-          :key="child.id"
-          :node="child"
-          :selected-id="props.selectedId"
-          :depth="props.depth + 1"
-          :index="childIndex"
-          :parent-id="props.node.id"
-          :can-have-children="!['Text', 'ToolCall', 'ToolResult', 'AgentCatalog', 'SkillCatalog', 'WorkflowCatalog', 'ActivatedSkills', 'SqlSchemaSummary', 'Import', 'LinkedAgentsSummary', 'LinkedAgentsReminder', 'WorkspaceFocusReminder', 'ModeAvailabilityReminder', 'TaskReminder', 'MentionedSkillsReminder', 'FileChangeNotice'].includes(child.type)"
-          :disabled-drop-node-ids="props.disabledDropNodeIds"
-          @select="emit('select', $event)"
-          @prepare-drag="emit('prepareDrag', $event)"
-          @duplicate="emit('duplicate', $event)"
-          @delete="emit('delete', $event)"
-        />
+        <template v-if="props.node.children.length > 0">
+          <ProfileTemplateNodeView
+            v-for="(child, childIndex) in props.node.children"
+            :key="child.id"
+            :node="child"
+            :selected-id="props.selectedId"
+            :depth="props.depth + 1"
+            :index="childIndex"
+            :parent-id="props.node.id"
+            :can-have-children="!['Text', 'ToolCall', 'ToolResult', 'AgentCatalog', 'SkillCatalog', 'WorkflowCatalog', 'ActivatedSkills', 'SqlSchemaSummary', 'Import', 'LinkedAgentsSummary', 'LinkedAgentsReminder', 'WorkspaceFocusReminder', 'ModeAvailabilityReminder', 'TaskReminder', 'MentionedSkillsReminder', 'FileChangeNotice'].includes(child.type)"
+            :disabled-drop-node-ids="props.disabledDropNodeIds"
+            @select="emit('select', $event)"
+            @prepare-drag="emit('prepareDrag', $event)"
+            @duplicate="emit('duplicate', $event)"
+            @delete="emit('delete', $event)"
+          />
+        </template>
         <div
           ref="insideDropRef"
           class="node-inside-drop"

@@ -12,7 +12,7 @@ import {
 } from 'nbook/server/agent/profiles/profile-artifact-compiler'
 import { AgentProfileCatalog } from 'nbook/server/agent/profiles/catalog'
 import { NeuroAgentHarness } from 'nbook/server/agent/harness/neuro-agent-harness'
-import { previewAgentProfilePrepare, readAgentProfileDetail } from 'nbook/server/agent/profiles/profile-http-service'
+import { previewAgentProfilePrepare } from 'nbook/server/agent/profiles/profile-http-service'
 import type { JsonValue } from 'nbook/server/agent/messages/types'
 import { generateBuiltinVariableTypes } from 'nbook/server/agent/variables/generated-types'
 import { builtinVariableDefinitions } from 'nbook/server/agent/variables/registry'

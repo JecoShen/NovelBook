@@ -21,6 +21,6 @@ export type PlanModeLocationInput = {
 /**
  * 返回 Agent 文件工具可使用的 Plan Mode 目录路径。
  */
-export function planModeToolDirectory(input: PlanModeLocationInput): string {
+export function planModeToolDirectory(_input: PlanModeLocationInput): string {
   return PLAN_MODE_DIRECTORY
 }

@@ -1,4 +1,4 @@
-import { dirname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { chmod as chmodFile } from 'node:fs/promises'
 
 import { extractArchive, githubReleaseAsset } from '#manager/download'
