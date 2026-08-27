@@ -1,3 +1,5 @@
+> **📌 编号变更** — 本任务原挂 `133`, 与 [Task 133-book-import-and-style-distill](../133-book-import-and-style-distill/README.md) 撞号 (style-eval 实施 walkthrough 晚于 book-import 设计 2 周: 07-31 vs 08-14). 改号 `150-style-eval-walkthrough` 独立跟踪 (2026-08-27). book-import 仍是 style-eval 的设计上游 (book-import 决策 D3 方案 A = 片段库 + 索引路由, 本 walkthrough 是其实验). 详细论据见 commit message.
+
 # 文风蒸馏默认值实验 walkthrough
 
 ## 目标
