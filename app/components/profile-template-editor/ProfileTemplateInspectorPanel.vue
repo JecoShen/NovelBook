@@ -95,7 +95,6 @@ function resetSchemaDraft(): void {
   schemaFields.value = schema ? fieldsFromJsonSchema(schema) : []
 }
 
-
 function currentSchemaDetail(): AgentProfileDetailDto['initialSchema'] | undefined {
   if (!props.profileDetail) {
     return undefined

@@ -230,7 +230,9 @@ describe('SnapshotCache 基础读取与并发', () => {
     const queuedOperation = vi.fn()
     const queued = cache.mutate('alpha', queuedOperation)
     let closeSettled = false
-    const close = cache.close('alpha').then(() => { closeSettled = true })
+    const close = cache.close('alpha').then(() => {
+      closeSettled = true
+    })
 
     await Promise.resolve()
     expect(closeSettled).toBe(false)
@@ -511,7 +513,9 @@ describe('SnapshotCache 资源生命周期', () => {
 
     const activation = cache.activate('alpha')
     let ready = false
-    void activation.ready.then(() => { ready = true })
+    void activation.ready.then(() => {
+      ready = true
+    })
     expect(activation).not.toBeInstanceOf(Promise)
     await waitFor(() => watcherOpenCount === 1)
     expect(ready).toBe(false)
@@ -585,7 +589,9 @@ describe('SnapshotCache 资源生命周期', () => {
       },
     }
     const cache = new SnapshotCache(options)
-    cache.subscribe('alpha', () => { stableCommitCount += 1 })
+    cache.subscribe('alpha', () => {
+      stableCommitCount += 1
+    })
     const activation = cache.activate('alpha', {
       onRawEvents: (batch) => {
         markers.push('raw')
@@ -741,7 +747,11 @@ describe('SnapshotCache 资源生命周期', () => {
     })
     unsubscribe()
 
-    opened.resolve({ close: () => { lateCloseCount += 1 } })
+    opened.resolve({
+      close: () => {
+        lateCloseCount += 1
+      },
+    })
     await waitFor(() => lateCloseCount === 1)
     await cache.close('alpha')
   })
@@ -868,7 +878,9 @@ describe('SnapshotCache 资源生命周期', () => {
     await activation.ready
     const close = cache.close('alpha')
     let closeAllSettled = false
-    const closeAll = cache.closeAll().then(() => { closeAllSettled = true })
+    const closeAll = cache.closeAll().then(() => {
+      closeAllSettled = true
+    })
 
     await new Promise<void>(resolve => setImmediate(resolve))
     expect(closeAllSettled).toBe(false)
@@ -929,8 +941,12 @@ describe('SnapshotCache 资源生命周期', () => {
   it('subscriber 抛错不会阻断其他 subscriber 或 commit', async () => {
     const cache = new SnapshotCache(cacheOptions(async () => buildResult(1)))
     let observedRevision = 0
-    cache.subscribe('alpha', () => { throw new Error('subscriber failed') })
-    cache.subscribe('alpha', (commit) => { observedRevision = commit.snapshot.revision })
+    cache.subscribe('alpha', () => {
+      throw new Error('subscriber failed')
+    })
+    cache.subscribe('alpha', (commit) => {
+      observedRevision = commit.snapshot.revision
+    })
 
     const snapshot = await cache.read('alpha')
     await waitFor(() => observedRevision === 1)

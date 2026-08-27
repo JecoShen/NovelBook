@@ -1,35 +1,35 @@
 export const meta = {
-    name: 'implement-world-engine-zod-refactor',
-    description: 'Implement World Engine schema refactor: Zod + CodeAct + JSON Patch',
-    phases: [
-        { title: 'Plan', detail: 'Read task and existing code to understand implementation scope' },
-        { title: 'Phase 1', detail: 'Schema layer: zod + ref + EmbeddingText', model: 'opus' },
-        { title: 'Phase 2', detail: 'Patch operations: 4 ops + summary + JSON Pointer', model: 'opus' },
-        { title: 'Phase 3', detail: 'CodeAct: sandbox + execute_world_query + vector search', model: 'opus' },
-        { title: 'Verify', detail: 'Review prompts and run tests' }
-    ]
-};
+  name: 'implement-world-engine-zod-refactor',
+  description: 'Implement World Engine schema refactor: Zod + CodeAct + JSON Patch',
+  phases: [
+    { title: 'Plan', detail: 'Read task and existing code to understand implementation scope' },
+    { title: 'Phase 1', detail: 'Schema layer: zod + ref + EmbeddingText', model: 'opus' },
+    { title: 'Phase 2', detail: 'Patch operations: 4 ops + summary + JSON Pointer', model: 'opus' },
+    { title: 'Phase 3', detail: 'CodeAct: sandbox + execute_world_query + vector search', model: 'opus' },
+    { title: 'Verify', detail: 'Review prompts and run tests' },
+  ],
+}
 
 // Phase 0: Plan - 理解任务范围
-phase('Plan');
+phase('Plan')
 
 const taskDoc = await agent(
-    'Read docs/tasks/67-world-engine-zod-schema-codeact/README.md and summarize: 1) Three phases and their deliverables 2) Key decisions (15 items) 3) Files to modify 4) Breaking changes',
-    { phase: 'Plan', label: 'read-task' }
-);
+  'Read docs/tasks/67-world-engine-zod-schema-codeact/README.md and summarize: 1) Three phases and their deliverables 2) Key decisions (15 items) 3) Files to modify 4) Breaking changes',
+  { phase: 'Plan', label: 'read-task' },
+)
 
 const existingCode = await agent(
-    'Read server/world-engine/ directory structure and key files: types.ts, schema-loader.ts, world-engine.service.ts. Summarize current architecture and identify what needs to be replaced vs modified.',
-    { phase: 'Plan', label: 'survey-code' }
-);
+  'Read server/world-engine/ directory structure and key files: types.ts, schema-loader.ts, world-engine.service.ts. Summarize current architecture and identify what needs to be replaced vs modified.',
+  { phase: 'Plan', label: 'survey-code' },
+)
 
-log(`Task scope understood. Starting 3-phase implementation.`);
+log(`Task scope understood. Starting 3-phase implementation.`)
 
 // Phase 1: Schema layer
-phase('Phase 1');
+phase('Phase 1')
 
 const schemaImpl = await agent(
-    `Implement Phase 1: Zod Schema Layer
+  `Implement Phase 1: Zod Schema Layer
 
 Task file: docs/tasks/67-world-engine-zod-schema-codeact/README.md
 
@@ -64,18 +64,18 @@ Verification (8 items in task):
 - All properties in init slice
 
 Write clean, documented code. Return file paths modified.`,
-    { 
-        phase: 'Phase 1', 
-        label: 'schema-impl',
-        effort: 'medium'
-    }
-);
+  {
+    phase: 'Phase 1',
+    label: 'schema-impl',
+    effort: 'medium',
+  },
+)
 
 // Phase 2: Patch operations
-phase('Phase 2');
+phase('Phase 2')
 
 const patchImpl = await agent(
-    `Implement Phase 2: Patch Operations
+  `Implement Phase 2: Patch Operations
 
 Task file: docs/tasks/67-world-engine-zod-schema-codeact/README.md
 
@@ -113,18 +113,18 @@ Verification (9 items in task):
 - Cross-ref rejected
 
 Write clean, documented code. Return file paths modified.`,
-    { 
-        phase: 'Phase 2', 
-        label: 'patch-impl',
-        effort: 'high'
-    }
-);
+  {
+    phase: 'Phase 2',
+    label: 'patch-impl',
+    effort: 'high',
+  },
+)
 
 // Phase 3: CodeAct sandbox + Agent tool
-phase('Phase 3');
+phase('Phase 3')
 
 const codeactImpl = await agent(
-    `Implement Phase 3: CodeAct Query System
+  `Implement Phase 3: CodeAct Query System
 
 Task file: docs/tasks/67-world-engine-zod-schema-codeact/README.md
 
@@ -168,18 +168,18 @@ Verification (13 items in task):
 - Old tools deleted
 
 Write clean, documented code. Return file paths modified.`,
-    { 
-        phase: 'Phase 3', 
-        label: 'codeact-impl',
-        effort: 'high'
-    }
-);
+  {
+    phase: 'Phase 3',
+    label: 'codeact-impl',
+    effort: 'high',
+  },
+)
 
 // Phase 4: Verify - 提示词审查
-phase('Verify');
+phase('Verify')
 
 const promptReview = await agent(
-    `Review Agent prompt engineering for World Engine
+  `Review Agent prompt engineering for World Engine
 
 Context: We just refactored World Engine to use:
 1. Zod schemas (type-safe, in TypeScript)
@@ -203,15 +203,15 @@ Task:
    - New op names
 
 Return list of files that need prompt updates with specific changes needed.`,
-    { 
-        phase: 'Verify', 
-        label: 'prompt-review',
-        effort: 'low'
-    }
-);
+  {
+    phase: 'Verify',
+    label: 'prompt-review',
+    effort: 'low',
+  },
+)
 
 const testRun = await agent(
-    `Run core World Engine tests
+  `Run core World Engine tests
 
 1. Run existing tests:
    bun test server/world-engine/*.test.ts
@@ -226,34 +226,34 @@ const testRun = await agent(
    - Test 3: Failed code saves to temp file
 
 Return test results and new test file path.`,
-    { 
-        phase: 'Verify', 
-        label: 'test-run',
-        effort: 'medium'
-    }
-);
+  {
+    phase: 'Verify',
+    label: 'test-run',
+    effort: 'medium',
+  },
+)
 
 // Return summary (archived workflow: top-level return not allowed in module, omitted)
 const summary = {
-    phases: {
-        phase1: schemaImpl,
-        phase2: patchImpl,
-        phase3: codeactImpl
-    },
-    verification: {
-        promptReview,
-        testRun
-    },
-    summary: {
-        message: 'World Engine Zod refactor complete. Review prompt updates and test results before merging.',
-        nextSteps: [
-            '1. Review and apply prompt engineering changes',
-            '2. Fix failing tests or rewrite for new API',
-            '3. Update reference/world-engine/schema-system.md',
-            '4. Test with real project data',
-            '5. Commit and notify users of breaking changes'
-        ]
-    }
-};
+  phases: {
+    phase1: schemaImpl,
+    phase2: patchImpl,
+    phase3: codeactImpl,
+  },
+  verification: {
+    promptReview,
+    testRun,
+  },
+  summary: {
+    message: 'World Engine Zod refactor complete. Review prompt updates and test results before merging.',
+    nextSteps: [
+      '1. Review and apply prompt engineering changes',
+      '2. Fix failing tests or rewrite for new API',
+      '3. Update reference/world-engine/schema-system.md',
+      '4. Test with real project data',
+      '5. Commit and notify users of breaking changes',
+    ],
+  },
+}
 
-export default { meta, summary };
+export default { meta, summary }

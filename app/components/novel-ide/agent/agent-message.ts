@@ -1309,8 +1309,6 @@ const publicToolResultDetails = (result: PublicToolResultDto): JsonValue | undef
       }
 }
 
-
-
 /** 将任意工具参数值解析为 AgentMode；非法/缺失时返回 undefined。复用 shared schema 避免手写枚举漂移。 */
 const parseAgentMode = (value: unknown): AgentMode | undefined => {
   const parsed = AgentModeSchema.safeParse(value)
