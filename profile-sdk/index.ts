@@ -178,6 +178,9 @@ export const MentionedSkillsReminder = constructors.MentionedSkillsReminder
 export const ModeSlot = constructors.ModeSlot
 export const Fragment = constructors.Fragment
 
+export { SESSION_TITLE_OWNER_STATE_KEY, readTitleOwner } from 'nbook/profile-sdk/session'
+export type { SessionTitleOwnerState } from 'nbook/profile-sdk/session'
+
 /** 定义 Profile Home 生命周期声明，不执行文件系统操作。 */
 export function defineProfileHome(definition: ProfileHomeDefinition): ProfileHomeDefinition {
   return definition

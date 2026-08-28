@@ -397,6 +397,10 @@ export type ProfileTurnPlan = {
 }
 
 export type AgentRuntimeHookStage = 'prepareRun' | 'prepareTurn' | 'ingestTurn' | 'prepareNextTurn' | 'settleRun'
+/** 写 plan op 投影到指定 leaf：`true` = current active leaf（fallback），`{ scope: 'activeLeaf', leafId }` = 显式指定。 */
+export type ProfileWritePlanProjection = true | { scope: 'activeLeaf', leafId: string }
+/** `session_update` 的 updates 字段支持 title / summary + 任意 ProfileJsonValue 字段。 */
+export type ProfileSessionUpdateFields = { title?: string, summary?: string } & { [key: string]: ProfileJsonValue }
 export type AgentRuntimeHookResult = {
   writePlans?: Array<{
     target: { sessionId: number }
@@ -404,7 +408,10 @@ export type AgentRuntimeHookResult = {
     durability?: 'immediate' | 'savePoint'
     ops: Array<{
       kind: 'append'
-      entry: { type: 'custom', key: string, value: ProfileJsonValue }
+      projection?: ProfileWritePlanProjection
+      entry:
+        | { type: 'custom', key: string, value: ProfileJsonValue }
+        | { type: 'session_update', updates: ProfileSessionUpdateFields }
     }>
   }>
   runtimeState?: ProfileJsonValue
