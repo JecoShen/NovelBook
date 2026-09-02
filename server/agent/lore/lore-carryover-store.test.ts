@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { mkdtempSync, rmSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, dirname } from 'node:path'
+import { join, dirname, basename } from 'node:path'
 import { recordLoreInjection, readRecentLoreInjections } from './lore-carryover-store'
 import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-types'
 
 function makeProjectRef(root: string): ReadyProjectSessionRef {
+  // 保持真实形状：ref.projectRoot 是 Workspace Root 下的单段相对 slug，
+  // store 只允许依赖绝对路径 workspace.root（历史上误用裸名导致相对路径落 cwd）。
   return {
-    workspace: { root, key: { slug: 'test', root }, ref: { projectRoot: root } },
+    workspace: { root, ref: { projectRoot: basename(root) } },
     generation: 1,
   } as unknown as ReadyProjectSessionRef
 }
@@ -68,7 +70,7 @@ describe('lore-carryover-store', () => {
   })
 
   it('read skips malformed trailing line, returns valid prior lines in order', async () => {
-    const jsonlPath = join(tmpRoot, 'workspace', '.nbook', 'state', 'lore-carryover.jsonl')
+    const jsonlPath = join(tmpRoot, '.nbook', 'state', 'lore-carryover.jsonl')
     mkdirSync(dirname(jsonlPath), { recursive: true })
     writeFileSync(jsonlPath, '')
     appendFileSync(jsonlPath, JSON.stringify({

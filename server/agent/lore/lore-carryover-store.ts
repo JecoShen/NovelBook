@@ -13,9 +13,12 @@ export interface ReadOptions {
 }
 
 function getJsonlPath(project: ReadyProjectSessionRef): string {
+  // 项目级状态路径约定对齐 profile-context-access（`workspace.root/.nbook/...`）。
+  // workspace.root 是 openProject 已 realpath 校验的绝对路径；ref.projectRoot 只是
+  // Workspace Root 下单段相对 slug——旧实现 join 裸名得到相对路径，被进程 cwd 锚定：
+  // 测试每次全量跑在仓库根泄漏 <slug>/ 目录，生产则随启动目录漂移（feature 静默失效）。
   return join(
-    project.workspace.ref.projectRoot,
-    'workspace',
+    project.workspace.root,
     '.nbook',
     'state',
     'lore-carryover.jsonl',
