@@ -9400,8 +9400,14 @@ describe('NeuroAgentHarness', () => {
   })
 
   it('running 状态 abort 会写 aborted lifecycle 并按 aborted 暂停 followUp queue', async () => {
+    // providerStarted 门禁：activeInvocation 在 provider 真正被调用前就已注册,只等它会让
+    // abort 赢得 race、invocation 在触达 provider 前被 forceAbort,两个 faux response 都不
+    // 消费(pending=2)。与兄弟用例（模型错误后暂停 followUp queue）同法显式等 provider 进入,
+    // 让 abort 落在真实 running 态：response[0] 已消费、'must not run' 的 response[1] 不被 followup 跑。
+    const providerStarted = createDeferred()
     faux.setResponses([
       async () => {
+        providerStarted.resolve()
         await new Promise(resolve => setTimeout(resolve, 30))
         return fauxAssistantMessage('stopped', { stopReason: 'aborted', errorMessage: 'user stopped' })
       },
@@ -9421,6 +9427,7 @@ describe('NeuroAgentHarness', () => {
       const snapshot = await harness.getSessionRecovery(created.sessionId)
       expect(snapshot.activeInvocation).not.toBeNull()
     })
+    await providerStarted.promise
     await harness.invokeAgent({
       sessionId: created.sessionId,
       mode: 'followup',

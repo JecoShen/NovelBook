@@ -7277,9 +7277,12 @@ export class NeuroAgentHarness {
     if (existing) {
       return existing
     }
+    // 带 context 的读取只来自 live-state/recovery 这类只读投影。持久化值不得回写权威内存 map：
+    // durable write 是异步 flush 的,晚到的 publish 可能把 stale 快照重新灌进刚被 clear 删除 key
+    // 的内存态,污染后续 mutation（2026-09-02 abort clearQueue 竞态复现）。启动恢复由
+    // recoverDurableFollowUps 显式 set,不依赖这里的缓存。
     const persisted = context ? this.readFollowUpQueueState(context) : undefined
     if (persisted) {
-      this.followUpQueues.set(sessionId, persisted)
       return persisted
     }
     return this.emptyFollowUpQueueState()
