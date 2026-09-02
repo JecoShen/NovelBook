@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { readFile, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AgentSessionEventHub } from 'nbook/server/agent/events/session-event-hub'
 import { createAssistantTextMessage, createTextToolResult } from 'nbook/server/agent/messages/message-utils'
 import { JsonlSessionRepository } from 'nbook/server/agent/session/session-repo'
 import { SessionWriteExecutor } from 'nbook/server/agent/session/write-plan'
-import type { SessionWriteTimingSink } from 'nbook/server/agent/session/write-plan'
-import type { AgentSessionEventDto } from 'nbook/shared/dto/agent-session.dto'
+import type { SessionWritePlan, SessionWriteTimingSink } from 'nbook/server/agent/session/write-plan'
+import type { SessionSnapshot } from 'nbook/server/agent/session/types'
+import type { AgentSessionEventDto, AgentSessionLiveStateDto } from 'nbook/shared/dto/agent-session.dto'
 import { absoluteFsPath, type AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 
 describe('SessionWriteExecutor', () => {
@@ -440,6 +441,410 @@ describe('SessionWriteExecutor', () => {
     expect(repo.reduce(await repo.readSession(session.metadata.sessionId)).messages.map(message => message.role)).toEqual(['assistant', 'assistant'])
   })
 
+  it('普通 invocation 失去 ownership 后拒绝写入', async () => {
+    const session = await repo.createSession({
+      profileKey: 'leader.default',
+      initial: {},
+    })
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => testLiveState(session.metadata.sessionId),
+      invocationWriteAllowed: () => false,
+    })
+
+    await expect(executor.execute([{
+      target: { sessionId: session.metadata.sessionId },
+      cause: 'lifecycle.start',
+      ops: [{
+        kind: 'append',
+        entry: {
+          type: 'invocation_lifecycle',
+          invocationId: 'old-invocation',
+          status: 'start',
+        },
+      }],
+    }], 'old-invocation')).rejects.toThrow('已失去 session')
+
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual([])
+  })
+
+  it('强制取消写入必须持有精确 tombstone 并发布归属事件', async () => {
+    const session = await repo.createSession({
+      profileKey: 'leader.default',
+      initial: {},
+    })
+    const authorizations = new Set<string>()
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => testLiveState(session.metadata.sessionId),
+      forcedAbortWriteAllowed: (sessionId: number, invocationId: string) => authorizations.has(`${String(sessionId)}:${invocationId}`),
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const plan = forcedAbortPlan(session.metadata.sessionId, 'old-invocation')
+
+    expect(() => forced.enqueueForcedAbort(plan, 'old-invocation')).toThrow('强制取消')
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual([])
+
+    authorizations.add(`${String(session.metadata.sessionId)}:old-invocation`)
+    const subscription = eventHub.subscribe(session.metadata.sessionId)
+    const iterator = subscription[Symbol.asyncIterator]()
+    await forced.enqueueForcedAbort(plan, 'old-invocation').completion
+    const stateEvent = await iterator.next()
+    await iterator.return?.()
+
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual(['aborted'])
+    const payload = stateEvent.done ? undefined : stateEvent.value.payload
+    expect(payload?.kind === 'session' && payload.event.type === 'session_state_changed'
+      && payload.invocationId === 'old-invocation').toBe(true)
+  })
+
+  it('强制取消终态同步入队，保证先于下一 invocation start', async () => {
+    const session = await repo.createSession({
+      profileKey: 'leader.default',
+      initial: {},
+    })
+    const authorizations = new Set([`${String(session.metadata.sessionId)}:old-invocation`])
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => testLiveState(session.metadata.sessionId),
+      invocationWriteAllowed: (_sessionId: number, invocationId: string) => invocationId === 'new-invocation',
+      forcedAbortWriteAllowed: (sessionId: number, invocationId: string) => authorizations.has(`${String(sessionId)}:${invocationId}`),
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const originalAppendEntry = repo.appendEntry.bind(repo)
+    const abortWriteStarted = Promise.withResolvers<undefined>()
+    const abortWriteGate = Promise.withResolvers<undefined>()
+    repo.appendEntry = async (...args: Parameters<JsonlSessionRepository['appendEntry']>) => {
+      const entry = args[1]
+      if (entry.type === 'invocation_lifecycle' && entry.invocationId === 'old-invocation' && entry.status === 'aborted') {
+        abortWriteStarted.resolve()
+        await abortWriteGate.promise
+      }
+      return originalAppendEntry(...args)
+    }
+
+    const forcedWrite = forced.enqueueForcedAbort(
+      forcedAbortPlan(session.metadata.sessionId, 'old-invocation'),
+      'old-invocation',
+    ).completion
+    await abortWriteStarted.promise
+    let nextSettled = false
+    const nextWrite = executor.execute([{
+      target: { sessionId: session.metadata.sessionId },
+      cause: 'lifecycle.start',
+      ops: [{
+        kind: 'append',
+        entry: {
+          type: 'invocation_lifecycle',
+          invocationId: 'new-invocation',
+          status: 'start',
+        },
+      }],
+    }], 'new-invocation').finally(() => {
+      nextSettled = true
+    })
+
+    // 固定观察窗是计划规定的时序合同：新 start 必须等旧 aborted 完成，而不是碰巧先到。
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(nextSettled).toBe(false)
+    abortWriteGate.resolve()
+    await Promise.all([forcedWrite, nextWrite])
+
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual(['aborted', 'start'])
+  })
+
+  it('畸形强制取消计划在同步入队前拒绝', async () => {
+    const session = await repo.createSession({
+      profileKey: 'leader.default',
+      initial: {},
+    })
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => testLiveState(session.metadata.sessionId),
+      forcedAbortWriteAllowed: () => true,
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const malformed = {
+      ...forcedAbortPlan(session.metadata.sessionId, 'old-invocation'),
+      cause: 'tool.state',
+    }
+
+    expect(() => forced.enqueueForcedAbort(malformed, 'old-invocation')).toThrow('强制取消')
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual([])
+  })
+
+  it('forced 计划不能通过普通 execute 绕过窄化授权', async () => {
+    const session = await repo.createSession({ profileKey: 'leader.default', initial: {} })
+    const plan = forcedAbortPlan(session.metadata.sessionId, 'old-invocation')
+
+    await expect(executor.execute([plan], 'old-invocation')).rejects.toThrow('enqueueForcedAbort')
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual([])
+  })
+
+  it('forced 入队会快照计划，调用方改写 target 也不越过原 Session 队列', async () => {
+    const first = await repo.createSession({ profileKey: 'leader.default', initial: {} })
+    const second = await repo.createSession({ profileKey: 'leader.default', initial: {} })
+    const authorizations = new Set([
+      `${String(first.metadata.sessionId)}:old-invocation`,
+      `${String(second.metadata.sessionId)}:old-invocation`,
+    ])
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async sessionId => testLiveState(sessionId),
+      forcedAbortWriteAllowed: (sessionId: number, invocationId: string) => authorizations.has(`${String(sessionId)}:${invocationId}`),
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const plan = forcedAbortPlan(first.metadata.sessionId, 'old-invocation')
+    const completion = forced.enqueueForcedAbort(plan, 'old-invocation').completion
+    plan.target.sessionId = second.metadata.sessionId
+
+    await completion
+    expect(lifecycleStatuses(await repo.readSession(first.metadata.sessionId))).toEqual(['aborted'])
+    expect(lifecycleStatuses(await repo.readSession(second.metadata.sessionId))).toEqual([])
+  })
+
+  it('forced physical append 失败保留 recovery，重试后只追加一次 aborted', async () => {
+    const session = await repo.createSession({ profileKey: 'leader.default', initial: {} })
+    const authorizations = new Set([`${String(session.metadata.sessionId)}:old-invocation`])
+    const originalAppendEntry = repo.appendEntry.bind(repo)
+    let failures = 1
+    repo.appendEntry = async (...args: Parameters<JsonlSessionRepository['appendEntry']>): ReturnType<JsonlSessionRepository['appendEntry']> => {
+      const entry = args[1]
+      if (entry.type === 'invocation_lifecycle' && entry.invocationId === 'old-invocation' && failures > 0) {
+        failures -= 1
+        throw new Error('append unavailable')
+      }
+      return originalAppendEntry(...args)
+    }
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => testLiveState(session.metadata.sessionId),
+      forcedAbortWriteAllowed: (sessionId: number, invocationId: string) => authorizations.has(`${String(sessionId)}:${invocationId}`),
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const plan = forcedAbortPlan(session.metadata.sessionId, 'old-invocation')
+
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).rejects.toMatchObject({
+      code: 'session_abort_durability_unavailable',
+      statusCode: 503,
+    })
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual([])
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).resolves.toBeDefined()
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual(['aborted'])
+  })
+
+  it('partial lifecycle append 后 repair 失败可继续重试并只补一条 auto leaf', async () => {
+    const session = await repo.createSession({ profileKey: 'leader.default', initial: {} })
+    const authorizations = new Set([`${String(session.metadata.sessionId)}:old-invocation`])
+    const repositoryInternals = repo as unknown as {
+      appendLine: (path: string, record: unknown) => Promise<void>
+    }
+    const appendLine = repositoryInternals.appendLine.bind(repo)
+    let appendLineCalls = 0
+    const appendLineSpy = vi.spyOn(repositoryInternals, 'appendLine').mockImplementation(async (...args) => {
+      appendLineCalls += 1
+      if (appendLineCalls === 2) {
+        throw new Error('auto leaf unavailable')
+      }
+      return appendLine(...args)
+    })
+    let repairFailures = 1
+    const observedBatches: string[] = []
+    const observedEvents: string[] = []
+    const subscription = eventHub.subscribe(session.metadata.sessionId)
+    const iterator = subscription[Symbol.asyncIterator]()
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => testLiveState(session.metadata.sessionId),
+      onEntriesWritten: (batch) => {
+        observedBatches.push(`${batch.cause}:${batch.entries.map(entry => entry.type).join(',')}`)
+      },
+      forcedAbortWriteAllowed: (sessionId: number, invocationId: string) => authorizations.has(`${String(sessionId)}:${invocationId}`),
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const originalEnsureAutoLeaf = repo.ensureAutoLeaf.bind(repo)
+    const ensureAutoLeafSpy = vi.spyOn(repo, 'ensureAutoLeaf').mockImplementation(async (...args) => {
+      if (repairFailures > 0) {
+        repairFailures -= 1
+        throw new Error('repair leaf unavailable')
+      }
+      return originalEnsureAutoLeaf(...args)
+    })
+    const plan = forcedAbortPlan(session.metadata.sessionId, 'old-invocation')
+
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).rejects.toMatchObject({
+      code: 'session_abort_durability_unavailable',
+      statusCode: 503,
+    })
+    const partial = await repo.readSession(session.metadata.sessionId)
+    const lifecycle = partial.entries.find(entry => entry.type === 'invocation_lifecycle')
+    expect(lifecycle?.status).toBe('aborted')
+    expect(partial.leafId).not.toBe(lifecycle?.id)
+
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).rejects.toMatchObject({
+      code: 'session_abort_durability_unavailable',
+      statusCode: 503,
+    })
+    expect(forced.hasPendingForcedAbortRecovery(session.metadata.sessionId, 'old-invocation')).toBe(true)
+
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).resolves.toBeDefined()
+    const repaired = await repo.readSession(session.metadata.sessionId)
+    const repairedLifecycle = repaired.entries.find(entry => entry.type === 'invocation_lifecycle')
+    expect(lifecycleStatuses(repaired)).toEqual(['aborted'])
+    expect(repaired.leafId).toBe(repairedLifecycle?.id)
+    expect(repaired.entries.filter(entry => entry.type === 'leaf' && entry.leafId === repairedLifecycle?.id)).toHaveLength(1)
+    expect(observedBatches).toEqual([
+      'lifecycle.aborted.repair:leaf',
+      'lifecycle.aborted.force:invocation_lifecycle',
+    ])
+
+    const event = await iterator.next()
+    if (!event.done) {
+      observedEvents.push(event.value.payload.kind === 'session' ? event.value.payload.event.type : event.value.payload.kind)
+    }
+    await iterator.return?.()
+    expect(observedEvents).toEqual(['session_state_changed'])
+    appendLineSpy.mockRestore()
+    ensureAutoLeafSpy.mockRestore()
+  })
+
+  it('forced live-state 失败保留 recovery，重试不重复追加 aborted', async () => {
+    const session = await repo.createSession({ profileKey: 'leader.default', initial: {} })
+    const authorizations = new Set([`${String(session.metadata.sessionId)}:old-invocation`])
+    let failures = 1
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => {
+        if (failures > 0) {
+          failures -= 1
+          throw new Error('live state unavailable')
+        }
+        return testLiveState(session.metadata.sessionId)
+      },
+      forcedAbortWriteAllowed: (sessionId: number, invocationId: string) => authorizations.has(`${String(sessionId)}:${invocationId}`),
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const plan = forcedAbortPlan(session.metadata.sessionId, 'old-invocation')
+
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).rejects.toMatchObject({
+      code: 'session_abort_durability_unavailable',
+      statusCode: 503,
+    })
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual(['aborted'])
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).resolves.toBeDefined()
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual(['aborted'])
+  })
+
+  it('forced physical after-write 失败登记 recovery，重试不重复追加 aborted', async () => {
+    const session = await repo.createSession({
+      profileKey: 'leader.default',
+      initial: {},
+    })
+    const authorizations = new Set([`${String(session.metadata.sessionId)}:old-invocation`])
+    let failures = 1
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => testLiveState(session.metadata.sessionId),
+      onEntriesWritten: async () => {
+        if (failures > 0) {
+          failures -= 1
+          throw new Error('after-write unavailable')
+        }
+      },
+      forcedAbortWriteAllowed: (sessionId: number, invocationId: string) => authorizations.has(`${String(sessionId)}:${invocationId}`),
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const plan = forcedAbortPlan(session.metadata.sessionId, 'old-invocation')
+
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).rejects.toMatchObject({
+      code: 'session_abort_durability_unavailable',
+      statusCode: 503,
+    })
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual(['aborted'])
+
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).resolves.toBeDefined()
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual(['aborted'])
+  })
+
+  it('pending recovery 必须先于同一 session 的普通 start', async () => {
+    const session = await repo.createSession({ profileKey: 'leader.default', initial: {} })
+    const authorizations = new Set([`${String(session.metadata.sessionId)}:old-invocation`])
+    let afterWriteFailures = 1
+    const recoveryStarted = Promise.withResolvers<undefined>()
+    const recoveryGate = Promise.withResolvers<undefined>()
+    executor = new SessionWriteExecutor({
+      repo,
+      eventHub,
+      liveStateProvider: async () => testLiveState(session.metadata.sessionId),
+      onEntriesWritten: async (batch) => {
+        if (batch.invocationId === 'old-invocation' && afterWriteFailures > 0) {
+          afterWriteFailures -= 1
+          throw new Error('after-write unavailable')
+        }
+        if (batch.invocationId === 'old-invocation') {
+          recoveryStarted.resolve()
+          await recoveryGate.promise
+        }
+      },
+      forcedAbortWriteAllowed: (sessionId: number, invocationId: string) => authorizations.has(`${String(sessionId)}:${invocationId}`),
+    })
+    const forced = executor as unknown as ForcedAbortExecutor
+    const plan = forcedAbortPlan(session.metadata.sessionId, 'old-invocation')
+    await expect(forced.enqueueForcedAbort(plan, 'old-invocation').completion).rejects.toMatchObject({ statusCode: 503 })
+
+    const start = executor.execute([{
+      target: { sessionId: session.metadata.sessionId },
+      cause: 'lifecycle.start',
+      ops: [{ kind: 'append', entry: { type: 'invocation_lifecycle', invocationId: 'new-invocation', status: 'start' } }],
+    }], 'new-invocation')
+    await recoveryStarted.promise
+    let settled = false
+    void start.finally(() => {
+      settled = true
+    })
+    await new Promise(resolve => setTimeout(resolve, 25))
+    expect(settled).toBe(false)
+    recoveryGate.resolve()
+    await start
+    expect(lifecycleStatuses(await repo.readSession(session.metadata.sessionId))).toEqual(['aborted', 'start'])
+  })
+
+  it('ensureAutoLeaf op 经同一 write queue 幂等补齐 active leaf', async () => {
+    const session = await repo.createSession({
+      profileKey: 'leader.default',
+      initial: {},
+    })
+    const lifecycle = await repo.appendEntry(session.metadata.sessionId, {
+      type: 'invocation_lifecycle',
+      invocationId: 'old-invocation',
+      status: 'aborted',
+    })
+    await repo.moveLeaf(session.metadata.sessionId, null)
+
+    const repairPlan: SessionWritePlan = {
+      target: { sessionId: session.metadata.sessionId },
+      cause: 'lifecycle.aborted.repair',
+      ops: [{ kind: 'ensureAutoLeaf', targetEntryId: lifecycle.id }],
+    }
+    const repaired = await executor.execute([repairPlan], 'old-invocation')
+    expect(repaired.entries).toHaveLength(1)
+    expect(repaired.entries[0]).toMatchObject({ type: 'leaf', leafId: lifecycle.id })
+    expect((await repo.readSession(session.metadata.sessionId)).leafId).toBe(lifecycle.id)
+
+    const noop = await executor.execute([repairPlan], 'old-invocation')
+    expect(noop.entries).toEqual([])
+    expect(noop.liveStates).toEqual(new Map())
+  })
+
   it('moveLeaf op 会移动 active leaf，并只发布有类型的 live state', async () => {
     const session = await repo.createSession({
       profileKey: 'leader.default',
@@ -474,6 +879,57 @@ describe('SessionWriteExecutor', () => {
     ])
   })
 })
+
+type ForcedAbortExecutor = {
+  enqueueForcedAbort: (plan: SessionWritePlan, invocationId: string) => { completion: Promise<unknown> }
+  hasPendingForcedAbortRecovery: (sessionId: number, invocationId: string) => boolean
+}
+
+function forcedAbortPlan(sessionId: number, invocationId: string): SessionWritePlan {
+  return {
+    target: { sessionId },
+    cause: 'lifecycle.aborted.force',
+    ops: [{
+      kind: 'append',
+      entry: {
+        type: 'invocation_lifecycle',
+        invocationId,
+        status: 'aborted',
+      },
+    }],
+  }
+}
+
+function lifecycleStatuses(snapshot: SessionSnapshot): string[] {
+  return snapshot.entries
+    .filter(entry => entry.type === 'invocation_lifecycle')
+    .map(entry => entry.status)
+}
+
+function testLiveState(sessionId: number): AgentSessionLiveStateDto {
+  return {
+    summary: {
+      sessionId,
+      profileKey: 'leader.default',
+      status: 'idle',
+      updatedAt: 1,
+      archived: false,
+    },
+    activeLeafId: null,
+    activePathRevision: null,
+    pendingUserInputs: [],
+    steerQueue: { count: 0 },
+    followUpQueue: {
+      status: 'ready',
+      count: 0,
+    },
+    activeInvocation: null,
+    model: null,
+    thinkingLevel: null,
+    effectiveThinkingLevel: 'off',
+    agentMode: 'normal',
+  }
+}
 
 function createTimingRecorder(): { sink: SessionWriteTimingSink, events: string[] } {
   const events: string[] = []
