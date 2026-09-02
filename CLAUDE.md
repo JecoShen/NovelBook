@@ -42,9 +42,10 @@ NeuroBook — 面向长篇小说的本地优先 AI 工作台（AGPL-3.0-only）�
 | **upstream / bot 推来的 orphan** (`origin/codex/*`, `origin/feat/i*`, `origin/fix/*` from Codex Task 145, `origin/refactor/*` 远古) | — | — | 来自远端 | 每月 1 次扫, 列出 + 等用户批量授权清 |
 
 **触发清理的场景**:
-- 会话开始时 `git branch -a | wc -l` > 20 → 列 TODO 等用户
+- 会话开始时 `git branch -r | grep origin/ | wc -l` > 5 → 列 TODO 等用户
+  - **只统计 origin 自有分支**（2026-09-02 修正：旧口径 `git branch -a` 把 `upstream/*` tracking refs 计入，78 条全是 notnotype/neuro-book 活跃分支，非本仓所有、属 port batch 数据源、上游删分支时 `fetch --prune` 自动清，永远无法归零 → 触发线恒真误报）
 - 新 archive 完成 → 自动清 (本会话内)
-- 上游 `git fetch upstream` 引入新 bot branch → 列入 TODO
+- 上游 `git fetch upstream` 引入新 bot branch → 列入 port batch TODO (分类 cherry-pick 或无视, 不删 upstream 远端分支)
 
 **禁止**:
 - 留 "我之后要查" 的 branch (work 已在 main 即应删, reflog git 默认 90 天可恢复, 不需要靠 branch 留底)
