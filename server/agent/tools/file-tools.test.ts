@@ -823,7 +823,9 @@ describe('v3 file tools', () => {
     expect(text).toContain('"path": "lorebook/character/hero/"')
     expect(text).toContain('"type": "character"')
     expect(text).toContain('OK')
-  })
+  // 冷启动真实 workspace CLI 子进程 ×2（parse + validate）实测 ~5.4s，贴穿 5s 默认预算；
+  // 命令内工具侧 timeout 本就是 10s，用例级预算须高于其上界。
+  }, 30_000)
 
   it('bash 优先从 user-assets bin 解析 workspace CLI', async () => {
     const userBinPath = join(workspaceRoot, '.nbook', 'agent', 'bin', 'workspace')

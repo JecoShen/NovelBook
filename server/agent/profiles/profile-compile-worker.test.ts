@@ -596,7 +596,9 @@ async function temporaryProfileSource(assetsOrProfileKey: IsolatedWorkspaceAsset
   const profileKey = typeof assetsOrProfileKey === 'string' ? assetsOrProfileKey : maybeProfileKey!
   const sourceRoot = assets?.userProfileRoot ?? resolve('assets', 'workspace', '.nbook', 'agent', 'profiles')
   const source = await readFile(resolve(sourceRoot, 'builtin', 'researcher.profile.tsx'), 'utf8')
-  return source.replace('key: "researcher"', `key: "${profileKey}"`)
+  // 引号形态自适应：8/20 的 @stylistic 批量修复（baccbb47）把源文件改成单引号后，
+  // 固定双引号模式静默不命中，编译出的 profileKey 全部留在 researcher。
+  return source.replace(/key:\s*(["'])researcher\1/, (_match, quote: string) => `key: ${quote}${profileKey}${quote}`)
 }
 
 async function blockingProfileSource(assets: IsolatedWorkspaceAssets, profileKey: string, markerPath: string, releasePath: string): Promise<string> {

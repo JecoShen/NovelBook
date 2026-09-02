@@ -18,6 +18,8 @@ import { messageText } from 'nbook/server/agent/messages/message-utils'
 import { fauxAssistantMessage, fauxText, fauxToolCall } from '@earendil-works/pi-ai'
 import { profileToolsFromKeys } from 'nbook/server/agent/test/profile-tools'
 import { defineAgentProfile } from 'nbook/server/agent/profiles/define-agent-profile'
+import { closeAllProjects, openProject, resetProjectSessionsForTest } from 'nbook/server/workspace-files/project-session'
+import { projectWorkspaceRef } from 'nbook/server/workspace-files/project-identity'
 import { Type } from 'typebox'
 import { WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema } from 'nbook/server/agent/profiles/builtin-contracts'
 
@@ -141,11 +143,22 @@ describe('Writer Agent invoke 集成测试', () => {
 
     // 注册测试 Writer profile
     harness.profiles.register(createTestWriterProfile(), false)
+
+    // createAgent 的 lifecycle 门禁（63b0b66d）：currentProjectRoot 非空必须已 openProject；
+    // 对齐 neuro-agent-harness.test「/new 继承 Current Project root」用例先例。
+    await openProject(projectWorkspaceRef(projectSlug), { kind: 'job', source: 'test' }, harness.workspaceRoot)
   })
 
   afterEach(async () => {
     if (harness) {
       await harness.drainBackgroundTasks()
+      await harness.dispose()
+    }
+    try {
+      await closeAllProjects()
+    }
+    finally {
+      resetProjectSessionsForTest()
     }
     await rm(testRoot, { recursive: true, force: true })
   })
