@@ -2,6 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-08-07
+- 复核：2026-09-02 第 1 轮重新评估 — 维持延期（见下方「复核记录」）
 - 关联任务：[Task 123](../tasks/123-repo-structure-optimization/README.md)、[Task 142](../tasks/142-post-merge-reliability-hardening/README.md)、[Task 143](../tasks/143-desktop-envelope-installation-spike/README.md)
 - 相关决策：[ADR 0010](0010-desktop-storage-loopback-shutdown.md)、[ADR 0014](0014-agent-job-durable-history.md)
 
@@ -70,8 +71,27 @@ Electron 和 Tauri 目前仍是 Desktop spike。配置、端口、Supervisor、�
 - 跨存储操作出现已复现且局部补偿无法恢复的用户可见数据损失。
 - Electron/Tauri 已进入正式发行，并出现可复现的跨宿主合同漂移。
 
-## 验证边界
+## 2026-09-02 复核记录（第 1 轮重新评估）
+
+按上述「重新评估清单」对四项证据逐条复核。结论：**§1–§3 维持延期，状态不变**，同时登记最小解环路径，供未来真正触发时直接采用。
+
+### 实测事实
+
+1. **Manager 独立发布已现实，但环未造成任何阻塞**：`@notnotype/neuro-book-manager@0.1.0-canary.54` 已发布 npm，`manager:verify-public` 通过。`packages/neuro-book-manager/scripts/build.mjs`（Bun.build，`target: 'bun'` + minify）会把全部 `nbook/*` 仓库源码**完整 inline** 进 `dist/` bundle 产物——即「独立 Manager 构建把仓库源码带入产物」这条证据字面上已成立。但它是本包 bundle 策略的默认设计而非故障模式：npm 产物自包含，安装、发布与五平台 Product / Portable / Container 验收（2026-08）均无异常，未构成清单第 2 条要求的「实际失败」。
+2. **环是边界问题的角落，不是边界本身**：Manager `src/` 非测试代码（16 个文件，含 `fixtures/` 辅助）跨仓库边界 import 实测 **38 处**（`nbook/shared` 22 / `nbook/server` 9 / `nbook/desktop` 4 / `nbook/scripts` 3，值级与 type 级混合）。而 `shared/` → `packages/` 的反向边全仓**仅 1 条**：`shared/product-runtime-image-verifier.ts:16` 引用 `PRODUCT_PLATFORMS` 与 `ProductPlatform`；Manager 侧引用 verifier 的共 3 处。单独解这 1 处环不改变上述产物形态、自包含性或发布能力。未来若做边界治理，应针对全量 38 处 import 面一次性处理（即 §1 的「以最小的实际复用面确定包边界」路径），而不是逐个解环。
+3. **平台枚举未漂移**：`PRODUCT_PLATFORMS` 唯一定义于 `packages/neuro-book-manager/src/types.ts:150`，`shared/` 无重复定义；`platform.test.ts:95-101` 断言 `PRODUCT_ASSET_NAMES` / `BUN_ASSET_NAMES` / `RIPGREP_ASSET_SUFFIXES` 键序与 `PRODUCT_PLATFORMS` 对齐，漂移已有测试拦截。
+4. **§3 的 shared ↔ `server/agent` 循环仍为双侧 type-only**，无运行时边，未触发清单第 3 条（独立宿主编译 / project reference / 生成客户端被阻塞）。
+
+### 解环最小路径（预登记，未来触发时启用）
+
+把 `PRODUCT_PLATFORMS` + `ProductPlatform` 下沉到 `shared/product-runtime-contract.ts`（语义上属 product runtime 合同层，且 verifier 本就依赖该模块）；`types.ts:150` 改为从 shared re-export，Manager 内部 `#manager/types` 导入面不变；verifier 内 10 处引用只改 import 来源不改用法。约 4 文件、单一真相源、非复制常量（与 §2 反对「仅为解环而复制常量」一致）。**本轮不启用**——触发条件均未成立，提前改动只会制造无收益的迁移风险。
+
+### 验证边界口径修正
+
+原「验证边界」中 `bun run typecheck` 退出码 255（Bun bin remap / `corrupted node_modules`）为 2026-08-07 快照，已过时：2026-08-21 修复 typecheck 链路（`desktop/electron` workspace install 串联 + `NODE_OPTIONS` 堆调整），2026-08-27 根 typecheck 收口至 0 错误。当前 `bun run typecheck` 可正常执行。
+
+## 验证边界（2026-08-07 原始记录）
 
 - 直接运行 `node node_modules/nuxt/bin/nuxt.mjs typecheck --dotenv .env.typecheck --logLevel silent`：通过，退出码 0。
-- `bun run typecheck` 未进入 TypeScript，Bun 报告 `Bun failed to remap this bin to its proper location within node_modules.`，并提示 `corrupted node_modules directory`，退出码 255。
+- `bun run typecheck` 未进入 TypeScript，Bun 报告 `Bun failed to remap this bin to its proper location within node_modules.`，并提示 `corrupted node_modules directory`，退出码 255。（**已被 2026-09-02 复核记录修正，不再成立**）
 - 本轮未运行全仓测试、浏览器验收、真实 provider 或发布流程；本 ADR 不替代这些门禁。
