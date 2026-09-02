@@ -241,11 +241,14 @@ provider reasoning/thinking
 
 ### 8. Abort
 
-1. 用户点击停止，前端调用 `POST /abort`。
-2. 后端 abort 当前 invocation。
-3. 前端可能收到 `invocation_aborted`，进入 aborting/stopped 过渡态。
-4. 后续 `session_state_changed` 或 snapshot 确认 `activeInvocation = null`。
-5. abort 不是 Run Error，不应默认显示错误卡。
+1. 用户点击停止，前端调用 `POST /api/agent/sessions/:sessionId/abort`，body 可为 `{reason?: string, clearQueue?: boolean}`，`clearQueue` 默认 `true`；`expectedInvocationId` 只用于 Harness 的 input-signal / Project-close 精确取消，不是 HTTP 字段。
+2. 后端在 Session mutation 边界内完成 abort admission；Running invocation 的 AbortSignal 在锁外传播，合作路径最多等待 `INVOCATION_ABORT_GRACE_MS = 150`。
+3. 前端可能收到 `invocation_aborted`，进入 aborting/stopped 过渡态；accepted abort 必须至少发布一次该事件，只有未订阅或断连客户端可能收不到。
+4. Waiting 的 durable writes 成功后按 `invocation_aborted -> session_entry（仅本次新写入） -> session_state_changed -> agent_end(aborted)` 发布；Running cooperative/forced 按 `invocation_aborted -> agent_end(aborted) -> session_state_changed` 收口。cooperative 的 `clearQueue=false` terminal 在 mutation 临界区按 durable snapshot 幂等提交：首次追加唯一 aborted lifecycle，随后完成 follow-up pause；若 lifecycle 已落盘但 auto-leaf append 失败，重试先经同一 write queue 补齐缺失 active leaf，再跳过 lifecycle append 并继续 pause/finish，不重复 aborted lifecycle。forced 的 state 可在物理 write/after-write 后异步到达。
+5. forced-abort 只在同一个 `SessionWriteExecutor` per-session queue 中接受唯一 `aborted` lifecycle 后释放 ownership；后续 `session_state_changed` 或 snapshot 确认 `activeInvocation = null`，后续 invocation `start` 不早于旧 terminal append。已有 `aborted` lifecycle 不重复追加，但 recovery 仍须在同一 queue 完成缺失的 auto leaf、strict after-write observer 和 live-state publish。
+6. Abort admission 固定分三支：`context.archived` 或 `summary.status === "archived"` 时无论是否有 active invocation 都返回 HTTP 409 `session_abort_not_allowed`；非归档且没有匹配 active invocation 时（包括 Idle、Profile `missing`/`unloadable`）返回 HTTP 200 `idle` 且无新 lifecycle、resolution、queue 或 abort 事件；有匹配 active invocation 时才检查 `interaction.canAbort`，`true` 进入 abort flow，`false` 返回 HTTP 409。abort-owned queue/terminal durable write 未完成返回 503 `session_abort_durability_unavailable`、`retryable: true`；HTTP 200 `aborted` 只表示 write queue admission。
+7. 匹配 `Aborting` 且 forced plan 可重试时，重复 POST 重试同一 plan；成功返回 `aborted` 且不重复 grace、lifecycle 或 terminal event。Aborting 无可重试 plan 时返回 `idle`。`clearQueue=true` 清空 follow-up，`false` 仅保留 follow-up 为 `paused` 且 `pausedBy.reason="aborted"`；terminal 始终清除 residual steer，不写 steer history、不发 `steered`。
+8. abort 不是 Run Error，不应默认显示错误卡；没有显式 reason 时不显示 Provider 英文 abort 文本。`interrupted` 仅用于重启时未闭合 start 的 recovery 投影或 partial message/run failure 元数据，不是在线 abort terminal。
 
 ### 9. Run Error
 

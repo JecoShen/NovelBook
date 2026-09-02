@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AgentAbortRequestDtoSchema,
   AgentInvokeRequestDtoSchema,
   AgentSessionAttachmentListQueryDtoSchema,
   AgentSessionAttachmentResolveRequestDtoSchema,
@@ -7,6 +8,16 @@ import {
   AgentSessionQueryDtoSchema,
   ClientVariablePatchAckDtoSchema,
 } from 'nbook/shared/dto/agent-session.dto'
+
+describe('AgentAbortRequestDtoSchema', () => {
+  it('拒绝未知字段而不是静默剥离', () => {
+    expect(AgentAbortRequestDtoSchema.safeParse({ unexpected: true }).success).toBe(false)
+    expect(AgentAbortRequestDtoSchema.parse({ reason: '停止', clearQueue: false })).toEqual({
+      reason: '停止',
+      clearQueue: false,
+    })
+  })
+})
 
 describe('AgentSessionListQueryDtoSchema', () => {
   it('recovery=required 只允许与 scope=all 组合并保留分页参数', () => {

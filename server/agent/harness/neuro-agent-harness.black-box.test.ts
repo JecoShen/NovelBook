@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fauxAssistantMessage, fauxText, fauxToolCall } from '@earendil-works/pi-ai'
 import { createFauxModels, type FauxModelsFixture, writeFauxProviderConfig } from 'nbook/server/agent/test-utils/faux-models'
 import { Type } from 'typebox'
 import { NeuroAgentHarness } from 'nbook/server/agent/harness/neuro-agent-harness'
 import type { AgentInvocationResult } from 'nbook/server/agent/harness/types'
 import { JsonlSessionRepository } from 'nbook/server/agent/session/session-repo'
+import type { ForcedAbortSessionWritePlan } from 'nbook/server/agent/session/write-plan'
 import { AgentProfileCatalog } from 'nbook/server/agent/profiles/catalog'
 import { defineAgentProfile as defineRuntimeAgentProfile } from 'nbook/server/agent/profiles/define-agent-profile'
 import { agentRuntimeBuiltins } from 'nbook/server/agent/profiles/define-agent-runtime'
@@ -34,6 +35,13 @@ type ObservedRun = {
   events: AgentSessionEventDto[]
   snapshot: Awaited<ReturnType<JsonlSessionRepository['readSession']>>
   context: NeuroSessionContext
+}
+
+type HarnessWriteExecutorAccess = {
+  writeExecutor: {
+    enqueueForcedAbort: (plan: ForcedAbortSessionWritePlan, invocationId: string) => { completion: Promise<unknown> }
+  }
+  forcedAbortWriteAuthorizations: Set<string>
 }
 
 type EventTrace = Array<{
@@ -205,6 +213,14 @@ async function nextEventLoopTurn(): Promise<void> {
   const turn = Promise.withResolvers<undefined>()
   setImmediate(turn.resolve)
   await turn.promise
+}
+
+/** 有界取消是真实时序合同：超时即失败，不用猜测性等待掩盖回归。 */
+async function raceTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(label)), ms)),
+  ])
 }
 
 describe('NeuroAgentHarness black-box contract', () => {
@@ -1216,6 +1232,25 @@ describe('NeuroAgentHarness black-box contract', () => {
     }
   })
 
+  it('Archived 且没有 active invocation 时 abort 返回 409', async () => {
+    const created = await harness.createAgent({
+      profileKey: 'leader.default',
+      initial: {},
+    })
+
+    await expect(harness.runCommand(created.sessionId, {
+      command: 'archive',
+      reason: 'archived before abort',
+    })).resolves.toMatchObject({ kind: 'live_state' })
+
+    await expect(harness.abortInvocation(created.sessionId, { reason: 'should be rejected' })).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'session_abort_not_allowed',
+    })
+    const snapshot = await harness.repo.readSession(created.sessionId)
+    expect(snapshot.entries.some(entry => entry.type === 'invocation_lifecycle')).toBe(false)
+  })
+
   it('Running + abort 清理 steer，并按 aborted 暂停 followup queue', async () => {
     const profileKey = registerPlainProfile(harness, {
       key: 'test.blackbox.running-abort',
@@ -1294,6 +1329,57 @@ describe('NeuroAgentHarness black-box contract', () => {
     }
   })
 
+  it('Running abort 在 queue projection 阻塞时仍先触发 signal 并有界返回', async () => {
+    const profileKey = registerPlainProfile(harness, {
+      key: 'test.blackbox.abort-before-queue-persistence',
+    })
+    const providerStarted = Promise.withResolvers<undefined>()
+    const providerGate = Promise.withResolvers<undefined>()
+    faux.setResponses([async () => {
+      providerStarted.resolve()
+      await providerGate.promise
+      return fauxAssistantMessage('late result')
+    }])
+    const created = await harness.createAgent({ profileKey, initial: {} })
+    const running = harness.invokeAgent({
+      sessionId: created.sessionId,
+      mode: 'prompt',
+      message: { text: 'block queue before abort' },
+    })
+    await providerStarted.promise
+    const internals = harness as unknown as {
+      abortControllers: Map<number, AbortController>
+    }
+    const signal = internals.abortControllers.get(created.sessionId)?.signal
+    expect(signal).toBeDefined()
+    const projectionStarted = Promise.withResolvers<undefined>()
+    const projectionGate = Promise.withResolvers<undefined>()
+    const realAppendProjectionEntry = harness.repo.appendProjectionEntry.bind(harness.repo)
+    const appendProjectionSpy = vi.spyOn(harness.repo, 'appendProjectionEntry').mockImplementation(async (...args: Parameters<JsonlSessionRepository['appendProjectionEntry']>) => {
+      const entry = args[1]
+      if (entry.type === 'custom' && entry.key === AGENT_FOLLOW_UP_QUEUE_STATE_KEY) {
+        projectionStarted.resolve()
+        await projectionGate.promise
+      }
+      return realAppendProjectionEntry(...args)
+    })
+    try {
+      const aborting = harness.abortInvocation(created.sessionId, { reason: 'stop before queue persistence' })
+      await projectionStarted.promise
+      expect(signal?.aborted).toBe(true)
+      await expect(raceTimeout(aborting, 300, 'abort API waited for blocked queue persistence'))
+        .resolves.toEqual({ status: 'aborted', sessionId: created.sessionId })
+      await expect(raceTimeout(running, 300, 'running invocation waited for blocked queue persistence'))
+        .resolves.toMatchObject({ status: 'error', aborted: true })
+    }
+    finally {
+      projectionGate.resolve()
+      providerGate.resolve()
+      appendProjectionSpy.mockRestore()
+      await running.catch(() => undefined)
+    }
+  }, 30_000)
+
   // 取消前必须等到 Faux Provider 实际取走悬挂响应；activeInvocation=running 只表示 admission 完成。
   // 300ms/1s race 是被测的公开取消上界，不用于等待测试状态推进。
   it('Running provider 忽略 AbortSignal 时 cancel 仍有界释放调用方，并隔离迟到结果', async () => {
@@ -1322,25 +1408,45 @@ describe('NeuroAgentHarness black-box contract', () => {
       message: { text: 'start hanging provider' },
     })
     await providerStarted.promise
+    const oldInvocationId = (await harness.getSessionRecovery(created.sessionId)).activeInvocation!.invocationId
+
+    // 阻塞旧 invocation 的 forced-aborted 落盘：两阶段取消必须不等待 I/O 就释放调用方，
+    // 且新 invocation 的 start 排在旧终态之后。
+    const durableGate = Promise.withResolvers<undefined>()
+    const realAppendEntry = harness.repo.appendEntry.bind(harness.repo)
+    const appendEntrySpy = vi.spyOn(harness.repo, 'appendEntry').mockImplementation(async (...args: Parameters<JsonlSessionRepository['appendEntry']>) => {
+      const entry = args[1]
+      if (entry.type === 'invocation_lifecycle' && entry.invocationId === oldInvocationId && entry.status === 'aborted') {
+        await durableGate.promise
+      }
+      return realAppendEntry(...args)
+    })
 
     try {
-      const aborted = await harness.abortInvocation(created.sessionId, { reason: 'force stop' })
-      const result = await Promise.race([
-        running,
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('running invocation did not settle after cancel')), 300)),
-      ])
-      const recovery = await harness.getSessionRecovery(created.sessionId)
-
+      const aborted = await raceTimeout(
+        harness.abortInvocation(created.sessionId, { reason: 'force stop' }),
+        300,
+        'abort API did not settle after cancel',
+      )
+      const result = await raceTimeout(running, 300, 'running invocation did not settle after cancel')
       expect(aborted).toEqual({ status: 'aborted', sessionId: created.sessionId })
-      expect(result).toMatchObject({ status: 'error', invocationId: expect.any(String) })
-      expect(recovery.activeInvocation).toBeNull()
+      expect(result).toMatchObject({ status: 'error', invocationId: expect.any(String), aborted: true })
+      await expect(harness.getSessionRecovery(created.sessionId)).resolves.toMatchObject({ activeInvocation: null })
 
-      const next = await harness.invokeAgent({
+      let nextSettled = false
+      const next = harness.invokeAgent({
         sessionId: created.sessionId,
         mode: 'prompt',
         message: { text: 'start fresh invocation' },
+      }).finally(() => {
+        nextSettled = true
       })
-      expect(next).toMatchObject({ status: 'completed', finalMessage: 'fresh invocation result' })
+      // 固定观察窗证明新 start 被 durable queue 挡住，而不是恰好更慢。
+      await new Promise(resolve => setTimeout(resolve, 50))
+      expect(nextSettled).toBe(false)
+
+      durableGate.resolve()
+      await expect(next).resolves.toMatchObject({ status: 'completed', finalMessage: 'fresh invocation result' })
 
       providerGate.resolve()
       await providerReturned.promise
@@ -1351,6 +1457,323 @@ describe('NeuroAgentHarness black-box contract', () => {
     }
     finally {
       providerGate.resolve()
+      durableGate.resolve()
+      appendEntrySpy.mockRestore()
+    }
+  }, 30_000)
+
+  it('running cooperative abort 的终态 queue pause 失败不重复 aborted lifecycle', async () => {
+    const profileKey = registerPlainProfile(harness, {
+      key: 'test.blackbox.cooperative-terminal-queue-failure',
+    })
+    const providerStarted = Promise.withResolvers<undefined>()
+    const providerGate = Promise.withResolvers<undefined>()
+    faux.setResponses([async () => {
+      providerStarted.resolve()
+      await providerGate.promise
+      return fauxAssistantMessage('cooperative stopped', { stopReason: 'aborted', errorMessage: 'ignored' })
+    }])
+    const created = await harness.createAgent({ profileKey, initial: {} })
+    const observer = await observeSession(harness, created.sessionId)
+    const running = harness.invokeAgent({
+      sessionId: created.sessionId,
+      mode: 'prompt',
+      message: { text: 'cooperative abort' },
+    })
+    await providerStarted.promise
+    const invocationId = (await harness.getSessionRecovery(created.sessionId)).activeInvocation!.invocationId
+    await harness.invokeAgent({
+      sessionId: created.sessionId,
+      mode: 'followup',
+      message: { text: 'preserve after abort' },
+    })
+    const realAppendProjectionEntry = harness.repo.appendProjectionEntry.bind(harness.repo)
+    let queueProjectionWrites = 0
+    let terminalQueueFailure = false
+    let abortedLifecyclesAtTerminalQueueFailure = 0
+    const appendProjectionSpy = vi.spyOn(harness.repo, 'appendProjectionEntry').mockImplementation(async (...args: Parameters<JsonlSessionRepository['appendProjectionEntry']>) => {
+      const entry = args[1]
+      if (entry.type === 'custom' && entry.key === AGENT_FOLLOW_UP_QUEUE_STATE_KEY) {
+        queueProjectionWrites += 1
+        if (queueProjectionWrites === 2) {
+          terminalQueueFailure = true
+          const snapshotAtFailure = await harness.repo.readSession(created.sessionId)
+          abortedLifecyclesAtTerminalQueueFailure = snapshotAtFailure.entries.filter(entry => entry.type === 'invocation_lifecycle'
+            && entry.invocationId === invocationId
+            && entry.status === 'aborted').length
+          throw new Error('cooperative terminal queue persistence unavailable')
+        }
+      }
+      return realAppendProjectionEntry(...args)
+    })
+
+    try {
+      const aborting = harness.abortInvocation(created.sessionId, { reason: 'cooperative stop', clearQueue: false })
+      await waitUntil(() => eventTypes(observer.events).includes('invocation_aborted'), 'cooperative abort admission')
+      providerGate.resolve()
+      await expect(raceTimeout(aborting, 300, 'cooperative abort did not settle'))
+        .resolves.toEqual({ status: 'aborted', sessionId: created.sessionId })
+      const result = await raceTimeout(running, 300, 'cooperative invocation did not settle')
+      const snapshot = await harness.repo.readSession(created.sessionId)
+      expect(result).toMatchObject({ status: 'error', aborted: true })
+      expect(terminalQueueFailure).toBe(true)
+      expect(queueProjectionWrites).toBe(3)
+      expect(abortedLifecyclesAtTerminalQueueFailure).toBe(1)
+      expect(lifecycleStatuses(snapshot)).toEqual(['start', 'aborted'])
+      expect(snapshot.entries.filter(entry => entry.type === 'invocation_lifecycle'
+        && entry.invocationId === result.invocationId
+        && entry.status === 'aborted')).toHaveLength(1)
+      const recovery = await harness.getSessionRecovery(created.sessionId)
+      expect(recovery).toMatchObject({
+        activeInvocation: null,
+        followUpQueue: {
+          status: 'paused',
+          pausedBy: {
+            invocationId: result.invocationId,
+            reason: 'aborted',
+          },
+          items: [expect.objectContaining({
+            kind: 'followup',
+            text: expect.objectContaining({ preview: 'preserve after abort', omitted: false }),
+          })],
+        },
+      })
+    }
+    finally {
+      providerGate.resolve()
+      appendProjectionSpy.mockRestore()
+      await running.catch(() => undefined)
+      await observer.stop()
+    }
+  }, 30_000)
+
+  it('running cooperative abort 的部分 lifecycle append 重试补齐 active leaf', async () => {
+    const profileKey = registerPlainProfile(harness, {
+      key: 'test.blackbox.cooperative-partial-lifecycle',
+    })
+    const providerStarted = Promise.withResolvers<undefined>()
+    const providerGate = Promise.withResolvers<undefined>()
+    faux.setResponses([async () => {
+      providerStarted.resolve()
+      await providerGate.promise
+      return fauxAssistantMessage('cooperative partial lifecycle', { stopReason: 'aborted', errorMessage: 'ignored' })
+    }])
+    const created = await harness.createAgent({ profileKey, initial: {} })
+    const observer = await observeSession(harness, created.sessionId)
+    const running = harness.invokeAgent({
+      sessionId: created.sessionId,
+      mode: 'prompt',
+      message: { text: 'cooperative partial lifecycle' },
+    })
+    await providerStarted.promise
+    const invocationId = (await harness.getSessionRecovery(created.sessionId)).activeInvocation!.invocationId
+    const repositoryInternals = harness.repo as unknown as {
+      appendLine: (path: string, record: unknown) => Promise<void>
+    }
+    const realAppendLine = repositoryInternals.appendLine.bind(harness.repo)
+    let abortedLifecycleId: string | undefined
+    let injectedAutoLeafFailure = false
+    let abortedLifecyclesAtAutoLeafFailure = 0
+    let autoLeavesAtAutoLeafFailure = 0
+    let activeLeafAtAutoLeafFailure: string | null = null
+    const appendLineSpy = vi.spyOn(repositoryInternals, 'appendLine').mockImplementation(async (...args) => {
+      const record = args[1] as {
+        kind?: string
+        entry?: {
+          type?: string
+          status?: string
+          id?: string
+          leafId?: string | null
+        }
+      }
+      if (record.kind === 'entry'
+        && record.entry?.type === 'invocation_lifecycle'
+        && record.entry.status === 'aborted'
+        && record.entry.id) {
+        abortedLifecycleId = record.entry.id
+      }
+      if (!injectedAutoLeafFailure
+        && abortedLifecycleId
+        && record.kind === 'entry'
+        && record.entry?.type === 'leaf'
+        && record.entry.leafId === abortedLifecycleId) {
+        const snapshotAtFailure = await harness.repo.readSession(created.sessionId)
+        abortedLifecyclesAtAutoLeafFailure = snapshotAtFailure.entries.filter(entry => entry.type === 'invocation_lifecycle'
+          && entry.invocationId === invocationId
+          && entry.status === 'aborted').length
+        autoLeavesAtAutoLeafFailure = snapshotAtFailure.entries.filter(entry => entry.type === 'leaf' && entry.leafId === abortedLifecycleId).length
+        activeLeafAtAutoLeafFailure = snapshotAtFailure.leafId
+        injectedAutoLeafFailure = true
+        throw new Error('cooperative auto leaf unavailable')
+      }
+      return realAppendLine(...args)
+    })
+    try {
+      const aborting = harness.abortInvocation(created.sessionId)
+      await waitUntil(() => eventTypes(observer.events).includes('invocation_aborted'), 'cooperative partial lifecycle admission')
+      providerGate.resolve()
+      await expect(raceTimeout(aborting, 300, 'cooperative partial lifecycle abort did not settle'))
+        .resolves.toEqual({ status: 'aborted', sessionId: created.sessionId })
+      const result = await raceTimeout(running, 300, 'cooperative partial lifecycle invocation did not settle')
+      await nextEventLoopTurn()
+      const invocationEvents = observer.events.filter(event => event.invocationId === invocationId)
+      const abortEventAt = firstIndex(invocationEvents, 'invocation_aborted')
+      const terminalEventAt = invocationEvents.findIndex((event, index) => index > abortEventAt
+        && event.event.type === 'agent_end'
+        && event.event.status === 'aborted')
+      expect(abortEventAt).toBeGreaterThanOrEqual(0)
+      expect(terminalEventAt).toBeGreaterThan(abortEventAt)
+      const terminalStateEvents = invocationEvents.filter((event, index) => index > terminalEventAt
+        && event.event.type === 'session_state_changed')
+      expect(terminalStateEvents).toHaveLength(1)
+      expect(invocationEvents.slice(abortEventAt + 1, terminalEventAt).some(event => event.event.type === 'session_state_changed')).toBe(false)
+      const snapshot = await harness.repo.readSession(created.sessionId)
+      const abortedLifecycles = snapshot.entries.filter(entry => entry.type === 'invocation_lifecycle'
+        && entry.invocationId === invocationId
+        && entry.status === 'aborted')
+      const abortedLifecycle = abortedLifecycles[0]
+      expect(result).toMatchObject({ status: 'error', aborted: true, invocationId })
+      expect(injectedAutoLeafFailure).toBe(true)
+      expect(abortedLifecyclesAtAutoLeafFailure).toBe(1)
+      expect(autoLeavesAtAutoLeafFailure).toBe(0)
+      expect(activeLeafAtAutoLeafFailure).not.toBe(abortedLifecycle?.id)
+      expect(abortedLifecycles).toHaveLength(1)
+      expect(lifecycleStatuses(snapshot)).toEqual(['start', 'aborted'])
+      expect(snapshot.leafId).toBe(abortedLifecycle?.id)
+      expect(snapshot.entries.filter(entry => entry.type === 'leaf' && entry.leafId === abortedLifecycle?.id)).toHaveLength(1)
+      await expect(harness.getSessionRecovery(created.sessionId)).resolves.toMatchObject({ activeInvocation: null })
+    }
+    finally {
+      providerGate.resolve()
+      appendLineSpy.mockRestore()
+      await running.catch(() => undefined)
+      await observer.stop()
+    }
+  }, 30_000)
+
+  it('Running forced enqueue 同步失败时保留 aborting ownership 并可重试', async () => {
+    const profileKey = registerPlainProfile(harness, {
+      key: 'test.blackbox.forced-enqueue-failure',
+    })
+    const providerStarted = Promise.withResolvers<undefined>()
+    const providerGate = Promise.withResolvers<undefined>()
+    faux.setResponses([async () => {
+      providerStarted.resolve()
+      await providerGate.promise
+      return fauxAssistantMessage('late result', { stopReason: 'aborted', errorMessage: 'ignored' })
+    }])
+    const created = await harness.createAgent({ profileKey, initial: {} })
+    const observer = await observeSession(harness, created.sessionId)
+    const running = harness.invokeAgent({ sessionId: created.sessionId, mode: 'prompt', message: { text: 'hang' } })
+    await providerStarted.promise
+    const oldInvocationId = (await harness.getSessionRecovery(created.sessionId)).activeInvocation!.invocationId
+    const harnessInternals = harness as unknown as HarnessWriteExecutorAccess
+    const retryEnqueued = Promise.withResolvers<undefined>()
+    const realEnqueueForcedAbort = harnessInternals.writeExecutor.enqueueForcedAbort.bind(harnessInternals.writeExecutor)
+    const enqueue = vi.spyOn(harnessInternals.writeExecutor, 'enqueueForcedAbort')
+      .mockImplementationOnce(() => {
+        throw new Error('queue unavailable')
+      })
+      .mockImplementationOnce((...args) => {
+        retryEnqueued.resolve()
+        return realEnqueueForcedAbort(...args)
+      })
+
+    try {
+      await expect(raceTimeout(harness.abortInvocation(created.sessionId, { reason: 'retry me' }), 300, 'abort did not settle'))
+        .rejects.toMatchObject({ statusCode: 503, code: 'session_abort_durability_unavailable' })
+      expect(observer.events.filter(event => event.event.type === 'agent_end')).toHaveLength(0)
+      await expect(harness.getSessionRecovery(created.sessionId)).resolves.toMatchObject({
+        activeInvocation: { invocationId: oldInvocationId },
+      })
+      const retry = harness.abortInvocation(created.sessionId, { reason: 'retry succeeds' })
+      await raceTimeout(retryEnqueued.promise, 75, 'forced abort retry repeated cooperative grace')
+      await expect(raceTimeout(retry, 300, 'abort retry did not settle'))
+        .resolves.toEqual({ status: 'aborted', sessionId: created.sessionId })
+      expect((await harness.getSessionRecovery(created.sessionId)).activeInvocation).toBeNull()
+      providerGate.resolve()
+      await running
+      await harness.drainBackgroundTasks()
+      expect(lifecycleStatuses(await harness.repo.readSession(created.sessionId))).toEqual(['start', 'aborted'])
+    }
+    finally {
+      enqueue.mockRestore()
+      providerGate.resolve()
+      await running
+      await observer.stop()
+    }
+  }, 30_000)
+
+  it('外部 signal 在 forced enqueue 同步失败时原 invoke 有界返回 retryable error，保留 aborting ownership 并可显式重试', async () => {
+    const profileKey = registerPlainProfile(harness, {
+      key: 'test.blackbox.exact-signal-enqueue-failure',
+    })
+    const providerStarted = Promise.withResolvers<undefined>()
+    const providerGate = Promise.withResolvers<undefined>()
+    faux.setResponses([
+      async () => {
+        providerStarted.resolve()
+        await providerGate.promise
+        return fauxAssistantMessage('late signal-enqueue-failure result', { stopReason: 'aborted', errorMessage: 'ignored' })
+      },
+      fauxAssistantMessage('new invocation survived'),
+    ])
+    const created = await harness.createAgent({ profileKey, initial: {} })
+    const observer = await observeSession(harness, created.sessionId)
+    const controller = new AbortController()
+    const running = harness.invokeAgent({
+      sessionId: created.sessionId,
+      mode: 'prompt',
+      message: { text: 'start signal-owned invocation' },
+      signal: controller.signal,
+    })
+    await providerStarted.promise
+    const oldInvocationId = (await harness.getSessionRecovery(created.sessionId)).activeInvocation!.invocationId
+    const harnessInternals = harness as unknown as HarnessWriteExecutorAccess
+    const enqueue = vi.spyOn(harnessInternals.writeExecutor, 'enqueueForcedAbort')
+      .mockImplementationOnce(() => {
+        throw new Error('queue unavailable')
+      })
+
+    try {
+      controller.abort(new Error('parent invocation cancelled'))
+      const cancelled = await raceTimeout(running, 1_000, 'signal-owned invocation did not settle after enqueue failure')
+      expect(cancelled).toMatchObject({
+        status: 'error',
+        invocationId: oldInvocationId,
+        errorInfo: {
+          code: 'session_abort_durability_unavailable',
+          retryable: true,
+        },
+      })
+      expect(cancelled.aborted).toBeUndefined()
+      expect(observer.events.filter(event => event.event.type === 'agent_end')).toHaveLength(0)
+      await expect(harness.getSessionRecovery(created.sessionId)).resolves.toMatchObject({
+        activeInvocation: { invocationId: oldInvocationId },
+      })
+      await expect(raceTimeout(harness.abortInvocation(created.sessionId, { reason: 'retry succeeds' }), 300, 'abort retry did not settle'))
+        .resolves.toEqual({ status: 'aborted', sessionId: created.sessionId })
+      await expect(harness.getSessionRecovery(created.sessionId)).resolves.toMatchObject({
+        activeInvocation: null,
+      })
+      providerGate.resolve()
+      await running.catch(() => undefined)
+      await harness.drainBackgroundTasks()
+      const snapshot = await harness.repo.readSession(created.sessionId)
+      expect(visibleText(harness.repo.reduce(snapshot).messages)).not.toContain('late signal-enqueue-failure result')
+      expect(lifecycleStatuses(snapshot)).toEqual(['start', 'aborted'])
+      const next = await harness.invokeAgent({
+        sessionId: created.sessionId,
+        mode: 'prompt',
+        message: { text: 'start new invocation' },
+      })
+      expect(next).toMatchObject({ status: 'completed', finalMessage: 'new invocation survived' })
+    }
+    finally {
+      enqueue.mockRestore()
+      providerGate.resolve()
+      await running.catch(() => undefined)
+      await observer.stop()
     }
   }, 30_000)
 
@@ -1452,11 +1875,12 @@ describe('NeuroAgentHarness black-box contract', () => {
       })
       await waitUntil(() => eventTypes(observer.events).includes('tool_execution_start'), 'hanging tool execution start')
 
-      const aborted = await harness.abortInvocation(created.sessionId, { reason: 'force stop tool' })
-      const result = await Promise.race([
-        running,
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('tool invocation did not settle after cancel')), 300)),
-      ])
+      const aborted = await raceTimeout(
+        harness.abortInvocation(created.sessionId, { reason: 'force stop tool' }),
+        300,
+        'tool cancel API did not settle',
+      )
+      const result = await raceTimeout(running, 300, 'tool invocation did not settle after cancel')
       expect(aborted).toEqual({ status: 'aborted', sessionId: created.sessionId })
       expect(result).toMatchObject({ status: 'error', invocationId: expect.any(String) })
       await expect(harness.getSessionRecovery(created.sessionId)).resolves.toMatchObject({ activeInvocation: null })
@@ -1543,13 +1967,15 @@ describe('NeuroAgentHarness black-box contract', () => {
     })
     await settleStarted
 
-    const aborted = await harness.abortInvocation(created.sessionId, { reason: 'cancel hanging settle' })
-    const result = await Promise.race([
-      running,
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('settle invocation did not stop after cancel')), 300)),
-    ])
+    const aborted = await raceTimeout(
+      harness.abortInvocation(created.sessionId, { reason: 'cancel hanging settle' }),
+      300,
+      'settle cancel API did not settle',
+    )
+    const result = await raceTimeout(running, 300, 'settle invocation did not stop after cancel')
     expect(aborted).toEqual({ status: 'aborted', sessionId: created.sessionId })
     expect(result).toMatchObject({ status: 'error' })
+    await expect(harness.getSessionRecovery(created.sessionId)).resolves.toMatchObject({ activeInvocation: null })
 
     releaseSettle!()
     await new Promise(resolve => setTimeout(resolve, 20))
