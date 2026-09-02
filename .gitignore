@@ -78,3 +78,5 @@ server/.agent/
 # Temporary screenshots / assets
 t16-editor-heat.png
 /cache/
+# impeccable 设计工具的本地状态（DESIGN.md/PRODUCT.md 入库，工具态不入库）
+.impeccable/
