@@ -28,7 +28,29 @@ NeuroBook — 面向长篇小说的本地优先 AI 工作台（AGPL-3.0-only）�
 - 远端 `main` 更新后建议 `git fetch`；**允许**普通 `git push`（`git push origin main`），**禁止** `force push` 与 `force-with-lease`（强推会改写 commit 哈希、破坏协作历史）。
 - 测试 / 临时数据：放在 `.agent/tmp/<test-name>-<uuid>/`，不要写在仓库、`.worktree/` 或快照目录。
 - 依赖：统一用 Bun；新增前先确认现有依赖是否能解决；`patches/` 目录有 nitropack 等上游未合补丁，**不要**绕过 `bunfig.toml` 的 patch 机制。
-- Agent 不自行合并 PR、关闭 Issue、跑 `release`、改版本号——这些动作需要用户明确许可。
+- Agent 不自行合并 PR、关闭 Issue、跑 `release`、改版本号、批量删 `origin/*` branch——这些动作需要用户明确许可。
+
+## 分支生命周期
+
+> 2026-08-28 立约：3 周不清理 origin 累积 30+ orphan branch (主因 = 上游 fork + Codex bot + archive 模式留底), 引入以下规则防止再发.
+
+| 模式 | branch 处理 | worktree | push | 删除时机 |
+| --- | --- | --- | --- | --- |
+| **archive** (合并到 main 的成果) | 1 feat branch | 用完即删 | push 1 次 | 合并后本地 + origin 都删, 仅留 `.agent/plan/<name>/` 5-file archive |
+| **audit** (本地审, 不动 main) | **不创建 branch**, 用 detached HEAD | 用完即删 | 不 push | 不适用 |
+| **WIP** (进行中) | 1 feat branch, 命名 `feat/<task>-<slug>` | 持续 | 定期 push | 7 天无更新 + 未合并 → 列 TODO 等用户决定 |
+| **upstream / bot 推来的 orphan** (`origin/codex/*`, `origin/feat/i*`, `origin/fix/*` from Codex Task 145, `origin/refactor/*` 远古) | — | — | 来自远端 | 每月 1 次扫, 列出 + 等用户批量授权清 |
+
+**触发清理的场景**:
+- 会话开始时 `git branch -a | wc -l` > 20 → 列 TODO 等用户
+- 新 archive 完成 → 自动清 (本会话内)
+- 上游 `git fetch upstream` 引入新 bot branch → 列入 TODO
+
+**禁止**:
+- 留 "我之后要查" 的 branch (work 已在 main 即应删, reflog git 默认 90 天可恢复, 不需要靠 branch 留底)
+- 删 origin branch 之前未确认 `main..X` 是空 (0 unmerged)
+- 任何 `--force` / `--force-with-lease` push (CLAUDE.md 既有红线)
+- **不再有 N 天承诺**: archive / audit / WIP / orphan 一律"该删就删", 不再约定保留期
 
 ## 已知债务与门禁
 
