@@ -23,6 +23,7 @@
 - [../../docs/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md](../../docs/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md)：prompt / continue / steer / followup 的外部行为合同。
 - [attachments.md](attachments.md)：Session 图片附件的存储、Markdown、授权、目录、Composer 与模型预算合同。
 - [sse.md](sse.md)：Agent session SSE / snapshot / event contract。
+- [session-abort.md](session-abort.md)：Agent Session abort 的 admission、两阶段取消、forced queue recovery 与 HTTP/SSE 行为合同（[ADR 0019](../../docs/adr/0019-agent-abort-mutation-boundary.md)）。
 - [jobs.md](jobs.md)：后台 Job 快照、全局 Jobs SSE、游标恢复、背压和 Manager 生命周期合同。
 - [pi-trace-observability.md](pi-trace-observability.md)：Pi 请求 trace 的存储布局、隐私边界、统一入口约束与抽库 runbook。
 - [workflow/](workflow/README.md)：Agent Workflow 参考入口：选用边界、目录覆盖、`run_workflow` 契约与内置库。

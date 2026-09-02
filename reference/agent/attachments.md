@@ -106,7 +106,7 @@ archive 只写当前 Session 的 `session_archived`，restore 只写 `session_re
 
 ## Session Mutation 边界
 
-所有受 interaction policy 约束的 Session mutation 都必须通过 `withSessionMutation()` / `withSessionMutations()` 线性化“读取最新状态、准入、提交”：
+所有受 interaction policy 约束的 Session mutation 都必须通过 `withSessionMutation()` / `withSessionMutations()` 线性化“读取最新状态、准入、提交”；[Agent Session Abort Spec](./session-abort.md) 与 [ADR 0019](../../docs/adr/0019-agent-abort-mutation-boundary.md) 定义 abort 的 forced control-plane 例外：
 
 - invocation claim 与 terminal transition、Tree/history、runtime command、附件最终登记、archive/restore 和 abort 共用该边界；
 - 固定锁顺序为 relation mutation lock -> 按 Session ID 排序的 Session mutation lock -> 按 Session ID 排序的 `SessionWriteExecutor` write lock；
