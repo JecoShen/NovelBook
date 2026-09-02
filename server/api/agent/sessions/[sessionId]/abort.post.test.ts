@@ -32,6 +32,11 @@ async function loadAbortHandler() {
   return (await import('nbook/server/api/agent/sessions/[sessionId]/abort.post')).default
 }
 
+// mock 的 http 模块首次加载会 importOriginal 拉起真实 http → harness 全模块图,冷 transform 约 10s,
+// 放进第一个用例的超时预算里会踩线(deterministic 超时,非逻辑竞态)。在文件级(不受单用例 timeout
+// 约束)预暖,route 模块的 mock 解析复用已缓存的模块图。
+await import('nbook/server/agent/http')
+
 describe('POST /api/agent/sessions/:sessionId/abort', () => {
   beforeEach(() => {
     vi.clearAllMocks()
