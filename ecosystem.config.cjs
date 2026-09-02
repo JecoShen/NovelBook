@@ -10,7 +10,9 @@ module.exports = {
         PORT: 3001,
         HOST: '0.0.0.0',
         NITRO_PORT: 3001,
-        NUXT_SESSION_PASSWORD: process.env.NUXT_SESSION_PASSWORD,
+        NEURO_BOOK_APPLICATION_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
+        NEURO_BOOK_STATE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
+        NEURO_BOOK_CACHE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org/cache',
       },
       // ── 防护配置（防脚本路径失效时狂重启刷爆日志）──
       // 历史教训：2026-08-17 book-neoshen 6,891,715 次重启

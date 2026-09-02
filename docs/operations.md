@@ -24,6 +24,75 @@ Manager v1 **不接管 systemd、pm2 或通用后台进程**。要开机自启�
 
 反向代理和 HTTPS 同样不在 Manager 职责内：把反代指向监听端口即可，注意放行 SSE（Agent 的流式输出依赖长连接，反代要关掉对应路径的缓冲）。
 
+### PM2 服务器部署
+
+本项目如果只在一台 Linux 服务器上以 Web 方式运行，可以把仓库根目录作为 Installation Root 和 State Root，用 PM2 托管 Product `.output`。这条路线不需要 Windows/macOS 本地安装包，也不需要 Electron/Tauri。
+
+当前服务器约定如下：
+
+| 项 | 值 |
+| --- | --- |
+| 仓库根目录 | `/www/wwwroot/book.neoshen.dpdns.org` |
+| PM2 进程名 | `book-neoshen` |
+| 监听端口 | `3001` |
+| 公网入口 | `https://book.neoshen.dpdns.org` |
+| State Root | `/www/wwwroot/book.neoshen.dpdns.org` |
+| Cache Root | `/www/wwwroot/book.neoshen.dpdns.org/cache` |
+
+PM2 配置应显式设置 `NEURO_BOOK_APPLICATION_ROOT`、`NEURO_BOOK_STATE_ROOT` 和 `NEURO_BOOK_CACHE_ROOT`。不要依赖 SSH 当前目录或临时 shell 环境来决定数据路径。
+
+常用操作：
+
+```bash
+cd /www/wwwroot/book.neoshen.dpdns.org
+node -c ecosystem.config.cjs
+pm2 start ecosystem.config.cjs --only book-neoshen
+pm2 save
+```
+
+更新源码并重新构建后，用同一份 PM2 配置重启。PM2 7.0.3 在这台机器上执行 `pm2 restart ecosystem.config.cjs --only book-neoshen --update-env` 曾触发过 `Cannot read properties of undefined (reading 'pm2_env')`，可用删除再启动作为可恢复路径：
+
+```bash
+cd /www/wwwroot/book.neoshen.dpdns.org
+pm2 delete book-neoshen
+pm2 start ecosystem.config.cjs --only book-neoshen
+pm2 save
+```
+
+重启前先确认没有迁移锁被其它存活进程持有：
+
+```bash
+scripts/clean-stale-lease.sh --dry-run
+```
+
+重启后执行服务器 smoke：
+
+```bash
+NEURO_BOOK_PUBLIC_URL=https://book.neoshen.dpdns.org \
+NEURO_BOOK_PM2_NAME=book-neoshen \
+PORT=3001 \
+scripts/deploy/server-smoke.sh
+```
+
+该 smoke 只检查 PM2 online、端口监听、本地和公网版本接口、根路径 HTTP 状态以及 `nginx -t`。它不登录、不改数据、不重启服务。
+
+Nginx 反代需要保留真实 Host，并关闭缓冲以支持 Agent 流式输出：
+
+```nginx
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_buffering off;
+```
+
+如果公网版本接口返回 502，先查 PM2 状态、端口监听和最近错误日志：
+
+```bash
+pm2 status book-neoshen
+ss -ltnp | grep ':3001'
+pm2 logs book-neoshen --lines 80
+```
+
 ## 更新与版本通道
 
 ```bash
@@ -71,6 +140,15 @@ Windows Portable 或 Installed Windows 可能在退出当前 Manager 后由外�
 | 日志 | `logs/` |
 
 **备份就是拷贝整个 State Root**。里面全是普通文件和 SQLite，没有外部依赖。恢复就是把目录放回去。注意 SQLite 有 WAL 文件，**热备份时不要只拷 `.sqlite` 而漏掉 `-wal` / `-shm`**，最稳妥是先停服务再拷。
+
+这台 PM2 服务器的最小备份范围是：
+
+- `workspace/`
+- `config.yaml`
+- `.env`
+- `logs/`（可选，排障需要时保留）
+
+冷备份流程是先停 PM2，再打包这些路径，最后启动服务并运行 smoke。热备份必须确保包含 SQLite 的 `-wal` 和 `-shm` 文件；否则恢复后的数据库可能缺最近写入。
 
 正文和设定本身是 Markdown 文件，任何编辑器都能打开，不依赖 NeuroBook 才能读。
 
