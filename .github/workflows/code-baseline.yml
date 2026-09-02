@@ -93,3 +93,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes ripgrep
       - name: Run full tests
         run: bun run test -- --reporter=dot
+      - name: Run bun-native tests
+        # lore 套件用 bun:test，已被 vitest.config.ts exclude（vitest 解析不了 'bun:test'）；
+        # 独立 runner 补回覆盖，勿并入 vitest 全量。
+        run: bun run test:lore

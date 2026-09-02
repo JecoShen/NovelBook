@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vitest/config'
+import { defaultExclude, defineConfig } from 'vitest/config'
 
 const rootDir = fileURLToPath(new URL('./', import.meta.url))
 
@@ -17,6 +17,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    // lore 套件是 bun:test 原生（runner = bun，入口 = bun run test:lore）；
+    // vitest 收进来越界解析不了 'bun:test'，只会把 agent 门禁染红。
+    // 若在 server/agent/lore 下新增 vitest 测试，须同步收窄这里的排除面。
+    exclude: [...defaultExclude, 'server/agent/lore/**/*.test.ts'],
     // Product bundle 与隔离 workspace fixture 会显著抬高单 worker 内存；
     // Windows 实测 4 workers 会触发进程池异常退出，2 workers 能保持完整门禁稳定。
     maxWorkers: 2,
