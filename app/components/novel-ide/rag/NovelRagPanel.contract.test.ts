@@ -42,12 +42,12 @@ describe('NovelRagPanel contract', () => {
 
   it('加载失败时清空旧数据，并在重建跳过时展示失败原因', async () => {
     const panel = await readFile(ragPanelPath, 'utf-8')
-    expect(panel).toContain('overview.value = null;')
-    expect(panel).toContain('selectedSubjectPath.value = "";')
-    expect(panel).toContain('subjectDetail.value = null;')
-    expect(panel).toContain('searchResult.value = null;')
+    expect(panel).toContain('overview.value = null')
+    expect(panel).toContain('selectedSubjectPath.value = \'\'')
+    expect(panel).toContain('subjectDetail.value = null')
+    expect(panel).toContain('searchResult.value = null')
     expect(panel).toContain('formatRebuildWarning(result)')
-    expect(panel).toContain('const failures = result.results.filter((item) => !item.ok);')
+    expect(panel).toContain('const failures = result.results.filter(item => !item.ok)')
     expect(panel).toContain('失败原因：')
   })
 

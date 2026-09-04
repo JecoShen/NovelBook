@@ -12,17 +12,17 @@ describe('Novel IDE Settings Current Project contract', () => {
     expect(source).not.toContain('targetNovelId')
     expect(source).not.toContain('projectOptions')
     expect(source).not.toContain('selectTargetNovel')
-    expect(source).toContain('activeScope.value === "project" && novelIdeStore.currentProjectRoot')
+    expect(source).toContain('activeScope.value === \'project\' && novelIdeStore.currentProjectRoot')
     expect(source).toContain('projectRoot: novelIdeStore.currentProjectRoot')
-    expect(source).toContain('novelIdeStore.currentNovel?.title || novelIdeStore.currentProjectRoot || "Project Workspace"')
+    expect(source).toContain('novelIdeStore.currentNovel?.title || novelIdeStore.currentProjectRoot || \'Project Workspace\'')
   })
 
   it('没有当前 Project 或位于 user-assets 时拒绝进入 Project scope', async () => {
     const source = (await readFile(settingsDialogPath, 'utf8')).replace(/\r\n/g, '\n')
 
-    expect(source).toContain('const projectScopeAvailable = computed(() => novelIdeStore.workspaceKind !== "user-assets"')
-    expect(source).toContain('if (scope === "project" && !projectScopeAvailable.value)')
+    expect(source).toContain('const projectScopeAvailable = computed(() => novelIdeStore.workspaceKind !== \'user-assets\'')
+    expect(source).toContain('if (scope === \'project\' && !projectScopeAvailable.value)')
     expect(source).toContain('([workspaceKind, currentProjectRoot]) => {')
-    expect(source).toContain('(workspaceKind === "user-assets" || !currentProjectRoot) && activeScope.value === "project"')
+    expect(source).toContain('(workspaceKind === \'user-assets\' || !currentProjectRoot) && activeScope.value === \'project\'')
   })
 })

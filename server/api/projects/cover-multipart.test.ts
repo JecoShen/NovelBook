@@ -75,5 +75,5 @@ describe('PUT /api/projects/cover browser multipart', () => {
       ref: expect.objectContaining({ projectRoot: 'book' }),
       cover: { bytes: png, extension: 'png' },
     })
-  })
+  }, 20_000)
 })

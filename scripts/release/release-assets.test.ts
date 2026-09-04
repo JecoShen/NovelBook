@@ -419,9 +419,9 @@ describe('Product Release宿主合同', () => {
     expect(workflow.jobs.preflight.steps).toContainEqual(
       expect.objectContaining({ run: 'bun run manager:verify-public' }),
     )
-    expect(publicManagerVerifier).toContain('["cat-file", "-e", `${publicPackage.gitHead}^{commit}`]')
-    expect(publicManagerVerifier).toContain('["fetch", "--no-tags", "origin", publicPackage.gitHead]')
-    expect(publicManagerVerifier).not.toContain('"--depth=1"')
+    expect(publicManagerVerifier).toContain('[\'cat-file\', \'-e\', `${publicPackage.gitHead}^{commit}`]')
+    expect(publicManagerVerifier).toContain('[\'fetch\', \'--no-tags\', \'origin\', publicPackage.gitHead]')
+    expect(publicManagerVerifier).not.toContain('\'--depth=1\'')
     const generatedSourcesStep = workflow.jobs.preflight.steps.findIndex(({ run }) => run === 'bun run generate')
     const productGraphStep = workflow.jobs.preflight.steps.findIndex(({ run }) => run?.includes('scripts/deploy/product-start.test.ts'))
     const agentStateRootStep = workflow.jobs.preflight.steps.find(({ run }) => run?.includes('product-agent-state-root-smoke.ts'))
@@ -570,8 +570,8 @@ describe('Product Release宿主合同', () => {
     ])
 
     expect(nuxtConfig).toContain('...productRuntimeIslandPackageNames()')
-    expect(runtimeIslands).toContain('packages: ["sharp", "@img/colour", "semver"]')
-    expect(commandBundle).toContain('"product-image-variant-smoke": "scripts/deploy/product-image-variant-smoke.ts"')
+    expect(runtimeIslands).toContain('packages: [\'sharp\', \'@img/colour\', \'semver\']')
+    expect(commandBundle).toContain('\'product-image-variant-smoke\': \'scripts/deploy/product-image-variant-smoke.ts\'')
     for (const platformPackage of [
       '@img/sharp-win32-x64',
       '@img/sharp-linux-x64',
@@ -743,17 +743,17 @@ describe('Product Release宿主合同', () => {
     expect(restartVerifier).toContain('manifest.components.managerRuntime')
     expect(restartVerifier).toContain('manifest.components.manager.path')
     expect(restartVerifier).toContain('AUTH_ADMIN_PASSWORD: ADMIN_PASSWORD')
-    expect(restartVerifier).toContain('"admin",\n        "create",\n        ADMIN_USERNAME,')
-    expect(restartVerifier).not.toContain('"--password-stdin"')
+    expect(restartVerifier).toContain('\'admin\',\n    \'create\',\n    ADMIN_USERNAME,')
+    expect(restartVerifier).not.toContain('\'--password-stdin\'')
     expect(restartVerifier).toContain('--shutdown-on-stdin-end')
     expect(restartVerifier).toContain('acquireAgentSessionStoreExclusiveLease')
-    expect(restartVerifier).toContain('const STARTUP_TIMEOUT_MS = 150_000;')
-    expect(restartVerifier).toContain('"node",\n        "--import",\n        "tsx"')
-    expect(restartVerifier).not.toContain('from "nbook/scripts/deploy/product-browser-smoke"')
+    expect(restartVerifier).toContain('const STARTUP_TIMEOUT_MS = 150_000')
+    expect(restartVerifier).toContain('\'node\',\n    \'--import\',\n    \'tsx\'')
+    expect(restartVerifier).not.toContain('from \'nbook/scripts/deploy/product-browser-smoke\'')
 
     const browserVerifier = await readFile(resolve(ROOT, 'scripts/deploy/product-browser-smoke.ts'), 'utf8')
-    expect(browserVerifier).toContain('process.platform === "win32" && typeof Bun !== "undefined"')
-    expect(browserVerifier).toContain('const BROWSER_LAUNCH_TIMEOUT_MS = 60_000;')
+    expect(browserVerifier).toContain('process.platform === \'win32\' && typeof Bun !== \'undefined\'')
+    expect(browserVerifier).toContain('const BROWSER_LAUNCH_TIMEOUT_MS = 60_000')
 
     const publicRun = workflow.jobs['verify-public-windows-data-reuse'].steps.map(step => step.run ?? '').join('\n')
     expect(publicRun).toContain('$managerRuntime = Join-Path $root $candidateManifest.components.managerRuntime.path')
