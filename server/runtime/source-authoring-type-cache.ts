@@ -156,7 +156,12 @@ async function readCurrent(authoringRoot: string): Promise<SourceAuthoringTypePr
     return null
   }
   const root = join(authoringRoot, pointer.fingerprint)
-  return validateProjection(root, pointer.fingerprint)
+  try {
+    return await validateProjection(root, pointer.fingerprint)
+  }
+  catch {
+    return null
+  }
 }
 
 function parseCurrent(raw: string): CurrentPointer {
@@ -315,7 +320,8 @@ async function garbageCollect(authoringRoot: string, currentFingerprint: string)
     catch {
       continue
     }
-    if (manifest.fingerprint !== entry.name) continue
+    if (manifest.fingerprint !== entry.name || projectionFingerprint(manifest) !== entry.name) continue
+    if (await hasUnsafeEntry(root)) continue
     const metadata = await stat(root).catch(() => null)
     if (!metadata || now - metadata.mtimeMs < SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS) continue
     const bytes = await directoryBytes(root)
@@ -328,6 +334,22 @@ async function garbageCollect(authoringRoot: string, currentFingerprint: string)
     await rm(candidate.root, { recursive: true, force: true })
     orphanBytes -= candidate.bytes
   }
+}
+
+/** GC 只删除完全由普通文件和目录构成的候选；symlink/特殊文件一律保留。 */
+async function hasUnsafeEntry(root: string): Promise<boolean> {
+  let entries
+  try {
+    entries = await readdir(root, { withFileTypes: true })
+  }
+  catch {
+    return true
+  }
+  for (const entry of entries) {
+    if (entry.isSymbolicLink() || (!entry.isDirectory() && !entry.isFile())) return true
+    if (entry.isDirectory() && await hasUnsafeEntry(join(root, entry.name))) return true
+  }
+  return false
 }
 
 async function directoryBytes(root: string): Promise<number> {

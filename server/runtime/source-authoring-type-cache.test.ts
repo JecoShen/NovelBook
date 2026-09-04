@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { access, mkdir, mkdtemp, readFile, readdir, truncate, rm, utimes, writeFile } from 'node:fs/promises'
+import { access, copyFile, mkdir, mkdtemp, readFile, readdir, symlink, truncate, rm, utimes, writeFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -14,8 +14,14 @@ import {
 
 const projectionMock = vi.hoisted(() => ({
   buildCalls: 0,
+  sourceVersion: 'one',
   failBuild: false,
 }))
+const MOCK_INPUT_PATH = '.agent/tmp/source-authoring-type-cache-input.txt'
+
+function mockInputBytes(): Buffer {
+  return readFileSync(resolve(process.cwd(), MOCK_INPUT_PATH))
+}
 
 vi.mock('nbook/scripts/build/authoring-sdk-type-projection', () => ({
   AUTHORING_SDK_TYPE_PROJECTION_SCHEMA: 'nbook.authoring-sdk-type-projection/v2',
@@ -25,11 +31,11 @@ vi.mock('nbook/scripts/build/authoring-sdk-type-projection', () => ({
     purpose: 'test',
     smoke: 'test',
   }],
-  authoringSdkTsconfig: () => '{"compilerOptions":{"strict":true}}\n',
+  authoringSdkTsconfig: () => `${JSON.stringify({ compilerOptions: { strict: true }, sourceVersion: projectionMock.sourceVersion })}\n`,
   authoringSdkTypeProjectionInputFiles: async () => [{
-    path: 'package.json',
-    sha256: createHash('sha256').update(readFileSync(resolve(process.cwd(), 'package.json'))).digest('hex'),
-    bytes: readFileSync(resolve(process.cwd(), 'package.json')).length,
+    path: MOCK_INPUT_PATH,
+    sha256: createHash('sha256').update(mockInputBytes()).digest('hex'),
+    bytes: mockInputBytes().length,
   }],
   buildAuthoringSdkTypeProjection: async ({ targetRoot }: { targetRoot: string }) => {
     if (projectionMock.failBuild) throw new Error('injected projection failure')
@@ -38,7 +44,7 @@ vi.mock('nbook/scripts/build/authoring-sdk-type-projection', () => ({
     await mkdir(join(targetRoot, 'node_modules', '@types', 'node'), { recursive: true })
     await writeFile(join(targetRoot, 'types', 'profile-sdk', 'index.d.ts'), 'export type Profile = true\n', 'utf8')
     await writeFile(join(targetRoot, 'node_modules', '@types', 'node', 'index.d.ts'), 'export type Node = true\n', 'utf8')
-    await writeFile(join(targetRoot, 'tsconfig.json'), '{"compilerOptions":{"strict":true}}\n', 'utf8')
+    await writeFile(join(targetRoot, 'tsconfig.json'), `${JSON.stringify({ compilerOptions: { strict: true }, sourceVersion: projectionMock.sourceVersion })}\n`, 'utf8')
     return {
       declarationFiles: 1,
       declarationBytes: 27,
@@ -59,9 +65,9 @@ vi.mock('nbook/scripts/build/authoring-sdk-type-projection', () => ({
         topLevel: true,
       }],
       inputFiles: [{
-        path: 'package.json',
-        sha256: createHash('sha256').update(readFileSync(resolve(process.cwd(), 'package.json'))).digest('hex'),
-        bytes: readFileSync(resolve(process.cwd(), 'package.json')).length,
+        path: MOCK_INPUT_PATH,
+        sha256: createHash('sha256').update(mockInputBytes()).digest('hex'),
+        bytes: mockInputBytes().length,
       }],
     }
   },
@@ -71,14 +77,23 @@ const roots: string[] = []
 
 afterEach(async () => {
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
+  await rm(resolve(process.cwd(), MOCK_INPUT_PATH), { force: true })
   projectionMock.buildCalls = 0
+  projectionMock.sourceVersion = 'one'
   projectionMock.failBuild = false
 })
 
 async function cacheRoot(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'nbook-source-authoring-types-'))
   roots.push(root)
+  await mkdir(resolve(process.cwd(), '.agent/tmp'), { recursive: true })
+  await writeFile(resolve(process.cwd(), MOCK_INPUT_PATH), projectionMock.sourceVersion, 'utf8')
   return root
+}
+
+async function setSourceVersion(version: string): Promise<void> {
+  projectionMock.sourceVersion = version
+  await writeFile(resolve(process.cwd(), MOCK_INPUT_PATH), version, 'utf8')
 }
 
 async function projectionDirectories(root: string): Promise<string[]> {
@@ -132,37 +147,67 @@ describe('Source authoring type projection cache', () => {
 
   it('GC 保留 current、年轻 owned orphan 和未知目录，超预算时删除最旧 owned orphan', async () => {
     const root = await cacheRoot()
+    const first = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    await setSourceVersion('two')
+    const young = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    await setSourceVersion('three')
     const current = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
     const authoringRoot = join(root, 'authoring-types')
-    const oldFingerprint = `sha256:${'a'.repeat(64)}`
-    const youngFingerprint = `sha256:${'b'.repeat(64)}`
     const unknownFingerprint = 'unknown-directory'
     const now = Date.now()
 
-    const currentManifest = JSON.parse(await readFile(join(current.root, 'manifest.json'), 'utf8')) as Record<string, unknown>
-    for (const fingerprint of [oldFingerprint, youngFingerprint, unknownFingerprint]) {
-      const directory = join(authoringRoot, fingerprint)
-      await mkdir(join(directory, 'types'), { recursive: true })
-      await writeFile(join(directory, 'types', 'payload.bin'), '', 'utf8')
-      if (fingerprint !== unknownFingerprint) {
-        await writeFile(join(directory, 'manifest.json'), `${JSON.stringify({
-          ...currentManifest,
-          fingerprint,
-          generatedAt: new Date(now - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000).toISOString(),
-        })}\n`, 'utf8')
-        await truncate(join(directory, 'types', 'payload.bin'), SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES)
-      }
-    }
-    await utimes(join(authoringRoot, oldFingerprint), new Date(now - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 2_000), new Date(now - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 2_000))
-    await utimes(join(authoringRoot, youngFingerprint), new Date(now), new Date(now))
+    await truncate(join(first.root, 'types', 'profile-sdk', 'index.d.ts'), SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES)
+    await utimes(first.root, new Date(now - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 2_000), new Date(now - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 2_000))
+    await mkdir(join(authoringRoot, unknownFingerprint))
     await utimes(join(authoringRoot, unknownFingerprint), new Date(now - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 3_000), new Date(now - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 3_000))
 
     await openSourceAuthoringTypeProjection(absoluteFsPath(root))
 
-    await expect(access(join(authoringRoot, oldFingerprint))).rejects.toMatchObject({ code: 'ENOENT' })
-    await expect(access(join(authoringRoot, youngFingerprint))).resolves.toBeUndefined()
+    await expect(access(first.root)).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(access(young.root)).resolves.toBeUndefined()
     await expect(access(join(authoringRoot, unknownFingerprint))).resolves.toBeUndefined()
     await expect(access(current.root)).resolves.toBeUndefined()
+  })
+
+  it('GC 保留目录名匹配但内容 fingerprint 不一致的伪造 manifest', async () => {
+    const root = await cacheRoot()
+    const current = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    const authoringRoot = join(root, 'authoring-types')
+    const forgedFingerprint = `sha256:${'c'.repeat(64)}`
+    const forgedRoot = join(authoringRoot, forgedFingerprint)
+    const manifest = JSON.parse(await readFile(join(current.root, 'manifest.json'), 'utf8')) as Record<string, unknown>
+
+    await mkdir(join(forgedRoot, 'types'), { recursive: true })
+    await writeFile(join(forgedRoot, 'manifest.json'), `${JSON.stringify({ ...manifest, fingerprint: forgedFingerprint })}\n`, 'utf8')
+    await writeFile(join(forgedRoot, 'types', 'payload.bin'), '', 'utf8')
+    await truncate(join(forgedRoot, 'types', 'payload.bin'), SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES)
+    await utimes(forgedRoot, new Date(Date.now() - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000), new Date(Date.now() - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000))
+
+    await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+
+    await expect(access(forgedRoot)).resolves.toBeUndefined()
+  })
+
+  it('GC 遇到 owned candidate 内的 symlink 时保留整个 candidate，包括 symlink manifest', async () => {
+    const root = await cacheRoot()
+    const first = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    await setSourceVersion('two')
+    const second = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    const authoringRoot = join(root, 'authoring-types')
+    const externalManifest = join(authoringRoot, 'manifest-target.json')
+    const firstManifest = join(first.root, 'manifest.json')
+    await copyFile(firstManifest, externalManifest)
+    await rm(firstManifest)
+    await symlink(externalManifest, firstManifest)
+    await truncate(join(first.root, 'types', 'profile-sdk', 'index.d.ts'), SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES)
+    const old = new Date(Date.now() - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000)
+    await utimes(first.root, old, old)
+
+    await setSourceVersion('three')
+    await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+
+    await expect(access(first.root)).resolves.toBeUndefined()
+    await expect(access(second.root)).resolves.toBeUndefined()
   })
 
   it('生成失败时只清理本次 staging，不留下 staging 目录', async () => {
