@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, relative, resolve } from 'node:path'
+import { init, parse } from 'es-module-lexer'
 import type * as TypeScript from 'typescript'
 import type {
   AuthoringDependencyRegistration,
@@ -12,9 +13,7 @@ import { containsSourceRootDescendant } from 'nbook/scripts/build/product-source
 
 export const AUTHORING_SDK_TYPE_PROJECTION_SCHEMA = 'nbook.authoring-sdk-type-projection/v2'
 
-const AUTHORING_SDK_SOURCE_INPUT_PATHS = [
-  'bun.lock',
-  'proper-lockfile.d.ts',
+const AUTHORING_SDK_EMITTER_ROOT_PATHS = [
   'profile-sdk/index.ts',
   'profile-sdk/contracts.ts',
   'profile-sdk/constructors.ts',
@@ -23,9 +22,21 @@ const AUTHORING_SDK_SOURCE_INPUT_PATHS = [
   'profile-sdk/jsx-dev-runtime.ts',
   'variable-sdk/index.ts',
   'variable-sdk/contracts.ts',
-  'server/agent/profiles/builtin-contracts.ts',
   'server/agent/tools/web-extraction-modules.d.ts',
 ] as const
+
+const AUTHORING_SDK_FIXED_INPUT_PATHS = [
+  'bun.lock',
+  'proper-lockfile.d.ts',
+] as const
+
+const AUTHORING_RUNTIME_TYPE_STUB_FILES = {
+  'nbook/server/agent/profiles/writer-writing-reference': 'writer-writing-reference.d.ts',
+  'nbook/server/agent/profiles/writer-writing-style': 'writer-writing-style.d.ts',
+  'nbook/server/agent/profiles/writer-writing-avoid-words': 'writer-writing-avoid-words.d.ts',
+  'nbook/server/agent/world-engine-tool-description': 'world-engine-tool-description.d.ts',
+  'nbook/server/low-code-form/resource-preset': 'resource-preset.d.ts',
+} as const
 
 export const AUTHORING_SDK_DEPENDENCIES = [
   {
@@ -105,7 +116,11 @@ export async function authoringSdkTypeProjectionInputFiles(
   input: { sourceRoot?: string } = {},
 ): Promise<Array<{ path: string, sha256: string, bytes: number }>> {
   const sourceRoot = resolve(input.sourceRoot ?? '.')
-  return await sourceInputFiles(sourceRoot, AUTHORING_SDK_SOURCE_INPUT_PATHS)
+  const sourcePaths = await reachableAuthoringSdkSourcePaths(sourceRoot)
+  return await sourceInputFiles(sourceRoot, [
+    ...AUTHORING_SDK_FIXED_INPUT_PATHS,
+    ...sourcePaths,
+  ])
 }
 
 export function authoringSdkTsconfig(): string {
@@ -157,11 +172,8 @@ async function emitAuthoringTypes(typeRoot: string, ts: typeof TypeScript): Prom
     jsxImportSource: 'nbook/profile-sdk',
     baseUrl: root,
     paths: {
-      'nbook/server/agent/profiles/writer-writing-reference': [resolve(stubRoot, 'writer-writing-reference.d.ts')],
-      'nbook/server/agent/profiles/writer-writing-style': [resolve(stubRoot, 'writer-writing-style.d.ts')],
-      'nbook/server/agent/profiles/writer-writing-avoid-words': [resolve(stubRoot, 'writer-writing-avoid-words.d.ts')],
-      'nbook/server/agent/world-engine-tool-description': [resolve(stubRoot, 'world-engine-tool-description.d.ts')],
-      'nbook/server/low-code-form/resource-preset': [resolve(stubRoot, 'resource-preset.d.ts')],
+      ...Object.fromEntries(Object.entries(AUTHORING_RUNTIME_TYPE_STUB_FILES)
+        .map(([specifier, fileName]) => [specifier, [resolve(stubRoot, fileName)]])),
       'nbook/*': ['./*'],
     },
     rootDir: root,
@@ -173,17 +185,7 @@ async function emitAuthoringTypes(typeRoot: string, ts: typeof TypeScript): Prom
     declaration: true,
     emitDeclarationOnly: true,
   }
-  const roots = [
-    resolve('profile-sdk', 'index.ts'),
-    resolve('profile-sdk', 'contracts.ts'),
-    resolve('profile-sdk', 'constructors.ts'),
-    resolve('profile-sdk', 'writing.ts'),
-    resolve('profile-sdk', 'jsx-runtime.ts'),
-    resolve('profile-sdk', 'jsx-dev-runtime.ts'),
-    resolve('variable-sdk', 'index.ts'),
-    resolve('variable-sdk', 'contracts.ts'),
-    resolve('server', 'agent', 'tools', 'web-extraction-modules.d.ts'),
-  ]
+  const roots = AUTHORING_SDK_EMITTER_ROOT_PATHS.map(path => resolve(root, path))
   try {
     const program = ts.createProgram({ rootNames: roots, options })
     const diagnostics = ts.getPreEmitDiagnostics(program)
@@ -386,4 +388,57 @@ async function sourceInputFiles(
     })
   }
   return files.sort((left, right) => left.path.localeCompare(right.path))
+}
+
+/** 从与 declaration emitter 相同的 roots 沿公开静态 import/re-export 图收集 Source 输入。 */
+async function reachableAuthoringSdkSourcePaths(sourceRoot: string): Promise<string[]> {
+  await init
+  const queue = AUTHORING_SDK_EMITTER_ROOT_PATHS.map(path => resolve(sourceRoot, path))
+  const visited = new Set<string>()
+  while (queue.length > 0) {
+    const sourcePath = queue.shift()!
+    const normalized = resolve(sourcePath)
+    if (visited.has(normalized)) continue
+    visited.add(normalized)
+    const source = await readFile(normalized, 'utf8')
+    const [imports] = parse(source)
+    for (const item of imports) {
+      if (!item.n) continue
+      const dependency = resolveAuthoringSdkSourceImport(sourceRoot, normalized, item.n)
+      if (dependency) queue.push(dependency)
+    }
+  }
+  return [...visited]
+    .map(path => relative(sourceRoot, path).split(/[\\/]+/u).join('/'))
+    .sort((left, right) => left.localeCompare(right))
+}
+
+function resolveAuthoringSdkSourceImport(
+  sourceRoot: string,
+  importerPath: string,
+  specifier: string,
+): string | null {
+  if (Object.prototype.hasOwnProperty.call(AUTHORING_RUNTIME_TYPE_STUB_FILES, specifier)) return null
+  let basePath: string
+  if (specifier.startsWith('.')) basePath = resolve(dirname(importerPath), specifier)
+  else if (specifier.startsWith('nbook/')) basePath = resolve(sourceRoot, specifier.slice('nbook/'.length))
+  else if (specifier.startsWith('#cache/')) basePath = resolve(sourceRoot, 'packages', 'file-snapshot-cache', 'src', specifier.slice('#cache/'.length))
+  else return null
+  const candidates = [
+    ...(extname(basePath) ? [basePath] : []),
+    `${basePath}.ts`,
+    `${basePath}.tsx`,
+    `${basePath}.d.ts`,
+    `${basePath}.mts`,
+    `${basePath}.cts`,
+    resolve(basePath, 'index.ts'),
+    resolve(basePath, 'index.d.ts'),
+  ]
+  const sourcePath = candidates.find(candidate => existsSync(candidate))
+  if (!sourcePath) return null
+  const withinSource = relative(sourceRoot, sourcePath)
+  if (withinSource.startsWith('..')) {
+    throw new Error(`Authoring Source input 越出 checkout：${specifier}`)
+  }
+  return sourcePath
 }

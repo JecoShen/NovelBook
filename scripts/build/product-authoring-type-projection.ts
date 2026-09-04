@@ -85,7 +85,7 @@ export async function projectAuthoringDependencies(input: {
   registrations: readonly AuthoringDependencyRegistration[]
   importerPath: string
 }): Promise<AuthoringDependencyProjection> {
-  const packages = await sourcePackages(input.registrations, input.targetNodeModulesRoot)
+  const packages = await sourcePackages(input.registrations, input.targetNodeModulesRoot, input.importerPath)
   const packageByName = new Map(packages.map(entry => [entry.registration.name, entry]))
   const packageInstances = new Map(packages.map(entry => [packageInstanceKey(entry.targetRoot, entry.version), entry]))
   const queue: PendingDeclaration[] = []
@@ -176,21 +176,28 @@ export async function projectAuthoringDependencies(input: {
 async function sourcePackages(
   registrations: readonly AuthoringDependencyRegistration[],
   targetNodeModulesRoot: string,
+  importerPath: string,
 ): Promise<SourcePackage[]> {
-  const requireFromSource = createRequire(pathToFileURL(resolve('package.json')))
   const seen = new Set<string>()
   const entries: SourcePackage[] = []
   for (const registration of registrations) {
     if (seen.has(registration.name)) throw new Error(`Authoring dependency 重复登记：${registration.name}`)
     seen.add(registration.name)
-    const packageJsonPath = requireFromSource.resolve(`${registration.name}/package.json`)
+    // Runtime package 与 type-only package 都可能拒绝 Node require 根入口或 package.json
+    // 子路径。统一用 TypeScript 的 exports-aware 声明解析反推已批准的 package root。
+    const resolved = ts.resolveModuleName(registration.name, importerPath, TYPESCRIPT_OPTIONS, ts.sys).resolvedModule
+    if (!resolved || !isDeclarationPath(resolved.resolvedFileName)) {
+      throw new Error(`Authoring dependency 没有可解析声明入口：${registration.name}`)
+    }
+    const sourceRoot = await realpath(packageRootForResolvedFile(resolved.resolvedFileName, registration.name))
+    const packageJsonPath = resolve(sourceRoot, 'package.json')
     const manifest = JSON.parse(await readFile(packageJsonPath, 'utf8')) as PackageManifest
     if (manifest.name !== registration.name || typeof manifest.version !== 'string' || !manifest.version) {
       throw new Error(`Authoring dependency identity 无效：${registration.name}`)
     }
     entries.push({
       registration,
-      sourceRoot: await realpath(dirname(packageJsonPath)),
+      sourceRoot,
       targetRoot: resolve(targetNodeModulesRoot, ...registration.name.split('/')),
       version: manifest.version,
       manifest,

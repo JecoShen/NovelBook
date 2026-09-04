@@ -21,14 +21,21 @@ describe('Authoring SDK type projection', () => {
     await writeSourceInputs(sourceRoot)
 
     const before = await authoringSdkTypeProjectionInputFiles({ sourceRoot })
-    const constructorPath = join(sourceRoot, 'profile-sdk', 'constructors.ts')
-    await writeFile(constructorPath, 'changed source input\n', 'utf8')
+    expect(before.map(file => file.path)).toContain('profile-sdk/session.ts')
+    const sessionPath = join(sourceRoot, 'profile-sdk', 'session.ts')
+    await writeFile(sessionPath, 'changed public re-export\n', 'utf8')
     const after = await authoringSdkTypeProjectionInputFiles({ sourceRoot })
 
     expect(after).not.toEqual(before)
-    expect(after.find(file => file.path === 'profile-sdk/constructors.ts')?.sha256)
-      .not.toBe(before.find(file => file.path === 'profile-sdk/constructors.ts')?.sha256)
+    expect(after.find(file => file.path === 'profile-sdk/session.ts')?.sha256)
+      .not.toBe(before.find(file => file.path === 'profile-sdk/session.ts')?.sha256)
     expect(after.map(file => file.path)).toContain('bun.lock')
+
+    const checkoutInputs = await authoringSdkTypeProjectionInputFiles()
+    expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/session.ts')
+    expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/workspace.ts')
+    expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/runtime-paths.ts')
+    expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/lore.ts')
   })
 
   it('生成一次可移植的声明投影', async () => {
@@ -60,6 +67,7 @@ const sourceInputPaths = [
   'profile-sdk/writing.ts',
   'profile-sdk/jsx-runtime.ts',
   'profile-sdk/jsx-dev-runtime.ts',
+  'profile-sdk/session.ts',
   'variable-sdk/index.ts',
   'variable-sdk/contracts.ts',
   'server/agent/profiles/builtin-contracts.ts',
@@ -72,6 +80,11 @@ async function writeSourceInputs(sourceRoot: string): Promise<void> {
     await mkdir(dirname(filePath), { recursive: true })
     await writeFile(filePath, `${path}\n`, 'utf8')
   }))
+  await writeFile(
+    join(sourceRoot, 'profile-sdk', 'index.ts'),
+    "export { readTitleOwner } from 'nbook/profile-sdk/session'\n",
+    'utf8',
+  )
 }
 
 async function collectDeclarations(root: string): Promise<string[]> {
