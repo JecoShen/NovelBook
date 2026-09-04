@@ -10,6 +10,7 @@ import {
   SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES,
   SOURCE_AUTHORING_TYPE_CACHE_SCHEMA,
   openSourceAuthoringTypeProjection,
+  setSourceAuthoringTypeCacheGcTestHook,
 } from 'nbook/server/runtime/source-authoring-type-cache'
 
 const projectionMock = vi.hoisted(() => ({
@@ -98,7 +99,7 @@ async function setSourceVersion(version: string): Promise<void> {
 
 async function projectionDirectories(root: string): Promise<string[]> {
   return (await readdir(join(root, 'authoring-types'), { withFileTypes: true }))
-    .filter(entry => entry.isDirectory() && entry.name !== '.staging')
+    .filter(entry => entry.isDirectory() && !['.staging', '.gc-quarantine'].includes(entry.name))
     .map(entry => entry.name)
     .sort()
 }
@@ -208,6 +209,34 @@ describe('Source authoring type projection cache', () => {
 
     await expect(access(first.root)).resolves.toBeUndefined()
     await expect(access(second.root)).resolves.toBeUndefined()
+  })
+
+  it('GC 在 quarantine 首次扫描后发生 mutation 时拒绝删除并恢复 candidate', async () => {
+    const root = await cacheRoot()
+    const first = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    await setSourceVersion('two')
+    const current = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    const mutationTarget = join(current.root, 'manifest.json')
+    await truncate(join(first.root, 'types', 'profile-sdk', 'index.d.ts'), SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES)
+    const old = new Date(Date.now() - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000)
+    await utimes(first.root, old, old)
+
+    let injected = false
+    setSourceAuthoringTypeCacheGcTestHook(async (stage, quarantineRoot) => {
+      if (stage !== 'after-first-scan' || injected) return
+      injected = true
+      await symlink(mutationTarget, join(quarantineRoot, 'mutation-link'))
+    })
+    try {
+      await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    }
+    finally {
+      setSourceAuthoringTypeCacheGcTestHook(null)
+    }
+
+    await expect(access(first.root)).resolves.toBeUndefined()
+    await expect(access(current.root)).resolves.toBeUndefined()
+    expect(injected).toBe(true)
   })
 
   it('生成失败时只清理本次 staging，不留下 staging 目录', async () => {

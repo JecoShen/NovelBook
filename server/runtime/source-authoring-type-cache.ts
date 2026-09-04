@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { lock } from 'proper-lockfile'
 import type { AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
@@ -10,6 +10,7 @@ export const SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES = 256 * 1024 * 1024
 
 const AUTHORING_TYPES_DIRECTORY = 'authoring-types'
 const STAGING_DIRECTORY = '.staging'
+const GC_QUARANTINE_DIRECTORY = '.gc-quarantine'
 const CURRENT_FILE = 'current.json'
 const PUBLISH_LOCK_FILE = '.publish.lock'
 
@@ -43,6 +44,14 @@ export type SourceAuthoringTypeProjection = Readonly<{
   nodeModulesRoot: string
   tsconfigPath: string
 }>
+
+type SourceAuthoringTypeCacheGcTestHook = (stage: 'after-first-scan', quarantineRoot: string) => Promise<void> | void
+let sourceAuthoringTypeCacheGcTestHook: SourceAuthoringTypeCacheGcTestHook | null = null
+
+/** 仅供缓存测试注入受控 mutation；生产调用方不应设置此 hook。 */
+export function setSourceAuthoringTypeCacheGcTestHook(hook: SourceAuthoringTypeCacheGcTestHook | null): void {
+  sourceAuthoringTypeCacheGcTestHook = hook
+}
 
 /** 打开一个已经逐文件验证过的不可变声明投影。 */
 export async function openSourceAuthoringTypeProjection(
@@ -305,64 +314,156 @@ async function publishCurrent(authoringRoot: string, fingerprint: string): Promi
   }
 }
 
+type GcCandidate = {
+  originalRoot: string
+  quarantineRoot: string
+  mtimeMs: number
+  bytes: number
+}
+
+type GcTreeFile = {
+  path: string
+  bytes: number
+  mtimeMs: number
+  dev: number
+  ino: number
+}
+
+type GcTreeScan = {
+  safe: boolean
+  bytes: number
+  files: GcTreeFile[]
+  manifest?: ProjectionManifest
+}
+
 async function garbageCollect(authoringRoot: string, currentFingerprint: string): Promise<void> {
   const now = Date.now()
-  const candidates: Array<{ root: string, mtimeMs: number, bytes: number }> = []
-  let orphanBytes = 0
+  const candidates: GcCandidate[] = []
+  const quarantineRoot = join(authoringRoot, GC_QUARANTINE_DIRECTORY)
   for (const entry of await readdir(authoringRoot, { withFileTypes: true })) {
-    if (!entry.isDirectory() || entry.name === STAGING_DIRECTORY || entry.name === currentFingerprint) continue
+    if (!entry.isDirectory() || entry.name === STAGING_DIRECTORY || entry.name === GC_QUARANTINE_DIRECTORY || entry.name === currentFingerprint) continue
     if (!isFingerprint(entry.name)) continue
     const root = join(authoringRoot, entry.name)
-    let manifest: ProjectionManifest
+    const metadata = await stat(root).catch(() => null)
+    if (!metadata || now - metadata.mtimeMs < SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS) continue
+    candidates.push({ originalRoot: root, quarantineRoot: '', mtimeMs: metadata.mtimeMs, bytes: 0 })
+  }
+  candidates.sort((left, right) => left.mtimeMs - right.mtimeMs)
+  const safeCandidates: GcCandidate[] = []
+  await mkdir(quarantineRoot, { recursive: true })
+  for (const candidate of candidates) {
+    const candidateName = candidate.originalRoot.slice(authoringRoot.length + 1)
+    const candidateQuarantineRoot = join(quarantineRoot, `${candidateName}-${randomUUID()}`)
     try {
-      manifest = parseManifest(await readFile(join(root, 'manifest.json'), 'utf8'))
+      await rename(candidate.originalRoot, candidateQuarantineRoot)
     }
     catch {
       continue
     }
-    if (manifest.fingerprint !== entry.name || projectionFingerprint(manifest) !== entry.name) continue
-    if (await hasUnsafeEntry(root)) continue
-    const metadata = await stat(root).catch(() => null)
-    if (!metadata || now - metadata.mtimeMs < SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS) continue
-    const bytes = await directoryBytes(root)
-    orphanBytes += bytes
-    candidates.push({ root, mtimeMs: metadata.mtimeMs, bytes })
+    const firstScan = await scanGcTree(candidateQuarantineRoot, candidateName)
+    if (!firstScan.safe) {
+      await restoreGcCandidate(candidate.originalRoot, candidateQuarantineRoot)
+      continue
+    }
+    await sourceAuthoringTypeCacheGcTestHook?.('after-first-scan', candidateQuarantineRoot)
+    const secondScan = await scanGcTree(candidateQuarantineRoot, candidateName)
+    if (!secondScan.safe || !sameGcTree(firstScan, secondScan)) {
+      await restoreGcCandidate(candidate.originalRoot, candidateQuarantineRoot)
+      continue
+    }
+    safeCandidates.push({
+      ...candidate,
+      quarantineRoot: candidateQuarantineRoot,
+      bytes: secondScan.bytes,
+    })
   }
-  candidates.sort((left, right) => left.mtimeMs - right.mtimeMs)
-  for (const candidate of candidates) {
-    if (orphanBytes <= SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES) break
-    await rm(candidate.root, { recursive: true, force: true })
+
+  let orphanBytes = safeCandidates.reduce((total, candidate) => total + candidate.bytes, 0)
+  for (const candidate of safeCandidates) {
+    if (orphanBytes <= SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES) {
+      await restoreGcCandidate(candidate.originalRoot, candidate.quarantineRoot)
+      continue
+    }
+    await rm(candidate.quarantineRoot, { recursive: true, force: true })
     orphanBytes -= candidate.bytes
   }
 }
 
-/** GC 只删除完全由普通文件和目录构成的候选；symlink/特殊文件一律保留。 */
-async function hasUnsafeEntry(root: string): Promise<boolean> {
-  let entries
-  try {
-    entries = await readdir(root, { withFileTypes: true })
-  }
-  catch {
-    return true
-  }
-  for (const entry of entries) {
-    if (entry.isSymbolicLink() || (!entry.isDirectory() && !entry.isFile())) return true
-    if (entry.isDirectory() && await hasUnsafeEntry(join(root, entry.name))) return true
-  }
-  return false
-}
-
-async function directoryBytes(root: string): Promise<number> {
-  let bytes = 0
+async function scanGcTree(root: string, expectedFingerprint: string): Promise<GcTreeScan> {
+  const files: GcTreeFile[] = []
+  let safe = true
   const walk = async (directory: string): Promise<void> => {
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
+    let entries
+    try {
+      entries = await readdir(directory, { withFileTypes: true })
+    }
+    catch {
+      safe = false
+      return
+    }
+    for (const entry of entries) {
       const path = join(directory, entry.name)
-      if (entry.isDirectory()) await walk(path)
-      else if (entry.isFile()) bytes += (await stat(path)).size
+      let metadata
+      try {
+        metadata = await lstat(path)
+      }
+      catch {
+        safe = false
+        continue
+      }
+      if (metadata.isSymbolicLink() || (!metadata.isDirectory() && !metadata.isFile())) {
+        safe = false
+        continue
+      }
+      if (metadata.isDirectory()) {
+        await walk(path)
+        continue
+      }
+      files.push({
+        path: relative(root, path).split(/[\\/]+/u).join('/'),
+        bytes: metadata.size,
+        mtimeMs: metadata.mtimeMs,
+        dev: metadata.dev,
+        ino: metadata.ino,
+      })
     }
   }
   await walk(root)
-  return bytes
+  if (!safe) return { safe: false, bytes: 0, files }
+
+  const manifestFile = files.find(file => file.path === 'manifest.json')
+  if (!manifestFile) return { safe: false, bytes: 0, files }
+  let manifest: ProjectionManifest
+  try {
+    manifest = parseManifest(await readFile(join(root, 'manifest.json'), 'utf8'))
+  }
+  catch {
+    return { safe: false, bytes: 0, files }
+  }
+  if (manifest.fingerprint !== expectedFingerprint || projectionFingerprint(manifest) !== expectedFingerprint) {
+    return { safe: false, bytes: 0, files }
+  }
+  return {
+    safe: true,
+    bytes: files.reduce((total, file) => total + file.bytes, 0),
+    files,
+    manifest,
+  }
+}
+
+function sameGcTree(left: GcTreeScan, right: GcTreeScan): boolean {
+  return JSON.stringify(left.files) === JSON.stringify(right.files)
+    && left.manifest?.fingerprint === right.manifest?.fingerprint
+}
+
+/** 恢复时只 rename 到空缺原路径，绝不覆盖并发发布的新目录。 */
+async function restoreGcCandidate(originalRoot: string, quarantineRoot: string): Promise<void> {
+  try {
+    await rename(quarantineRoot, originalRoot)
+  }
+  catch {
+    // 原路径若已被新发布占用，保留 quarantine 内容，宁可泄漏也不覆盖新 owner。
+  }
 }
 
 function isMissing(error: unknown): boolean {
