@@ -85,18 +85,6 @@ type ReleaseWorkflow = {
   }
 }
 
-type ProductWorkflow = {
-  jobs: {
-    product: WorkflowJob & {
-      strategy: {
-        matrix: {
-          include: Array<{ platform: string, browser: string }>
-        }
-      }
-    }
-  }
-}
-
 afterEach(async () => {
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
@@ -533,29 +521,13 @@ describe('Product Release宿主合同', () => {
   })
 
   it('Linux AArch64 Product必须安装并执行真实浏览器smoke', async () => {
-    const workflow = parse(await readFile(resolve(ROOT, '.github/workflows/product-platforms.yml'), 'utf8')) as ProductWorkflow
     const releaseWorkflow = parse(await readFile(resolve(ROOT, '.github/workflows/release-container.yml'), 'utf8')) as ReleaseWorkflow
-    const linuxArm = workflow.jobs.product.strategy.matrix.include.find(({ platform }) => platform === 'linux-aarch64-glibc')
-    expect(linuxArm?.browser).toBe('playwright')
-    expect(workflow.jobs.product.steps).toContainEqual(
-      expect.objectContaining({ run: 'bunx playwright-core install --with-deps chromium' }),
-    )
     expect(releaseWorkflow.jobs['product-linux-aarch64'].steps).toContainEqual(
       expect.objectContaining({ run: 'bunx playwright-core install --with-deps chromium' }),
     )
     expect(releaseWorkflow.jobs['product-linux-aarch64'].steps.some(
       ({ run }) => run?.includes('verify-posix-product.sh') && run.includes('playwright'),
     )).toBe(true)
-  })
-
-  it('Product失败诊断必须包含最终Runtime Image而不是复制整份Source', async () => {
-    const workflow = parse(await readFile(resolve(ROOT, '.github/workflows/product-platforms.yml'), 'utf8')) as ProductWorkflow
-    const diagnostics = workflow.jobs.product.steps.find(({ name }) => name === 'Upload native Product diagnostics')
-
-    expect(diagnostics?.with?.['include-hidden-files']).toBe(true)
-    expect(diagnostics?.with?.path).toContain('/application/.output')
-    expect(diagnostics?.with?.path).toContain('/state')
-    expect(diagnostics?.with?.path).not.toContain('-smoke/*')
   })
 
   it('五平台 Product 与 GHCR 必须携带 sharp native island 并执行最终图片命令', async () => {

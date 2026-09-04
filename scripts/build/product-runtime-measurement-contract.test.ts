@@ -33,22 +33,9 @@ describe('Product Runtime Image measurement contracts', () => {
     expect(workflow).not.toContain('release:product:')
   })
 
-  it('平台 CI 按登记状态分流，正式 release 在构建前检查全部 policy', async () => {
-    const [platformChecks, release] = await Promise.all([
-      readFile('.github/workflows/product-platforms.yml', 'utf8'),
-      readFile('.github/workflows/release-container.yml', 'utf8'),
-    ])
+  it('正式 release 在构建前检查全部 policy', async () => {
+    const release = await readFile('.github/workflows/release-container.yml', 'utf8')
 
-    expect(platformChecks).toContain('check-product-runtime-policies.ts --platform')
-    expect(platformChecks).toContain('steps.runtime_policy.outputs.registered != \'true\'')
-    expect(platformChecks).toContain('steps.runtime_policy.outputs.registered == \'true\'')
-    expect(platformChecks).toContain('bun run product:measure --output')
-    for (const platform of PRODUCT_PLATFORMS.filter(candidate => candidate !== 'windows-x64')) {
-      expect(platformChecks).toContain(`platform: ${platform}`)
-    }
-    expect(platformChecks).toMatch(
-      /name: Verify Manager platform contracts\r?\n\s+if: steps\.runtime_policy\.outputs\.registered == 'true'/u,
-    )
     expect(release).toContain('Verify approved Product Runtime Image policies')
     expect(release).toContain('run: bun run product:policy:check')
   })
