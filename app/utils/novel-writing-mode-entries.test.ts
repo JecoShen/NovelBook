@@ -26,8 +26,9 @@ describe('Novel writing mode entries', () => {
 
     expect(activityBar).not.toContain('"outline"')
     expect(activityBar).not.toContain('"rag"')
-    expect(activityBar).toContain('plot: "i-lucide-git-branch"')
-    expect(activityBar).toContain('case "plot": emit("open-tab", item.id); return;')
+    expect(activityBar).toContain('\'plot\': \'i-lucide-git-branch\',')
+    expect(activityBar).toContain('case \'plot\':')
+    expect(activityBar).toContain('emit(\'open-tab\', item.id)')
     expect(toolPanel).toContain('NovelPlotPanel')
     expect(toolPanel).toContain('activeTab === \'plot\' && !props.userAssetsMode')
     expect(toolPanel).not.toContain('NovelRagPanel')
@@ -38,7 +39,8 @@ describe('Novel writing mode entries', () => {
     const plotPanel = await readFile(plotPanelPath, 'utf-8')
     const welcome = await readFile(welcomePath, 'utf-8')
 
-    expect(activityBar).toContain('case "plot": emit("open-tab", item.id); return;')
+    expect(activityBar).toContain('case \'plot\':')
+    expect(activityBar).toContain('emit(\'open-tab\', item.id)')
     expect(activityBar).toContain('ide.header.plotWorkbench')
     expect(plotPanel).toContain('plot-panel-workbench-entry')
     expect(plotPanel).toContain('plotWorkbenchOpen = true')
@@ -87,8 +89,8 @@ describe('Novel writing mode entries', () => {
     expect(agentSurface).toContain('hiddenWritingModeProfileKeys')
     expect(agentSurface).not.toContain('{profileKey: "rp.leader"')
     expect(agentSurface).not.toContain('{profileKey: "simulator.leader"')
-    expect(agentSurface).toContain('case "rp.leader": return t("agent.profiles.rpLeader")')
-    expect(agentSurface).toContain('case "simulator.leader": return t("agent.profiles.simulatorLeader")')
+    expect(agentSurface).toContain('case \'rp.leader\': return t(\'agent.profiles.rpLeader\')')
+    expect(agentSurface).toContain('case \'simulator.leader\': return t(\'agent.profiles.simulatorLeader\')')
   })
 
   it('Project 下载确认提示完整 History 隐私风险，user-assets 不显示该提示', async () => {

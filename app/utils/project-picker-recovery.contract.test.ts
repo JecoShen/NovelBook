@@ -10,8 +10,8 @@ describe('Project Picker Session recovery contract', () => {
 
     expect(picker).toContain('if (recoveryExpanded.value && !recoveryLoaded.value)')
     expect(picker).toContain('await loadRecoverySessions(0, false)')
-    expect(picker).toContain('scope: "all"')
-    expect(picker).toContain('recovery: "required"')
+    expect(picker).toContain('scope: \'all\'')
+    expect(picker).toContain('recovery: \'required\'')
     expect(picker).toContain('limit: RECOVERY_PAGE_SIZE')
   })
 
@@ -28,8 +28,8 @@ describe('Project Picker Session recovery contract', () => {
   it('追加页按 sessionId 去重，恢复一项后同步前移下一页 offset', async () => {
     const picker = await readFile(pickerPath, 'utf8')
 
-    expect(picker).toContain('const knownSessionIds = new Set(recoverySessions.value.map((session) => session.sessionId));')
-    expect(picker).toContain('page.items.filter((session) => !knownSessionIds.has(session.sessionId))')
-    expect(picker).toContain('recoveryOffset.value = Math.max(0, recoveryOffset.value - 1);')
+    expect(picker).toContain('const knownSessionIds = new Set(recoverySessions.value.map(session => session.sessionId))')
+    expect(picker).toContain('page.items.filter(session => !knownSessionIds.has(session.sessionId))')
+    expect(picker).toContain('recoveryOffset.value = Math.max(0, recoveryOffset.value - 1)')
   })
 })
