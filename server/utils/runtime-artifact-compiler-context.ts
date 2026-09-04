@@ -6,6 +6,8 @@ import {
   ProductRuntimeImageVerifier,
   type ProductRuntimeImageManifest,
 } from 'nbook/shared/product-runtime-image-verifier'
+import { openSourceAuthoringTypeProjection } from 'nbook/server/runtime/source-authoring-type-cache'
+import { runtimePathsFromEnv } from 'nbook/server/runtime/paths/runtime-paths'
 
 type RuntimeArtifactCompilerPaths = Readonly<{
   root: string
@@ -15,6 +17,8 @@ type RuntimeArtifactCompilerPaths = Readonly<{
   compilerPackageRoot: string
   /** 仅供 esbuild 解析批准 authoring 依赖的 node_modules。 */
   compilerNodeModulesRoot: string
+  /** 编译 Profile/Variable 时唯一允许的 authoring 声明投影根。 */
+  authoringTypeRoot: string
   /** 已生成 artifact 在 Product 运行时建立 require 的根。 */
   artifactRuntimeRequireRoot: string
   tsconfigPath: string
@@ -70,6 +74,7 @@ export async function resolveRuntimeArtifactCompilerContext(
   const outputEntry = resolve(outputRoot, 'index.mjs')
   const outputPackage = resolve(outputRoot, 'package.json')
   if (!explicitImageRoot) {
+    const projection = await openSourceAuthoringTypeProjection(runtimePathsFromEnv(absoluteRoot, env).cacheRoot)
     return Object.freeze({
       kind: 'source',
       root: absoluteRoot,
@@ -77,9 +82,10 @@ export async function resolveRuntimeArtifactCompilerContext(
       outputRoot,
       nbookRoot: absoluteRoot,
       compilerPackageRoot: resolve(absoluteRoot, 'package.json'),
-      compilerNodeModulesRoot: resolve(absoluteRoot, 'node_modules'),
+      compilerNodeModulesRoot: projection.nodeModulesRoot,
+      authoringTypeRoot: projection.typeRoot,
       artifactRuntimeRequireRoot: resolve(absoluteRoot, 'package.json'),
-      tsconfigPath: resolve(absoluteRoot, 'tsconfig.json'),
+      tsconfigPath: projection.tsconfigPath,
     })
   }
 
@@ -146,6 +152,7 @@ function productCompilerPaths(root: string, outputRoot: string, outputEntry: str
     nbookRoot: resolve(authoringRoot, 'nbook'),
     compilerPackageRoot: authoringPackagePath,
     compilerNodeModulesRoot: resolve(authoringRoot, 'node_modules'),
+    authoringTypeRoot: resolve(authoringRoot, 'types'),
     artifactRuntimeRequireRoot: outputEntry,
     tsconfigPath,
   }
