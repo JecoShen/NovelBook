@@ -101,6 +101,7 @@ describe('World Engine 单文件 runtime artifact cleanup', () => {
     const authoringRoot = path.join(serverRoot, 'authoring')
     const schemaPath = path.join(root, 'world-engine', 'schema', 'index.ts')
     await fs.mkdir(path.join(authoringRoot, 'nbook', 'world-engine', 'schema'), { recursive: true })
+    await fs.mkdir(path.join(authoringRoot, 'types'), { recursive: true })
     await fs.mkdir(path.dirname(schemaPath), { recursive: true })
     await fs.writeFile(path.join(serverRoot, 'index.mjs'), 'export {};', 'utf8')
     await fs.writeFile(path.join(serverRoot, 'package.json'), '{"name":"neuro-book-output"}', 'utf8')
@@ -135,6 +136,7 @@ describe('World Engine 单文件 runtime artifact cleanup', () => {
       nbookRoot: path.join(authoringRoot, 'nbook'),
       compilerPackageRoot: path.join(authoringRoot, 'package.json'),
       compilerNodeModulesRoot: path.join(authoringRoot, 'node_modules'),
+      authoringTypeRoot: path.join(authoringRoot, 'types'),
       artifactRuntimeRequireRoot: path.join(serverRoot, 'index.mjs'),
       tsconfigPath: path.join(authoringRoot, 'tsconfig.json'),
     }
