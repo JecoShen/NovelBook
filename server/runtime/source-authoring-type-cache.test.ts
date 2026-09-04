@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { access, copyFile, mkdir, mkdtemp, readFile, readdir, symlink, truncate, rm, utimes, writeFile } from 'node:fs/promises'
+import { access, copyFile, cp, mkdir, mkdtemp, readFile, readdir, rename, symlink, truncate, rm, utimes, writeFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -237,6 +237,64 @@ describe('Source authoring type projection cache', () => {
     await expect(access(first.root)).resolves.toBeUndefined()
     await expect(access(current.root)).resolves.toBeUndefined()
     expect(injected).toBe(true)
+  })
+
+  it('后续 GC 会恢复合法的 crash quarantine candidate', async () => {
+    const root = await cacheRoot()
+    const first = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    await setSourceVersion('two')
+    const current = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    const authoringRoot = join(root, 'authoring-types')
+    const quarantineRoot = join(authoringRoot, '.gc-quarantine', `${first.fingerprint}-crash`)
+    const old = new Date(Date.now() - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000)
+    await rename(first.root, quarantineRoot)
+    await utimes(quarantineRoot, old, old)
+
+    await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+
+    await expect(access(first.root)).resolves.toBeUndefined()
+    await expect(access(quarantineRoot)).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(access(current.root)).resolves.toBeUndefined()
+  })
+
+  it('原 fingerprint 路径已有有效 current 时回收重复 quarantine candidate', async () => {
+    const root = await cacheRoot()
+    const current = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    const authoringRoot = join(root, 'authoring-types')
+    const quarantineRoot = join(authoringRoot, '.gc-quarantine', `${current.fingerprint}-duplicate`)
+    const old = new Date(Date.now() - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000)
+    await cp(current.root, quarantineRoot, { recursive: true })
+    await utimes(quarantineRoot, old, old)
+
+    await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+
+    await expect(access(current.root)).resolves.toBeUndefined()
+    await expect(access(quarantineRoot)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('未知或 unsafe quarantine candidate 永久保留且不参与递归删除', async () => {
+    const root = await cacheRoot()
+    const current = await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+    const authoringRoot = join(root, 'authoring-types')
+    const quarantineRoot = join(authoringRoot, '.gc-quarantine')
+    const unknownRoot = join(quarantineRoot, 'unknown-quarantine')
+    const unsafeRoot = join(quarantineRoot, `${current.fingerprint}-unsafe`)
+    const externalManifest = join(authoringRoot, 'quarantine-manifest-target.json')
+    const old = new Date(Date.now() - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000)
+
+    await mkdir(unknownRoot, { recursive: true })
+    await writeFile(join(unknownRoot, 'payload.bin'), 'retain\n', 'utf8')
+    await cp(current.root, unsafeRoot, { recursive: true })
+    await copyFile(join(current.root, 'manifest.json'), externalManifest)
+    await rm(join(unsafeRoot, 'manifest.json'))
+    await symlink(externalManifest, join(unsafeRoot, 'manifest.json'))
+    await utimes(unknownRoot, old, old)
+    await utimes(unsafeRoot, old, old)
+
+    await openSourceAuthoringTypeProjection(absoluteFsPath(root))
+
+    await expect(access(unknownRoot)).resolves.toBeUndefined()
+    await expect(access(unsafeRoot)).resolves.toBeUndefined()
   })
 
   it('生成失败时只清理本次 staging，不留下 staging 目录', async () => {

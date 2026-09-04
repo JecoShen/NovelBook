@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { lstat, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readFile, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { lock } from 'proper-lockfile'
 import type { AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
@@ -338,8 +338,9 @@ type GcTreeScan = {
 
 async function garbageCollect(authoringRoot: string, currentFingerprint: string): Promise<void> {
   const now = Date.now()
-  const candidates: GcCandidate[] = []
   const quarantineRoot = join(authoringRoot, GC_QUARANTINE_DIRECTORY)
+  const safeCandidates = await recoverGcQuarantine(authoringRoot, quarantineRoot, now)
+  const candidates: GcCandidate[] = []
   for (const entry of await readdir(authoringRoot, { withFileTypes: true })) {
     if (!entry.isDirectory() || entry.name === STAGING_DIRECTORY || entry.name === GC_QUARANTINE_DIRECTORY || entry.name === currentFingerprint) continue
     if (!isFingerprint(entry.name)) continue
@@ -349,7 +350,6 @@ async function garbageCollect(authoringRoot: string, currentFingerprint: string)
     candidates.push({ originalRoot: root, quarantineRoot: '', mtimeMs: metadata.mtimeMs, bytes: 0 })
   }
   candidates.sort((left, right) => left.mtimeMs - right.mtimeMs)
-  const safeCandidates: GcCandidate[] = []
   await mkdir(quarantineRoot, { recursive: true })
   for (const candidate of candidates) {
     const candidateName = candidate.originalRoot.slice(authoringRoot.length + 1)
@@ -378,14 +378,67 @@ async function garbageCollect(authoringRoot: string, currentFingerprint: string)
     })
   }
 
+  safeCandidates.sort((left, right) => left.mtimeMs - right.mtimeMs)
   let orphanBytes = safeCandidates.reduce((total, candidate) => total + candidate.bytes, 0)
   for (const candidate of safeCandidates) {
     if (orphanBytes <= SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES) {
-      await restoreGcCandidate(candidate.originalRoot, candidate.quarantineRoot)
+      if (candidate.originalRoot) await restoreGcCandidate(candidate.originalRoot, candidate.quarantineRoot)
       continue
     }
     await rm(candidate.quarantineRoot, { recursive: true, force: true })
     orphanBytes -= candidate.bytes
+  }
+}
+
+/** 处理进程崩溃遗留的本模块 quarantine；未知和不安全内容永远留在原处。 */
+async function recoverGcQuarantine(authoringRoot: string, quarantineRoot: string, now: number): Promise<GcCandidate[]> {
+  const safeCandidates: GcCandidate[] = []
+  const entries = await readdir(quarantineRoot, { withFileTypes: true }).catch(() => [])
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue
+    const fingerprint = quarantineFingerprint(entry.name)
+    if (!fingerprint) continue
+    const quarantinePath = join(quarantineRoot, entry.name)
+    const metadata = await stat(quarantinePath).catch(() => null)
+    if (!metadata || now - metadata.mtimeMs < SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS) continue
+    const firstScan = await scanGcTree(quarantinePath, fingerprint)
+    if (!firstScan.safe) continue
+    const secondScan = await scanGcTree(quarantinePath, fingerprint)
+    if (!secondScan.safe || !sameGcTree(firstScan, secondScan)) continue
+
+    const originalPath = join(authoringRoot, fingerprint)
+    const existing = await validateProjection(originalPath, fingerprint).catch(() => null)
+    if (existing) {
+      await rm(quarantinePath, { recursive: true, force: true })
+      continue
+    }
+    if (await pathExists(originalPath)) {
+      safeCandidates.push({ originalRoot: '', quarantineRoot: quarantinePath, mtimeMs: metadata.mtimeMs, bytes: secondScan.bytes })
+      continue
+    }
+    try {
+      await rename(quarantinePath, originalPath)
+      await utimes(originalPath, new Date(), new Date()).catch(() => undefined)
+    }
+    catch {
+      // Restore failure retains the private quarantine for a later GC attempt.
+    }
+  }
+  return safeCandidates
+}
+
+function quarantineFingerprint(name: string): string | null {
+  const fingerprint = /^(sha256:[0-9a-f]{64})-.+$/u.exec(name)?.[1]
+  return fingerprint && isFingerprint(fingerprint) ? fingerprint : null
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await lstat(path)
+    return true
+  }
+  catch {
+    return false
   }
 }
 
