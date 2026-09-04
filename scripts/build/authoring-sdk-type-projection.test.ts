@@ -1,9 +1,10 @@
-import { access, mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   authoringSdkTsconfig,
+  authoringSdkTypeProjectionInputFiles,
   buildAuthoringSdkTypeProjection,
 } from 'nbook/scripts/build/authoring-sdk-type-projection'
 
@@ -14,27 +15,64 @@ afterEach(async () => {
 })
 
 describe('Authoring SDK type projection', () => {
-  it('在不同目标根生成相同的可移植声明 inventory', async () => {
-    const targetA = await mkdtemp(join(tmpdir(), 'nbook-authoring-types-a-'))
-    const targetB = await mkdtemp(join(tmpdir(), 'nbook-authoring-types-b-'))
-    temporaryRoots.push(targetA, targetB)
+  it('将公开 Source 输入内容纳入稳定 inventory', async () => {
+    const sourceRoot = await mkdtemp(join(tmpdir(), 'nbook-authoring-inputs-'))
+    temporaryRoots.push(sourceRoot)
+    await writeSourceInputs(sourceRoot)
 
-    const resultA = await buildAuthoringSdkTypeProjection({ targetRoot: targetA })
-    const resultB = await buildAuthoringSdkTypeProjection({ targetRoot: targetB })
+    const before = await authoringSdkTypeProjectionInputFiles({ sourceRoot })
+    const constructorPath = join(sourceRoot, 'profile-sdk', 'constructors.ts')
+    await writeFile(constructorPath, 'changed source input\n', 'utf8')
+    const after = await authoringSdkTypeProjectionInputFiles({ sourceRoot })
 
-    expect(resultA).toEqual(resultB)
-    await access(join(targetA, 'types/profile-sdk/index.d.ts'))
-    await access(join(targetA, 'types/variable-sdk/index.d.ts'))
-    await access(join(targetA, 'node_modules/@types/node/index.d.ts'))
-    expect(await readFile(join(targetA, 'tsconfig.json'), 'utf8')).toBe(authoringSdkTsconfig())
+    expect(after).not.toEqual(before)
+    expect(after.find(file => file.path === 'profile-sdk/constructors.ts')?.sha256)
+      .not.toBe(before.find(file => file.path === 'profile-sdk/constructors.ts')?.sha256)
+    expect(after.map(file => file.path)).toContain('bun.lock')
+  })
 
-    const declarationFiles = await collectDeclarations(targetA)
+  it('生成一次可移植的声明投影', async () => {
+    const target = await mkdtemp(join(tmpdir(), 'nbook-authoring-types-'))
+    temporaryRoots.push(target)
+
+    const result = await buildAuthoringSdkTypeProjection({ targetRoot: target })
+
+    expect(result.inputFiles).toEqual(await authoringSdkTypeProjectionInputFiles())
+    await access(join(target, 'types/profile-sdk/index.d.ts'))
+    await access(join(target, 'types/variable-sdk/index.d.ts'))
+    await access(join(target, 'node_modules/@types/node/index.d.ts'))
+    expect(await readFile(join(target, 'tsconfig.json'), 'utf8')).toBe(authoringSdkTsconfig())
+
+    const declarationFiles = await collectDeclarations(target)
     const checkoutPath = process.cwd().replaceAll('\\', '/')
     for (const declarationFile of declarationFiles) {
       expect((await readFile(declarationFile, 'utf8')).replaceAll('\\', '/')).not.toContain(checkoutPath)
     }
   }, 360_000)
 })
+
+const sourceInputPaths = [
+  'bun.lock',
+  'proper-lockfile.d.ts',
+  'profile-sdk/index.ts',
+  'profile-sdk/contracts.ts',
+  'profile-sdk/constructors.ts',
+  'profile-sdk/writing.ts',
+  'profile-sdk/jsx-runtime.ts',
+  'profile-sdk/jsx-dev-runtime.ts',
+  'variable-sdk/index.ts',
+  'variable-sdk/contracts.ts',
+  'server/agent/profiles/builtin-contracts.ts',
+  'server/agent/tools/web-extraction-modules.d.ts',
+]
+
+async function writeSourceInputs(sourceRoot: string): Promise<void> {
+  await Promise.all(sourceInputPaths.map(async (path) => {
+    const filePath = join(sourceRoot, path)
+    await mkdir(dirname(filePath), { recursive: true })
+    await writeFile(filePath, `${path}\n`, 'utf8')
+  }))
+}
 
 async function collectDeclarations(root: string): Promise<string[]> {
   const declarationFiles: string[] = []
