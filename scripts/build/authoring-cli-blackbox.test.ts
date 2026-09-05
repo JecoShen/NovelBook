@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -44,6 +44,7 @@ describe('Authoring CLI blackbox', () => {
     const validPreview = await runCli(profileCommand, ['preview', 'valid.profile.ts', '--input-json', '{}'], fixture)
     expect(validPreview, `stdout:\n${validPreview.stdout}\nstderr:\n${validPreview.stderr}`).toMatchObject({ code: 0 })
     expect(validPreview.stdout).toContain('preview ok: yes')
+    await expectPublishedAuthoringTypes(fixture)
 
     await writeFile(validPath, `${validProfileSource()}\n// source changed\n`, 'utf8')
     const stale = await runCli(profileCommand, ['status', 'valid.profile.ts'], fixture)
@@ -66,6 +67,7 @@ describe('Authoring CLI blackbox', () => {
     const globalCompile = await runCli(variableCommand, ['definition', 'compile', '--global'], fixture)
     expect(globalCompile, `stdout:\n${globalCompile.stdout}\nstderr:\n${globalCompile.stderr}`).toMatchObject({ code: 0 })
     expect((await runCli(variableCommand, ['definition', 'status', '--global'], fixture)).code).toBe(0)
+    await expectPublishedAuthoringTypes(fixture)
 
     await writeFile(globalPath, `${validVariableSource('global-smoke')}\n// source changed\n`, 'utf8')
     expect((await runCli(variableCommand, ['definition', 'status', '--global'], fixture)).code).toBe(1)
@@ -161,6 +163,27 @@ async function runCli(
 async function leaseEntries(cacheRoot: string, kind: string): Promise<string[]> {
   try {
     return await readdir(join(cacheRoot, 'authoring', kind))
+  }
+  catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
+      return []
+    }
+    throw error
+  }
+}
+
+/** 确认真实 CLI 成功后发布 current 指针，并清空本轮 projection staging。 */
+async function expectPublishedAuthoringTypes(fixture: AuthoringFixture): Promise<void> {
+  const authoringRoot = join(fixture.cacheRoot, 'authoring-types')
+  await expect(readFile(join(authoringRoot, 'current.json'), 'utf8')).resolves.toMatch(
+    /"fingerprint":\s*"sha256:[0-9a-f]{64}"/u,
+  )
+  await expect(directoryEntries(join(authoringRoot, '.staging'))).resolves.toEqual([])
+}
+
+async function directoryEntries(root: string): Promise<string[]> {
+  try {
+    return await readdir(root)
   }
   catch (error) {
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
