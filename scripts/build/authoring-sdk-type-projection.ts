@@ -312,7 +312,7 @@ function declarationModuleSpecifiers(
 ): Set<string> {
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
   const specifiers = new Set<string>()
-  const visit = (node: ts.Node): void => {
+  const visit = (node: TypeScript.Node): void => {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
       && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
       specifiers.add(node.moduleSpecifier.text)
@@ -346,7 +346,7 @@ function resolveInternalDeclaration(emittedRoot: string, importer: string, speci
 }
 
 function assertDeclaredTypeDependencies(specifiers: Set<string>): void {
-  const allowedPackages = new Set(AUTHORING_SDK_DEPENDENCIES.map(dependency => dependency.name))
+  const allowedPackages = new Set<string>(AUTHORING_SDK_DEPENDENCIES.map(dependency => dependency.name))
   const unsupported = [...specifiers].filter((specifier) => {
     if (specifier.startsWith('node:') || specifier === 'proper-lockfile') return false
     const segments = specifier.split('/')

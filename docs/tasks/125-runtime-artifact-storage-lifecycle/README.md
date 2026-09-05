@@ -276,6 +276,10 @@ Source Profile CLI 资源测量使用新的隔离 Cache Root `/www/wwwroot/book.
 
 受控全量测试仅在启动前 `MemAvailable=3770408 KiB`（至少 `3 GiB`）时执行：`taskset -c 0 nice -n 15 timeout --signal=INT --kill-after=10s 20m bun run test -- --maxWorkers=1`。全量在 `77788 ms` 时因单进程 RSS 达到 `1072504 KiB` 超过止损线而终止，退出码 `130`，`MAX_GROUP_RSS_KIB=1373076`，`MIN_MEM_AVAILABLE_KIB=2499056`，无残留；全量测试未完成，不能由聚焦测试替代。
 
+后续把非桌面 typecheck 按独立配置拆分，并继续使用单核、单进程 `1 GiB` / `MemAvailable 2 GiB` 止损。`shared/tsconfig.json` 退出码 `0`，`MAX_SINGLE_RSS_KIB=295532`；`server/runtime/tsconfig.json` 与 `scripts/tsconfig.json` 分别在 `1048772 KiB`、`1055180 KiB` 触发止损。排除 runtime 测试和本轮新增缓存文件后，runtime 生产基线仍在 `1068208 KiB` 触发止损，证明该整图峰值并非由新增缓存模块单独造成。
+
+新增投影链的两个最小 typecheck 图都能在止损线内完成，并首先暴露 `6` 个严格类型错误：TypeScript namespace/value 混用、依赖 allowlist 的字面量集合过窄、resolver 可选路径未显式收窄。最小类型修复后，缓存入口与投影入口均退出码 `0`，`MAX_SINGLE_RSS_KIB=325828` / `325552`，`MAX_GROUP_RSS_KIB=334836` / `334556`；相关投影与缓存回归 `3` 个文件、`16` 个测试通过，`MAX_SINGLE_RSS_KIB=483420`、`MAX_GROUP_RSS_KIB=818132`、`MIN_MEM_AVAILABLE_KIB=3151916`。这证明本轮新增链可独立通过类型检查，但不能替代仍未完成的全仓非桌面 typecheck。
+
 GC 当前实现已覆盖 owner 判定、10 分钟最小安全年龄、`256 MiB` 可证明 orphan 预算、quarantine 双次 `lstat` 稳定性检查和未知/不安全内容保守保留；本轮没有把 GC report、warn 日志或不可回收超预算 fail-closed 扩展为运行时代码，因此稳定 Reference 只记录当前已实现合同。
 
 ### 实际结果与原计划差异
@@ -294,5 +298,5 @@ GC 当前实现已覆盖 owner 判定、10 分钟最小安全年龄、`256 MiB` 
 - [ ] Phase 2 补测：预算 GC 四条聚焦测试、`profile-artifact-store.test.ts`、fixture 所有权测试。
 - [x] Phase 3：Profile artifact 减重（Round 03：单 artifact 27.3→1.2 MiB、一代 release 382→17.24 MiB；「Product 只有 5.9 MB」的差距根因即渗漏边——Product 是对 Nitro tree-shake 后的 `.output/server` 编译，天然没有 jsdom/prisma；切边后 source 反而更小）。
 - [x] Phase 3 门禁：编译器 metafile 依赖白名单 + 禁止依赖族 + 4 MiB 字节上限，违规 `compile_failed`，合同见 `reference/agent/profile-compiled-artifacts.md` 的 Dependency Gate 小节。
-- [x] Task 5：单 Worker 防线、Source 投影缓存冷/热资源验收和聚焦回归；冷/热均低于 `786432 KiB`，但 typecheck 因 `1093576 KiB` 止损，全量因 `1072504 KiB` 止损，均未完成。
+- [x] Task 5：单 Worker 防线、Source 投影缓存冷/热资源验收和聚焦回归；冷/热均低于 `786432 KiB`。新增投影链的拆分 typecheck 已通过并修复 `6` 个严格类型错误；全仓 typecheck 和全量测试仍分别因 `1093576 KiB` / `1072504 KiB` 止损，均未完成。
 - [ ] Phase 4：跨环境验收（Source / Product Bun / Windows Portable 三形态 Profile 导入）与 5 轮空间收敛曲线。原 `bun:ffi` 阻塞已在 Round 02/03 解除（`isPlatformBuiltinModule` external + 依赖图切边），`catalog.test.ts` 已回到 44/44；本轮 typecheck 和受控全量测试仍未完成。

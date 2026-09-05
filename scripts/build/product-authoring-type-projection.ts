@@ -260,7 +260,7 @@ async function resolveDeclarationReference(
     if (reference.ignored) return null
     throw new Error(`Authoring dependency 解析到错误身份：${reference.specifier}`)
   }
-  const owner = await resolvedPackageInstance(resolved, importer.owner, topLevelOwner, packageInstances)
+  const owner = await resolvedPackageInstance(resolved, resolved.resolvedFileName, importer.owner, topLevelOwner, packageInstances)
   const resolvedPath = realpathSync(resolved.resolvedFileName)
   assertDeclarationInsidePackage(owner, resolvedPath)
   return { sourcePath: resolvedPath, owner }
@@ -296,14 +296,15 @@ async function resolveTypeReference(
   if (!topLevelOwner) throw new Error(`${importer.owner.registration.name} 声明引用未登记 types：${reference}`)
   const resolved = ts.resolveTypeReferenceDirective(reference, importer.sourcePath, TYPESCRIPT_OPTIONS, ts.sys)
     .resolvedTypeReferenceDirective
-  if (!resolved || !isDeclarationPath(resolved.resolvedFileName)) {
+  const resolvedFileName = resolved?.resolvedFileName
+  if (!resolved || !resolvedFileName || !isDeclarationPath(resolvedFileName)) {
     throw new Error(`${importer.owner.registration.name} 无法解析 types：${reference}`)
   }
   if (!resolved.packageId || resolved.packageId.name !== topLevelOwner.registration.name) {
     throw new Error(`Authoring types 解析到错误身份：${reference}`)
   }
-  const owner = await resolvedPackageInstance(resolved, importer.owner, topLevelOwner, packageInstances)
-  const resolvedPath = realpathSync(resolved.resolvedFileName)
+  const owner = await resolvedPackageInstance(resolved, resolvedFileName, importer.owner, topLevelOwner, packageInstances)
+  const resolvedPath = realpathSync(resolvedFileName)
   assertDeclarationInsidePackage(owner, resolvedPath)
   return { sourcePath: resolvedPath, owner }
 }
@@ -314,16 +315,17 @@ async function resolveTypeReference(
  */
 async function resolvedPackageInstance(
   resolved: ts.ResolvedModuleFull | ts.ResolvedTypeReferenceDirective,
+  resolvedFileName: string,
   importerOwner: SourcePackage,
   topLevelOwner: SourcePackage,
   packageInstances: Map<string, SourcePackage>,
 ): Promise<SourcePackage> {
   const version = resolved.packageId?.version
   if (!version) throw new Error(`Authoring dependency 缺少解析版本：${topLevelOwner.registration.name}`)
-  if (version === topLevelOwner.version && isPathInside(topLevelOwner.sourceRoot, resolved.resolvedFileName)) {
+  if (version === topLevelOwner.version && isPathInside(topLevelOwner.sourceRoot, resolvedFileName)) {
     return topLevelOwner
   }
-  const sourceRoot = await realpath(packageRootForResolvedFile(resolved.resolvedFileName, topLevelOwner.registration.name))
+  const sourceRoot = await realpath(packageRootForResolvedFile(resolvedFileName, topLevelOwner.registration.name))
   const targetRoot = resolve(importerOwner.targetRoot, 'node_modules', ...topLevelOwner.registration.name.split('/'))
   const key = packageInstanceKey(targetRoot, version)
   const existing = packageInstances.get(key)
