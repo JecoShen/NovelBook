@@ -10,6 +10,7 @@ import { normalizeAgentProfile } from 'nbook/server/agent/profiles/define-agent-
 import type { AgentProfile, AgentProfileDefinition } from 'nbook/server/agent/profiles/types'
 import { generateVariableTypes, VARIABLE_TYPES_FILE_NAME, type VariableTypeGenerationDiagnostic } from 'nbook/server/agent/variables/generated-types'
 import { appLogger } from 'nbook/server/app-logs/logger'
+import { PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS } from 'nbook/server/agent/profiles/profile-authoring-sdk-specifiers'
 import { importRuntimeArtifact } from 'nbook/server/utils/runtime-artifact-import'
 import { runtimeArtifactBundlePlugin } from 'nbook/server/utils/runtime-artifact-bundle-plugin'
 import {
@@ -1386,7 +1387,7 @@ async function compileProfileFile(profileRoot: string, compiledDir: string, file
     kind: 'profile',
     root: profileRoot,
     entry: file.absolutePath,
-    allowedSdkSpecifiers: ['nbook/profile-sdk', 'nbook/profile-sdk/lore', 'nbook/profile-sdk/writing', 'nbook/profile-sdk/workspace', 'nbook/profile-sdk/runtime-paths', 'nbook/profile-sdk/session'],
+    allowedSdkSpecifiers: PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS,
   })
   const temporaryStem = stableArtifactStem(file.fileName, /\.profile\.(tsx|ts|mjs|js)$/)
   const temporaryOutputPath = join(compiledDir, `${temporaryStem}.${randomUUID()}.building.mjs`)

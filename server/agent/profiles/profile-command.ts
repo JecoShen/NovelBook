@@ -25,6 +25,7 @@ import { resolveRuntimeArtifactCompilerContext } from 'nbook/server/utils/runtim
 import { runtimePathsFromEnv } from 'nbook/server/runtime/paths/runtime-paths'
 import { prepareAuthoringCacheLease } from 'nbook/server/runtime/authoring-cache'
 import { validateRuntimeArtifactAuthoring } from 'nbook/server/utils/runtime-artifact-authoring-interface'
+import { PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS } from 'nbook/server/agent/profiles/profile-authoring-sdk-specifiers'
 
 const runtimeRequire = createRequire(import.meta.url)
 const ts = runtimeRequire('typescript') as typeof TypeScript
@@ -437,7 +438,7 @@ async function runTypecheckFiles(filePaths: string[], target: Awaited<ReturnType
       kind: 'profile',
       root: target.root,
       entry: filePath,
-      allowedSdkSpecifiers: ['nbook/profile-sdk', 'nbook/profile-sdk/lore', 'nbook/profile-sdk/writing', 'nbook/profile-sdk/workspace', 'nbook/profile-sdk/runtime-paths'],
+      allowedSdkSpecifiers: PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS,
     })
   }
   const variableTypes = await prepareVariableTypeEnvironment(target, options)
