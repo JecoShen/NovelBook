@@ -276,6 +276,8 @@ Source Profile CLI 资源测量使用新的隔离 Cache Root `/www/wwwroot/book.
 
 受控全量测试仅在启动前 `MemAvailable=3770408 KiB`（至少 `3 GiB`）时执行：`taskset -c 0 nice -n 15 timeout --signal=INT --kill-after=10s 20m bun run test -- --maxWorkers=1`。全量在 `77788 ms` 时因单进程 RSS 达到 `1072504 KiB` 超过止损线而终止，退出码 `130`，`MAX_GROUP_RSS_KIB=1373076`，`MIN_MEM_AVAILABLE_KIB=2499056`，无残留；全量测试未完成，不能由聚焦测试替代。
 
+GC 当前实现已覆盖 owner 判定、10 分钟最小安全年龄、`256 MiB` 可证明 orphan 预算、quarantine 双次 `lstat` 稳定性检查和未知/不安全内容保守保留；本轮没有把 GC report、warn 日志或不可回收超预算 fail-closed 扩展为运行时代码，因此稳定 Reference 只记录当前已实现合同。
+
 ### 实际结果与原计划差异
 
 - 原问题最初聚焦 `.agent` 缓存；深入后确认最大残留实际位于系统 `%TEMP%`，由测试 fixture 放大 `.compiled` 导致，因此任务范围从“缓存清理”扩展为三个 owner 的生命周期设计。
