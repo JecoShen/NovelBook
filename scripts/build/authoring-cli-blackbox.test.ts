@@ -215,9 +215,12 @@ async function directoryEntries(root: string): Promise<string[]> {
 function validProfileSource(): string {
   return `
 import {ProfilePrompt, System, Type, defineAgentProfile, toolset} from "nbook/profile-sdk";
+import {readTitleOwner} from "nbook/profile-sdk/session";
+
+const titleOwner = readTitleOwner({});
 
 export default defineAgentProfile({
-    manifest: {key: "valid", name: "Valid"},
+    manifest: {key: "valid", name: titleOwner === "auto" ? "Valid" : "Owned"},
     initialSchema: Type.Object({}),
     tools: toolset(),
     context() { return ProfilePrompt({children: System({children: "ok"})}); },
