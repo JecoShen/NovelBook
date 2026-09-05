@@ -2,6 +2,19 @@ import { fileURLToPath } from 'node:url'
 import { defaultExclude, defineConfig } from 'vitest/config'
 
 const rootDir = fileURLToPath(new URL('./', import.meta.url))
+const isTypecheckTestRun = process.argv.some(argument => argument.startsWith('scripts/typecheck/'))
+const globalSetup = isTypecheckTestRun
+  ? ['server/workspace-files/vitest-global-setup.ts']
+  : [
+      'server/agent/test/global-setup.ts',
+      'server/workspace-files/vitest-global-setup.ts',
+    ]
+const setupFiles = isTypecheckTestRun
+  ? ['server/workspace-files/vitest-tmpdir-setup.ts']
+  : [
+      'server/workspace-files/vitest-tmpdir-setup.ts',
+      'server/agent/test/setup.ts',
+    ]
 
 /**
  * 当前测试先聚焦后端 Agent 与 Agent 前端纯逻辑投影。
@@ -28,14 +41,8 @@ export default defineConfig({
     // 这是承认当前 artifact 体积的真实成本，不是掩盖挂起——真正的修复是把 artifact 压小。
     hookTimeout: 60_000,
     // run 级：先由 Agent fixture 设置 runId，再注册受控临时根清理；teardown 逆序执行。
-    globalSetup: [
-      'server/agent/test/global-setup.ts',
-      'server/workspace-files/vitest-global-setup.ts',
-    ],
-    setupFiles: [
-      'server/workspace-files/vitest-tmpdir-setup.ts',
-      'server/agent/test/setup.ts',
-    ],
+    globalSetup,
+    setupFiles,
     include: [
       'app/composables/**/*.test.ts',
       'app/components/novel-ide/**/*.test.ts',
@@ -50,6 +57,7 @@ export default defineConfig({
       'scripts/install/**/*.test.ts',
       'scripts/maintenance/**/*.test.ts',
       'scripts/release/**/*.test.ts',
+      'scripts/typecheck/**/*.test.ts',
       'server/**/*.test.ts',
       // Profile DSL 用 JSX，相关测试必须是 .tsx 才能被 oxc 解析。
       'server/**/*.test.tsx',
