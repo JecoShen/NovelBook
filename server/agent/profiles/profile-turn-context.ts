@@ -20,7 +20,7 @@ import {
 } from 'nbook/shared/agent/file-change-policy'
 import type { OperationActor, UnseenGroup } from 'nbook/server/vendor/nb-history/index'
 
-export type FileChangeAwareness = 'off' | 'minimal' | 'full'
+export type { FileChangeAwareness } from 'nbook/server/agent/profiles/profile-turn-context-contract'
 
 export type ProfileTurnContextPlan = {
   kind: 'file-change-notice'

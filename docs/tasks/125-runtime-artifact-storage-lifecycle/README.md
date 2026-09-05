@@ -280,6 +280,10 @@ Source Profile CLI 资源测量使用新的隔离 Cache Root `/www/wwwroot/book.
 
 新增投影链的两个最小 typecheck 图都能在止损线内完成，并首先暴露 `6` 个严格类型错误：TypeScript namespace/value 混用、依赖 allowlist 的字面量集合过窄、resolver 可选路径未显式收窄。最小类型修复后，缓存入口与投影入口均退出码 `0`，`MAX_SINGLE_RSS_KIB=325828` / `325552`，`MAX_GROUP_RSS_KIB=334836` / `334556`；相关投影与缓存回归 `3` 个文件、`16` 个测试通过，`MAX_SINGLE_RSS_KIB=483420`、`MAX_GROUP_RSS_KIB=818132`、`MIN_MEM_AVAILABLE_KIB=3151916`。这证明本轮新增链可独立通过类型检查，但不能替代仍未完成的全仓非桌面 typecheck。
 
+继续二分 runtime 生产图后，`profile-dsl.ts` 单文件 typecheck 在 `MAX_SINGLE_RSS_KIB=1060976` 触发止损。根因是它为了三值 `FileChangeAwareness` 类型和三个基础消息构造器，分别加载 `profile-turn-context.ts` 与包含完整工具结果合同的 `message-utils.ts`。临时等价声明对照将同一检查降到 `514028 KiB` 并以退出码 `0` 完成；据此把轻量 turn-context 合同和消息构造器拆成独立模块，旧入口保留兼容导出。真实新边界下 `profile-dsl.ts` typecheck 退出码 `0`，`MAX_SINGLE_RSS_KIB=529260`、`MAX_GROUP_RSS_KIB=538340`、`MIN_MEM_AVAILABLE_KIB=3417576`；消息/DSL 聚焦回归实际匹配 `2` 个文件、`37` 个测试并全部通过。
+
+完整 `server/runtime/tsconfig.json` 在上述拆分后仍于 `MAX_SINGLE_RSS_KIB=1057192` 触发止损。剩余最小复现是 `profile-turn-context.ts` 本身：它单独检查达到 `1053668 KiB`，因为 Project Session 与 Project History 的组合根仍在同一源码图内。当前不能把 Profile DSL 边界通过写成完整 runtime typecheck 通过；下一轮需要单独设计 History 数据面与注册/组合根的拆分。
+
 GC 当前实现已覆盖 owner 判定、10 分钟最小安全年龄、`256 MiB` 可证明 orphan 预算、quarantine 双次 `lstat` 稳定性检查和未知/不安全内容保守保留；本轮没有把 GC report、warn 日志或不可回收超预算 fail-closed 扩展为运行时代码，因此稳定 Reference 只记录当前已实现合同。
 
 ### 实际结果与原计划差异
