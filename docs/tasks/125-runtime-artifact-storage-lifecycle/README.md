@@ -257,6 +257,25 @@ Phase 0 需要把 `defineAgentProfile -> profile-dsl / low-code-form / runtime s
 - Round 03 实施 Phase 3 artifact 减重（四处切边 + 依赖门禁），见 [walkthrough](walkthroughs/round-03-phase3-artifact-diet.md)。
 - Round 04 把 Project 测试写入全部收进 suite 级隔离 Runtime Workspace Root，移除 Preview 测试前缀遮掩，并精确清理已授权残留，见 [walkthrough](walkthroughs/round-04-workspace-test-isolation.md)。
 
+### Round 05：Source 投影缓存资源验收与单 Worker 防线（2026-09-05）
+
+本轮把根 `vitest.config.ts` 的 `test.maxWorkers` 从 `2` 收紧为 `1`，并新增运行配置合同测试。合同测试实际导入根配置后先在旧值 `2` 下失败，再在值 `1` 下通过；没有使用源码文本 grep。
+
+Source Profile CLI 资源测量使用新的隔离 Cache Root `/www/wwwroot/book.neoshen.dpdns.org/.worktree/i2-test-baseline/.agent/tmp/task5-resource-5f96b107-6e02-4f2b-a81f-aa4a4e469591`，State Root 是其 `state/` 子目录。冷、热两次使用同一 Cache Root 和同一 `bun server/agent/profiles/profile-command.ts compile resource-smoke.profile.tsx` 命令，并通过 `NEURO_BOOK_APPLICATION_ROOT`、`NEURO_BOOK_STATE_ROOT`、`NEURO_BOOK_CACHE_ROOT` 传入环境；这与 `runtimePathsFromEnv()` 的合同一致，输出实际落在该 Cache Root 的 `authoring-types/` 下。
+
+| 场景 | 退出码 | 时长 | MAX_SINGLE_RSS_KIB | MAX_GROUP_RSS_KIB | MIN_MEM_AVAILABLE_KIB | 残留 |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 冷缓存 | `0` | `21868 ms` | `761120` | `807560` | `3317516` | 无 |
+| 热缓存 | `0` | `8904 ms` | `459036` | `501304` | `3580964` | 无 |
+
+采样每 `1` 秒读取目标进程组中全部进程的 RSS；冷、热单进程峰值都低于 `786432 KiB` 目标，且都低于 `1 GiB` 止损线。测量结束后目标进程组均无残留。
+
+按资源防线执行的类型检查只尝试一次：`taskset -c 0 nice -n 15 timeout --signal=INT --kill-after=10s 12m bun run typecheck`；在 `28207 ms` 时单进程 RSS 达到 `1093576 KiB`，超过 `1 GiB` 止损线，发送信号终止全进程组，退出码 `130`，`MAX_GROUP_RSS_KIB=1306204`，`MIN_MEM_AVAILABLE_KIB=2847784`，无残留。未重跑类型检查。
+
+聚焦回归按轻量、重型顺序执行，均为单核单 Worker：轻量集合 `5` 个文件、`23` 个测试通过，退出码 `0`，时长 `66055 ms`，`MAX_SINGLE_RSS_KIB=797356`，`MAX_GROUP_RSS_KIB=1290908`，`MIN_MEM_AVAILABLE_KIB=2540328`，无残留；黑盒集合 `1` 个文件、`3` 个测试通过，退出码 `0`，时长 `111326 ms`，`MAX_SINGLE_RSS_KIB=522192`，`MAX_GROUP_RSS_KIB=794136`，`MIN_MEM_AVAILABLE_KIB=2836796`，无残留。
+
+受控全量测试仅在启动前 `MemAvailable=3770408 KiB`（至少 `3 GiB`）时执行：`taskset -c 0 nice -n 15 timeout --signal=INT --kill-after=10s 20m bun run test -- --maxWorkers=1`。全量在 `77788 ms` 时因单进程 RSS 达到 `1072504 KiB` 超过止损线而终止，退出码 `130`，`MAX_GROUP_RSS_KIB=1373076`，`MIN_MEM_AVAILABLE_KIB=2499056`，无残留；全量测试未完成，不能由聚焦测试替代。
+
 ### 实际结果与原计划差异
 
 - 原问题最初聚焦 `.agent` 缓存；深入后确认最大残留实际位于系统 `%TEMP%`，由测试 fixture 放大 `.compiled` 导致，因此任务范围从“缓存清理”扩展为三个 owner 的生命周期设计。
@@ -273,4 +292,5 @@ Phase 0 需要把 `defineAgentProfile -> profile-dsl / low-code-form / runtime s
 - [ ] Phase 2 补测：预算 GC 四条聚焦测试、`profile-artifact-store.test.ts`、fixture 所有权测试。
 - [x] Phase 3：Profile artifact 减重（Round 03：单 artifact 27.3→1.2 MiB、一代 release 382→17.24 MiB；「Product 只有 5.9 MB」的差距根因即渗漏边——Product 是对 Nitro tree-shake 后的 `.output/server` 编译，天然没有 jsdom/prisma；切边后 source 反而更小）。
 - [x] Phase 3 门禁：编译器 metafile 依赖白名单 + 禁止依赖族 + 4 MiB 字节上限，违规 `compile_failed`，合同见 `reference/agent/profile-compiled-artifacts.md` 的 Dependency Gate 小节。
-- [ ] Phase 4：跨环境验收（Source / Product Bun / Windows Portable 三形态 Profile 导入）与 5 轮空间收敛曲线。原 `bun:ffi` 阻塞已在 Round 02/03 解除（`isPlatformBuiltinModule` external + 依赖图切边），`catalog.test.ts` 已回到 44/44。
+- [x] Task 5：单 Worker 防线、Source 投影缓存冷/热资源验收和聚焦回归；冷/热均低于 `786432 KiB`，但 typecheck 因 `1093576 KiB` 止损，全量因 `1072504 KiB` 止损，均未完成。
+- [ ] Phase 4：跨环境验收（Source / Product Bun / Windows Portable 三形态 Profile 导入）与 5 轮空间收敛曲线。原 `bun:ffi` 阻塞已在 Round 02/03 解除（`isPlatformBuiltinModule` external + 依赖图切边），`catalog.test.ts` 已回到 44/44；本轮 typecheck 和受控全量测试仍未完成。
