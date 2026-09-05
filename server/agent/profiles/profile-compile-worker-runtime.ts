@@ -31,10 +31,12 @@ import {
 
 type InternalProfileCompileRequest = AgentProfileCompileRequestDto & {
   userProfileRoot?: string
+  sourceRoot?: string
 }
 
 type InternalProfileCompileAllRequest = AgentProfileCompileAllRequestDto & {
   userProfileRoot?: string
+  sourceRoot?: string
 }
 
 /**
@@ -55,6 +57,7 @@ export async function runProfileCompile(input: InternalProfileCompileRequest): P
     const staged = await stageProfileArtifactEntry({
       profileRoot: userProfileRoot,
       fileName: input.fileName,
+      sourceRoot: input.sourceRoot,
     })
     const entry = staged.entry
     const issues = entry.status === 'compile_failed'
@@ -124,6 +127,7 @@ export async function runProfileCompileEntry(input: InternalProfileCompileReques
     const staged = await stageProfileArtifactEntry({
       profileRoot: userProfileRoot,
       fileName: input.fileName,
+      sourceRoot: input.sourceRoot,
     })
     const entry = staged.entry
     const issues = entry.status === 'compile_failed'
@@ -184,6 +188,7 @@ export async function runProfileCompileAll(input: InternalProfileCompileAllReque
     const staged = await stageProfileArtifacts({
       profileRoot: userProfileRoot,
       rootLabel: 'workspace/.nbook/agent/profiles',
+      sourceRoot: input.sourceRoot,
     })
     const profileItems = files.map((file) => {
       const manifestEntry = staged.manifest.entries.find(profile => profile.fileName === file.fileName)
@@ -260,10 +265,12 @@ async function runDryRunProfilePreview(input: AgentProfileCompileRequestDto, use
       profileRoot: temporaryRoot,
       fileName: input.fileName,
       rootLabel: 'temporary-profile-source-check',
+      sourceRoot: input.sourceRoot,
     })
     const profiles = new AgentProfileCatalog(
       join(resolveSystemNbookRoot(), 'agent', 'profiles'),
       temporaryRoot,
+      input.sourceRoot,
     )
     const detail = await readProfileSource(profiles, { fileName: input.fileName }, {
       userProfileRoot: temporaryRoot,

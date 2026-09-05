@@ -41,17 +41,27 @@ describe('Authoring SDK type projection', () => {
   it('生成一次可移植的声明投影', async () => {
     const target = await mkdtemp(join(tmpdir(), 'nbook-authoring-types-'))
     temporaryRoots.push(target)
+    const unrelatedCwd = await mkdtemp(join(tmpdir(), 'nbook-authoring-cwd-'))
+    temporaryRoots.push(unrelatedCwd)
 
-    const result = await buildAuthoringSdkTypeProjection({ targetRoot: target })
+    const sourceRoot = process.cwd()
+    process.chdir(unrelatedCwd)
+    let result
+    try {
+      result = await buildAuthoringSdkTypeProjection({ targetRoot: target, sourceRoot })
+    }
+    finally {
+      process.chdir(sourceRoot)
+    }
 
-    expect(result.inputFiles).toEqual(await authoringSdkTypeProjectionInputFiles())
+    expect(result.inputFiles).toEqual(await authoringSdkTypeProjectionInputFiles({ sourceRoot }))
     await access(join(target, 'types/profile-sdk/index.d.ts'))
     await access(join(target, 'types/variable-sdk/index.d.ts'))
     await access(join(target, 'node_modules/@types/node/index.d.ts'))
     expect(await readFile(join(target, 'tsconfig.json'), 'utf8')).toBe(authoringSdkTsconfig())
 
     const declarationFiles = await collectDeclarations(target)
-    const checkoutPath = process.cwd().replaceAll('\\', '/')
+    const checkoutPath = sourceRoot.replaceAll('\\', '/')
     for (const declarationFile of declarationFiles) {
       expect((await readFile(declarationFile, 'utf8')).replaceAll('\\', '/')).not.toContain(checkoutPath)
     }
@@ -82,7 +92,7 @@ async function writeSourceInputs(sourceRoot: string): Promise<void> {
   }))
   await writeFile(
     join(sourceRoot, 'profile-sdk', 'index.ts'),
-    "export { readTitleOwner } from 'nbook/profile-sdk/session'\n",
+    'export { readTitleOwner } from \'nbook/profile-sdk/session\'\n',
     'utf8',
   )
 }

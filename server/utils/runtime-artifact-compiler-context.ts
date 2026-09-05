@@ -8,6 +8,7 @@ import {
 } from 'nbook/shared/product-runtime-image-verifier'
 import { openSourceAuthoringTypeProjection } from 'nbook/server/runtime/source-authoring-type-cache'
 import { runtimePathsFromEnv } from 'nbook/server/runtime/paths/runtime-paths'
+import { resolveApplicationRoot } from 'nbook/server/workspace-files/system-workspace-assets'
 
 type RuntimeArtifactCompilerPaths = Readonly<{
   root: string
@@ -74,7 +75,11 @@ export async function resolveRuntimeArtifactCompilerContext(
   const outputEntry = resolve(outputRoot, 'index.mjs')
   const outputPackage = resolve(outputRoot, 'package.json')
   if (!explicitImageRoot) {
-    const projection = await openSourceAuthoringTypeProjection(runtimePathsFromEnv(absoluteRoot, env).cacheRoot)
+    const sourceRoot = resolveApplicationRoot(absoluteRoot)
+    const projection = await openSourceAuthoringTypeProjection(
+      runtimePathsFromEnv(absoluteRoot, env).cacheRoot,
+      sourceRoot,
+    )
     return Object.freeze({
       kind: 'source',
       root: absoluteRoot,

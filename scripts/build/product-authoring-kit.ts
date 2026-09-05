@@ -15,9 +15,7 @@ import {
   productBundleOutputText,
 } from 'nbook/scripts/build/product-reproducible-bundle'
 import { productRuntimeIslandPackageNames } from 'nbook/scripts/build/product-runtime-islands'
-import {
-  type ProjectedAuthoringDependency,
-} from 'nbook/scripts/build/product-authoring-type-projection'
+import type { ProjectedAuthoringDependency } from 'nbook/scripts/build/product-authoring-type-projection'
 
 export { assertAuthoringDeclarationSourcePaths }
 
@@ -139,7 +137,7 @@ export async function buildProductAuthoringKit(outputRoot: string): Promise<Prod
     ),
     'utf8',
   )
-  const typeProjection = await buildAuthoringSdkTypeProjection({ targetRoot: kitRoot })
+  const typeProjection = await buildAuthoringSdkTypeProjection({ targetRoot: kitRoot, sourceRoot: resolve('.') })
   await writeFile(resolve(kitRoot, 'package.json'), `${JSON.stringify({
     name: '@notnotype/neuro-book-profile-authoring-kit',
     private: true,

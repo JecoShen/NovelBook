@@ -186,7 +186,7 @@ export class AgentProfileCatalog implements ProfileReleaseRegistrySink {
      * 创建只绑定指定物理 roots 的 Profile Catalog。
      * system/user root 必须由进程、CLI、构建或测试 Adapter 显式决定；本 Module 不发现 cwd 或环境。
      */
-  constructor(systemRoot: string, userRoot: string) {
+  constructor(systemRoot: string, userRoot: string, private readonly sourceRoot?: string) {
     this.systemRoot = resolve(systemRoot)
     this.userRoot = resolve(userRoot)
     this.artifactStore = new ProfileArtifactStore()
@@ -737,6 +737,7 @@ export class AgentProfileCatalog implements ProfileReleaseRegistrySink {
       const manifestItem = manifestEntry
       const freshness = await this.freshness.validate(source === 'system' ? this.systemRoot : this.userRoot, manifestItem, {
         checkDependencies: false,
+        sourceRoot: this.sourceRoot,
       })
       if (!freshness.fresh) {
         const issue = this.staleIssue(source, file, manifestItem, freshness.reason)

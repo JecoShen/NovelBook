@@ -84,7 +84,9 @@ export async function projectAuthoringDependencies(input: {
   targetNodeModulesRoot: string
   registrations: readonly AuthoringDependencyRegistration[]
   importerPath: string
+  sourceRoot?: string
 }): Promise<AuthoringDependencyProjection> {
+  const sourceRoot = resolve(input.sourceRoot ?? dirname(input.importerPath), '..')
   const packages = await sourcePackages(input.registrations, input.targetNodeModulesRoot, input.importerPath)
   const packageByName = new Map(packages.map(entry => [entry.registration.name, entry]))
   const packageInstances = new Map(packages.map(entry => [packageInstanceKey(entry.targetRoot, entry.version), entry]))
@@ -145,7 +147,7 @@ export async function projectAuthoringDependencies(input: {
       if (!declarationPath) {
         throw new Error(`Authoring runtime dependency 缺少 package 根声明入口：${entry.registration.name}`)
       }
-      await bundleRuntimePackage(entry, targetRoot, declarationPath)
+      await bundleRuntimePackage(entry, targetRoot, declarationPath, sourceRoot)
     }
     else {
       await writeFile(resolve(targetRoot, 'package.json'), await readFile(sourceManifestPath, 'utf8'), 'utf8')
@@ -452,8 +454,8 @@ async function copyDeclaration(owner: SourcePackage, sourcePath: string, source:
 }
 
 /** 为批准的运行 dependency 生成单文件 ESM 实现，并保留已投影的声明入口。 */
-async function bundleRuntimePackage(entry: SourcePackage, targetRoot: string, declarationPath: string): Promise<void> {
-  const requireFromSource = createRequire(pathToFileURL(resolve('package.json')))
+async function bundleRuntimePackage(entry: SourcePackage, targetRoot: string, declarationPath: string, sourceRoot: string): Promise<void> {
+  const requireFromSource = createRequire(pathToFileURL(resolve(sourceRoot, 'package.json')))
   const runtimeEntry = requireFromSource.resolve(entry.registration.name)
   const runtimeOutput = resolve(targetRoot, 'index.mjs')
   const result = await bundleProductJavaScript({

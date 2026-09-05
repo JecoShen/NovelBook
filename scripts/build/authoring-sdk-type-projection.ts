@@ -70,9 +70,10 @@ export type AuthoringSdkTypeProjectionResult = Readonly<{
 }>
 
 export async function buildAuthoringSdkTypeProjection(
-  input: { targetRoot: string },
+  input: { targetRoot: string, sourceRoot: string },
 ): Promise<AuthoringSdkTypeProjectionResult> {
   const targetRoot = resolve(input.targetRoot)
+  const sourceRoot = resolve(input.sourceRoot)
   const typeRoot = resolve(targetRoot, 'types')
   const nodeModulesRoot = resolve(targetRoot, 'node_modules')
   const [typescriptModule, { projectAuthoringDependencies }] = await Promise.all([
@@ -80,9 +81,9 @@ export async function buildAuthoringSdkTypeProjection(
     import('nbook/scripts/build/product-authoring-type-projection'),
   ])
   const ts = typescriptModule.default
-  const declarationDependencies = await emitAuthoringTypes(typeRoot, ts)
+  const declarationDependencies = await emitAuthoringTypes(typeRoot, ts, sourceRoot)
   assertDeclaredTypeDependencies(declarationDependencies)
-  await cp(resolve('proper-lockfile.d.ts'), resolve(typeRoot, 'proper-lockfile.d.ts'))
+  await cp(resolve(sourceRoot, 'proper-lockfile.d.ts'), resolve(typeRoot, 'proper-lockfile.d.ts'))
   const dependencyProjection = await projectAuthoringDependencies({
     // Authoring tsconfig 显式启用 Node globals；即使 SDK 声明没有直接 import，也必须投影其真实类型闭包。
     seedSpecifiers: new Set([
@@ -91,7 +92,8 @@ export async function buildAuthoringSdkTypeProjection(
     ]),
     targetNodeModulesRoot: nodeModulesRoot,
     registrations: AUTHORING_SDK_DEPENDENCIES,
-    importerPath: resolve('profile-sdk', 'index.ts'),
+    importerPath: resolve(sourceRoot, 'profile-sdk', 'index.ts'),
+    sourceRoot,
   })
   await writeFile(resolve(targetRoot, 'tsconfig.json'), authoringSdkTsconfig(), 'utf8')
 
@@ -104,7 +106,7 @@ export async function buildAuthoringSdkTypeProjection(
     dependencyBytes: dependencies.bytes,
     dependencies: dependencyProjection.dependencies,
     dependencyInstances: dependencyProjection.instances,
-    inputFiles: await authoringSdkTypeProjectionInputFiles(),
+    inputFiles: await authoringSdkTypeProjectionInputFiles({ sourceRoot }),
   }
 }
 
@@ -156,8 +158,8 @@ export function authoringSdkTsconfig(): string {
  * 使用 TypeScript semantic gate 与声明 emitter 建立候选图，再从 SDK 公开入口精确投影可达声明。
  * `program.emit()` 会写出 Program 中所有源码；不能直接把那棵树当成 SDK 闭包。
  */
-async function emitAuthoringTypes(typeRoot: string, ts: typeof TypeScript): Promise<Set<string>> {
-  const root = resolve('.')
+async function emitAuthoringTypes(typeRoot: string, ts: typeof TypeScript, sourceRoot: string): Promise<Set<string>> {
+  const root = resolve(sourceRoot)
   const emittedRoot = resolve(dirname(typeRoot), '.types-emitted')
   const stubRoot = resolve(dirname(typeRoot), '.authoring-runtime-stubs')
   await rm(emittedRoot, { recursive: true, force: true })
@@ -180,6 +182,7 @@ async function emitAuthoringTypes(typeRoot: string, ts: typeof TypeScript): Prom
     outDir: emittedRoot,
     lib: ['lib.esnext.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts'],
     types: ['bun', 'node'],
+    typeRoots: [resolve(root, 'node_modules', '@types')],
     skipLibCheck: true,
     strict: true,
     declaration: true,
@@ -192,13 +195,13 @@ async function emitAuthoringTypes(typeRoot: string, ts: typeof TypeScript): Prom
     if (diagnostics.length > 0) {
       throw new Error(ts.formatDiagnostics(diagnostics, {
         getCanonicalFileName: fileName => fileName,
-        getCurrentDirectory: () => process.cwd(),
+        getCurrentDirectory: () => root,
         getNewLine: () => '\n',
       }))
     }
     const emitted = program.emit()
     if (emitted.emitSkipped) throw new Error('Profile SDK declaration projection 没有完成。')
-    return await copyReachableDeclarations(emittedRoot, typeRoot, ts)
+    return await copyReachableDeclarations(emittedRoot, typeRoot, ts, root)
   }
   finally {
     await rm(emittedRoot, { recursive: true, force: true })
@@ -214,7 +217,7 @@ async function writeAuthoringRuntimeTypeStubs(stubRoot: string): Promise<void> {
   await mkdir(stubRoot, { recursive: true })
   await Promise.all([
     writeFile(resolve(stubRoot, 'writer-writing-reference.d.ts'), [
-      "import type { ProfileHomeFacade, WritingReferenceDefinition, WritingReferencePreset } from 'nbook/profile-sdk/contracts'",
+      'import type { ProfileHomeFacade, WritingReferenceDefinition, WritingReferencePreset } from \'nbook/profile-sdk/contracts\'',
       'export const DEFAULT_WRITING_REFERENCE_PRESET: string',
       'export function legacyReferenceKeyToHomeKey(key: string): string',
       'export function homeReferenceKeyToLegacyKey(key: string): string',
@@ -223,7 +226,7 @@ async function writeAuthoringRuntimeTypeStubs(stubRoot: string): Promise<void> {
       'export function buildWritingReference(input?: { preset?: WritingReferencePreset, home?: ProfileHomeFacade }): Promise<string>',
     ].join('\n'), 'utf8'),
     writeFile(resolve(stubRoot, 'writer-writing-style.d.ts'), [
-      "import type { ProfileHomeFacade, WritingStyleDefinition, WritingStylePreset } from 'nbook/profile-sdk/contracts'",
+      'import type { ProfileHomeFacade, WritingStyleDefinition, WritingStylePreset } from \'nbook/profile-sdk/contracts\'',
       'export const DEFAULT_WRITING_STYLE_PRESET: string',
       'export function legacyStyleKeyToHomeKey(key: string): string',
       'export function homeStyleKeyToLegacyKey(key: string): string',
@@ -232,16 +235,16 @@ async function writeAuthoringRuntimeTypeStubs(stubRoot: string): Promise<void> {
       'export function buildWritingStyle(input?: { preset?: WritingStylePreset, home?: ProfileHomeFacade }): Promise<string>',
     ].join('\n'), 'utf8'),
     writeFile(resolve(stubRoot, 'writer-writing-avoid-words.d.ts'), [
-      "import type { ProfileHomeFacade } from 'nbook/profile-sdk/contracts'",
+      'import type { ProfileHomeFacade } from \'nbook/profile-sdk/contracts\'',
       'export const DEFAULT_AVOID_WORDS_PRESET: string',
       'export function buildAvoidWords(input?: { preset?: string, home?: ProfileHomeFacade }): Promise<string>',
     ].join('\n'), 'utf8'),
     writeFile(resolve(stubRoot, 'world-engine-tool-description.d.ts'), [
-      "export function buildExecuteWorldDescription(mode: 'readonly' | 'readwrite'): string",
+      'export function buildExecuteWorldDescription(mode: \'readonly\' | \'readwrite\'): string',
     ].join('\n'), 'utf8'),
     writeFile(resolve(stubRoot, 'resource-preset.d.ts'), [
-      "import type { ResourcePresetDefinition } from 'nbook/profile-sdk/contracts'",
-      "export function profileHomeResource(input: { directory: string, extension?: '.md', template?: string }): ResourcePresetDefinition",
+      'import type { ResourcePresetDefinition } from \'nbook/profile-sdk/contracts\'',
+      'export function profileHomeResource(input: { directory: string, extension?: \'.md\', template?: string }): ResourcePresetDefinition',
     ].join('\n'), 'utf8'),
   ])
 }
@@ -251,6 +254,7 @@ async function copyReachableDeclarations(
   emittedRoot: string,
   typeRoot: string,
   ts: typeof TypeScript,
+  sourceRoot: string,
 ): Promise<Set<string>> {
   const queue = [
     resolve(emittedRoot, 'profile-sdk', 'index.d.ts'),
@@ -271,7 +275,7 @@ async function copyReachableDeclarations(
       throw new Error(`Authoring declaration 越出 emitter 根：${sourcePath}`)
     }
     const source = await readFile(sourcePath, 'utf8')
-    assertAuthoringDeclarationSourcePaths(source, resolve('.'), emittedRelativePath)
+    assertAuthoringDeclarationSourcePaths(source, sourceRoot, emittedRelativePath)
     const targetPath = resolve(typeRoot, emittedRelativePath)
     await mkdir(dirname(targetPath), { recursive: true })
     await cp(sourcePath, targetPath)

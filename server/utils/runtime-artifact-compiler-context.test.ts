@@ -6,6 +6,7 @@ import {
   resolveRuntimeArtifactCompilerContext,
   resolveRuntimeArtifactNbookPath,
 } from 'nbook/server/utils/runtime-artifact-compiler-context'
+import { resolveApplicationRoot } from 'nbook/server/workspace-files/system-workspace-assets'
 
 const verifier = {
   openSelfVerified: vi.fn(async (path: string) => ({
@@ -173,7 +174,7 @@ describe('runtime artifact compiler context', () => {
       compilerNodeModulesRoot: join(cacheRoot, 'authoring-types', 'sha256:source-context', 'node_modules'),
       tsconfigPath: join(cacheRoot, 'authoring-types', 'sha256:source-context', 'tsconfig.json'),
     })
-    expect(sourceProjectionMock.open).toHaveBeenCalledWith(cacheRoot)
+    expect(sourceProjectionMock.open).toHaveBeenCalledWith(cacheRoot, resolveApplicationRoot(root))
   })
 
   it('Source声明投影生成失败时拒绝回退仓库tsconfig', async () => {
@@ -188,6 +189,6 @@ describe('runtime artifact compiler context', () => {
     await expect(resolveRuntimeArtifactCompilerContext(root, {
       NEURO_BOOK_CACHE_ROOT: cacheRoot,
     })).rejects.toThrow('injected projection failure')
-    expect(sourceProjectionMock.open).toHaveBeenCalledWith(cacheRoot)
+    expect(sourceProjectionMock.open).toHaveBeenCalledWith(cacheRoot, resolveApplicationRoot(root))
   })
 })

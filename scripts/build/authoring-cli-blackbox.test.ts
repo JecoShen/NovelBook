@@ -78,6 +78,7 @@ describe('Authoring CLI blackbox', () => {
     await writeFile(join(projectVariableRoot, 'definitions.ts'), validVariableSource('project-smoke'), 'utf8')
     expect((await runCli(variableCommand, ['definition', 'compile', '--project', 'demo'], fixture, projectRoot)).code).toBe(0)
     expect((await runCli(variableCommand, ['definition', 'status', '--project', 'demo'], fixture, projectRoot)).code).toBe(0)
+    await expectPublishedAuthoringTypes(fixture)
     expect((await runCli(variableCommand, ['definition', 'status', '--project', '..'], fixture, projectRoot)).code).toBe(1)
   }, 180_000)
 
@@ -175,9 +176,27 @@ async function leaseEntries(cacheRoot: string, kind: string): Promise<string[]> 
 /** 确认真实 CLI 成功后发布 current 指针，并清空本轮 projection staging。 */
 async function expectPublishedAuthoringTypes(fixture: AuthoringFixture): Promise<void> {
   const authoringRoot = join(fixture.cacheRoot, 'authoring-types')
-  await expect(readFile(join(authoringRoot, 'current.json'), 'utf8')).resolves.toMatch(
-    /"fingerprint":\s*"sha256:[0-9a-f]{64}"/u,
-  )
+  const current = JSON.parse(await readFile(join(authoringRoot, 'current.json'), 'utf8')) as {
+    schema?: unknown
+    fingerprint?: unknown
+  }
+  expect(current).toMatchObject({
+    schema: 'nbook.source-authoring-types/v1',
+  })
+  expect(current.fingerprint).toEqual(expect.stringMatching(/^sha256:[0-9a-f]{64}$/u))
+  const publishedRoot = join(authoringRoot, String(current.fingerprint))
+  const manifest = JSON.parse(await readFile(join(publishedRoot, 'manifest.json'), 'utf8')) as {
+    schema?: unknown
+    fingerprint?: unknown
+    inputFiles?: unknown
+    files?: unknown
+  }
+  expect(manifest).toMatchObject({
+    schema: 'nbook.source-authoring-types/v1',
+    fingerprint: current.fingerprint,
+  })
+  expect(Array.isArray(manifest.inputFiles)).toBe(true)
+  expect(Array.isArray(manifest.files)).toBe(true)
   await expect(directoryEntries(join(authoringRoot, '.staging'))).resolves.toEqual([])
 }
 

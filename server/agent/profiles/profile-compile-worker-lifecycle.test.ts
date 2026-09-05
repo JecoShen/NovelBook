@@ -43,6 +43,7 @@ describe('profile compile worker Project lifecycle', () => {
         preview: true,
         sessionId: String(sessionId),
         userProfileRoot: assets.userProfileRoot,
+        sourceRoot: assets.applicationRoot,
       })
 
       expect(result.lifecycleError).toEqual({
@@ -64,7 +65,7 @@ describe('profile compile worker Project lifecycle', () => {
       const { projectRoot, sessionId } = await createUnopenedProjectSession(assets)
       const fileName = PROFILE_FILE_NAME
       const source = await readFile(profilePath(assets, fileName), 'utf8')
-      const worker = new ProfileCompileWorkerService('test-project-lifecycle-error', 1, undefined, assets.userProfileRoot)
+      const worker = new ProfileCompileWorkerService('test-project-lifecycle-error', 1, undefined, assets.userProfileRoot, assets.applicationRoot)
       try {
         try {
           await worker.compile({

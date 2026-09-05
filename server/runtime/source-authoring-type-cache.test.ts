@@ -17,11 +17,13 @@ const projectionMock = vi.hoisted(() => ({
   buildCalls: 0,
   sourceVersion: 'one',
   failBuild: false,
+  sourceRoots: [] as string[],
+  inputSourceRoot: '',
 }))
 const MOCK_INPUT_PATH = '.agent/tmp/source-authoring-type-cache-input.txt'
 
-function mockInputBytes(): Buffer {
-  return readFileSync(resolve(process.cwd(), MOCK_INPUT_PATH))
+function mockInputBytes(sourceRoot = projectionMock.inputSourceRoot || process.cwd()): Buffer {
+  return readFileSync(resolve(sourceRoot, MOCK_INPUT_PATH))
 }
 
 vi.mock('nbook/scripts/build/authoring-sdk-type-projection', () => ({
@@ -33,14 +35,15 @@ vi.mock('nbook/scripts/build/authoring-sdk-type-projection', () => ({
     smoke: 'test',
   }],
   authoringSdkTsconfig: () => `${JSON.stringify({ compilerOptions: { strict: true }, sourceVersion: projectionMock.sourceVersion })}\n`,
-  authoringSdkTypeProjectionInputFiles: async () => [{
+  authoringSdkTypeProjectionInputFiles: async ({ sourceRoot }: { sourceRoot?: string } = {}) => [{
     path: MOCK_INPUT_PATH,
-    sha256: createHash('sha256').update(mockInputBytes()).digest('hex'),
-    bytes: mockInputBytes().length,
+    sha256: createHash('sha256').update(mockInputBytes(sourceRoot)).digest('hex'),
+    bytes: mockInputBytes(sourceRoot).length,
   }],
-  buildAuthoringSdkTypeProjection: async ({ targetRoot }: { targetRoot: string }) => {
+  buildAuthoringSdkTypeProjection: async ({ targetRoot, sourceRoot }: { targetRoot: string, sourceRoot?: string }) => {
     if (projectionMock.failBuild) throw new Error('injected projection failure')
     projectionMock.buildCalls += 1
+    projectionMock.sourceRoots.push(sourceRoot ?? '')
     await mkdir(join(targetRoot, 'types', 'profile-sdk'), { recursive: true })
     await mkdir(join(targetRoot, 'node_modules', '@types', 'node'), { recursive: true })
     await writeFile(join(targetRoot, 'types', 'profile-sdk', 'index.d.ts'), 'export type Profile = true\n', 'utf8')
@@ -67,8 +70,8 @@ vi.mock('nbook/scripts/build/authoring-sdk-type-projection', () => ({
       }],
       inputFiles: [{
         path: MOCK_INPUT_PATH,
-        sha256: createHash('sha256').update(mockInputBytes()).digest('hex'),
-        bytes: mockInputBytes().length,
+        sha256: createHash('sha256').update(mockInputBytes(sourceRoot)).digest('hex'),
+        bytes: mockInputBytes(sourceRoot).length,
       }],
     }
   },
@@ -82,6 +85,8 @@ afterEach(async () => {
   projectionMock.buildCalls = 0
   projectionMock.sourceVersion = 'one'
   projectionMock.failBuild = false
+  projectionMock.sourceRoots = []
+  projectionMock.inputSourceRoot = ''
 })
 
 async function cacheRoot(): Promise<string> {
@@ -105,6 +110,27 @@ async function projectionDirectories(root: string): Promise<string[]> {
 }
 
 describe('Source authoring type projection cache', () => {
+  it('显式 sourceRoot 使投影生成和输入校验不依赖 process.cwd', async () => {
+    const root = await cacheRoot()
+    const sourceRoot = await mkdtemp(join(tmpdir(), 'nbook-source-authoring-source-'))
+    const unrelatedCwd = await mkdtemp(join(tmpdir(), 'nbook-source-authoring-cwd-'))
+    roots.push(sourceRoot, unrelatedCwd)
+    await mkdir(join(sourceRoot, '.agent', 'tmp'), { recursive: true })
+    await writeFile(join(sourceRoot, MOCK_INPUT_PATH), projectionMock.sourceVersion, 'utf8')
+    projectionMock.inputSourceRoot = sourceRoot
+
+    const previousCwd = process.cwd()
+    process.chdir(unrelatedCwd)
+    try {
+      const projection = await openSourceAuthoringTypeProjection(absoluteFsPath(root), absoluteFsPath(sourceRoot))
+      expect(projection.fingerprint).toMatch(/^sha256:[0-9a-f]{64}$/u)
+      expect(projectionMock.sourceRoots).toEqual([absoluteFsPath(sourceRoot)])
+    }
+    finally {
+      process.chdir(previousCwd)
+    }
+  })
+
   it('首次生成并发布，随后复用相同 fingerprint 路径', async () => {
     const root = await cacheRoot()
 

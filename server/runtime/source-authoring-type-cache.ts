@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { lstat, mkdir, readFile, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { lock } from 'proper-lockfile'
-import type { AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
+import { absoluteFsPath, type AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 
 export const SOURCE_AUTHORING_TYPE_CACHE_SCHEMA = 'nbook.source-authoring-types/v1'
 export const SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS = 10 * 60 * 1_000
@@ -56,17 +57,19 @@ export function setSourceAuthoringTypeCacheGcTestHook(hook: SourceAuthoringTypeC
 /** 打开一个已经逐文件验证过的不可变声明投影。 */
 export async function openSourceAuthoringTypeProjection(
   cacheRoot: AbsoluteFsPath,
+  sourceRoot: AbsoluteFsPath = absoluteFsPath(process.cwd()),
 ): Promise<SourceAuthoringTypeProjection> {
+  const absoluteSourceRoot = resolve(sourceRoot)
   const authoringRoot = resolve(cacheRoot, AUTHORING_TYPES_DIRECTORY)
   await mkdir(authoringRoot, { recursive: true })
 
-  const current = await readCurrent(authoringRoot)
+  const current = await readCurrent(authoringRoot, absoluteSourceRoot)
   if (current) {
     const release = await acquirePublishLock(authoringRoot)
     try {
-      const lockedCurrent = await readCurrent(authoringRoot)
+      const lockedCurrent = await readCurrent(authoringRoot, absoluteSourceRoot)
       if (lockedCurrent) {
-        await garbageCollect(authoringRoot, lockedCurrent.fingerprint).catch(() => undefined)
+        await garbageCollect(authoringRoot, lockedCurrent.fingerprint, absoluteSourceRoot).catch(() => undefined)
         return lockedCurrent
       }
     }
@@ -78,8 +81,8 @@ export async function openSourceAuthoringTypeProjection(
   const stagingRoot = join(authoringRoot, STAGING_DIRECTORY, randomUUID())
   try {
     await mkdir(stagingRoot, { recursive: true })
-    const projectionModule = await import('nbook/scripts/build/authoring-sdk-type-projection')
-    const result = await projectionModule.buildAuthoringSdkTypeProjection({ targetRoot: stagingRoot })
+    const projectionModule = await loadProjectionModule(absoluteSourceRoot)
+    const result = await projectionModule.buildAuthoringSdkTypeProjection({ targetRoot: stagingRoot, sourceRoot: absoluteSourceRoot })
     const files = await projectionFiles(stagingRoot)
     const inputFiles = normalizeFiles(result.inputFiles)
     const tsconfig = projectionModule.authoringSdkTsconfig()
@@ -105,14 +108,14 @@ export async function openSourceAuthoringTypeProjection(
 
     const release = await acquirePublishLock(authoringRoot)
     try {
-      const lockedCurrent = await readCurrent(authoringRoot)
+      const lockedCurrent = await readCurrent(authoringRoot, absoluteSourceRoot)
       if (lockedCurrent) return lockedCurrent
 
       const targetRoot = join(authoringRoot, fingerprint)
-      const existing = await validateProjection(targetRoot, fingerprint)
+      const existing = await validateProjection(targetRoot, fingerprint, absoluteSourceRoot)
       if (existing) {
         await publishCurrent(authoringRoot, fingerprint)
-        await garbageCollect(authoringRoot, fingerprint).catch(() => undefined)
+        await garbageCollect(authoringRoot, fingerprint, absoluteSourceRoot).catch(() => undefined)
         return existing
       }
       else {
@@ -120,7 +123,7 @@ export async function openSourceAuthoringTypeProjection(
         await rename(stagingRoot, targetRoot)
         await publishCurrent(authoringRoot, fingerprint)
         const projection = projectionFromRoot(targetRoot, fingerprint)
-        await garbageCollect(authoringRoot, fingerprint).catch(() => undefined)
+        await garbageCollect(authoringRoot, fingerprint, absoluteSourceRoot).catch(() => undefined)
         return projection
       }
     }
@@ -131,6 +134,17 @@ export async function openSourceAuthoringTypeProjection(
   finally {
     // A candidate is private until rename; never sweep another process's staging.
     await rm(stagingRoot, { recursive: true, force: true }).catch(() => undefined)
+  }
+}
+
+/** Worker 的 TS loader 可能不为运行时 dynamic import 应用 tsconfig alias；回退到同一 checkout 的源码文件。 */
+async function loadProjectionModule(sourceRoot: string): Promise<typeof import('nbook/scripts/build/authoring-sdk-type-projection')> {
+  try {
+    return await import('nbook/scripts/build/authoring-sdk-type-projection')
+  }
+  catch (error) {
+    if (!(error instanceof Error) || !error.message.includes('Cannot find package \'nbook\'')) throw error
+    return await import(pathToFileURL(resolve(sourceRoot, 'scripts/build/authoring-sdk-type-projection.ts')).href)
   }
 }
 
@@ -155,7 +169,7 @@ function projectionFromRoot(root: string, fingerprint: string): SourceAuthoringT
   }
 }
 
-async function readCurrent(authoringRoot: string): Promise<SourceAuthoringTypeProjection | null> {
+async function readCurrent(authoringRoot: string, sourceRoot: string): Promise<SourceAuthoringTypeProjection | null> {
   let pointer: CurrentPointer
   try {
     pointer = parseCurrent(await readFile(join(authoringRoot, CURRENT_FILE), 'utf8'))
@@ -166,7 +180,7 @@ async function readCurrent(authoringRoot: string): Promise<SourceAuthoringTypePr
   }
   const root = join(authoringRoot, pointer.fingerprint)
   try {
-    return await validateProjection(root, pointer.fingerprint)
+    return await validateProjection(root, pointer.fingerprint, sourceRoot)
   }
   catch {
     return null
@@ -183,7 +197,7 @@ function parseCurrent(raw: string): CurrentPointer {
   return pointer as CurrentPointer
 }
 
-async function validateProjection(root: string, fingerprint: string): Promise<SourceAuthoringTypeProjection | null> {
+async function validateProjection(root: string, fingerprint: string, sourceRoot: string): Promise<SourceAuthoringTypeProjection | null> {
   let manifest: ProjectionManifest
   try {
     manifest = parseManifest(await readFile(join(root, 'manifest.json'), 'utf8'))
@@ -207,7 +221,7 @@ async function validateProjection(root: string, fingerprint: string): Promise<So
   }
   for (const input of manifest.inputFiles) {
     if (!isSafeRelativePath(input.path)) return null
-    const sourcePath = resolve(process.cwd(), input.path)
+    const sourcePath = resolve(sourceRoot, input.path)
     try {
       const bytes = await readFile(sourcePath)
       if (bytes.length !== input.bytes || sha256(bytes) !== input.sha256) return null
@@ -336,10 +350,10 @@ type GcTreeScan = {
   manifest?: ProjectionManifest
 }
 
-async function garbageCollect(authoringRoot: string, currentFingerprint: string): Promise<void> {
+async function garbageCollect(authoringRoot: string, currentFingerprint: string, sourceRoot: string): Promise<void> {
   const now = Date.now()
   const quarantineRoot = join(authoringRoot, GC_QUARANTINE_DIRECTORY)
-  const safeCandidates = await recoverGcQuarantine(authoringRoot, quarantineRoot, now)
+  const safeCandidates = await recoverGcQuarantine(authoringRoot, quarantineRoot, now, sourceRoot)
   const candidates: GcCandidate[] = []
   for (const entry of await readdir(authoringRoot, { withFileTypes: true })) {
     if (!entry.isDirectory() || entry.name === STAGING_DIRECTORY || entry.name === GC_QUARANTINE_DIRECTORY || entry.name === currentFingerprint) continue
@@ -391,7 +405,7 @@ async function garbageCollect(authoringRoot: string, currentFingerprint: string)
 }
 
 /** 处理进程崩溃遗留的本模块 quarantine；未知和不安全内容永远留在原处。 */
-async function recoverGcQuarantine(authoringRoot: string, quarantineRoot: string, now: number): Promise<GcCandidate[]> {
+async function recoverGcQuarantine(authoringRoot: string, quarantineRoot: string, now: number, sourceRoot: string): Promise<GcCandidate[]> {
   const safeCandidates: GcCandidate[] = []
   const entries = await readdir(quarantineRoot, { withFileTypes: true }).catch(() => [])
   for (const entry of entries) {
@@ -407,7 +421,7 @@ async function recoverGcQuarantine(authoringRoot: string, quarantineRoot: string
     if (!secondScan.safe || !sameGcTree(firstScan, secondScan)) continue
 
     const originalPath = join(authoringRoot, fingerprint)
-    const existing = await validateProjection(originalPath, fingerprint).catch(() => null)
+    const existing = await validateProjection(originalPath, fingerprint, sourceRoot).catch(() => null)
     if (existing) {
       await rm(quarantinePath, { recursive: true, force: true })
       continue
