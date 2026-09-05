@@ -531,7 +531,10 @@ export async function stageProfileArtifacts(options: CompileProfileArtifactsOpti
       const existingItem = existingManifest.profiles.find(item => item.fileName === file.fileName)
       let validation: ProfileArtifactValidation | undefined
       if ((options.skipFresh || options.writePolicy === 'forbid') && existingItem) {
-        validation = await validateProfileArtifact(profileRoot, existingItem, { requireTypeArtifact: true })
+        validation = await validateProfileArtifact(profileRoot, existingItem, {
+          requireTypeArtifact: true,
+          sourceRoot: options.sourceRoot,
+        })
         if (validation.fresh) {
           return { entry: existingItem }
         }

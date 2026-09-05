@@ -84,9 +84,9 @@ export async function projectAuthoringDependencies(input: {
   targetNodeModulesRoot: string
   registrations: readonly AuthoringDependencyRegistration[]
   importerPath: string
-  sourceRoot?: string
+  sourceRoot: string
 }): Promise<AuthoringDependencyProjection> {
-  const sourceRoot = resolve(input.sourceRoot ?? dirname(input.importerPath), '..')
+  const sourceRoot = resolve(input.sourceRoot)
   const packages = await sourcePackages(input.registrations, input.targetNodeModulesRoot, input.importerPath)
   const packageByName = new Map(packages.map(entry => [entry.registration.name, entry]))
   const packageInstances = new Map(packages.map(entry => [packageInstanceKey(entry.targetRoot, entry.version), entry]))
