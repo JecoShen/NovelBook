@@ -2,19 +2,26 @@ import { fileURLToPath } from 'node:url'
 import { defaultExclude, defineConfig } from 'vitest/config'
 
 const rootDir = fileURLToPath(new URL('./', import.meta.url))
-const isTypecheckTestRun = process.argv.some(argument => argument.startsWith('scripts/typecheck/'))
-const globalSetup = isTypecheckTestRun
-  ? ['server/workspace-files/vitest-global-setup.ts']
-  : [
-      'server/agent/test/global-setup.ts',
-      'server/workspace-files/vitest-global-setup.ts',
-    ]
-const setupFiles = isTypecheckTestRun
-  ? ['server/workspace-files/vitest-tmpdir-setup.ts']
-  : [
-      'server/workspace-files/vitest-tmpdir-setup.ts',
-      'server/agent/test/setup.ts',
-    ]
+const AGENT_TEST_INCLUDE = [
+  'app/composables/**/*.test.ts',
+  'app/components/novel-ide/**/*.test.ts',
+  'app/components/markdown-studio/**/*.test.ts',
+  'app/components/profile-template-editor/**/*.test.ts',
+  'app/stores/**/*.test.ts',
+  'app/utils/**/*.test.ts',
+  'scripts/build/**/*.test.ts',
+  'scripts/ci/**/*.test.ts',
+  'scripts/cli/**/*.test.ts',
+  'scripts/db/**/*.test.ts',
+  'scripts/install/**/*.test.ts',
+  'scripts/maintenance/**/*.test.ts',
+  'scripts/release/**/*.test.ts',
+  'server/**/*.test.ts',
+  // Profile DSL 用 JSX，相关测试必须是 .tsx 才能被 oxc 解析。
+  'server/**/*.test.tsx',
+  'shared/**/*.test.ts',
+]
+const TEST_EXCLUDE = [...defaultExclude, 'server/agent/lore/**/*.test.ts']
 
 /**
  * 当前测试先聚焦后端 Agent 与 Agent 前端纯逻辑投影。
@@ -28,48 +35,56 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'node',
-    globals: true,
-    // lore 套件是 bun:test 原生（runner = bun，入口 = bun run test:lore）；
-    // vitest 收进来越界解析不了 'bun:test'，只会把 agent 门禁染红。
-    // 若在 server/agent/lore 下新增 vitest 测试，须同步收窄这里的排除面。
-    exclude: [...defaultExclude, 'server/agent/lore/**/*.test.ts'],
-    // 服务器与 CI 的内存并发防线；projection cache 负责降低单进程峰值。
-    maxWorkers: 1,
-    // 默认 10s 不够：beforeEach 里开 Project 会加载 14 个 profile artifact，
-    // 而单个 artifact 目前有 27.3 MiB（宿主实现被打进 bundle，见 Task 125 Phase 3）。
-    // 这是承认当前 artifact 体积的真实成本，不是掩盖挂起——真正的修复是把 artifact 压小。
-    hookTimeout: 60_000,
-    // run 级：先由 Agent fixture 设置 runId，再注册受控临时根清理；teardown 逆序执行。
-    globalSetup,
-    setupFiles,
-    include: [
-      'app/composables/**/*.test.ts',
-      'app/components/novel-ide/**/*.test.ts',
-      'app/components/markdown-studio/**/*.test.ts',
-      'app/components/profile-template-editor/**/*.test.ts',
-      'app/stores/**/*.test.ts',
-      'app/utils/**/*.test.ts',
-      'scripts/build/**/*.test.ts',
-      'scripts/ci/**/*.test.ts',
-      'scripts/cli/**/*.test.ts',
-      'scripts/db/**/*.test.ts',
-      'scripts/install/**/*.test.ts',
-      'scripts/maintenance/**/*.test.ts',
-      'scripts/release/**/*.test.ts',
-      'scripts/typecheck/**/*.test.ts',
-      'server/**/*.test.ts',
-      // Profile DSL 用 JSX，相关测试必须是 .tsx 才能被 oxc 解析。
-      'server/**/*.test.tsx',
-      'shared/**/*.test.ts',
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'agent',
+          environment: 'node',
+          globals: true,
+          // lore 套件是 bun:test 原生（runner = bun，入口 = bun run test:lore）；
+          // vitest 收进来越界解析不了 'bun:test'，只会把 agent 门禁染红。
+          // 若在 server/agent/lore 下新增 vitest 测试，须同步收窄这里的排除面。
+          exclude: TEST_EXCLUDE,
+          // 服务器与 CI 的内存并发防线；projection cache 负责降低单进程峰值。
+          maxWorkers: 1,
+          // 默认 10s 不够：beforeEach 里开 Project 会加载 14 个 profile artifact，
+          // 而单个 artifact 目前有 27.3 MiB（宿主实现被打进 bundle，见 Task 125 Phase 3）。
+          // 这是承认当前 artifact 体积的真实成本，不是掩盖挂起——真正的修复是把 artifact 压小。
+          hookTimeout: 60_000,
+          // Agent 测试需要完整的 run snapshot 与日志隔离合同。
+          globalSetup: [
+            'server/agent/test/global-setup.ts',
+            'server/workspace-files/vitest-global-setup.ts',
+          ],
+          setupFiles: [
+            'server/workspace-files/vitest-tmpdir-setup.ts',
+            'server/agent/test/setup.ts',
+          ],
+          include: AGENT_TEST_INCLUDE,
+          coverage: {
+            provider: 'v8',
+            reporter: ['text', 'html'],
+            include: [
+              'server/agent/**/*.ts',
+              'shared/dto/agent-chat.dto.ts',
+            ],
+          },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'typecheck',
+          environment: 'node',
+          globals: true,
+          exclude: TEST_EXCLUDE,
+          maxWorkers: 1,
+          globalSetup: ['server/workspace-files/vitest-global-setup.ts'],
+          setupFiles: ['server/workspace-files/vitest-tmpdir-setup.ts'],
+          include: ['scripts/typecheck/**/*.test.ts'],
+        },
+      },
     ],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html'],
-      include: [
-        'server/agent/**/*.ts',
-        'shared/dto/agent-chat.dto.ts',
-      ],
-    },
   },
 })
