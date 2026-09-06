@@ -1,13 +1,15 @@
 import type { StoredAgentMessage } from 'nbook/server/agent/messages/stored-types'
 import { createStoredUserMessage } from 'nbook/server/agent/messages/message-utils'
-import { requireReadyModuleHandle } from 'nbook/server/workspace-files/project-session'
-import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-types'
+import { requireReadyModuleHandle } from 'nbook/server/workspace-files/project-session-data-plane'
+import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-contract'
+import {
+  PROJECT_HISTORY_MODULE_TOKEN,
+  type ProjectHistoryHandle,
+} from 'nbook/server/workspace-history/project-history-contract'
 import {
   advanceAgentCursor,
-  PROJECT_HISTORY_MODULE_TOKEN,
   readUnseenForAgent,
-  type ProjectHistoryHandle,
-} from 'nbook/server/workspace-history/project-history'
+} from 'nbook/server/workspace-history/project-history-data-plane'
 import {
   readAgentChangeDiffDetails,
   type AgentChangeDiffDetail,

@@ -2,17 +2,11 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import { consola } from 'consola'
 import {
-  HistoryError,
   WorkspaceHistory,
-  type OperationActor,
-  type UnseenGroup,
 } from 'nbook/server/vendor/nb-history/index'
-import type { SnapshotRawEventBatch } from 'nbook/packages/file-snapshot-cache/src/index'
 import {
-  projectModuleToken,
   registerProjectModule,
   type ProjectModule,
-  type ProjectModuleHandle,
 } from 'nbook/server/workspace-files/project-module'
 import type { AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 import type { ProjectWorkspaceKey } from 'nbook/server/workspace-files/project-identity'
@@ -25,6 +19,34 @@ import { loadGlobalEffectiveConfigSync, loadProjectModuleConfig } from 'nbook/se
 import type { WorkspaceHistorySettingsConfig } from 'nbook/server/config/types'
 import { isHistoryTrackedRelativePath } from 'nbook/server/workspace-history/history-paths'
 import type { WorkspaceFileChangeEventDto } from 'nbook/shared/dto/workspace-file-events.dto'
+import {
+  PROJECT_HISTORY_MODULE_TOKEN,
+  type ProjectHistoryHandle,
+  type ProjectHistoryWarmupDiagnostics,
+  type ProjectHistoryWarmupFailure,
+  type ProjectHistoryWarmupPhase,
+} from 'nbook/server/workspace-history/project-history-contract'
+import {
+  collectTrackedDiskFiles,
+  readFileForHistoryReconcile,
+} from 'nbook/server/workspace-history/project-history-data-plane'
+
+export {
+  PROJECT_HISTORY_MODULE_TOKEN,
+  type ProjectHistoryDiagnostics,
+  type ProjectHistoryHandle,
+  type ProjectHistoryWarmupDiagnostics,
+  type ProjectHistoryWarmupFailure,
+  type ProjectHistoryWarmupPhase,
+} from 'nbook/server/workspace-history/project-history-contract'
+export {
+  advanceAgentCursor,
+  collectTrackedDiskFiles,
+  readUnseenForAgent,
+  recordProjectDelete,
+  recordProjectRename,
+  recordProjectWrite,
+} from 'nbook/server/workspace-history/project-history-data-plane'
 
 /**
  * Project 文件历史门面（Task 95：nb-history 集成）。
@@ -48,8 +70,6 @@ export const LOCAL_USER_ID = 'local'
 const HISTORY_DATABASE_RELATIVE_PATH = '.nbook/history.sqlite'
 /** open 后维护（对账扫描 + auto-accept + prune）的进程内最小间隔。 */
 const MAINTENANCE_MIN_INTERVAL_MS = 24 * 60 * 60_000
-/** 对账面单文件读取上限：超大二进制不主动读盘对账（正文场景不存在，历史链例外记录于注释）。 */
-const RECONCILE_MAX_BYTES = 8 * 1024 * 1024
 /** diagnostics 只保留最近一次错误的有界摘要，避免未知异常携带大对象或长文本。 */
 const WARMUP_ERROR_MESSAGE_MAX_LENGTH = 1_024
 
@@ -67,52 +87,6 @@ let historyEnabledOverrideForTest: boolean | null = null
 export function setHistoryEnabledOverrideForTest(value: boolean | null): void {
   historyEnabledOverrideForTest = value
 }
-
-/** History generation warm-up当前所处的重工作阶段。 */
-export type ProjectHistoryWarmupPhase = 'reconcile' | 'maintenance'
-
-/** 最近一次History warm-up失败的有界诊断。 */
-export type ProjectHistoryWarmupFailure = {
-  readonly phase: ProjectHistoryWarmupPhase
-  readonly failedAt: string
-  readonly message: string
-}
-
-/** 单个History generation的只读warm-up诊断快照。 */
-export type ProjectHistoryWarmupDiagnostics = {
-  readonly state: 'idle' | 'running' | 'ready' | 'failed' | 'cancelled' | 'disabled'
-  /** 仅running/failed/cancelled时表示对应尝试所处阶段，其余状态为null。 */
-  readonly phase: ProjectHistoryWarmupPhase | null
-  readonly attemptCount: number
-  /** 尚未开始任何尝试时为null。 */
-  readonly startedAt: string | null
-  /** 当前generation尚未成功完成warm-up时为null。 */
-  readonly succeededAt: string | null
-  /** 没有失败过时为null；成功重试后仍保留最近一次失败供诊断。 */
-  readonly lastFailure: ProjectHistoryWarmupFailure | null
-}
-
-/** History generation公开的有界资源与后台任务诊断。 */
-export type ProjectHistoryDiagnostics = {
-  readonly warmup: ProjectHistoryWarmupDiagnostics
-}
-
-/** History在单个ProjectSession generation中拥有的精确资源句柄。 */
-export interface ProjectHistoryHandle extends ProjectModuleHandle {
-  /** 当前generation完成最低ready后打开的History；功能关闭时为null。 */
-  readonly history: Promise<WorkspaceHistory | null>
-  /** 等待或启动当前generation的共享warm-up；失败后下一批消费者会共享一次新尝试。 */
-  waitForWarmup(): Promise<void>
-  /** 返回当前generation的有界只读诊断快照。 */
-  diagnostics(): ProjectHistoryDiagnostics
-  /** 消费File Index在rebuild前投递的原始事件批。 */
-  reconcileRawEvents(batch: SnapshotRawEventBatch<WorkspaceFileChangeEventDto>): Promise<void>
-  /** 当前generation统一判断一条Project-relative路径是否由History消费。 */
-  readonly pathPolicy: (relativePath: string) => ProjectWorkspacePathPolicyResult
-}
-
-/** ReadyProjectSession数据面取得History generation handle使用的稳定token。 */
-export const PROJECT_HISTORY_MODULE_TOKEN = projectModuleToken<ProjectHistoryHandle>('history', 'required')
 
 /** required History Module：最低ready只包含开库与必要路径清理。 */
 export const projectHistoryModule: ProjectModule<ProjectHistoryHandle> = {
@@ -408,159 +382,12 @@ async function reconcileEventBatch(
         await history.reconcile(event.path, null)
       }
       else {
-        await history.reconcile(event.path, await readFileForReconcile(root, event.path))
+        await history.reconcile(event.path, await readFileForHistoryReconcile(root, event.path))
       }
     }
     catch (error) {
       consola.warn({ projectRoot, path: event.path, error }, 'workspace-history 单路径对账失败')
     }
-  }
-}
-
-/** 对账用读盘：文件不存在 / 读失败 / 超过大小上限按「不存在 / 跳过」处理。 */
-async function readFileForReconcile(
-  root: string,
-  relativePath: string,
-  signal?: AbortSignal,
-): Promise<Uint8Array | null> {
-  signal?.throwIfAborted()
-  const absolutePath = path.join(root, ...relativePath.split('/'))
-  const stat = await fs.stat(absolutePath).catch(() => null)
-  signal?.throwIfAborted()
-  if (!stat?.isFile() || stat.size > RECONCILE_MAX_BYTES) {
-    return null
-  }
-  try {
-    const content = await fs.readFile(absolutePath, signal ? { signal } : undefined)
-    signal?.throwIfAborted()
-    return content
-  }
-  catch {
-    if (signal?.aborted) {
-      throw signal.reason
-    }
-    return null
-  }
-}
-
-// ── 写入记账面（S4/S5 收口层调用；全部 fail-open）─────────────────────────
-
-/** 记一次写入（create/edit 由模块按账面自动判定）。before 为 null 表示此前文件不存在。 */
-export async function recordProjectWrite(handle: ProjectHistoryHandle, input: {
-  relativePath: string
-  actor: OperationActor
-  before: Uint8Array | null
-  after: Uint8Array
-}): Promise<void> {
-  const relativePath = normalizeRecordPath(input.relativePath)
-  await recordSafely(handle, relativePath, async (history) => {
-    await history.registerWrite(input.actor, relativePath, input.before, input.after)
-  })
-}
-
-/** 记一次删除。before 是删除前内容（删除找回的快照来源）。 */
-export async function recordProjectDelete(handle: ProjectHistoryHandle, input: {
-  relativePath: string
-  actor: OperationActor
-  before: Uint8Array
-}): Promise<void> {
-  const relativePath = normalizeRecordPath(input.relativePath)
-  await recordSafely(handle, relativePath, async (history) => {
-    await history.registerDelete(input.actor, relativePath, input.before)
-  })
-}
-
-/** 记一次改名（内容不变）。from/to 任一不在记账范围则整条跳过（罕见的跨界移动，注释于谓词）。 */
-export async function recordProjectRename(handle: ProjectHistoryHandle, input: {
-  fromPath: string
-  toPath: string
-  actor: OperationActor
-}): Promise<void> {
-  const fromPath = normalizeRecordPath(input.fromPath)
-  const toPath = normalizeRecordPath(input.toPath)
-  if (!historyConsumesPath(handle, fromPath)) {
-    return
-  }
-  await recordSafely(handle, toPath, async (history) => {
-    await history.registerRename(input.actor, fromPath, toPath)
-  })
-}
-
-/** 记账公共外壳：路径归一化 + 谓词过滤 + 实例获取 + fail-open（记账失败告警降级，绝不向调用方抛出，N3）。 */
-async function recordSafely(
-  handle: ProjectHistoryHandle,
-  relativePath: string,
-  fn: (history: WorkspaceHistory) => Promise<void>,
-): Promise<void> {
-  if (!historyConsumesPath(handle, relativePath)) {
-    return
-  }
-  try {
-    await handle.waitForWarmup()
-    const history = await handle.history
-    if (!history) {
-      return
-    }
-    await fn(history)
-  }
-  catch (error) {
-    consola.warn({ path: relativePath, error }, 'workspace-history 记账失败（fail-open 降级，历史由对账自愈）')
-  }
-}
-
-/** 归一化记账相对路径：只转换分隔符并去尾斜杠，绝对/越界输入交由Project Path Policy拒绝。 */
-function normalizeRecordPath(value: string): string {
-  return value.replace(/\\/g, '/').replace(/\/+$/u, '')
-}
-
-// ── harness 消费面（S6）────────────────────────────────────────────────
-
-/**
- * 会话未见变更（fail-open：任何失败返回空数组）。
- * 游标懒初始化（N8）：会话首次查询时以「当下」为基线建游标并返回空——新会话不被历史淹没，
- * 也避免在 createAgent（无 ensure-open 保证）挂 initCursor。
- */
-export async function readUnseenForAgent(
-  handle: ProjectHistoryHandle,
-  sessionId: number,
-): Promise<UnseenGroup[]> {
-  try {
-    await handle.waitForWarmup()
-    const history = await handle.history
-    if (!history) {
-      return []
-    }
-    try {
-      return await history.unseenChanges(String(sessionId))
-    }
-    catch (error) {
-      // 与 vendored 模块的错误文案耦合（VENDOR.json 锁定版本）：游标未初始化 = 会话首次接触该项目。
-      if (error instanceof HistoryError && error.message.includes('游标未初始化')) {
-        await history.initCursor(String(sessionId))
-        return []
-      }
-      throw error
-    }
-  }
-  catch (error) {
-    consola.warn({ sessionId, error }, 'workspace-history 未见变更查询失败（视为无变更）')
-    return []
-  }
-}
-
-/** 推进会话游标（提醒成功送达后调用；fail-open）。 */
-export async function advanceAgentCursor(
-  handle: ProjectHistoryHandle,
-  sessionId: number,
-  entryId: number,
-): Promise<void> {
-  try {
-    await handle.waitForWarmup()
-    const history = await handle.history
-    await history?.advanceCursor(String(sessionId), entryId)
-  }
-  catch (error) {
-    consola.warn({ sessionId, error }, 'workspace-history 游标推进失败（下轮提醒将重复出现）')
   }
 }
 
@@ -589,17 +416,6 @@ async function runHistoryWarmup(
   )
 }
 
-/** 路径策略错误按fail-open记账入口的既有语义降级为不消费。 */
-function historyConsumesPath(handle: ProjectHistoryHandle, relativePath: string): boolean {
-  try {
-    return handle.pathPolicy(relativePath).disposition === 'consume'
-      && isHistoryTrackedRelativePath(relativePath)
-  }
-  catch {
-    return false
-  }
-}
-
 /**
  * D15 全量对账扫描：closed 期间的外部变更补 external 账。
  * 拆「记账 / 呈现」两半——此处只补记账保历史链完整；呈现侧天然安全：external 条目不触发
@@ -618,7 +434,7 @@ async function reconcileFullScan(
   for (const relativePath of diskFiles) {
     signal?.throwIfAborted()
     try {
-      await history.reconcile(relativePath, await readFileForReconcile(projectWorkspaceRoot, relativePath, signal))
+      await history.reconcile(relativePath, await readFileForHistoryReconcile(projectWorkspaceRoot, relativePath, signal))
       signal?.throwIfAborted()
     }
     catch (error) {
@@ -646,34 +462,6 @@ async function reconcileFullScan(
       consola.warn({ projectRoot: key, path: live.path, error }, 'workspace-history open 删除对账失败')
     }
   }
-}
-
-/** 递归收集受管文件相对路径（正斜杠）；排除段目录整树跳过。写面目录记账与 open 对账扫描共用。 */
-export async function collectTrackedDiskFiles(
-  root: string,
-  prefix: string,
-  signal?: AbortSignal,
-  consumesPath: (relativePath: string) => boolean = isHistoryTrackedRelativePath,
-): Promise<string[]> {
-  signal?.throwIfAborted()
-  const absolute = prefix ? path.join(root, ...prefix.split('/')) : root
-  const entries = await fs.readdir(absolute, { withFileTypes: true }).catch(() => [])
-  signal?.throwIfAborted()
-  const files: string[] = []
-  for (const entry of entries) {
-    signal?.throwIfAborted()
-    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name
-    if (!consumesPath(relativePath)) {
-      continue
-    }
-    if (entry.isDirectory()) {
-      files.push(...await collectTrackedDiskFiles(root, relativePath, signal, consumesPath))
-    }
-    else if (entry.isFile()) {
-      files.push(relativePath)
-    }
-  }
-  return files
 }
 
 /** 24h 一轮维护：auto-accept（D8）→ prune。进程内水位，重启后首次 open 会再跑一轮（幂等无害）。 */
