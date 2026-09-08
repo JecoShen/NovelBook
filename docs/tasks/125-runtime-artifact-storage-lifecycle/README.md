@@ -286,7 +286,38 @@ Source Profile CLI 资源测量使用新的隔离 Cache Root `/www/wwwroot/book.
 
 GC 当前实现已覆盖 owner 判定、10 分钟最小安全年龄、`256 MiB` 可证明 orphan 预算、quarantine 双次 `lstat` 稳定性检查和未知/不安全内容保守保留；本轮没有把 GC report、warn 日志或不可回收超预算 fail-closed 扩展为运行时代码，因此稳定 Reference 只记录当前已实现合同。
 
-### 实际结果与原计划差异
+### Round 06：Phase 0 声明消费可行性闸门实测通过（2026-09-09）
+
+本轮接替 Round 05，先复核 Round 05 记录的资源数字，再实测 Phase 0 可行性闸门。**结论：闸门通过，可以继续创建其余项目。**
+
+**校正 Round 05 的三个数字。** Round 05 记录的 `MAX_SINGLE_RSS_KIB` 是止损线掐断时的截断值，不是真实峰值。放宽单进程上限后重测（`MemAvailable` 下限维持保护，全程未触及，最低 `1266096 KiB`）：
+
+| 对象 | Round 05 记录 | 本轮实测（跑完） | 退出码 |
+| --- | ---: | ---: | ---: |
+| `profile-turn-context.ts` 单文件 | `1053668`（截断） | `1205172` | `0` |
+| 全仓 `nuxt typecheck` | `1093576`（截断） | 触顶 `1966092`、再触顶 `2621500`，均未跑完 | `130` |
+
+四次测量累计 `0` 条 TS 错误；全仓 typecheck 在 CI（16 GiB runner）为绿。把 V8 堆压到 `1536 MiB` 后 Mark-Compact 只能从 `1510.7 MiB` 降到 `1471.4 MiB` 并 `FATAL ERROR: Ineffective mark-compacts near heap limit`，证明其内存需求是真实活跃对象，不是 V8 惰性增长。**全仓单体 typecheck 在本机（8 GiB，含生产 PM2 常驻约 `776 MiB`）无法带安全余量完成。**
+
+**样板超限的根因与修复。** 对 `profile-turn-context.ts` 的 11 个依赖逐个单文件测量：`message-utils` 为 `1254868 KiB`，其余（`project-history-data-plane` `911888`、`agent-change-diff` `846472`、`project-session-data-plane` `845884`、`project-lifecycle` `834288`）均在 `834`–`912 MiB` 区间。`message-utils` 因 `import type { NeuroToolResult } from 'nbook/server/agent/tools/types'` 把完整工具结果合同带进每个消费者的 Program。`profile-turn-context.ts` 只用到 `createStoredUserMessage`，改为从 Round 05 已建的 `message-constructors.ts` 导入后：`1205172` → `853740 KiB`、`31954` → `17613 ms`，落到 `1048576 KiB` 止损线内。`message-utils` 继续 re-export 构造器，调用方不变。
+
+**Phase 0 闸门四项验收实测。** 精确闭包由 `tsc --listFiles` 导出：`104` 个仓库文件（Program 总计 `1667` 个，其余为 `node_modules` 与 lib）。以其中 `103` 个（除样板自身）作为 `contracts` composite 项目的 `files`：
+
+| 层 | 退出码 | 时长 | MAX_SINGLE_RSS_KIB | MAX_GROUP_RSS_KIB | MIN_MEM_AVAILABLE_KIB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `contracts`（`emitDeclarationOnly`，产 `102` 个 `.d.ts`） | `0` | `24033 ms` | `903396` | `912044` | `2975672` |
+| `profile-turn-context` 样板消费者 | `0` | `4707 ms` | `406928` | `415588` | `3543016` |
+
+1. 下游解析到声明而非上游源码：消费者 `--listFiles` 中唯一的仓库 `.ts` 是 `server/agent/profiles/profile-turn-context.ts` 本身，其余全部落在声明输出目录。
+2. 完成真实 typecheck：两层退出码均为 `0`。
+3. 资源：两层单进程峰值均低于 `1048576 KiB`。
+4. 无需 `prepend`、无需 `paths` 指向源码、未把上下游文件列入同一项目，因此不构成 spec §4 的可行性失败。
+
+声明消费相对源码模式的实测收益：样板消费者 `853740` → `406928 KiB`（`-52%`）、`17613` → `4707 ms`（`-73%`）。据此修正 Round 05 遗留的推断——`834 MiB` 量级只是**源码模式**下加载整个闭包 typings 的开销，不是分层无法突破的地板。
+
+**本轮已知边界。** 上述为一次性脚手架实测，尚未落为仓库内的 `tsconfig.typecheck.base.json`、`typecheck/contracts/`、`typecheck/fixtures/`、`project-graph.test.ts` 与 runner CLI；Task 4-7 未开始；桌面端未跑；全量 Vitest 未跑；浏览器验收未跑；部署烟测未跑。实测中发现两处后续实现必须遵守的约束：composite 项目要求穷举 `files`（否则 `TS6307`），且 tsconfig 内相对路径按配置文件所在目录解析，runner 生成的 per-run 配置必须写绝对路径。
+
+
 
 - 原问题最初聚焦 `.agent` 缓存；深入后确认最大残留实际位于系统 `%TEMP%`，由测试 fixture 放大 `.compiled` 导致，因此任务范围从“缓存清理”扩展为三个 owner 的生命周期设计。
 - 原本可能只需修 cleanup；最小实验证明 Profile artifact 与 runtime import cache 自身也无界，因此单修测试会很快复发。
@@ -304,3 +335,5 @@ GC 当前实现已覆盖 owner 判定、10 分钟最小安全年龄、`256 MiB` 
 - [x] Phase 3 门禁：编译器 metafile 依赖白名单 + 禁止依赖族 + 4 MiB 字节上限，违规 `compile_failed`，合同见 `reference/agent/profile-compiled-artifacts.md` 的 Dependency Gate 小节。
 - [x] Task 5：单 Worker 防线、Source 投影缓存冷/热资源验收和聚焦回归；冷/热均低于 `786432 KiB`。新增投影链的拆分 typecheck 已通过并修复 `6` 个严格类型错误；全仓 typecheck 和全量测试仍分别因 `1093576 KiB` / `1072504 KiB` 止损，均未完成。
 - [ ] Phase 4：跨环境验收（Source / Product Bun / Windows Portable 三形态 Profile 导入）与 5 轮空间收敛曲线。原 `bun:ffi` 阻塞已在 Round 02/03 解除（`isPlatformBuiltinModule` external + 依赖图切边），`catalog.test.ts` 已回到 44/44；本轮 typecheck 和受控全量测试仍未完成。
+- [x] Phase 0 可行性闸门（Round 06）：声明消费实测通过 — `contracts` 层 `903396 KiB` 产 `102` 个 `.d.ts`，样板消费者 `406928 KiB` 且只解析声明不解析上游源码，两层退出码 `0`，均低于 `1048576 KiB`。据此解除 Task 3 STOP GATE，允许创建其余项目。
+- [ ] Task 3 落地：把 Round 06 的脚手架实测落为 `tsconfig.typecheck.base.json`、`typecheck/contracts/tsconfig.json`、`typecheck/fixtures/profile-turn-context/tsconfig.json`、`scripts/typecheck/project-graph.test.ts`、`non-desktop-layers.ts` 层数据与 runner CLI（`--through`）。
