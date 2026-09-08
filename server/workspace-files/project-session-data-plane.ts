@@ -2,9 +2,22 @@ import path from 'node:path'
 import type { AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 import type { ProjectWorkspaceRef } from 'nbook/server/workspace-files/project-identity'
 import type {
+  ProjectCandidateSnapshot,
+  ProjectCoverUpdateInput,
+  ProjectCoverUpdateResult,
+  ProjectCreateInput,
+  ProjectCreateResult,
+  ProjectDeleteResult,
+  ProjectEnsureResult,
+  ProjectListSnapshot,
+  ProjectMetadataUpdateInput,
+  ProjectMetadataUpdateResult,
+} from 'nbook/server/workspace-files/project-lifecycle'
+import type {
   ProjectModuleHandle,
   ProjectModuleToken,
 } from 'nbook/server/workspace-files/project-module'
+import type { ProjectOpener } from 'nbook/server/workspace-files/project-session-contract'
 import type {
   ProjectOperationStart,
   ProjectSessionCloseReason,
@@ -45,7 +58,18 @@ type OpenProjectSnapshot = ProjectOccupancySnapshot & {
   readonly lastActivityAt: string
 }
 
-type ProjectSessionDataPlaneService = {
+export type ProjectSessionDataPlaneService = {
+  openProject(ref: ProjectWorkspaceRef, opener: ProjectOpener): Promise<ReadyProjectSessionRef>
+  openProjectControl(ref: ProjectWorkspaceRef, opener: ProjectOpener): Promise<{
+    readonly ready: ReadyProjectSessionRef
+    readonly publication: ProjectEnsureResult
+  }>
+  listProjects(): Promise<ProjectListSnapshot>
+  listCandidates(): Promise<ProjectCandidateSnapshot>
+  createProject(input: ProjectCreateInput): Promise<ProjectCreateResult>
+  updateProjectMetadata(input: ProjectMetadataUpdateInput): Promise<ProjectMetadataUpdateResult>
+  updateProjectCover(input: ProjectCoverUpdateInput): Promise<ProjectCoverUpdateResult>
+  deleteProject(ref: ProjectWorkspaceRef): Promise<ProjectDeleteResult>
   requireReadyProject(ref: ProjectWorkspaceRef): ReadyProjectSessionRef
   requireReadyModuleHandle<THandle extends ProjectModuleHandle>(
     ready: ReadyProjectSessionRef,
@@ -74,8 +98,9 @@ type ProjectSessionDataPlaneService = {
   projectOccupancy(ref: ProjectWorkspaceRef): ProjectOccupancySnapshot | null
   acquireUserPresence(ref: ProjectWorkspaceRef): () => void
   registerAgentPresenceProbe(probe: ((session: ReadyProjectSessionRef) => boolean) | null): void
+  markProjectActivity(ref: ProjectWorkspaceRef): void
   closeProject(ref: ProjectWorkspaceRef, reason: ProjectSessionCloseReason): Promise<void>
-  sweepProjectSessions(now?: number): Promise<ReadyProjectSessionRef[]>
+  sweepProjectSessions(now?: number): Promise<ProjectWorkspaceRef[]>
   closeAll(): Promise<void>
 }
 
@@ -92,15 +117,15 @@ const globalState = globalForProjectSession.__nbookProjectSessionV2 ??= {
 }
 
 /** 返回已绑定的HMR稳定Service；production composition root负责首次创建真实Service。 */
-export function projectSessionServiceFor<TService extends ProjectSessionDataPlaneService>(
+export function projectSessionServiceFor(
   workspaceRoot: AbsoluteFsPath,
-  createService?: () => TService,
-): TService {
+  createService?: () => ProjectSessionDataPlaneService,
+): ProjectSessionDataPlaneService {
   if (globalState.service) {
     if (workspaceRootIdentity(globalState.workspaceRoot!) !== workspaceRootIdentity(workspaceRoot)) {
       throw new Error('ProjectSession Service已经绑定到另一个Workspace Root')
     }
-    return globalState.service as TService
+    return globalState.service
   }
   if (!createService) {
     throw projectNotOpenError(String(workspaceRoot))

@@ -1,18 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-contract'
+import type { UnseenGroup } from 'nbook/server/vendor/nb-history/index'
 
 const mocks = vi.hoisted(() => ({
   requireReadyModuleHandle: vi.fn(),
-  readUnseenForAgent: vi.fn(async () => [] as Array<{
-    path: string
-    baseHash: string | null
-    endHash: string | null
-    maxEntryId: number
-    entries: Array<{
-      actor: { kind: 'user', userId: string }
-      operation: { type: 'file.create' }
-    }>
-  }>),
+  readUnseenForAgent: vi.fn(async () => [] as UnseenGroup[]),
   advanceAgentCursor: vi.fn(async () => undefined),
 }))
 
@@ -74,10 +66,12 @@ describe('Profile turn context generation', () => {
       endHash: 'hash-after',
       maxEntryId: 42,
       entries: [{
+        id: 42,
+        occurredAt: '2026-09-06T00:00:00.000Z',
         actor: { kind: 'user', userId: 'local' },
-        operation: { type: 'file.create' },
+        operation: { type: 'file.create', path: 'manuscript/ch1.md', afterHash: 'hash-after' },
       }],
-    }]
+    }] satisfies UnseenGroup[]
     mocks.requireReadyModuleHandle.mockReturnValue(history)
     mocks.readUnseenForAgent.mockResolvedValue(unseen)
     const {
