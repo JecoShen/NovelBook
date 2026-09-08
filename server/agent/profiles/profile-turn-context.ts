@@ -1,5 +1,5 @@
 import type { StoredAgentMessage } from 'nbook/server/agent/messages/stored-types'
-import { createStoredUserMessage } from 'nbook/server/agent/messages/message-utils'
+import { createStoredUserMessage } from 'nbook/server/agent/messages/message-constructors'
 import { requireReadyModuleHandle } from 'nbook/server/workspace-files/project-session-data-plane'
 import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-contract'
 import {
