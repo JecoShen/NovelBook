@@ -77,4 +77,21 @@ export const NON_DESKTOP_TYPECHECK_LAYERS: readonly TypecheckLayerDefinition[] =
     project: 'typecheck/agent-composition/tsconfig.json',
     dependsOn: Object.freeze(['contracts', 'workspace-history', 'agent-support', 'agent']),
   }),
+  Object.freeze({
+    name: 'runtime',
+    project: 'typecheck/runtime/tsconfig.json',
+    dependsOn: Object.freeze(['contracts', 'workspace-history', 'agent-support', 'agent', 'agent-composition']),
+  }),
+  Object.freeze({
+    name: 'scripts',
+    project: 'typecheck/scripts/tsconfig.json',
+    dependsOn: Object.freeze([
+      'contracts',
+      'workspace-history',
+      'agent-support',
+      'agent',
+      'agent-composition',
+      'runtime',
+    ]),
+  }),
 ])

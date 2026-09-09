@@ -5,6 +5,13 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 
+import { materializeTypecheckLayers } from 'nbook/scripts/typecheck/layer-project-configs'
+import {
+  NON_DESKTOP_TYPECHECK_LAYERS,
+  type TypecheckProjectLayer,
+} from 'nbook/scripts/typecheck/non-desktop-layers'
+import { runNonDesktopTypecheck, type TypecheckRunReport } from 'nbook/scripts/typecheck/non-desktop-runner'
+
 /**
  * Task 3（Phase 0 声明消费可行性闸门）的图所有权与解析证据。
  *
@@ -47,6 +54,13 @@ const UNLISTED_FILE_DIAGNOSTIC_CODE = 6307
 const CONTRACTS_BUILD_TIMEOUT_MS = 300_000
 /** 纯配置解析用例的超时；不建 Program，只防负载抖动。 */
 const CONFIG_PARSE_TIMEOUT_MS = 60_000
+/**
+ * fixture 层序用例的超时。
+ *
+ * 两个层各跑一次 `bun x tsc`，文件面只有一个 fixture 源码，但冷启动仍有秒级开销，
+ * 且 runner 每 250 ms 采一次 `/proc`。留足余量，避免机器负载波动造成假红。
+ */
+const FIXTURE_SOLUTION_TIMEOUT_MS = 300_000
 
 /** contracts 闭包里不允许出现的组合根（计划 Task 3 Step 1）。 */
 const FORBIDDEN_CONTRACT_PATHS: readonly string[] = [
@@ -82,7 +96,36 @@ const EXPECTED_PROJECT_DEPENDENCIES: Readonly<Record<string, readonly string[]>>
   'agent-support': ['contracts', 'workspace-history'],
   'agent': ['agent-support', 'contracts', 'workspace-history'],
   'agent-composition': ['agent', 'agent-support', 'contracts', 'workspace-history'],
+  'runtime': ['agent', 'agent-composition', 'agent-support', 'contracts', 'workspace-history'],
+  'scripts': ['agent', 'agent-composition', 'agent-support', 'contracts', 'runtime', 'workspace-history'],
 }
+
+/**
+ * 注入型 fixture：fixture 名 → 带类型错误的那一层。
+ *
+ * 只列"哪层带错"，层序另由 `FIXTURE_LAYER_NAMES` 给出——两者分开是因为断言的是
+ * "错误归属到哪一层"与"其后的层不启动"两件事，前者是这张表，后者是层序。
+ */
+const TYPECHECK_FIXTURE_FAULTY_LAYER: Readonly<Record<string, string>> = {
+  'runtime-type-error': 'runtime',
+}
+
+/** fixture 跑的层序：计划 Task 5 新增的两层，先后必须与正式层表一致。 */
+const FIXTURE_LAYER_NAMES: readonly string[] = ['runtime', 'scripts']
+
+/** fixture 注入的类型错误文本，与 tsc TS2322 的措辞一致。 */
+const FIXTURE_TYPE_ERROR_TEXT = 'Type \'string\' is not assignable to type \'number\''
+
+/**
+ * 分层之前就存在的单进程 typecheck 入口。
+ *
+ * 它们仍被别处消费（`runtime:typecheck` 脚本、`.github/workflows/release-container.yml`），
+ * 本 Task 不改它们，但它们拥有的每个文件都必须仍被某一层覆盖。
+ */
+const LEGACY_TYPECHECK_ENTRIES: readonly string[] = [
+  'server/runtime/tsconfig.json',
+  'scripts/tsconfig.json',
+]
 
 type RawTsConfig = {
   readonly extends?: string | readonly string[]
@@ -300,7 +343,125 @@ describe('layered typecheck project ownership', () => {
     expect(graph).not.toContainSourceOwnedBy('workspace-history')
     expect(graph).not.toContainSourceOwnedBy('contracts')
   }, CONFIG_PARSE_TIMEOUT_MS)
+
+  // 计划 Task 5 Step 3：「Preserve all production files currently owned by
+  // `server/runtime/tsconfig.json` and `scripts/tsconfig.json`」。
+  //
+  // 这两份配置在本 Task 里刻意**保持原样**（理由见计划 Task 5 Step 3 的落地附记），于是它们
+  // 与分层配置各有一份文件清单，可能无声漂移：往 `server/runtime/` 加一个文件，旧配置的
+  // `include` 会自动收，分层清单不会 —— 门禁便漏掉它。本用例把"漂移"变成硬失败。
+  it.each(LEGACY_TYPECHECK_ENTRIES)('keeps every file of %s owned by some layer', async (entry) => {
+    const projects = await readSolutionProjects()
+    const ownership = await Promise.all(projects.map(project => collectOwnership(project)))
+    const owned = new Set(ownership.flatMap(layer => layer.ownedSources))
+
+    // 所有权表为空会让下面的差集空转通过。
+    expect(owned.size).toBeGreaterThan(0)
+
+    const legacyOwned = parseConfigFile(resolveRepoPath(entry)).fileNames
+      .map(fileName => toRepoRelative(resolve(fileName)))
+      .filter(file => isNonDeclarationSource(file))
+      .sort()
+    expect(legacyOwned).not.toHaveLength(0)
+
+    expect(legacyOwned.filter(file => !owned.has(file))).toEqual([])
+  }, CONFIG_PARSE_TIMEOUT_MS)
 })
+
+// 计划 Task 5 Step 1：真实类型错误的归属层与停止顺序。
+//
+// 与 `non-desktop-runner.test.ts` 里同名的停止行为用例不重复：那边用 fixture 命令
+// 伪造退出码，证的是 runner 的调度；这里由**真实 tsc** 产出 TS2322，证的是
+// 「真错 → 报到出错层 → 后续层不启动」这条链在真实编译器下也成立。
+describe('layered typecheck failure attribution', () => {
+  it('reports the owning layer and does not start later layers', async () => {
+    const report = await runFixtureSolution('runtime-type-error')
+
+    expect(report.layers.at(-1)?.name).toBe('runtime')
+    expect(report.output).toContain(FIXTURE_TYPE_ERROR_TEXT)
+    expect(report.layers.some(layer => layer.name === 'scripts')).toBe(false)
+
+    // 退出码为 0 说明 fixture 自己没有真的报错，上面三条会在一次"全绿空跑"上通过。
+    expect(report.exitCode).not.toBe(0)
+  }, FIXTURE_SOLUTION_TIMEOUT_MS)
+})
+
+/**
+ * 用真实 tsc 跑一遍"某层带类型错误"的层序，返回 runner 的 run report。
+ *
+ * 层名与相对先后取自正式层表 `NON_DESKTOP_TYPECHECK_LAYERS`：runtime/scripts 未注册
+ * 或顺序反了，组装期就抛，用例即红——不会退化成一个恰好通过的空运行。
+ *
+ * 层的 project 是写在 runRoot 里的极小配置，只含一个 fixture 源码文件。真实层的文件面
+ * 由 `bun scripts/typecheck/non-desktop-runner.ts --through scripts`（计划 Task 5 Step 4）
+ * 负责；本函数刻意不 extends 正式层配置，否则每跑一次用例就要把上游整条声明链
+ * 重建一遍（实测 100 s 以上），而它要证的那条链与层的文件面无关。
+ *
+ * fixture 的源码与配置只写在 runRoot 之下，仓库树不留任何文件；runRoot 由
+ * `runNonDesktopTypecheck` 在自己的 finally 里删除，这里的 finally 覆盖它没跑到的路径
+ * （层组装抛错、断言抛错）。
+ */
+async function runFixtureSolution(name: string): Promise<TypecheckRunReport> {
+  const faultyLayer = TYPECHECK_FIXTURE_FAULTY_LAYER[name]
+  if (faultyLayer === undefined) {
+    throw new Error(`未知的 typecheck fixture：${name}。已定义：${Object.keys(TYPECHECK_FIXTURE_FAULTY_LAYER).join('、')}`)
+  }
+  if (!FIXTURE_LAYER_NAMES.includes(faultyLayer)) {
+    throw new Error(`fixture ${name} 指定的出错层 ${faultyLayer} 不在层序 ${FIXTURE_LAYER_NAMES.join('、')} 里。`)
+  }
+  assertRegisteredInOrder(FIXTURE_LAYER_NAMES)
+
+  const runRoot = await createRunRoot()
+  try {
+    const layers: TypecheckProjectLayer[] = []
+    for (const [index, layerName] of FIXTURE_LAYER_NAMES.entries()) {
+      const sourcePath = join(runRoot, `${layerName}-fixture.ts`)
+      await writeFile(sourcePath, fixtureSource(layerName === faultyLayer), 'utf8')
+      const project = await writePerRunConfig(runRoot, `${layerName}-fixture.tsconfig.json`, {
+        extends: resolveRepoPath(BASE_CONFIG),
+        // rootDir 收到 runRoot：base 里的 `.` 按 base 所在目录（仓库根）解析，
+        // 那会让声明产物落到 outDir 下的深层嵌套路径里。
+        compilerOptions: { rootDir: runRoot },
+        files: [sourcePath],
+      })
+      const upstream = index === 0 ? [] : [FIXTURE_LAYER_NAMES[index - 1]!]
+      layers.push({ name: layerName, project: project.path, dependsOn: upstream })
+    }
+
+    const runnable = await materializeTypecheckLayers(layers, { runRoot, repoRoot })
+    return await runNonDesktopTypecheck({ runRoot, layers: runnable })
+  }
+  finally {
+    await rm(runRoot, { recursive: true, force: true })
+  }
+}
+
+function fixtureSource(faulty: boolean): string {
+  return faulty
+    ? 'export const fixtureAnswer: number = \'not a number\'\n'
+    : 'export const fixtureAnswer: number = 42\n'
+}
+
+/** 断言这些层已注册到正式层表，且相对先后与表一致。 */
+function assertRegisteredInOrder(names: readonly string[]): void {
+  const registered = NON_DESKTOP_TYPECHECK_LAYERS.map(layer => layer.name)
+  const missing = names.filter(name => !registered.includes(name))
+  if (missing.length > 0) {
+    throw new Error(
+      `层 ${missing.join('、')} 尚未注册到 NON_DESKTOP_TYPECHECK_LAYERS，`
+      + `当前已注册：${registered.join('、')}`
+      + '（计划：docs/superpowers/plans/2026-09-05-layered-typecheck-projects.md Task 5 Step 3）',
+    )
+  }
+  const positions = names.map(name => registered.indexOf(name))
+  const ascending = positions.every((position, index) => index === 0 || position > positions[index - 1]!)
+  if (!ascending) {
+    throw new Error(
+      `层 ${names.join('、')} 在正式层表里的下标是 ${positions.join('、')}，`
+      + '与 fixture 期望的先后不一致：「后续层不启动」在乱序下无从证明。',
+    )
+  }
+}
 
 /**
  * 真实构建 contracts 声明，再用样板消费者建 Program 并追踪它解析到了什么。

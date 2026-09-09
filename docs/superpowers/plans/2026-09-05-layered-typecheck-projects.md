@@ -441,7 +441,7 @@ Before committing, replace the broad final `git add` arguments with the exact ch
 - Produces: formal Runtime and Scripts typecheck layers; existing `runtime:typecheck` points to the layered Runtime target.
 - Test helper `runFixtureSolution(name): Promise<TypecheckRunReport>` creates its fixture only below the test run root and removes it in `finally`.
 
-- [ ] **Step 1: Add a real type-error fixture and stop-order assertion**
+- [x] **Step 1: Add a real type-error fixture and stop-order assertion**
 
 ```ts
 it('reports the owning layer and does not start later layers', async () => {
@@ -452,25 +452,104 @@ it('reports the owning layer and does not start later layers', async () => {
 })
 ```
 
-- [ ] **Step 2: Run the fixture and verify RED**
+> 落地为 `runFixtureSolution(name)` + `TYPECHECK_FIXTURE_FAULTY_LAYER` / `FIXTURE_LAYER_NAMES` /
+> `assertRegisteredInOrder`。层名与相对先后取自正式层表，fixture 的源码与 tsconfig 只写在
+> runRoot 之下。另加一条 `expect(report.exitCode).not.toBe(0)` 守卫：否则 fixture 若自己没报错，
+> 上面三条会在一次"全绿空跑"上通过。
+>
+> **刻意不 extends 正式层配置**：那会让每跑一次用例就重建整条上游声明链（实测 100 s 以上），
+> 而本用例要证的「真错 → 报到出错层 → 后续层不启动」与层的文件面无关；文件面由 Step 4 的
+> 真实 runner 运行负责。与 `non-desktop-runner.test.ts` 里的同类用例也不重复：那边用 fixture
+> 命令伪造退出码，证的是调度；这里由**真实 tsc** 产出 TS2322。
+
+- [x] **Step 2: Run the fixture and verify RED**
 
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run scripts/typecheck/project-graph.test.ts -t "owning layer" --maxWorkers=1`
 
 Expected: FAIL because Runtime/Scripts layers are not registered.
 
-- [ ] **Step 3: Convert formal Runtime and Scripts configs to declaration consumers**
+> 实测 RED，且红的原因正是所要的那一条：
+> `层 runtime、scripts 尚未注册到 NON_DESKTOP_TYPECHECK_LAYERS，当前已注册：contracts、phase0-sample、workspace-history、agent-support、agent、agent-composition`
+
+- [x] **Step 3: Convert formal Runtime and Scripts configs to declaration consumers**
 
 Do not replace them with diagnostic minimal includes. Preserve all production files currently owned by `server/runtime/tsconfig.json` and `scripts/tsconfig.json`, exclude their tests only when an existing formal config already excludes tests, and map upstream aliases exclusively to declaration roots.
 
-- [ ] **Step 4: Run formal layers and their existing contract tests**
+> 落地为 `typecheck/runtime/tsconfig.json`（30 文件）与 `typecheck/scripts/tsconfig.json`（34 文件），
+> 依赖方向 `runtime → scripts` 与 spec §2 一致。三处需要记录的事实：
+>
+> 1. **`composite: true` 要求 files 穷举**。首轮 runtime 层以 TS6307 失败：Program 里出现了
+>    `server/database/{config,prisma,app-sqlite-migrations}.ts`、`server/generated/prisma/**`（9 个）
+>    与 `shared/product-runtime-receipt.ts`，它们不属于任何上游层，必须由 runtime 层自己列出。
+>    先前"未被拥有的文件可以搭车"的判断是错的，那只在非 composite 项目里成立。
+> 2. **两层都不排除测试**：`server/runtime/tsconfig.json` 今天的 `include` 就收 10 个 `.test.ts`，
+>    `scripts/tsconfig.json` 显式列了 `release/manager-release-contract.test.ts`，按本步骤的条件
+>    （"仅当正式配置已排除测试时才排除"）一并保留。
+> 3. **`server/runtime/tsconfig.json` 与 `scripts/tsconfig.json` 保持原样，未改**——与本 Task 标题
+>    的 Files 清单有偏离，理由有二：(a) 让它们 extends 分层配置会继承 `composite: true`，与
+>    `runtime:typecheck` 的 `tsc --noEmit` 冲突；(b) 分层清单刻意排除了上游已拥有的文件
+>    （runtime 7 个、scripts 1 个），改成 extends 会**缩小**这两个既有入口的覆盖面，其中
+>    `scripts/tsconfig.json` 是 `.github/workflows/release-container.yml:51` 在用的门禁。
+>    代价是两份清单可能无声漂移，因此补了一条 `keeps every file of %s owned by some layer`
+>    用例把漂移变成硬失败——这正是本步骤 "Preserve all production files" 的可执行形式。
+>
+> 该用例当场抓到一个真重复：`packages/neuro-book-manager/src/types.ts` 被 contracts 与 scripts
+> 同时声明，已从 scripts 层移除（改由 contracts 声明消费）。
+
+- [x] **Step 4: Run formal layers and their existing contract tests**
 
 Run: `taskset -c 0 nice -n 15 bun scripts/typecheck/non-desktop-runner.ts --through scripts`
 
 Expected: exit `0`; formal Runtime and Scripts both complete below the RSS line; the injected fixture stops at Runtime and production run reaches Scripts.
 
+> 实跑聚合退出码 `0`，零残留：
+>
+> | 层 | exitCode | durationMs | maxSingleRssKiB | minMemAvailableKiB |
+> | --- | --- | --- | --- | --- |
+> | contracts | 0 | 22750 | 867720 | 2726888 |
+> | phase0-sample | 0 | 5829 | 423660 | 3174752 |
+> | workspace-history | 0 | 17040 | 672628 | 2892260 |
+> | agent-support | 0 | 24966 | 923728 | 2667200 |
+> | agent | 0 | 28255 | 1061832 | 2493804 |
+> | agent-composition | 0 | 12667 | 599616 | 2992904 |
+> | **runtime** | 0 | 10900 | **588848** | 3002748 |
+> | **scripts** | 0 | 12677 | **562788** | 2985092 |
+>
+> 两个新层都远在 `1310720` 线内（余量 55% / 57%），`MemAvailable` 最低点仍是 agent 层的
+> 2493804 KiB，高于 2097152 底线。
+>
+> **门禁抓到计划预告的 7 个潜伏真错**，全在 `server/workspace-files/workspace-command.ts`
+> ——该文件此前不在任何 typecheck 配置里。根因只有两个：
+>
+> - 6 个 `AbsoluteFsPath` 品牌丢失：品牌在源头产生正确（`resolveWorkspaceContentRoot(): Promise<AbsoluteFsPath>`、
+>   `resolveWorkspaceCliTarget` 返回 `absoluteFsPath(...)`），却被 4 处本地标注擦成 `string`
+>   （`ResolvedWorkspaceTarget.root`、`resolveWorkspaceCliTarget` 返回值、
+>   `normalizeContentNodeDirectoryPath` 的两个形参与返回值、`assertSingleWorkspaceRoot` 返回值）。
+>   修法是把品牌接回去；`path.dirname` 返回裸 string，交回 `absoluteFsPath()` 重新加品牌，
+>   对已解析的绝对路径而言 trim/expandHome/resolve 都是恒等，运行时行为不变。
+> - 1 个 `unknown[]`：`'change' in result` 里 `result` 是 `ProjectEnsureResult | ProjectMetadataUpdateResult`，
+>   后者没有 `change`。TypeScript 4.9 起 `in` 对缺该字段的成员收窄成 `& Record<'change', unknown>`，
+>   于是 `[result.change]` 成了 `unknown[]`，传给只收 `readonly string[]` 的 `emitProjectSuccess`。
+>   改成类型谓词 `hasEnsureChange`，运行时判断完全相同。
+>
+> **这是修真错，不是为迁就资源线而改源码。**
+
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run scripts/ci/code-baseline-workflow.test.ts server/runtime --maxWorkers=1`
 
 Expected: PASS for the files matched by these paths; record exact file/test counts.
+
+> **未达成，原因与本 Task 无关**：11 个文件 74 个用例中，`server/runtime/source-authoring-type-cache.test.ts`
+> 有 8 个用例失败，其余 10 文件 66 用例通过。8 个失败同一根因：
+> `await expect(access(p)).resolves.toBeUndefined()` —— **Bun 1.3.14 的 `fs.promises.access`
+> resolve 出 `null`，Node 是 `undefined`**（已直接实测两个运行时确认；该测试只 mock 了
+> `authoring-sdk-type-projection`，没有 mock `node:fs/promises`）。
+>
+> 判定为先存在：这些文件由本分支更早的 `0dc06fb5`..`c163601a`（source authoring type projection
+> 一线）引入，main 上根本没有；且本 Task 改动的 4 个文件没有一个在该测试的 import 闭包里。
+> 同款写法全仓 26 处，属跨文件的测试惯例问题，另开一项处理，不混进本 Task 的 commit。
+>
+> 其余验收：`scripts/typecheck/project-graph.test.ts` 10/10、`scripts/typecheck/non-desktop-runner.test.ts`
+> 14/14、`server/workspace-files/workspace-command.test.ts` 7/7 全通过；三个改动文件 eslint 退出 0。
 
 - [ ] **Step 5: Commit Task 5**
 

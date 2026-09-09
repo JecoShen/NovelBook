@@ -30,6 +30,7 @@ import {
   ProjectLifecycle,
   ProjectLifecycleTransactionError,
   projectWorkspaceRef,
+  type ProjectEnsureResult,
   type ProjectListEntry,
   type ProjectLifecycleDiagnostics,
   type ProjectValidationResult,
@@ -80,7 +81,7 @@ type WorkspaceProjectOptions = {
 }
 
 type ResolvedWorkspaceTarget = {
-  root: string
+  root: AbsoluteFsPath
   relativePath: string
 }
 
@@ -196,7 +197,7 @@ projectCommand
         }
         return ensured
       })
-      const actions = 'change' in result && result.change !== 'none' ? [result.change] : []
+      const actions = hasEnsureChange(result) && result.change !== 'none' ? [result.change] : []
       emitProjectSuccess(result.project, actions, diagnostics, options.json)
     }
     catch (error) {
@@ -488,7 +489,7 @@ async function resolveSingleWorkspaceTarget(target: string): Promise<ResolvedWor
 /**
  * 相对输入固定从本次内容File Scope解析；绝对输入不得越过该内容根。
  */
-function resolveWorkspaceCliTarget(root: ReturnType<typeof resolveWorkspaceContainerRoot>, target: string): string {
+function resolveWorkspaceCliTarget(root: ReturnType<typeof resolveWorkspaceContainerRoot>, target: string): AbsoluteFsPath {
   const value = target.trim()
   if (!value) {
     throw new Error('内容节点路径不能为空')
@@ -526,6 +527,19 @@ function normalizeProjectTemplateName(template: string | undefined): 'default' {
     false,
     `未知 Project 模板：${value}`,
   )
+}
+
+/**
+ * 该 Project 操作结果是否带 manifest 动作。
+ *
+ * 不能在调用点直接写 `'change' in result`：`ensure` 返回 `ProjectEnsureResult`（有
+ * `change`），`updateMetadata` 返回 `ProjectMetadataUpdateResult`（没有）。TypeScript 4.9
+ * 起 `in` 对缺该字段的联合成员收窄成 `& Record<'change', unknown>`，于是 `result.change`
+ * 退化成 `unknown`，`[result.change]` 也就成了 `unknown[]`——传给只收 `readonly string[]`
+ * 的 `emitProjectSuccess` 是真错。这里把同一个运行时判断收进类型谓词，字段类型得以保留。
+ */
+function hasEnsureChange(result: object): result is Pick<ProjectEnsureResult, 'change'> {
+  return 'change' in result
 }
 
 /** 统一输出Project JSON协议；非JSON调用只输出面向人的一行结果。 */
@@ -633,10 +647,12 @@ async function resolveWorkspaceContentRoot(): Promise<AbsoluteFsPath> {
 /**
  * 将目录或 index.md 输入统一成内容节点目录绝对路径。
  */
-function normalizeContentNodeDirectoryPath(root: string, absoluteTarget: string): string {
+function normalizeContentNodeDirectoryPath(root: AbsoluteFsPath, absoluteTarget: AbsoluteFsPath): AbsoluteFsPath {
   const safeTarget = resolveWorkspacePath(root, absoluteTarget)
   if (path.basename(safeTarget).toLowerCase() === 'index.md') {
-    return path.dirname(safeTarget)
+    // `path.dirname` 返回裸 string，会丢掉品牌；绝对路径的父目录仍是绝对路径，
+    // 交回构造器重新加品牌，运行时行为不变（trim/expandHome/resolve 对已解析路径是恒等）。
+    return absoluteFsPath(path.dirname(safeTarget))
   }
   return safeTarget
 }
@@ -644,7 +660,7 @@ function normalizeContentNodeDirectoryPath(root: string, absoluteTarget: string)
 /**
  * 确认所有目标都属于同一个 workspace，并返回该 root。
  */
-function assertSingleWorkspaceRoot(targets: ResolvedWorkspaceTarget[]): string {
+function assertSingleWorkspaceRoot(targets: ResolvedWorkspaceTarget[]): AbsoluteFsPath {
   const root = targets[0]?.root
   if (!root) {
     throw new Error('至少需要提供一个内容节点路径')

@@ -5,6 +5,8 @@
     { "path": "typecheck/workspace-history" },
     { "path": "typecheck/agent-support" },
     { "path": "typecheck/agent" },
-    { "path": "typecheck/agent-composition" }
+    { "path": "typecheck/agent-composition" },
+    { "path": "typecheck/runtime" },
+    { "path": "typecheck/scripts" }
   ]
 }
