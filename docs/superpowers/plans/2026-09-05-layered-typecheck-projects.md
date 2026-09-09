@@ -62,7 +62,7 @@
 - Test helpers local to this test: `ok(name)`, `fail(name)`, `holdWithChild(name)`, `pathExists(path): Promise<boolean>`, and `processGroupExists(pgid): Promise<boolean>` build fixture commands and assert cleanup; they are not production exports.
 - Consumes later: Task 3-6 append only layer definitions; Task 7 calls the CLI without duplicating orchestration.
 
-- [ ] **Step 1: Write runner contract tests**
+- [x] **Step 1: Write runner contract tests**
 
 ```ts
 it('runs one layer at a time and stops after the first failure', async () => {
@@ -89,13 +89,13 @@ it('kills the whole process group at the RSS limit and leaves no child', async (
 })
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run scripts/typecheck/non-desktop-runner.test.ts --maxWorkers=1`
 
 Expected: FAIL because `non-desktop-runner.ts` and exported interfaces do not exist.
 
-- [ ] **Step 3: Implement layer data and guarded process ownership**
+- [x] **Step 3: Implement layer data and guarded process ownership**
 
 ```ts
 export type TypecheckLayer = {
@@ -128,7 +128,7 @@ export async function runNonDesktopTypecheck(options: RunOptions): Promise<Typec
 
 Implementation requirements: spawn each layer detached so its PID is its PGID; sample every member from `/proc/<pid>/stat` and `/proc/<pid>/status`; read `MemAvailable` from `/proc/meminfo`; on stop send `SIGINT`, then `SIGTERM`, then `SIGKILL` to `-pgid`; install and remove SIGINT/SIGTERM handlers in `finally`; CI mode may disable `/proc` sampling but may not alter layer commands or order.
 
-- [ ] **Step 4: Run runner tests and lint**
+- [x] **Step 4: Run runner tests and lint**
 
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run scripts/typecheck/non-desktop-runner.test.ts --maxWorkers=1`
 
@@ -138,7 +138,7 @@ Run: `bun x eslint scripts/typecheck`
 
 Expected: exit `0`.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```bash
 git add scripts/typecheck
@@ -164,7 +164,7 @@ git commit -m "test(typecheck): add serial resource guard"
 - Produces: `requireReadyProject`, `requireActiveReadyProject`, `requireReadyModuleHandle`, `readUnseenForAgent`, `advanceAgentCursor`, and record operations from data-plane files.
 - Preserves: all existing exports from `project-session.ts` and `project-history.ts` through explicit re-exports.
 
-- [ ] **Step 1: Add boundary behavior tests before moving code**
+- [x] **Step 1: Add boundary behavior tests before moving code**
 
 ```ts
 vi.mock('nbook/server/workspace-files/project-session-data-plane', () => ({
@@ -183,13 +183,13 @@ it('materializes and settles through data-plane ports without loading compositio
 })
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run server/agent/profiles/profile-turn-context-generation.test.ts --maxWorkers=1`
 
 Expected: FAIL because both data-plane modules are missing.
 
-- [ ] **Step 3: Move contracts and data-plane logic, then re-export compatibility API**
+- [x] **Step 3: Move contracts and data-plane logic, then re-export compatibility API**
 
 ```ts
 // project-history-contract.ts
@@ -211,7 +211,7 @@ registerProjectModule(projectHistoryModule)
 
 Move code without changing bodies. `project-session-data-plane.ts` may own its small global service access port, but it must not import `project-history.ts`, database modules, Plot, Agent SQL, or any other registration entry. `project-history-data-plane.ts` may consume only its handle and pure diff/history helpers; it must not import config loading or `registerProjectModule`.
 
-- [ ] **Step 4: Run behavior regression and import-boundary checks**
+- [x] **Step 4: Run behavior regression and import-boundary checks**
 
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run server/agent/profiles/profile-turn-context-generation.test.ts server/workspace-files/project-session.test.ts server/workspace-history/project-history.test.ts --maxWorkers=1`
 
@@ -221,7 +221,7 @@ Run: `bun x eslint server/workspace-files/project-session-contract.ts server/wor
 
 Expected: exit `0`.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```bash
 git add server/workspace-files/project-session-contract.ts server/workspace-files/project-session-data-plane.ts server/workspace-files/project-session.ts server/workspace-history/project-history-contract.ts server/workspace-history/project-history-data-plane.ts server/workspace-history/project-history.ts server/agent/profiles/profile-turn-context.ts server/agent/profiles/profile-turn-context-generation.test.ts
@@ -242,7 +242,7 @@ git commit -m "refactor(workspace): isolate session history data plane"
 - Produces: sample consumer that maps contract aliases to `<runRoot>/contracts/*.d.ts` and checks `profile-turn-context.ts` without resolving contract Source.
 - Test helpers local to `project-graph.test.ts`: `buildAndTraceSample(runRoot): Promise<ResolutionTrace>` and `collectResolvedGraph(configPath): Promise<ResolvedGraph>` invoke the TypeScript compiler API; `ResolvedGraph` exposes `toContainPath(path)` for Vitest assertions.
 
-- [ ] **Step 1: Write graph ownership and resolution tests**
+- [x] **Step 1: Write graph ownership and resolution tests**
 
 ```ts
 it('resolves the sample consumer to emitted declarations only', async () => {
@@ -267,7 +267,12 @@ Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run scrip
 
 Expected: FAIL because the composite configs and trace helper do not exist.
 
-- [ ] **Step 3: Add strict composite configs and exact declaration paths**
+> **未完成（记录偏离）**：本步骤的 RED 状态从未被观察到。实际执行顺序是先落 Step 3 的配置、
+> 再写本用例，因此不存在“配置缺失导致失败”的那一刻。用例作者在编写时未看到实现（配置当时被
+> 告知不存在），独立规格的价值得以保留，但 RED→GREEN 的转变没有证据。
+> 后续任务不要沿用这个顺序：Task 4-6 的 Step 1-2 必须先跑出 RED 再实现。
+
+- [x] **Step 3: Add strict composite configs and exact declaration paths**
 
 ```json
 {
@@ -288,7 +293,7 @@ Expected: FAIL because the composite configs and trace helper do not exist.
 The runner supplies unique `outDir`, `declarationDir` and `tsBuildInfoFile` through generated per-run configs inside `runRoot`; committed configs never point at a persistent output directory. The sample consumer's `paths` entries must point at emitted `.d.ts` roots, not repository directories.
 `project-graph.test.ts` must also assert every child config inherits `skipLibCheck: true` from this base and none declares its own `skipLibCheck` key.
 
-- [ ] **Step 4: Prove the dry graph, real check, resource limit and cleanup**
+- [x] **Step 4: Prove the dry graph, real check, resource limit and cleanup**
 
 Run through the guarded runner: `taskset -c 0 nice -n 15 bun scripts/typecheck/non-desktop-runner.ts --through phase0-sample`
 
@@ -300,7 +305,7 @@ Expected: PASS.
 
 **STOP GATE:** if either command fails because declarations cannot preserve symbol identity, the graph resolves Source, or resource limits trigger, do not execute Task 4-7. Record exact failure in Task 125 and revise the design.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```bash
 git add tsconfig.typecheck.base.json typecheck/contracts/tsconfig.json typecheck/fixtures/profile-turn-context/tsconfig.json scripts/typecheck/non-desktop-layers.ts scripts/typecheck/project-graph.test.ts

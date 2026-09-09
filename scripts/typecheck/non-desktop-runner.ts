@@ -1,15 +1,47 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { mkdir, readdir, readFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import type { Readable } from 'node:stream'
+import { parseArgs } from 'node:util'
 
-import type { TypecheckLayer } from 'nbook/scripts/typecheck/non-desktop-layers'
+import { materializeTypecheckLayers } from 'nbook/scripts/typecheck/layer-project-configs'
+import {
+  NON_DESKTOP_TYPECHECK_LAYERS,
+  type TypecheckLayer,
+  type TypecheckLayerDefinition,
+} from 'nbook/scripts/typecheck/non-desktop-layers'
 
-export type { TypecheckLayer } from 'nbook/scripts/typecheck/non-desktop-layers'
+export type { TypecheckLayer, TypecheckLayerDefinition } from 'nbook/scripts/typecheck/non-desktop-layers'
 
 export const RESOURCE_LIMITS = Object.freeze({
   maxSingleRssKiB: 1_048_576,
   minMemAvailableKiB: 2_097_152,
   sampleIntervalMs: 250,
 })
+
+/**
+ * 单层输出保留上限（字节）。
+ *
+ * 1 MiB 已经能装下约一万条 tsc 诊断行，远超任何人会读的量；
+ * 而 8 个层最坏情况合计 8 MiB，对 1048576 KiB 单进程 RSS 线和
+ * 2097152 KiB MemAvailable 底线都可忽略。目的是让"某层刷海量输出"
+ * 不能通过 runner 自身的缓冲把内存吃穿。
+ */
+export const MAX_LAYER_OUTPUT_BYTES = 1_048_576
+
+/** `.agent/tmp/typecheck/<runId>` 的固定前缀；runner 拥有并在 finally 清理该目录。 */
+export const TYPECHECK_RUN_ROOT_RELATIVE = join('.agent', 'tmp', 'typecheck')
+
+/** 参数或层注册无效时的退出码：这一类失败发生在任何 run report 存在之前。 */
+export const CLI_USAGE_EXIT_CODE = 2
+
+/**
+ * 子进程 exit 之后排空管道的时限。
+ *
+ * 用 `exit` 而不是 `close` 判定完成：孙进程继承管道时 `close` 可能永不触发，
+ * 那会让 runner 在被止损后挂住。限时排空 + destroy 兼顾"输出不丢"和"不挂住"。
+ */
+const OUTPUT_DRAIN_TIMEOUT_MS = 1_000
 
 export type TypecheckStopReason = 'max-single-rss' | 'min-mem-available' | 'signal'
 
@@ -23,11 +55,15 @@ export type TypecheckLayerReport = {
   readonly maxGroupRssKiB: number | null
   readonly minMemAvailableKiB: number | null
   readonly stopReason: TypecheckStopReason | null
+  /** 该层 stdout + stderr 按到达顺序合并；超过上限时保留尾部并标注截断。 */
+  readonly output: string
 }
 
 export type TypecheckRunReport = {
   readonly exitCode: number
   readonly layers: readonly TypecheckLayerReport[]
+  /** 各有输出层的聚合文本，按执行顺序拼接并标注层名。 */
+  readonly output: string
 }
 
 export type RunOptions = {
@@ -36,9 +72,15 @@ export type RunOptions = {
   readonly maxSingleRssKiB?: number
   readonly minMemAvailableKiB?: number
   readonly sampleIntervalMs?: number
+  readonly maxLayerOutputBytes?: number
   /** 非 Linux CI 可关闭 /proc 采样；层命令与顺序保持不变。 */
   readonly sampleResources?: boolean
 }
+
+type ResolvedLimits = Required<Pick<
+  RunOptions,
+  'maxSingleRssKiB' | 'minMemAvailableKiB' | 'sampleIntervalMs' | 'maxLayerOutputBytes' | 'sampleResources'
+>>
 
 type GroupResources = {
   readonly maxSingleRssKiB: number
@@ -56,11 +98,17 @@ type ActiveRun = {
   terminate: (() => void) | null
 }
 
+type OutputCollector = {
+  push: (chunk: Buffer) => void
+  text: () => string
+}
+
 export async function runNonDesktopTypecheck(options: RunOptions): Promise<TypecheckRunReport> {
-  const limits = {
+  const limits: ResolvedLimits = {
     maxSingleRssKiB: options.maxSingleRssKiB ?? RESOURCE_LIMITS.maxSingleRssKiB,
     minMemAvailableKiB: options.minMemAvailableKiB ?? RESOURCE_LIMITS.minMemAvailableKiB,
     sampleIntervalMs: options.sampleIntervalMs ?? RESOURCE_LIMITS.sampleIntervalMs,
+    maxLayerOutputBytes: options.maxLayerOutputBytes ?? MAX_LAYER_OUTPUT_BYTES,
     sampleResources: options.sampleResources ?? process.platform === 'linux',
   }
   const results: TypecheckLayerReport[] = []
@@ -103,16 +151,25 @@ export async function runNonDesktopTypecheck(options: RunOptions): Promise<Typec
 
 async function runGuardedLayer(
   layer: TypecheckLayer,
-  limits: Required<Pick<RunOptions, 'maxSingleRssKiB' | 'minMemAvailableKiB' | 'sampleIntervalMs' | 'sampleResources'>>,
+  limits: ResolvedLimits,
   activeRun: ActiveRun,
 ): Promise<TypecheckLayerReport> {
   const startedAt = Date.now()
   const child = spawn(layer.command[0], layer.command.slice(1), {
     detached: true,
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'],
   })
   const pgid = child.pid
   if (!pgid) throw new Error(`无法启动 typecheck 层 ${layer.name}。`)
+
+  // 管道必须立即进入流动模式：不消费的话子进程写满 64 KiB 内核缓冲后会阻塞。
+  const collector = createOutputCollector(limits.maxLayerOutputBytes)
+  child.stdout?.on('data', (chunk: Buffer) => {
+    collector.push(chunk)
+  })
+  child.stderr?.on('data', (chunk: Buffer) => {
+    collector.push(chunk)
+  })
 
   activeRun.child = child
   let stopReason: TypecheckStopReason | null = null
@@ -149,6 +206,7 @@ async function runGuardedLayer(
   }
 
   if (termination) await termination
+  await drainChildOutput(child, OUTPUT_DRAIN_TIMEOUT_MS)
   if (!completed) throw new Error(`typecheck 层 ${layer.name} 未返回退出状态。`)
   const exitCode = completed.exitCode ?? 1
   return {
@@ -161,6 +219,44 @@ async function runGuardedLayer(
     maxGroupRssKiB,
     minMemAvailableKiB,
     stopReason,
+    output: collector.text(),
+  }
+}
+
+/**
+ * 有界输出缓冲：超过上限时从头部丢弃，保留最后 `maxBytes` 字节并标注截断。
+ *
+ * 保留尾部是因为 tsc 把 `Found N errors` 汇总打在最后，尾部信息密度更高。
+ */
+function createOutputCollector(maxBytes: number): OutputCollector {
+  const chunks: Buffer[] = []
+  let bufferedBytes = 0
+  let droppedBytes = 0
+
+  return {
+    push(chunk: Buffer) {
+      if (chunk.byteLength === 0) return
+      chunks.push(chunk)
+      bufferedBytes += chunk.byteLength
+      while (bufferedBytes > maxBytes && chunks.length > 0) {
+        const overflow = bufferedBytes - maxBytes
+        const head = chunks[0]!
+        if (head.byteLength <= overflow) {
+          chunks.shift()
+          bufferedBytes -= head.byteLength
+          droppedBytes += head.byteLength
+          continue
+        }
+        chunks[0] = head.subarray(overflow)
+        bufferedBytes -= overflow
+        droppedBytes += overflow
+      }
+    },
+    text() {
+      const body = Buffer.concat(chunks).toString('utf8')
+      if (droppedBytes === 0) return body
+      return `[output truncated: dropped first ${droppedBytes} bytes, kept last ${bufferedBytes} bytes]\n${body}`
+    },
   }
 }
 
@@ -169,17 +265,188 @@ function summarize(layers: readonly TypecheckLayerReport[], receivedSignal: Node
   return {
     exitCode: failedLayer ? failedLayer.exitCode || 1 : receivedSignal ? 1 : 0,
     layers,
+    output: layers
+      .filter(layer => layer.output.length > 0)
+      .map(layer => `[layer ${layer.name}]\n${layer.output}`)
+      .join('\n'),
   }
 }
 
+/**
+ * 只等 `exit`：`close` 要求所有 stdio 流关闭，孙进程继承管道时可能永不触发。
+ * 输出完整性由 `drainChildOutput` 单独负责。
+ */
 function waitForChild(child: ChildProcess): Promise<ChildCompletion> {
   return new Promise((resolvePromise, rejectPromise) => {
     child.once('error', rejectPromise)
-    child.once('close', (exitCode, signal) => {
+    child.once('exit', (exitCode, signal) => {
       resolvePromise({ exitCode, signal })
     })
   })
 }
+
+async function drainChildOutput(child: ChildProcess, timeoutMs: number): Promise<void> {
+  const streams = [child.stdout, child.stderr].filter((stream): stream is Readable => stream !== null)
+  if (streams.length === 0) return
+  const ended = Promise.all(streams.map(stream => new Promise<void>((resolvePromise) => {
+    if (stream.readableEnded || stream.destroyed) {
+      resolvePromise()
+      return
+    }
+    stream.once('end', resolvePromise)
+    stream.once('close', resolvePromise)
+    stream.once('error', () => resolvePromise())
+  })))
+  await Promise.race([ended, delay(timeoutMs)])
+  for (const stream of streams) stream.destroy()
+}
+
+// ── CLI ────────────────────────────────────────────────────────────────────
+
+export type RunnerCliOptions = {
+  readonly through: string | null
+}
+
+export type RunnerCliDependencies = {
+  readonly argv?: readonly string[]
+  readonly layers?: readonly TypecheckLayerDefinition[]
+  readonly repoRoot?: string
+  readonly createRunRoot?: () => Promise<string>
+  readonly run?: (options: RunOptions) => Promise<TypecheckRunReport>
+  readonly writeOut?: (text: string) => void
+  readonly writeError?: (text: string) => void
+}
+
+export function parseRunnerCliArgs(argv: readonly string[]): RunnerCliOptions {
+  try {
+    const { values } = parseArgs({
+      args: [...argv],
+      allowPositionals: false,
+      options: { through: { type: 'string' } },
+      strict: true,
+    })
+    return { through: values.through ?? null }
+  }
+  catch (error: unknown) {
+    throw new Error(`非桌面 typecheck runner 参数无效：${describeError(error)}`, { cause: error })
+  }
+}
+
+/** `--through <layer>`：按拓扑顺序执行到该层（含），其后的层不运行。 */
+export function selectLayersThrough<T extends { readonly name: string }>(
+  layers: readonly T[],
+  through: string | null,
+): readonly T[] {
+  if (through === null) return layers
+  const index = layers.findIndex(layer => layer.name === through)
+  if (index === -1) {
+    const available = layers.length > 0
+      ? layers.map(layer => layer.name).join(', ')
+      : '(当前未注册任何层)'
+    throw new Error(`未知的 typecheck 层 --through ${through}。可用层：${available}`)
+  }
+  return layers.slice(0, index + 1)
+}
+
+/** 创建本次运行独占的 `.agent/tmp/typecheck/<runId>`；mkdtemp 保证 runId 唯一。 */
+export async function createTypecheckRunRoot(repoRoot: string = process.cwd()): Promise<string> {
+  const parent = resolve(repoRoot, TYPECHECK_RUN_ROOT_RELATIVE)
+  await mkdir(parent, { recursive: true })
+  const stamp = new Date().toISOString().replace(/[:.]/gu, '-')
+  return await mkdtemp(join(parent, `${stamp}-`))
+}
+
+export function formatRunReport(report: TypecheckRunReport): string {
+  const lines = report.layers.map(formatLayerReport)
+  const stopped = report.layers.find(layer => layer.stopReason !== null)
+  if (stopped) {
+    lines.push(
+      `止损：层 ${stopped.name} 触发 ${stopped.stopReason}，`
+      + `命令 ${formatCommand(stopped.command)}；后续层未运行。`,
+    )
+  }
+  const failed = report.layers.find(layer => layer.exitCode !== 0 && layer.stopReason === null)
+  if (failed) {
+    lines.push(
+      `失败：层 ${failed.name} 退出码 ${failed.exitCode}，`
+      + `命令 ${formatCommand(failed.command)}；后续层未运行。`,
+    )
+  }
+  lines.push(`聚合退出码：${report.exitCode}`)
+  return lines.join('\n')
+}
+
+function formatLayerReport(layer: TypecheckLayerReport): string {
+  return [
+    `层 ${layer.name}`,
+    `exitCode=${layer.exitCode}`,
+    `durationMs=${layer.durationMs}`,
+    `maxSingleRssKiB=${formatMetric(layer.maxSingleRssKiB)}`,
+    `maxGroupRssKiB=${formatMetric(layer.maxGroupRssKiB)}`,
+    `minMemAvailableKiB=${formatMetric(layer.minMemAvailableKiB)}`,
+    `stopReason=${layer.stopReason ?? 'none'}`,
+  ].join(' ')
+}
+
+function formatMetric(value: number | null): string {
+  return value === null ? 'n/a' : String(value)
+}
+
+function formatCommand(command: readonly string[]): string {
+  return command
+    .map(part => /^[\w./:=@-]+$/u.test(part) ? part : JSON.stringify(part))
+    .join(' ')
+}
+
+export async function runNonDesktopTypecheckCli(dependencies: RunnerCliDependencies = {}): Promise<number> {
+  const writeOut = dependencies.writeOut ?? ((text: string) => {
+    console.log(text)
+  })
+  const writeError = dependencies.writeError ?? ((text: string) => {
+    console.error(text)
+  })
+  const layers = dependencies.layers ?? NON_DESKTOP_TYPECHECK_LAYERS
+
+  let selected: readonly TypecheckLayerDefinition[]
+  try {
+    const { through } = parseRunnerCliArgs(dependencies.argv ?? process.argv.slice(2))
+    selected = selectLayersThrough(layers, through)
+  }
+  catch (error: unknown) {
+    writeError(describeError(error))
+    return CLI_USAGE_EXIT_CODE
+  }
+  if (selected.length === 0) {
+    writeError('未注册任何非桌面 typecheck 层：空运行不能算作通过的门禁。')
+    return CLI_USAGE_EXIT_CODE
+  }
+
+  try {
+    const repoRoot = dependencies.repoRoot ?? process.cwd()
+    const runRoot = await (dependencies.createRunRoot ?? createTypecheckRunRoot)()
+    // per-run 配置必须写在 runRoot 内且在层执行之前：runNonDesktopTypecheck 在 finally 里
+    // 删掉整个 runRoot，生成物随之清理，仓库树不留任何构建产物。
+    const runnable = await materializeTypecheckLayers(selected, { runRoot, repoRoot })
+    const report = await (dependencies.run ?? runNonDesktopTypecheck)({ runRoot, layers: runnable })
+    writeOut(formatRunReport(report))
+    for (const layer of report.layers) {
+      if (layer.output.length === 0) continue
+      if (layer.exitCode === 0 && layer.stopReason === null) continue
+      writeError(`── 层 ${layer.name} 输出 ──\n${layer.output}`)
+    }
+    return report.exitCode
+  }
+  catch (error: unknown) {
+    writeError(`非桌面 typecheck runner 运行失败：${describeError(error)}`)
+    return 1
+  }
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+// ── /proc 采样与进程组归属 ───────────────────────────────────────────────────
 
 async function readGroupResources(pgid: number): Promise<GroupResources> {
   const processIds = await readdir('/proc', { withFileTypes: true })
@@ -273,4 +540,8 @@ function isNoSuchProcessError(error: unknown): boolean {
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise(resolvePromise => setTimeout(resolvePromise, milliseconds))
+}
+
+if (import.meta.main) {
+  process.exitCode = await runNonDesktopTypecheckCli()
 }
