@@ -14,6 +14,23 @@ module.exports = {
         NEURO_BOOK_STATE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
         NEURO_BOOK_CACHE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org/cache',
       },
+      // ── 关闭 PM2 进程内 APM（pmx）：Bun 下每 800ms 烧掉半个核 ──
+      // 2026-09-09 根因：进程 7.15 天累计烧 4 天 1 小时 CPU（均值 56.6%），空载、无请求、
+      // 无日志、无 I/O，99.5% 用户态。链条：
+      //   ProcessContainerForkBun.js:12 → ProcessUtils.injectModules()
+      //   → ProcessUtils.js:5 `pmx !== 'false'` → require('pm2-io-bpm')
+      //   → pm2-io-bpm/index.js:8 `new PMX().init()`（**导入即启动**，
+      //      所以 ProcessUtils 第 11 行那个提前 return 拦不住它）
+      //   → modules/pm2-io-bpm/metrics/v8.js:74 setInterval(v8.getHeapStatistics, 800)
+      // 而 Bun 的 v8.getHeapStatistics() 是 O(堆大小)：空堆 5.5ms，229MB 堆 426-473ms。
+      // 于是每 800ms 阻塞主线程约 400ms —— 实测占空比周期正是 800ms，
+      // PM2 自报 Event Loop Latency p95 = 394ms，两边吻合。堆越大越糟
+      // （新进程 16-19% → 7 天后 90%），这也是 2026-08-28 部署时记过一次
+      // 「旧 process 100% CPU 异常」却未查根因的同一现象。
+      // 代价：失去 pm2 describe 的进程内指标（堆 / 事件循环延迟 / HTTP 延迟）；
+      // pm2 list 的 CPU/内存由 daemon 从 /proc 读，不受影响。
+      pmx: false,
+
       // ── 防护配置（防脚本路径失效时狂重启刷爆日志）──
       // 历史教训：2026-08-17 book-neoshen 6,891,715 次重启
       // 根因：worktree 被清空，bash 找不到脚本 → exit 127 → autorestart 立即循环
