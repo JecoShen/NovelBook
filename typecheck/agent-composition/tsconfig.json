@@ -1,0 +1,56 @@
+{
+  "extends": "../../tsconfig.typecheck.base.json",
+  "compilerOptions": {
+    "paths": {
+      "nbook/*": [
+        "${configDir}/contracts/*",
+        "${configDir}/workspace-history/*",
+        "${configDir}/agent-support/*",
+        "${configDir}/agent/*",
+        "./*"
+      ],
+      "neuro_book/*": [
+        "${configDir}/contracts/*",
+        "${configDir}/workspace-history/*",
+        "${configDir}/agent-support/*",
+        "${configDir}/agent/*",
+        "./*"
+      ]
+    }
+  },
+  "references": [
+    {
+      "path": "../contracts"
+    },
+    {
+      "path": "../workspace-history"
+    },
+    {
+      "path": "../agent-support"
+    },
+    {
+      "path": "../agent"
+    }
+  ],
+  "files": [
+    "../../proper-lockfile.d.ts",
+    "../../server/agent/bridge/bridge-service.ts",
+    "../../server/agent/profiles/profile-command.ts",
+    "../../server/agent/profiles/profile-compile-worker-entry.ts",
+    "../../server/agent/profiles/profile-compile-worker-runtime.ts",
+    "../../server/agent/profiles/profile-http-service.ts",
+    "../../server/agent/profiles/profile-workbench-roots.ts",
+    "../../server/agent/profiles/test/runtime-session.ts",
+    "../../server/agent/profiles/workbench-service.ts",
+    "../../server/agent/session/migrations/session-v2-review-repair/migration.ts",
+    "../../server/agent/session/migrations/session-v2/journal.ts",
+    "../../server/agent/session/migrations/session-v2/legacy-decoder.ts",
+    "../../server/agent/session/migrations/session-v2/migration.ts",
+    "../../server/agent/session/migrations/session-v2/types.ts",
+    "../../server/agent/test/profile-tools.ts",
+    "../../server/api/projects/project-http-error.ts",
+    "../../server/workspace-files/project-open-guard.ts",
+    "../../server/workspace-history/tracked-workspace-files.ts",
+    "../../server/workspace-history/user-file-recorder.ts"
+  ]
+}

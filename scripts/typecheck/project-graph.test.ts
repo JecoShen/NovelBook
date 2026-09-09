@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { access, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
@@ -56,6 +56,28 @@ const FORBIDDEN_CONTRACT_PATHS: readonly string[] = [
   'server/plot/index.ts',
 ]
 
+/** 正式 solution config：只声明 project references，是"哪些层是正式层"的唯一事实源。 */
+const SOLUTION_CONFIG = 'tsconfig.typecheck.json'
+
+/**
+ * 层依赖期望。
+ *
+ * `typecheck/fixtures/**` 下的样板消费者**不进** solution：它是 Task 3 的可行性证据，
+ * 计划 Task 6 的 layerNames 里也没有它。solution 只收正式层。
+ *
+ * 与计划 Task 4 Step 1 的原始期望有两处偏离，均由实测证据驱动：
+ * - 多出 `agent-support` 层：agent 簇的 252 个文件里最大强连通分量只有 83 个，
+ *   其余 151 个不触达该分量，可以单独成层；不拆则整簇一个项目必然超资源线。
+ * - 尚无 `agent` 层：83 个文件的强连通分量实测触发 `max-single-rss` 止损，
+ *   而止损上报的峰值恒等于"刚过上限"，真实峰值未知，缩到多少才够无法据此判断。
+ *   提交版配置已落 `typecheck/agent/` 与 `typecheck/agent-composition/`，但暂不入 solution。
+ */
+const EXPECTED_PROJECT_DEPENDENCIES: Readonly<Record<string, readonly string[]>> = {
+  'contracts': [],
+  'workspace-history': ['contracts'],
+  'agent-support': ['contracts', 'workspace-history'],
+}
+
 type RawTsConfig = {
   readonly extends?: string | readonly string[]
   readonly references?: readonly { readonly path?: string }[]
@@ -85,6 +107,28 @@ type ResolvedGraph = {
   matchingPaths(expectedPath: string): readonly string[]
 }
 
+/** solution config 里的一个正式层。 */
+type LayerProject = {
+  /** 层名 = `typecheck/<name>/tsconfig.json` 里的目录名。 */
+  readonly name: string
+  readonly configPath: string
+  /** 本层 `references` 指向的层名，已排序。 */
+  readonly dependsOn: readonly string[]
+}
+
+/** 一层的自有源码所有权。 */
+type LayerOwnership = {
+  readonly name: string
+  /** 本层 `files` / `include` 展开后的自有**源码**（已排除 ambient .d.ts 与依赖）。 */
+  readonly ownedSources: readonly string[]
+}
+
+/** 带所有权视角的解析闭包：能回答"我解析到了别层的源码吗"。 */
+type OwnedGraph = ResolvedGraph & {
+  readonly owner: string
+  sourcesOwnedBy(otherOwner: string): readonly string[]
+}
+
 const formatHost: ts.FormatDiagnosticsHost = {
   getCurrentDirectory: () => repoRoot,
   getCanonicalFileName: fileName => fileName,
@@ -103,6 +147,22 @@ expect.extend({
         : `expected ${received.configPath} to resolve ${this.utils.printExpected(expectedPath)}; its closure has ${received.files.length} files`,
     }
   },
+
+  toContainSourceOwnedBy(received: OwnedGraph, otherOwner: string) {
+    const matches = received.sourcesOwnedBy(otherOwner)
+    const pass = matches.length > 0
+
+    return {
+      pass,
+      message: () => pass
+        ? [
+            `expected layer ${this.utils.printReceived(received.owner)} not to resolve source owned by ${this.utils.printExpected(otherOwner)},`,
+            '但它的自有文件列表里出现了下面这些（应改为消费上游声明输出）：',
+            ...matches.map(match => `  - ${match}`),
+          ].join('\n')
+        : `expected layer ${this.utils.printReceived(received.owner)} to resolve source owned by ${this.utils.printExpected(otherOwner)}; 它当前的闭包有 ${received.files.length} 个文件`,
+    }
+  },
 })
 
 declare module 'vitest' {
@@ -110,9 +170,11 @@ declare module 'vitest' {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   interface Assertion<T = any> {
     toContainPath(expectedPath: string): T
+    toContainSourceOwnedBy(otherOwner: string): T
   }
   interface AsymmetricMatchersContaining {
     toContainPath(expectedPath: string): unknown
+    toContainSourceOwnedBy(otherOwner: string): unknown
   }
 }
 
@@ -196,6 +258,40 @@ describe('layered typecheck project graph', () => {
     expect(graph).not.toContainPath('server/plot/index.ts')
 
     expect(FORBIDDEN_CONTRACT_PATHS.flatMap(forbidden => graph.matchingPaths(forbidden))).toEqual([])
+  }, CONFIG_PARSE_TIMEOUT_MS)
+})
+
+// 计划 Task 4 Step 1：层所有权唯一性与依赖方向。
+//
+// 这三条只解析配置、不建 Program，因此在资源线内几乎无成本；它们回答的是
+// "分层是否真的成立"，而不是"类型是否通过"——后者由 runner 的逐层 tsc 负责。
+describe('layered typecheck project ownership', () => {
+  it('never lets two projects own the same source file', async () => {
+    const projects = await readSolutionProjects()
+    const ownership = await Promise.all(projects.map(project => collectOwnership(project)))
+
+    // 所有权表为空会让下面的重复检测空转通过。
+    expect(ownership.filter(layer => layer.ownedSources.length === 0).map(layer => layer.name)).toEqual([])
+
+    expect(duplicateOwners(ownership)).toEqual([])
+  }, CONFIG_PARSE_TIMEOUT_MS)
+
+  it('declares the planned dependency direction and nothing else', async () => {
+    const projects = await readSolutionProjects()
+
+    expect(projectDependencies(projects)).toEqual(EXPECTED_PROJECT_DEPENDENCIES)
+  }, CONFIG_PARSE_TIMEOUT_MS)
+
+  it('makes the downstream layer consume upstream declarations instead of their source', async () => {
+    // 计划原文断言的是 `agent` 层；该层实测超资源线暂未入 solution，
+    // 这里对当前最下游的正式层做同一条契约检查，语义不变。
+    const graph = await resolvedBy('agent-support')
+
+    // 闭包为空会让下面的 not.toContainSourceOwnedBy 空转通过。
+    expect(graph.files).not.toHaveLength(0)
+
+    expect(graph).not.toContainSourceOwnedBy('workspace-history')
+    expect(graph).not.toContainSourceOwnedBy('contracts')
   }, CONFIG_PARSE_TIMEOUT_MS)
 })
 
@@ -298,6 +394,146 @@ async function collectResolvedGraph(configPath: string): Promise<ResolvedGraph> 
     relativeFiles,
     toContainPath: expectedPath => matchRepoPaths(relativeFiles, expectedPath).length > 0,
     matchingPaths: expectedPath => matchRepoPaths(relativeFiles, expectedPath),
+  }
+}
+
+/**
+ * 读 solution config 里声明的正式层。
+ *
+ * solution 只声明 references，不声明 files / include：它是"层清单 + 依赖方向"的事实源，
+ * 自己不拥有任何文件。
+ */
+async function readSolutionProjects(): Promise<readonly LayerProject[]> {
+  const solutionPath = resolveRepoPath(SOLUTION_CONFIG)
+  if (!await pathExists(solutionPath)) {
+    throw new Error([
+      `solution config 不存在：${SOLUTION_CONFIG}`,
+      '它应当只声明 project references，把每一层串成一张无环图。',
+      '（计划：docs/superpowers/plans/2026-09-05-layered-typecheck-projects.md Task 4 Step 3）',
+    ].join('\n'))
+  }
+
+  const raw = await readRawConfig(solutionPath)
+  const references = raw.references ?? []
+  if (references.length === 0) {
+    throw new Error([
+      `${SOLUTION_CONFIG} 没有声明任何 project reference，层清单为空。`,
+      '（计划：docs/superpowers/plans/2026-09-05-layered-typecheck-projects.md Task 4 Step 3）',
+    ].join('\n'))
+  }
+
+  return Promise.all(references.map(async (reference) => {
+    const configPath = await resolveReferenceConfig(solutionPath, reference.path)
+    const layerRaw = await readRawConfig(configPath)
+    const dependsOn = await Promise.all((layerRaw.references ?? [])
+      .map(dependency => resolveReferenceConfig(configPath, dependency.path)))
+
+    return {
+      name: layerNameOf(configPath),
+      configPath,
+      dependsOn: dependsOn.map(dependency => layerNameOf(dependency)).sort(),
+    }
+  }))
+}
+
+/**
+ * 把一条 reference 的 path 解析成 tsconfig 绝对路径。
+ *
+ * TypeScript 允许 reference 指向目录（隐含 `<dir>/tsconfig.json`），两种写法都要接。
+ */
+async function resolveReferenceConfig(fromConfigPath: string, referencePath: string | undefined): Promise<string> {
+  if (referencePath === undefined || referencePath.length === 0) {
+    throw new Error(`${toRepoRelative(fromConfigPath)} 里有一条 reference 没有 path。`)
+  }
+
+  const resolved = isAbsolute(referencePath) ? referencePath : resolve(dirname(fromConfigPath), referencePath)
+  if (resolved.endsWith('.json')) return resolved
+
+  const asDirectory = join(resolved, 'tsconfig.json')
+  if (await pathExists(asDirectory)) return asDirectory
+
+  throw new Error([
+    `无法把 reference 解析成 tsconfig：${referencePath}`,
+    `  声明位置：${toRepoRelative(fromConfigPath)}`,
+    `  尝试过：${toRepoRelative(resolved)} 与 ${toRepoRelative(asDirectory)}`,
+  ].join('\n'))
+}
+
+/** 层名 = `typecheck/<name>/tsconfig.json` 的目录名。 */
+function layerNameOf(configPath: string): string {
+  return basename(dirname(configPath))
+}
+
+/**
+ * 收集一层的自有源码。
+ *
+ * 排除 ambient `.d.ts` 输入：它们不可能被 `emitDeclarationOnly` 重新产出，按仓内既有约定
+ * 每层都要各自列一遍（例如 `proper-lockfile.d.ts`），因此**不构成**所有权冲突。
+ */
+async function collectOwnership(project: LayerProject): Promise<LayerOwnership> {
+  const parsed = parseConfigFile(project.configPath)
+  assertNoConfigErrors(parsed, project.configPath)
+
+  const ownedSources = parsed.fileNames
+    .map(fileName => resolve(fileName))
+    .filter(file => !isDependencyFile(file))
+    .filter(file => !isAmbientDeclaration(file))
+    .map(file => toRepoRelative(file))
+    .sort()
+
+  return { name: project.name, ownedSources }
+}
+
+/** 被两层以上同时声明为自有的源码，形如 `path (owner-a, owner-b)`。 */
+function duplicateOwners(ownership: readonly LayerOwnership[]): readonly string[] {
+  const owners = new Map<string, string[]>()
+  for (const layer of ownership) {
+    for (const file of layer.ownedSources) {
+      owners.set(file, [...(owners.get(file) ?? []), layer.name])
+    }
+  }
+
+  return [...owners.entries()]
+    .filter(([, claimants]) => claimants.length > 1)
+    .map(([file, claimants]) => `${file} (${[...claimants].sort().join(', ')})`)
+    .sort()
+}
+
+function projectDependencies(projects: readonly LayerProject[]): Record<string, readonly string[]> {
+  return Object.fromEntries(projects.map(project => [project.name, project.dependsOn]))
+}
+
+/** 取某一层的解析闭包，并挂上"别层拥有哪些源码"的视角。 */
+async function resolvedBy(layerName: string): Promise<OwnedGraph> {
+  const projects = await readSolutionProjects()
+  const project = projects.find(candidate => candidate.name === layerName)
+  if (project === undefined) {
+    throw new Error([
+      `${SOLUTION_CONFIG} 里没有名为 ${layerName} 的层。`,
+      `  当前层清单：${projects.map(candidate => candidate.name).join(', ') || '(空)'}`,
+      '（计划：docs/superpowers/plans/2026-09-05-layered-typecheck-projects.md Task 4 Step 3）',
+    ].join('\n'))
+  }
+
+  const graph = await collectResolvedGraph(project.configPath)
+  const foreignOwnership = await Promise.all(projects
+    .filter(candidate => candidate.name !== layerName)
+    .map(candidate => collectOwnership(candidate)))
+  const ownedByLayer = new Map(foreignOwnership.map(layer => [layer.name, new Set(layer.ownedSources)]))
+
+  return {
+    ...graph,
+    owner: layerName,
+    sourcesOwnedBy: (otherOwner) => {
+      const owned = ownedByLayer.get(otherOwner)
+      if (owned === undefined) {
+        throw new Error([
+          `${SOLUTION_CONFIG} 里没有名为 ${otherOwner} 的其他层，无法判断跨层源码解析。`,
+          `  可比对的层：${[...ownedByLayer.keys()].join(', ') || '(空)'}`,
+        ].join('\n'))
+      }
+      return graph.relativeFiles.filter(file => owned.has(file)).sort()
+    },
   }
 }
 
@@ -550,6 +786,16 @@ function matchRepoPaths(relativeFiles: readonly string[], expectedPath: string):
 
 function isNonDeclarationSource(file: string): boolean {
   return file.endsWith('.ts') && !file.endsWith('.d.ts')
+}
+
+/**
+ * ambient 声明输入（`.d.ts`）。
+ *
+ * 与 `isNonDeclarationSource` 的区别：这条按"是不是声明"判断，不要求 `.ts` 后缀，
+ * 所以 `.tsx` / `.vue` 也会被正确算作源码。
+ */
+function isAmbientDeclaration(file: string): boolean {
+  return file.endsWith('.d.ts')
 }
 
 function isDependencyFile(file: string): boolean {

@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "typecheck/contracts" },
+    { "path": "typecheck/workspace-history" },
+    { "path": "typecheck/agent-support" }
+  ]
+}

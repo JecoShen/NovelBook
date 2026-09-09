@@ -327,7 +327,7 @@ git commit -m "build(typecheck): prove declaration project boundary"
 - Produces: emitted workspace-history declarations consumed by Agent; emitted Agent declarations consumed by Task 5-6.
 - Extends test helpers with `expectDuplicateOwners(solution): string[]`, `projectDependencies(solution): Record<string, string[]>`, and `resolvedBy(project): ResolvedGraph`; `ResolvedGraph.toContainSourceOwnedBy(owner)` reports cross-owner Source resolution.
 
-- [ ] **Step 1: Extend graph tests with owner uniqueness and forbidden dependencies**
+- [x] **Step 1: Extend graph tests with owner uniqueness and forbidden dependencies**
 
 ```ts
 expectDuplicateOwners(solution).toEqual([])
@@ -339,25 +339,62 @@ expect(projectDependencies(solution)).toEqual({
 expect(resolvedBy('agent')).not.toContainSourceOwnedBy('workspace-history')
 ```
 
-- [ ] **Step 2: Run graph tests and verify RED**
+> 落地为 `duplicateOwners(ownership)` / `projectDependencies(projects)` / `resolvedBy(name)` +
+> `toContainSourceOwnedBy` 自定义 matcher。所有权比对**排除 ambient `.d.ts`**：它们不会被
+> `emitDeclarationOnly` 重新产出，按仓内既有约定每层各列一遍，不构成冲突。
+
+- [x] **Step 2: Run graph tests and verify RED**
 
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run scripts/typecheck/project-graph.test.ts --maxWorkers=1`
 
 Expected: FAIL because the two project configs and solution references do not exist.
 
-- [ ] **Step 3: Add projects incrementally and lower only proven shared contracts**
+- [x] **Step 3: Add projects incrementally and lower only proven shared contracts**
 
 Add `workspace-history` first, run it, then add `agent`. If a cycle appears, move only the shared type or port into `contracts`; never add reciprocal references. Keep production facades as compatibility re-exports and preserve all runtime specifiers.
 
-- [ ] **Step 4: Run each layer and focused behavior tests under the guard**
+> **偏离（用户已拍板"改边界，不改源码"）**：本步骤的原始假设是 workspace-history 与 agent
+> 各一层即可。实测证据推翻了它，改法全在层归属，零源码改动：
+>
+> 1. **组合根构成真实反向边**。`workspace-history/project-history.ts` 值级 import
+>    `server/config/config-service.ts`，后者 import `server/agent/http`；另有
+>    `server/utils/model-settings.ts` → `agent/harness/pi-*`、
+>    `workspace-files/project-session.ts` → `agent/tools/agent-sql-project-module`。
+>    这 4 个枢纽文件都不在本 Task 声明的可改范围内（blast radius：`config-service` 38 个
+>    importer、`project-session` 85 个）。因此改边界：**workspace-history 只收 agent-free 子集**
+>    （67 文件），互相递归的 agent∪组合根簇归下游同层。
+> 2. **`server/workspace-files/` 从未被 typecheck 过**。根 `tsconfig.json` 的 `include` 只有
+>    `app/`、`server/agent/`、`shared/`。分层因此**扩大**了检查面，并立刻在
+>    `workspace-files/workspace-command.ts` 上暴露 7 个潜伏 `AbsoluteFsPath` 品牌类型真错。
+>    该文件用 `commander`、按 spec §2 属 `scripts` 层，已移出本层交 Task 5；错误记为发现债务。
+> 3. **agent 簇 252 文件 = 170 个 SCC，最大 SCC 83 个，其余全是单点**。所以可纯靠边界切分：
+>    新增 `agent-support`（151 个不触达该 SCC 的文件，实测 925552 KiB 通过）。
+> 4. **`agent` 层（83 文件 SCC）仍超线**，且 83/102/253 文件三种规模的上报峰值都落在
+>    1049xxx–1053xxx —— 这些**全是止损截断值,不是真实峰值**，据此判断"该缩到多少"无效。
+>    提交版 `typecheck/agent/` 与 `typecheck/agent-composition/` 已落地但**暂不入 solution
+>    与 runner**（入了门禁恒红）。定位真实峰值需一次刻意超线测量，同机生产有 OOM 风险，
+>    留待授权。
+
+- [x] **Step 4: Run each layer and focused behavior tests under the guard**
 
 Run: `taskset -c 0 nice -n 15 bun scripts/typecheck/non-desktop-runner.ts --through agent`
 
 Expected: exit `0`; each layer reports `MAX_SINGLE_RSS_KIB < 1048576` and `MIN_MEM_AVAILABLE_KIB >= 2097152`.
 
+> 实跑 `--through agent-support`（`agent` 未入 runner，见 Step 3）：聚合退出码 `0`，零残留。
+>
+> | 层 | exitCode | durationMs | maxSingleRssKiB | minMemAvailableKiB |
+> | --- | --- | --- | --- | --- |
+> | contracts | 0 | 19795 | 871004 | 3064104 |
+> | phase0-sample | 0 | 5527 | 421028 | 3482236 |
+> | workspace-history | 0 | 17359 | 668260 | 3241460 |
+> | agent-support | 0 | 20502 | 925552 | 2977468 |
+
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run server/workspace-files/project-session.test.ts server/workspace-history/project-history.test.ts server/agent/profiles/profile-turn-context-generation.test.ts server/agent/harness/file-change-reminder.test.ts server/agent/profiles/profile-dsl.test.ts --maxWorkers=1`
 
 Expected: PASS; no compatibility import breaks.
+
+> 实跑：5 文件 / 72 用例全通过（73.48 s）。图与 runner 用例 21/21 通过。
 
 - [ ] **Step 5: Commit Task 4**
 

@@ -1,0 +1,90 @@
+{
+  "extends": "../../tsconfig.typecheck.base.json",
+  "compilerOptions": {
+    "paths": {
+      "nbook/*": [
+        "${configDir}/contracts/*",
+        "./*"
+      ],
+      "neuro_book/*": [
+        "${configDir}/contracts/*",
+        "./*"
+      ]
+    }
+  },
+  "references": [
+    {
+      "path": "../contracts"
+    }
+  ],
+  "files": [
+    "../../proper-lockfile.d.ts",
+    "../../server/assets/asset-resolver.ts",
+    "../../server/generated/project-prisma/client.ts",
+    "../../server/generated/project-prisma/enums.ts",
+    "../../server/media/image-variant-contract.ts",
+    "../../server/media/raster-image.ts",
+    "../../server/plot/assemblers/plot-dto.assembler.ts",
+    "../../server/plot/contracts/plot-repositories.ts",
+    "../../server/plot/core/constants.ts",
+    "../../server/plot/core/errors.ts",
+    "../../server/plot/core/types.ts",
+    "../../server/plot/http/plot-input.parser.ts",
+    "../../server/plot/http/plot-route.ts",
+    "../../server/plot/repositories/includes.ts",
+    "../../server/plot/repositories/prisma-chapter.repository.ts",
+    "../../server/plot/repositories/prisma-decision.repository.ts",
+    "../../server/plot/repositories/prisma-promise.repository.ts",
+    "../../server/plot/repositories/prisma-scene.repository.ts",
+    "../../server/plot/repositories/prisma-story.repository.ts",
+    "../../server/plot/repositories/prisma-thread.repository.ts",
+    "../../server/plot/repositories/thread-tags.ts",
+    "../../server/plot/services/chapter.service.ts",
+    "../../server/plot/services/decision.service.ts",
+    "../../server/plot/services/order.service.ts",
+    "../../server/plot/services/plot-scope.guard.ts",
+    "../../server/plot/services/promise.service.ts",
+    "../../server/plot/services/ref-resolver.service.ts",
+    "../../server/plot/services/scene-world-anchor.validator.ts",
+    "../../server/plot/services/scene.service.ts",
+    "../../server/plot/services/story.service.ts",
+    "../../server/plot/services/thread.service.ts",
+    "../../server/utils/novel-chapter.ts",
+    "../../server/workspace-files/content-node-schema.ts",
+    "../../server/workspace-files/content-node-templates.ts",
+    "../../server/workspace-files/project-cover-upload.ts",
+    "../../server/workspace-files/project-cover.ts",
+    "../../server/workspace-files/project-database-module.ts",
+    "../../server/workspace-files/system-assets-preflight.ts",
+    "../../server/workspace-files/system-assets-projection.ts",
+    "../../server/workspace-files/tracked-prisma-libsql.ts",
+    "../../server/workspace-files/workspace-archive.ts",
+    "../../server/workspace-files/workspace-file-conflict.ts",
+    "../../server/workspace-files/workspace-file-index-key.ts",
+    "../../server/workspace-files/workspace-files.ts",
+    "../../server/workspace-files/workspace-upload.ts",
+    "../../server/workspace-history/history-dto.ts",
+    "../../server/workspace-history/history-inbox.ts",
+    "../../server/world-engine/calendar-strategy.ts",
+    "../../server/world-engine/calendar.ts",
+    "../../server/world-engine/calendars/custom.ts",
+    "../../server/world-engine/calendars/gregorian.ts",
+    "../../server/world-engine/calendars/legacy-simple.ts",
+    "../../server/world-engine/calendars/simple.ts",
+    "../../server/world-engine/codeact-sandbox.ts",
+    "../../server/world-engine/embedding-vector.ts",
+    "../../server/world-engine/patch-operations.ts",
+    "../../server/world-engine/schema-loader.ts",
+    "../../server/world-engine/single-file-typescript-config-import.ts",
+    "../../server/world-engine/types.ts",
+    "../../server/world-engine/world-engine.repository.ts",
+    "../../server/world-engine/world-issue-builder.ts",
+    "../../server/world-engine/world-issue-catalog.ts",
+    "../../shared/dto/plot.dto.ts",
+    "../../shared/dto/workspace-file-conflict.dto.ts",
+    "../../shared/dto/workspace-tree.dto.ts",
+    "../../shared/dto/write-response.ts",
+    "../../shared/media/raster-image.ts",
+    "../../shared/reference-core.ts"
+  ]
+}
