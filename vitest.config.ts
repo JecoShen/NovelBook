@@ -35,6 +35,24 @@ export default defineConfig({
     },
   },
   test: {
+    // zod 必须由 Vite 处理，不能作为外部依赖直接加载。
+    //
+    // zod 4 的 ESM 入口只有 4 行（`export * from` + `export { z }` + `export default z`），
+    // CJS 入口用 TypeScript 的 __createBinding / __exportStar 降级辅助函数。Vite 8 把 zod
+    // 当外部依赖加载时，interop 层拿不到命名导出 `z`：`import { z } from 'zod'` 得到
+    // undefined，随后按调用链表现为 `TypeError: undefined is not an object (evaluating
+    // 'z.string')` 或 `SyntaxError: [vite] The requested module 'zod' does not provide an
+    // export named 'z'`。后者会在 agent project 的 setupFiles 加载期抛出，把该 project
+    // 下**全部**测试一起染红，与被测代码无关。
+    //
+    // 实测（vite 8.1.4 / vitest 4.1.10 / zod 4.4.3）：`ssr.resolve.externalConditions` 与
+    // `resolve.conditions` 改成优先 import 都**不能**修复——问题不在条件解析，而在
+    // externalize 后的 interop。只有让 Vite 处理该包才行。代价是每次运行多约 1.6s transform。
+    server: {
+      deps: {
+        inline: ['zod'],
+      },
+    },
     projects: [
       {
         extends: true,
