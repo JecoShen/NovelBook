@@ -72,10 +72,16 @@ const SOLUTION_CONFIG = 'tsconfig.typecheck.json'
  *   而止损上报的峰值恒等于"刚过上限"，真实峰值未知，缩到多少才够无法据此判断。
  *   提交版配置已落 `typecheck/agent/` 与 `typecheck/agent-composition/`，但暂不入 solution。
  */
+/**
+ * 每层的上游集合。值按**字母序**排列，与 `projectDependencies` 的归一化一致——
+ * 本用例断言的是"有哪些上游"，拓扑顺序由 runner 的层列表另行保证。
+ */
 const EXPECTED_PROJECT_DEPENDENCIES: Readonly<Record<string, readonly string[]>> = {
   'contracts': [],
   'workspace-history': ['contracts'],
   'agent-support': ['contracts', 'workspace-history'],
+  'agent': ['agent-support', 'contracts', 'workspace-history'],
+  'agent-composition': ['agent', 'agent-support', 'contracts', 'workspace-history'],
 }
 
 type RawTsConfig = {
@@ -283,13 +289,14 @@ describe('layered typecheck project ownership', () => {
   }, CONFIG_PARSE_TIMEOUT_MS)
 
   it('makes the downstream layer consume upstream declarations instead of their source', async () => {
-    // 计划原文断言的是 `agent` 层；该层实测超资源线暂未入 solution，
-    // 这里对当前最下游的正式层做同一条契约检查，语义不变。
-    const graph = await resolvedBy('agent-support')
+    // 计划原文指定的就是 `agent` 层。它一度因资源线未入 solution，本用例当时降级到
+    // `agent-support` 做同一条契约检查；agent 层落位后已还原到原文目标。
+    const graph = await resolvedBy('agent')
 
     // 闭包为空会让下面的 not.toContainSourceOwnedBy 空转通过。
     expect(graph.files).not.toHaveLength(0)
 
+    expect(graph).not.toContainSourceOwnedBy('agent-support')
     expect(graph).not.toContainSourceOwnedBy('workspace-history')
     expect(graph).not.toContainSourceOwnedBy('contracts')
   }, CONFIG_PARSE_TIMEOUT_MS)

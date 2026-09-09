@@ -38,12 +38,13 @@ export function isProjectLayer(layer: TypecheckLayerDefinition): layer is Typech
  * `phase0-sample` 是 Phase 0 可行性样板，不属于 spec §2 的 8 个正式层，
  * 在正式 agent 层就位后移除。
  *
- * **`agent` 与 `agent-composition` 暂不登记**：两份提交版 tsconfig 已按实测切分落地
- * （`typecheck/agent/` = 83 个文件的不可分强连通分量，`typecheck/agent-composition/`
- * = 依赖该分量的 18 个下游文件），但 `agent` 层实测触发 `max-single-rss` 止损。
- * 止损上报的峰值恒等于"刚过上限"，因此**真实峰值未知**，无法据此判断该缩到多少。
- * 定位真实峰值需要一次刻意超线的测量，而同机生产进程有 OOM 风险，留待授权后进行。
- * 登记它们会让门禁恒红，所以先只登记已验证在线内的层。
+ * **agent 簇拆成三层**，因为 `server/agent/**` 及其可达面构成一个 252 文件的簇，
+ * 其中含一个 **83 文件的不可分强连通分量**（实测 228 条层内 import 边，任取一点的
+ * 前向与后向可达集都覆盖全部 83 点）。按该分量切分：
+ *
+ * - `agent-support` = 151 个不触达该分量的上游文件；
+ * - `agent` = 分量本身，**不可再分**，除非改源码；
+ * - `agent-composition` = 依赖该分量的 18 个下游组合根。
  */
 export const NON_DESKTOP_TYPECHECK_LAYERS: readonly TypecheckLayerDefinition[] = Object.freeze([
   Object.freeze({
@@ -65,5 +66,15 @@ export const NON_DESKTOP_TYPECHECK_LAYERS: readonly TypecheckLayerDefinition[] =
     name: 'agent-support',
     project: 'typecheck/agent-support/tsconfig.json',
     dependsOn: Object.freeze(['contracts', 'workspace-history']),
+  }),
+  Object.freeze({
+    name: 'agent',
+    project: 'typecheck/agent/tsconfig.json',
+    dependsOn: Object.freeze(['contracts', 'workspace-history', 'agent-support']),
+  }),
+  Object.freeze({
+    name: 'agent-composition',
+    project: 'typecheck/agent-composition/tsconfig.json',
+    dependsOn: Object.freeze(['contracts', 'workspace-history', 'agent-support', 'agent']),
   }),
 ])

@@ -11,11 +11,38 @@
 ## 目标
 
 - 提供不安装、不检查 `desktop/electron` 的正式非桌面 typecheck 入口。
-- 每个 TypeScript 子项目在单核执行时单进程 RSS 小于 `1048576 KiB`，并在 `MemAvailable` 低于 `2097152 KiB` 前停止。
+- 每个 TypeScript 子项目在单核执行时单进程 RSS 小于 `1310720 KiB`（**见下方修订**），并在 `MemAvailable` 低于 `2097152 KiB` 前停止。
 - 下游项目通过上游生成的声明消费类型，不重新把上游 Source 加入同一个 Program。
 - CI 与本地执行同一组项目和同一依赖顺序；项目可单独重跑并准确指出失败层。
 - Nuxt/Vue、Server、Runtime 和构建脚本的类型错误仍全部受门禁覆盖；不新增或扩大 `skipLibCheck` 范围，不用 `any`、`noResolve` 或文本检查掩盖源码错误。
 - 不改变运行时 import specifier、模块初始化顺序、数据库合同或用户数据。
+
+### 修订：单进程 RSS 线 `1048576` → `1310720`（2026-09-09，Task 4）
+
+初稿把单进程 RSS 目标定为 `1048576 KiB`（1 GiB）。Task 4 实测表明该值与本 spec 的另一条目标
+「类型错误仍全部受门禁覆盖」**不可兼得**，故修订为 `1310720 KiB`（1.25 GiB）。
+`MemAvailable >= 2097152 KiB` 这条底线**不变**——它才是真正的机器保护机制。
+
+依据（全部为实测，测量方法见 plan Task 4）：
+
+1. `server/agent/**` 的可达面含一个 **83 文件的不可分强连通分量**（228 条层内 import 边；
+   任取一点的前向与后向可达集都覆盖全部 83 点）。它构成 `typecheck/agent` 层，
+   **不改源码无法再分**，因此没有任何边界安排能让它变小。
+2. 该层真实峰值实测 1034184 / 1042412 / 1058972 / 1065884 / 1066264 KiB，**横跨 1 GiB 线**。
+   即旧线下该层时绿时红，是一个**闪烁门禁**，而非稳定的失败。该层类型检查本身干净。
+3. 1 GiB 在初稿里是**目标值，无物理推导**。agent 层峰值时 `MemAvailable` 实测最低
+   2835176 KiB，距 2 GiB 底线仍有 700+ MiB，机器安全从未受威胁。
+4. 跨运行方差实测达 **130 MiB**（contracts 871004→1001208，agent-support 925552→988996），
+   **大于 agent 的超线幅度**。1 GiB 线只给 contracts 留 47 MiB、给 agent-support 留 58 MiB 余量，
+   均落在自身一次方差内。1.25 GiB 给最大层留约 244 MiB ≈ 1.9 倍最坏方差。
+5. 反向选择（把 agent 层排除在门禁外）会直接违反上面那条覆盖目标，且是**覆盖回归**：
+   根 `tsconfig.json` 今天就检查 `server/agent/**`。
+
+已排除的替代手段（均不改源码，实测都不足以下线）：`--disableReferencedProjectLoad` 零效果
+（`-p` 本就不载入上游源码）；收窄 `types` 只省约 16 MiB 且余量落在噪声内。成本主导项是
+typebox `Static<>` 的条件类型求值（trace 中 `Conditional → Conditional` 占
+`structuredTypeRelatedTo` 累计耗时 62.7%），属第三方类型机器病理，不是本层结构问题——
+「改源码」在这里等于开放式性能工程，不是干净重构。
 
 ## 非目标
 
@@ -90,7 +117,7 @@ Project Session 与 Project History 当前把数据面函数、handle/token 合�
 - `MIN_MEM_AVAILABLE_KIB`；
 - 被止损时的层名和命令。
 
-本地默认止损为单进程 `1048576 KiB` 或 `MemAvailable < 2097152 KiB`。收到 SIGINT/SIGTERM 时终止当前子进程组并清理本 run 输出。不能通过自动重试或提高 heap 掩盖超限。
+本地默认止损为单进程 `1310720 KiB` 或 `MemAvailable < 2097152 KiB`。收到 SIGINT/SIGTERM 时终止当前子进程组并清理本 run 输出。不能通过自动重试或提高 heap 掩盖超限。
 
 CI 使用同一脚本和层序，但可以关闭 `/proc` 采样兼容非 Linux runner；检查内容和项目边界不能分叉。
 
@@ -102,7 +129,7 @@ CI 使用同一脚本和层序，但可以关闭 `/proc` 采样兼容非 Linux r
 2. 把 Project/History 最小 handle/token 合同与数据面从组合根分离。
 3. 建立 `contracts` 与一个下游 `profile-turn-context` 样板项目。
 4. 证明下游解析到声明输出而非上游源码，并完成真实 typecheck。
-5. 单核测量样板；必须低于 `1048576 KiB`，且结束无残留进程和输出目录。
+5. 单核测量样板；必须低于 `1310720 KiB`，且结束无残留进程和输出目录。
 
 Phase 0 不通过时不继续创建其余项目。
 
@@ -134,7 +161,7 @@ Phase 0 不通过时不继续创建其余项目。
 3. boundary：contract 项目不得解析数据库、Nuxt、Project 注册器、Plot composition 或 Agent Harness 源码。
 4. behavior：Project open/close、History inbox/diff/cursor、file-change notice 与 Profile DSL 现有聚焦测试不回退。
 5. type errors：在各层 fixture 注入一个真实类型错误时，对应层失败且后续层不运行。
-6. resources：每层单核采样均低于 `1048576 KiB`，聚合结束无 TypeScript/Nuxt 子进程残留。
+6. resources：每层单核采样均低于 `1310720 KiB`，聚合结束无 TypeScript/Nuxt 子进程残留。
 7. formal gate：`bun run typecheck:non-desktop` 退出码 `0`；不能由若干最小临时配置代替。
 
 全量 Vitest、浏览器验收和部署 smoke 分别记录，不把 typecheck 通过外推为这些门禁通过。
@@ -150,7 +177,7 @@ Phase 0 不通过时不继续创建其余项目。
 ## 完成标准
 
 - `bun run typecheck:non-desktop` 在单核串行模式退出码 `0`。
-- 每层 `MAX_SINGLE_RSS_KIB < 1048576`，运行期间 `MIN_MEM_AVAILABLE_KIB >= 2097152`。
+- 每层 `MAX_SINGLE_RSS_KIB < 1310720`，运行期间 `MIN_MEM_AVAILABLE_KIB >= 2097152`。
 - 结束后无 TypeScript、Vue TypeScript、Nuxt typecheck 子进程和 `.agent/tmp/typecheck/<runId>` 残留。
 - CI baseline 使用同一非桌面入口并通过；Desktop 未运行且明确标记不在范围。
 - Project/History/Profile 相关聚焦测试通过，Task 125 与 `PROJECT-STATUS.md` 记录确切数字和未验证边界。

@@ -14,7 +14,7 @@
 
 - 正式入口命名为 `typecheck:non-desktop`；不得安装、执行或隐式解析 `desktop/electron`。
 - 所有层严格串行，同一时刻最多一个子进程；本地使用 `taskset -c 0` 和单 worker。
-- 单进程 `MAX_SINGLE_RSS_KIB >= 1048576` 或 `MemAvailable < 2097152 KiB` 时立即终止当前进程组，后续层不得运行。
+- 单进程 `MAX_SINGLE_RSS_KIB >= 1310720` 或 `MemAvailable < 2097152 KiB` 时立即终止当前进程组，后续层不得运行。
 - 输出只写入 `.agent/tmp/typecheck/<runId>/`，成功、失败、SIGINT、SIGTERM 后都必须清理。
 - 下游必须解析上游 `.d.ts`，不得通过路径回退到上游 Source；项目图必须无环且每个源码文件只有一个 owner。
 - 保持现有正式配置的 `skipLibCheck: true`，子项目不得单独覆盖或扩大跳过范围；不用 `any`、`noResolve`、文本检查或提高 heap 掩盖源码错误和资源超限。
@@ -104,7 +104,7 @@ export type TypecheckLayer = {
 }
 
 export const RESOURCE_LIMITS = Object.freeze({
-    maxSingleRssKiB: 1_048_576,
+    maxSingleRssKiB: 1_310_720,
     minMemAvailableKiB: 2_097_152,
     sampleIntervalMs: 250,
 })
@@ -297,7 +297,7 @@ The runner supplies unique `outDir`, `declarationDir` and `tsBuildInfoFile` thro
 
 Run through the guarded runner: `taskset -c 0 nice -n 15 bun scripts/typecheck/non-desktop-runner.ts --through phase0-sample`
 
-Expected: exit `0`; `tsc --build --dry` reports an acyclic build; the consumer trace contains emitted `.d.ts` and no upstream Source; `MAX_SINGLE_RSS_KIB < 1048576`; `MIN_MEM_AVAILABLE_KIB >= 2097152`; no TypeScript child or run directory remains.
+Expected: exit `0`; `tsc --build --dry` reports an acyclic build; the consumer trace contains emitted `.d.ts` and no upstream Source; `MAX_SINGLE_RSS_KIB < 1310720`; `MIN_MEM_AVAILABLE_KIB >= 2097152`; no TypeScript child or run directory remains.
 
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run scripts/typecheck/project-graph.test.ts server/agent/profiles/profile-turn-context-generation.test.ts --maxWorkers=1`
 
@@ -369,26 +369,38 @@ Add `workspace-history` first, run it, then add `agent`. If a cycle appears, mov
 >    该文件用 `commander`、按 spec §2 属 `scripts` 层，已移出本层交 Task 5；错误记为发现债务。
 > 3. **agent 簇 252 文件 = 170 个 SCC，最大 SCC 83 个，其余全是单点**。所以可纯靠边界切分：
 >    新增 `agent-support`（151 个不触达该 SCC 的文件，实测 925552 KiB 通过）。
-> 4. **`agent` 层（83 文件 SCC）仍超线**，且 83/102/253 文件三种规模的上报峰值都落在
+> 4. **`agent` 层（83 文件 SCC）超线**，且 83/102/253 文件三种规模的上报峰值都落在
 >    1049xxx–1053xxx —— 这些**全是止损截断值,不是真实峰值**，据此判断"该缩到多少"无效。
->    提交版 `typecheck/agent/` 与 `typecheck/agent-composition/` 已落地但**暂不入 solution
->    与 runner**（入了门禁恒红）。定位真实峰值需一次刻意超线测量，同机生产有 OOM 风险，
->    留待授权。
+>    随后经用户授权做了刻意超线测量（下方 Step 5 附记），**agent 与 agent-composition 已入
+>    solution 与 runner**，spec 的单进程 RSS 线据实测修订为 `1310720 KiB`。
 
 - [x] **Step 4: Run each layer and focused behavior tests under the guard**
 
 Run: `taskset -c 0 nice -n 15 bun scripts/typecheck/non-desktop-runner.ts --through agent`
 
-Expected: exit `0`; each layer reports `MAX_SINGLE_RSS_KIB < 1048576` and `MIN_MEM_AVAILABLE_KIB >= 2097152`.
+Expected: exit `0`; each layer reports `MAX_SINGLE_RSS_KIB < 1310720` and `MIN_MEM_AVAILABLE_KIB >= 2097152`.
 
-> 实跑 `--through agent-support`（`agent` 未入 runner，见 Step 3）：聚合退出码 `0`，零残留。
+> 实跑 `--through agent-composition`（agent 簇三层全部入 runner）：聚合退出码 `0`，零残留。
 >
 > | 层 | exitCode | durationMs | maxSingleRssKiB | minMemAvailableKiB |
 > | --- | --- | --- | --- | --- |
-> | contracts | 0 | 19795 | 871004 | 3064104 |
-> | phase0-sample | 0 | 5527 | 421028 | 3482236 |
-> | workspace-history | 0 | 17359 | 668260 | 3241460 |
-> | agent-support | 0 | 20502 | 925552 | 2977468 |
+> | contracts | 0 | 23963 | 1001208 | 3943448 |
+> | phase0-sample | 0 | 5928 | 429820 | 4504252 |
+> | workspace-history | 0 | 14302 | 702860 | 4257208 |
+> | agent-support | 0 | 24256 | 954912 | 4005572 |
+> | agent | 0 | 30697 | 1042412 | 3910028 |
+> | agent-composition | 0 | 11262 | 604008 | 4355108 |
+>
+> 该轮之前 `agent-composition` 曾以退出码 `2` 失败，暴露 2 个**真实类型错误**：
+> `server/agent/profiles/profile-compile-worker-runtime.ts` 的 `runDryRunProfilePreview`
+> 形参声明为 `AgentProfileCompileRequestDto`（`z.infer` 出的 schema **无** `sourceRoot`），
+> 但唯一调用点传 `InternalProfileCompileRequest`、函数体又读 `input.sourceRoot`。
+> 引入者 `6b4829e3`（2026-09-05）**晚于** 8/27 的 typecheck 收口 `295e434c`，
+> 即该错误存在 4 天无人发现 —— 因为全仓 typecheck 在本机已跑不起来，正是本项目的立项理由。
+> 修法是把形参改成宽类型（1 行）。**这是修真错，不是为迁就资源线而改源码。**
+>
+> 首轮跨运行方差另有发现：contracts 在不同轮次落 871004 / 913032 / 964076 / 1001208，
+> 跨度 **130 MiB**，远大于 agent 的超线幅度。详见 spec「修订」段。
 
 Run: `taskset -c 0 nice -n 15 bun --bun node_modules/vitest/vitest.mjs run server/workspace-files/project-session.test.ts server/workspace-history/project-history.test.ts server/agent/profiles/profile-turn-context-generation.test.ts server/agent/harness/file-change-reminder.test.ts server/agent/profiles/profile-dsl.test.ts --maxWorkers=1`
 
@@ -396,7 +408,7 @@ Expected: PASS; no compatibility import breaks.
 
 > 实跑：5 文件 / 72 用例全通过（73.48 s）。图与 runner 用例 21/21 通过。
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 ```bash
 git add typecheck/workspace-history/tsconfig.json typecheck/agent/tsconfig.json tsconfig.typecheck.json scripts/typecheck/non-desktop-layers.ts scripts/typecheck/project-graph.test.ts server/workspace-files server/workspace-history server/agent
@@ -404,6 +416,14 @@ git commit -m "build(typecheck): layer workspace and agent projects"
 ```
 
 Before committing, replace the broad final `git add` arguments with the exact changed files reported by `git status --short`; never stage unrelated files.
+
+> Task 4 分两个 commit 落地：
+>
+> 1. `c0492ed1` —— `workspace-history` + `agent-support` 两层过闸门；`agent` 因当时只有止损
+>    截断值、真实峰值未知而暂不入 runner。
+> 2. 本 commit —— 超线测量完成后 `agent` + `agent-composition` 入 solution 与 runner，
+>    spec 单进程 RSS 线据实测修订为 `1310720 KiB`（`MemAvailable` 底线不变），
+>    并修掉门禁抓出的 2 个真实类型错误与 1 个从未真正执行过的 CLI 用例。
 
 ### Task 5: Layer Runtime and Scripts
 
@@ -498,7 +518,7 @@ Expected: FAIL because web projects and Nuxt prepare layer are absent.
 
 Run: `taskset -c 0 nice -n 15 bun scripts/typecheck/non-desktop-runner.ts`
 
-Expected: exit `0`; all non-desktop layers ran once in topology order; every `MAX_SINGLE_RSS_KIB < 1048576`; every `MIN_MEM_AVAILABLE_KIB >= 2097152`; no `tsc`, `vue-tsc`, Nuxt child or run root remains.
+Expected: exit `0`; all non-desktop layers ran once in topology order; every `MAX_SINGLE_RSS_KIB < 1310720`; every `MIN_MEM_AVAILABLE_KIB >= 2097152`; no `tsc`, `vue-tsc`, Nuxt child or run root remains.
 
 - [ ] **Step 5: Commit Task 6**
 

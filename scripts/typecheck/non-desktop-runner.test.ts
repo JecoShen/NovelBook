@@ -280,7 +280,11 @@ function layer(name: string, exitCode: string): TypecheckLayer {
 }
 
 async function runCliProcess(args: readonly string[]): Promise<{ exitCode: number, output: string }> {
-  const child = spawn(process.execPath, [runnerEntry, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
+  // 必须用 bun 而不是 `process.execPath`：runner 入口 import `nbook/*`，该前缀只由
+  // tsconfig `paths` 定义（`node_modules/nbook` 不存在），node 会在导入期就
+  // `ERR_MODULE_NOT_FOUND`，于是本用例只验证到"进程非零退出"而从未真正跑到 CLI。
+  // 真实入口同样由 bun 执行（Task 7 的 package.json script）。
+  const child = spawn('bun', ['run', runnerEntry, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
   child.stdout?.on('data', (chunk: Buffer) => {
     output += chunk.toString('utf8')
