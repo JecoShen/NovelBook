@@ -31,7 +31,10 @@ describe("LocalAttachmentBlobAdapter", () => {
 
         await Promise.all(Array.from({length: 32}, () => adapter.put("sha256/bb/blob", bytes)));
 
-        await expect(adapter.get("sha256/bb/blob")).resolves.toEqual(Buffer.from(bytes));
+        // toEqual 对 2 MiB blob 是逐属性递归深比较（实测 ~12s），必然超时；
+        // 内容等价性改用 Buffer.equals 的原生 memcmp。
+        const published = (await adapter.get("sha256/bb/blob")) ?? new Uint8Array();
+        expect(Buffer.from(published).equals(Buffer.from(bytes))).toBe(true);
         await expect(readdir(join(root, "sha256", "bb"))).resolves.toEqual(["blob"]);
     }, 10_000);
 

@@ -18,6 +18,7 @@ import { messageText } from 'nbook/server/agent/messages/message-utils'
 import { fauxAssistantMessage, fauxText, fauxToolCall } from '@earendil-works/pi-ai'
 import { profileToolsFromKeys } from 'nbook/server/agent/test/profile-tools'
 import { defineAgentProfile } from 'nbook/server/agent/profiles/define-agent-profile'
+import { resolveProfileArtifactPathContext } from 'nbook/server/agent/profiles/profile-artifact-compiler'
 import { closeAllProjects, openProject, resetProjectSessionsForTest } from 'nbook/server/workspace-files/project-session'
 import { projectWorkspaceRef } from 'nbook/server/workspace-files/project-identity'
 import { Type } from 'typebox'
@@ -134,7 +135,16 @@ describe('Writer Agent invoke 集成测试', () => {
       repo: new JsonlSessionRepository(testRoot),
       profiles: new AgentProfileCatalog(
         join(testRoot, 'profiles-system'),
-        join(testRoot, 'profiles-user'),
+        // 用户 profile root 传 undefined：上游 catalog.ts profileRootLabelForProject
+        // 现在要求该路径含 /.nbook/agent/profiles 边界，裸目录会直接抛错。
+        // 本用例的 Writer profile 由下方 harness.profiles.register 内存注册，
+        // 不读磁盘用户根 —— 与上游同类测试（payload / black-box / file-tools）一致。
+        undefined,
+        undefined,
+        undefined,
+        // 上游 catalog 不再允许隐式 artifact path context（默认 resolver 直接抛错）。
+        (profileRoot, rootLabel) => resolveProfileArtifactPathContext(profileRoot, rootLabel, testRoot),
+        { install: 'workspace/.nbook/agent/profiles' },
       ),
       modelResolver: () => faux.getModel(),
       runtimeResolver: () => faux.runtime,
