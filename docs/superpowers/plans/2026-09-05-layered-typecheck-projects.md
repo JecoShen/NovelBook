@@ -1,5 +1,20 @@
 # Layered Non-Desktop Typecheck Projects Implementation Plan
 
+> ## ⚠️ 部分作废 — 2026-09-10
+>
+> **Task 1-5 已完成并合并**（PR #3 → main `14a9c971`），其结论仍然有效，
+> 尤其是 Task 2 的 project/history 契约拆分（真重构，与目录结构无关）。
+>
+> **Task 6-7 不再执行。** 本仓已跟随上游完成 13-package monorepo 重构
+> （merge `9076c082`），应用根从仓库根迁至 `packages/neuro-book/`。
+> 本计划的全部 `typecheck/*/tsconfig.json`、`tsconfig.typecheck*.json`、
+> `scripts/typecheck/` 均引用根级路径，迁移后失效，已随迁移丢弃（42 项之一）。
+> 分层门禁将改为采用上游 `code-baseline.yml` + `workspace-packages.yml` 重建。
+>
+> 迁移方案与依据见 `.agent/plan/monorepo-migration-2026-09-10/`。
+> 本计划保留作为**资源线实测数据**的档案（含 11 条分层机制实测结论、
+> RSS 1048576→1310720 KiB 的修订依据）。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 建立不安装或检查 Desktop、可在单 worker 资源防线内完成的正式非桌面 typecheck 门禁。
@@ -551,7 +566,7 @@ Expected: PASS for the files matched by these paths; record exact file/test coun
 > 其余验收：`scripts/typecheck/project-graph.test.ts` 10/10、`scripts/typecheck/non-desktop-runner.test.ts`
 > 14/14、`server/workspace-files/workspace-command.test.ts` 7/7 全通过；三个改动文件 eslint 退出 0。
 
-- [ ] **Step 5: Commit Task 5**
+- [x] **Step 5: Commit Task 5**
 
 ```bash
 git add typecheck/runtime/tsconfig.json typecheck/scripts/tsconfig.json server/runtime/tsconfig.json scripts/tsconfig.json tsconfig.typecheck.json scripts/typecheck/non-desktop-layers.ts scripts/typecheck/project-graph.test.ts
