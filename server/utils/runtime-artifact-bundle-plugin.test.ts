@@ -18,6 +18,7 @@ describe('Runtime Artifact bundle plugin', () => {
     roots.push(root)
     const packageRoot = join(root, 'authoring', 'package.json')
     await mkdir(join(root, 'authoring'), { recursive: true })
+    await mkdir(join(root, 'authoring', 'types'), { recursive: true })
     await writeFile(packageRoot, `${JSON.stringify({ name: 'fixture-authoring', private: true })}\n`, 'utf8')
     const context: RuntimeArtifactCompilerContext = {
       kind: 'product-candidate',
@@ -28,6 +29,7 @@ describe('Runtime Artifact bundle plugin', () => {
       nbookRoot: resolve('.'),
       compilerPackageRoot: packageRoot,
       compilerNodeModulesRoot: join(root, 'authoring', 'node_modules'),
+      authoringTypeRoot: join(root, 'authoring', 'types'),
       artifactRuntimeRequireRoot: join(root, 'server', 'index.mjs'),
       tsconfigPath: resolve('tsconfig.json'),
     }

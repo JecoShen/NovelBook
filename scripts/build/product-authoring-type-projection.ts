@@ -84,8 +84,10 @@ export async function projectAuthoringDependencies(input: {
   targetNodeModulesRoot: string
   registrations: readonly AuthoringDependencyRegistration[]
   importerPath: string
+  sourceRoot: string
 }): Promise<AuthoringDependencyProjection> {
-  const packages = await sourcePackages(input.registrations, input.targetNodeModulesRoot)
+  const sourceRoot = resolve(input.sourceRoot)
+  const packages = await sourcePackages(input.registrations, input.targetNodeModulesRoot, input.importerPath)
   const packageByName = new Map(packages.map(entry => [entry.registration.name, entry]))
   const packageInstances = new Map(packages.map(entry => [packageInstanceKey(entry.targetRoot, entry.version), entry]))
   const queue: PendingDeclaration[] = []
@@ -145,7 +147,7 @@ export async function projectAuthoringDependencies(input: {
       if (!declarationPath) {
         throw new Error(`Authoring runtime dependency 缺少 package 根声明入口：${entry.registration.name}`)
       }
-      await bundleRuntimePackage(entry, targetRoot, declarationPath)
+      await bundleRuntimePackage(entry, targetRoot, declarationPath, sourceRoot)
     }
     else {
       await writeFile(resolve(targetRoot, 'package.json'), await readFile(sourceManifestPath, 'utf8'), 'utf8')
@@ -176,21 +178,28 @@ export async function projectAuthoringDependencies(input: {
 async function sourcePackages(
   registrations: readonly AuthoringDependencyRegistration[],
   targetNodeModulesRoot: string,
+  importerPath: string,
 ): Promise<SourcePackage[]> {
-  const requireFromSource = createRequire(pathToFileURL(resolve('package.json')))
   const seen = new Set<string>()
   const entries: SourcePackage[] = []
   for (const registration of registrations) {
     if (seen.has(registration.name)) throw new Error(`Authoring dependency 重复登记：${registration.name}`)
     seen.add(registration.name)
-    const packageJsonPath = requireFromSource.resolve(`${registration.name}/package.json`)
+    // Runtime package 与 type-only package 都可能拒绝 Node require 根入口或 package.json
+    // 子路径。统一用 TypeScript 的 exports-aware 声明解析反推已批准的 package root。
+    const resolved = ts.resolveModuleName(registration.name, importerPath, TYPESCRIPT_OPTIONS, ts.sys).resolvedModule
+    if (!resolved || !isDeclarationPath(resolved.resolvedFileName)) {
+      throw new Error(`Authoring dependency 没有可解析声明入口：${registration.name}`)
+    }
+    const sourceRoot = await realpath(packageRootForResolvedFile(resolved.resolvedFileName, registration.name))
+    const packageJsonPath = resolve(sourceRoot, 'package.json')
     const manifest = JSON.parse(await readFile(packageJsonPath, 'utf8')) as PackageManifest
     if (manifest.name !== registration.name || typeof manifest.version !== 'string' || !manifest.version) {
       throw new Error(`Authoring dependency identity 无效：${registration.name}`)
     }
     entries.push({
       registration,
-      sourceRoot: await realpath(dirname(packageJsonPath)),
+      sourceRoot,
       targetRoot: resolve(targetNodeModulesRoot, ...registration.name.split('/')),
       version: manifest.version,
       manifest,
@@ -251,7 +260,7 @@ async function resolveDeclarationReference(
     if (reference.ignored) return null
     throw new Error(`Authoring dependency 解析到错误身份：${reference.specifier}`)
   }
-  const owner = await resolvedPackageInstance(resolved, importer.owner, topLevelOwner, packageInstances)
+  const owner = await resolvedPackageInstance(resolved, resolved.resolvedFileName, importer.owner, topLevelOwner, packageInstances)
   const resolvedPath = realpathSync(resolved.resolvedFileName)
   assertDeclarationInsidePackage(owner, resolvedPath)
   return { sourcePath: resolvedPath, owner }
@@ -287,14 +296,15 @@ async function resolveTypeReference(
   if (!topLevelOwner) throw new Error(`${importer.owner.registration.name} 声明引用未登记 types：${reference}`)
   const resolved = ts.resolveTypeReferenceDirective(reference, importer.sourcePath, TYPESCRIPT_OPTIONS, ts.sys)
     .resolvedTypeReferenceDirective
-  if (!resolved || !isDeclarationPath(resolved.resolvedFileName)) {
+  const resolvedFileName = resolved?.resolvedFileName
+  if (!resolved || !resolvedFileName || !isDeclarationPath(resolvedFileName)) {
     throw new Error(`${importer.owner.registration.name} 无法解析 types：${reference}`)
   }
   if (!resolved.packageId || resolved.packageId.name !== topLevelOwner.registration.name) {
     throw new Error(`Authoring types 解析到错误身份：${reference}`)
   }
-  const owner = await resolvedPackageInstance(resolved, importer.owner, topLevelOwner, packageInstances)
-  const resolvedPath = realpathSync(resolved.resolvedFileName)
+  const owner = await resolvedPackageInstance(resolved, resolvedFileName, importer.owner, topLevelOwner, packageInstances)
+  const resolvedPath = realpathSync(resolvedFileName)
   assertDeclarationInsidePackage(owner, resolvedPath)
   return { sourcePath: resolvedPath, owner }
 }
@@ -305,16 +315,17 @@ async function resolveTypeReference(
  */
 async function resolvedPackageInstance(
   resolved: ts.ResolvedModuleFull | ts.ResolvedTypeReferenceDirective,
+  resolvedFileName: string,
   importerOwner: SourcePackage,
   topLevelOwner: SourcePackage,
   packageInstances: Map<string, SourcePackage>,
 ): Promise<SourcePackage> {
   const version = resolved.packageId?.version
   if (!version) throw new Error(`Authoring dependency 缺少解析版本：${topLevelOwner.registration.name}`)
-  if (version === topLevelOwner.version && isPathInside(topLevelOwner.sourceRoot, resolved.resolvedFileName)) {
+  if (version === topLevelOwner.version && isPathInside(topLevelOwner.sourceRoot, resolvedFileName)) {
     return topLevelOwner
   }
-  const sourceRoot = await realpath(packageRootForResolvedFile(resolved.resolvedFileName, topLevelOwner.registration.name))
+  const sourceRoot = await realpath(packageRootForResolvedFile(resolvedFileName, topLevelOwner.registration.name))
   const targetRoot = resolve(importerOwner.targetRoot, 'node_modules', ...topLevelOwner.registration.name.split('/'))
   const key = packageInstanceKey(targetRoot, version)
   const existing = packageInstances.get(key)
@@ -445,8 +456,8 @@ async function copyDeclaration(owner: SourcePackage, sourcePath: string, source:
 }
 
 /** 为批准的运行 dependency 生成单文件 ESM 实现，并保留已投影的声明入口。 */
-async function bundleRuntimePackage(entry: SourcePackage, targetRoot: string, declarationPath: string): Promise<void> {
-  const requireFromSource = createRequire(pathToFileURL(resolve('package.json')))
+async function bundleRuntimePackage(entry: SourcePackage, targetRoot: string, declarationPath: string, sourceRoot: string): Promise<void> {
+  const requireFromSource = createRequire(pathToFileURL(resolve(sourceRoot, 'package.json')))
   const runtimeEntry = requireFromSource.resolve(entry.registration.name)
   const runtimeOutput = resolve(targetRoot, 'index.mjs')
   const result = await bundleProductJavaScript({

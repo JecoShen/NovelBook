@@ -10,6 +10,7 @@ import { normalizeAgentProfile } from 'nbook/server/agent/profiles/define-agent-
 import type { AgentProfile, AgentProfileDefinition } from 'nbook/server/agent/profiles/types'
 import { generateVariableTypes, VARIABLE_TYPES_FILE_NAME, type VariableTypeGenerationDiagnostic } from 'nbook/server/agent/variables/generated-types'
 import { appLogger } from 'nbook/server/app-logs/logger'
+import { PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS } from 'nbook/server/agent/profiles/profile-authoring-sdk-specifiers'
 import { importRuntimeArtifact } from 'nbook/server/utils/runtime-artifact-import'
 import { runtimeArtifactBundlePlugin } from 'nbook/server/utils/runtime-artifact-bundle-plugin'
 import {
@@ -181,6 +182,8 @@ export type ProfileArtifactManifest = {
 
 export type CompileProfileArtifactsOptions = {
   profileRoot: string
+  /** Source checkout root；worker 不应依赖自身 cwd 解析 authoring 投影。 */
+  sourceRoot?: string
   fileName?: string
   rootLabel?: string
   skipFresh?: boolean
@@ -529,7 +532,10 @@ export async function stageProfileArtifacts(options: CompileProfileArtifactsOpti
       const existingItem = existingManifest.profiles.find(item => item.fileName === file.fileName)
       let validation: ProfileArtifactValidation | undefined
       if ((options.skipFresh || options.writePolicy === 'forbid') && existingItem) {
-        validation = await validateProfileArtifact(profileRoot, existingItem, { requireTypeArtifact: true })
+        validation = await validateProfileArtifact(profileRoot, existingItem, {
+          requireTypeArtifact: true,
+          sourceRoot: options.sourceRoot,
+        })
         if (validation.fresh) {
           return { entry: existingItem }
         }
@@ -543,7 +549,7 @@ export async function stageProfileArtifacts(options: CompileProfileArtifactsOpti
       try {
         stagingReady ??= createProfileArtifactStaging(buildCompiledDir, operationId)
         await stagingReady
-        const item = await compileProfileFile(profileRoot, buildCompiledDir, file)
+        const item = await compileProfileFile(profileRoot, buildCompiledDir, file, options.sourceRoot)
         return { entry: item, compiled: item }
       }
       catch (error) {
@@ -891,6 +897,8 @@ export async function stageProfileArtifactEntry(options: {
   profileRoot: string
   fileName: string
   stagingRoot?: string
+  /** Source checkout root；worker 不应依赖自身 cwd 解析 authoring 投影。 */
+  sourceRoot?: string
 }): Promise<StagedProfileArtifactEntryResult> {
   const profileRoot = resolve(options.profileRoot)
   const stagingRoot = resolve(options.stagingRoot ?? join(dirname(profileRoot), '.staging'))
@@ -901,7 +909,7 @@ export async function stageProfileArtifactEntry(options: {
   try {
     const file = resolveProfileFile(profileRoot, options.fileName)
     try {
-      const item = await compileProfileFile(profileRoot, buildCompiledDir, file)
+      const item = await compileProfileFile(profileRoot, buildCompiledDir, file, options.sourceRoot)
       return {
         profileRoot,
         buildCompiledDir,
@@ -1101,6 +1109,7 @@ export function profileArtifactManifestPath(profileRoot: string): string {
 export async function validateProfileArtifact(profileRoot: string, item: ProfileArtifactManifestItem, options: {
   requireTypeArtifact?: boolean
   checkDependencies?: boolean
+  sourceRoot?: string
 } = {}): Promise<ProfileArtifactValidation> {
   const root = resolve(profileRoot)
   const sourcePath = join(root, ...item.fileName.split('/'))
@@ -1119,7 +1128,7 @@ export async function validateProfileArtifact(profileRoot: string, item: Profile
   if (await artifactHasNitroImportMetaShim(artifactPath)) {
     return { fresh: false, reason: 'artifact_changed' }
   }
-  if ((await resolveRuntimeArtifactCompilerContext()).productRuntime && !await artifactHasProductRequireShim(artifactPath)) {
+  if ((await resolveRuntimeArtifactCompilerContext(options.sourceRoot)).productRuntime && !await artifactHasProductRequireShim(artifactPath)) {
     return { fresh: false, reason: 'artifact_changed' }
   }
   if (!options.requireTypeArtifact) {
@@ -1372,18 +1381,18 @@ function profileKeyFromFileName(fileName: string): string {
   return basename(fileName).replace(/\.profile\.(tsx|ts|mjs|js)$/u, '')
 }
 
-async function compileProfileFile(profileRoot: string, compiledDir: string, file: ProfileFileEntry): Promise<ProfileArtifactManifestItem> {
+async function compileProfileFile(profileRoot: string, compiledDir: string, file: ProfileFileEntry, sourceRoot?: string): Promise<ProfileArtifactManifestItem> {
   const sourceHash = await hashFile(file.absolutePath)
   const authoringGraph = await validateRuntimeArtifactAuthoring({
     kind: 'profile',
     root: profileRoot,
     entry: file.absolutePath,
-    allowedSdkSpecifiers: ['nbook/profile-sdk', 'nbook/profile-sdk/lore', 'nbook/profile-sdk/writing', 'nbook/profile-sdk/workspace', 'nbook/profile-sdk/runtime-paths', 'nbook/profile-sdk/session'],
+    allowedSdkSpecifiers: PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS,
   })
   const temporaryStem = stableArtifactStem(file.fileName, /\.profile\.(tsx|ts|mjs|js)$/)
   const temporaryOutputPath = join(compiledDir, `${temporaryStem}.${randomUUID()}.building.mjs`)
   const temporaryTypePath = join(compiledDir, `${temporaryStem}.${randomUUID()}.building.${VARIABLE_TYPES_FILE_NAME}`)
-  const compilerContext = await resolveRuntimeArtifactCompilerContext()
+  const compilerContext = await resolveRuntimeArtifactCompilerContext(sourceRoot)
   const tsconfigPath = compilerContext.tsconfigPath
   let dependencies: ProfileArtifactDependency[]
 

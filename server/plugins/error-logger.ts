@@ -6,6 +6,10 @@ type RequestErrorEvent = {
   path?: string
 }
 
+type RequestErrorContext = {
+  event?: RequestErrorEvent
+}
+
 /**
  * 从未知错误中提取状态码。
  */
@@ -84,8 +88,9 @@ const sanitizeRequestError = (error: unknown, rawPath: string | null, safePath: 
 const scrubRequestPath = (text: string, rawPath: string, safePath: string): string => text.replaceAll(rawPath, safePath)
 
 export default defineNitroPlugin((nitroApp) => {
-  nitroApp.hooks.hook('error', (error, event) => {
-    const safeEvent = event as RequestErrorEvent | undefined
+  nitroApp.hooks.hook('error', (error, context) => {
+    const event = (context as RequestErrorContext | undefined)?.event
+    const safeEvent = event
     const method = safeEvent?.method ?? 'UNKNOWN'
     const path = resolveSafeRequestPath(event)
     const rawPath = resolveRawRequestPath(event)

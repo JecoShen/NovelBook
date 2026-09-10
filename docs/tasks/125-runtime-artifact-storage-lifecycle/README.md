@@ -257,7 +257,67 @@ Phase 0 需要把 `defineAgentProfile -> profile-dsl / low-code-form / runtime s
 - Round 03 实施 Phase 3 artifact 减重（四处切边 + 依赖门禁），见 [walkthrough](walkthroughs/round-03-phase3-artifact-diet.md)。
 - Round 04 把 Project 测试写入全部收进 suite 级隔离 Runtime Workspace Root，移除 Preview 测试前缀遮掩，并精确清理已授权残留，见 [walkthrough](walkthroughs/round-04-workspace-test-isolation.md)。
 
-### 实际结果与原计划差异
+### Round 05：Source 投影缓存资源验收与单 Worker 防线（2026-09-05）
+
+本轮把根 `vitest.config.ts` 的 `test.maxWorkers` 从 `2` 收紧为 `1`，并新增运行配置合同测试。合同测试实际导入根配置后先在旧值 `2` 下失败，再在值 `1` 下通过；没有使用源码文本 grep。
+
+Source Profile CLI 资源测量使用新的隔离 Cache Root `/www/wwwroot/book.neoshen.dpdns.org/.worktree/i2-test-baseline/.agent/tmp/task5-resource-5f96b107-6e02-4f2b-a81f-aa4a4e469591`，State Root 是其 `state/` 子目录。冷、热两次使用同一 Cache Root 和同一 `bun server/agent/profiles/profile-command.ts compile resource-smoke.profile.tsx` 命令，并通过 `NEURO_BOOK_APPLICATION_ROOT`、`NEURO_BOOK_STATE_ROOT`、`NEURO_BOOK_CACHE_ROOT` 传入环境；这与 `runtimePathsFromEnv()` 的合同一致，输出实际落在该 Cache Root 的 `authoring-types/` 下。
+
+| 场景 | 退出码 | 时长 | MAX_SINGLE_RSS_KIB | MAX_GROUP_RSS_KIB | MIN_MEM_AVAILABLE_KIB | 残留 |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 冷缓存 | `0` | `21868 ms` | `761120` | `807560` | `3317516` | 无 |
+| 热缓存 | `0` | `8904 ms` | `459036` | `501304` | `3580964` | 无 |
+
+采样每 `1` 秒读取目标进程组中全部进程的 RSS；冷、热单进程峰值都低于 `786432 KiB` 目标，且都低于 `1 GiB` 止损线。测量结束后目标进程组均无残留。
+
+按资源防线执行的类型检查只尝试一次：`taskset -c 0 nice -n 15 timeout --signal=INT --kill-after=10s 12m bun run typecheck`；在 `28207 ms` 时单进程 RSS 达到 `1093576 KiB`，超过 `1 GiB` 止损线，发送信号终止全进程组，退出码 `130`，`MAX_GROUP_RSS_KIB=1306204`，`MIN_MEM_AVAILABLE_KIB=2847784`，无残留。未重跑类型检查。
+
+聚焦回归按轻量、重型顺序执行，均为单核单 Worker：轻量集合 `5` 个文件、`23` 个测试通过，退出码 `0`，时长 `66055 ms`，`MAX_SINGLE_RSS_KIB=797356`，`MAX_GROUP_RSS_KIB=1290908`，`MIN_MEM_AVAILABLE_KIB=2540328`，无残留；黑盒集合 `1` 个文件、`3` 个测试通过，退出码 `0`，时长 `111326 ms`，`MAX_SINGLE_RSS_KIB=522192`，`MAX_GROUP_RSS_KIB=794136`，`MIN_MEM_AVAILABLE_KIB=2836796`，无残留。
+
+受控全量测试仅在启动前 `MemAvailable=3770408 KiB`（至少 `3 GiB`）时执行：`taskset -c 0 nice -n 15 timeout --signal=INT --kill-after=10s 20m bun run test -- --maxWorkers=1`。全量在 `77788 ms` 时因单进程 RSS 达到 `1072504 KiB` 超过止损线而终止，退出码 `130`，`MAX_GROUP_RSS_KIB=1373076`，`MIN_MEM_AVAILABLE_KIB=2499056`，无残留；全量测试未完成，不能由聚焦测试替代。
+
+后续把非桌面 typecheck 按独立配置拆分，并继续使用单核、单进程 `1 GiB` / `MemAvailable 2 GiB` 止损。`shared/tsconfig.json` 退出码 `0`，`MAX_SINGLE_RSS_KIB=295532`；`server/runtime/tsconfig.json` 与 `scripts/tsconfig.json` 分别在 `1048772 KiB`、`1055180 KiB` 触发止损。排除 runtime 测试和本轮新增缓存文件后，runtime 生产基线仍在 `1068208 KiB` 触发止损，证明该整图峰值并非由新增缓存模块单独造成。
+
+新增投影链的两个最小 typecheck 图都能在止损线内完成，并首先暴露 `6` 个严格类型错误：TypeScript namespace/value 混用、依赖 allowlist 的字面量集合过窄、resolver 可选路径未显式收窄。最小类型修复后，缓存入口与投影入口均退出码 `0`，`MAX_SINGLE_RSS_KIB=325828` / `325552`，`MAX_GROUP_RSS_KIB=334836` / `334556`；相关投影与缓存回归 `3` 个文件、`16` 个测试通过，`MAX_SINGLE_RSS_KIB=483420`、`MAX_GROUP_RSS_KIB=818132`、`MIN_MEM_AVAILABLE_KIB=3151916`。这证明本轮新增链可独立通过类型检查，但不能替代仍未完成的全仓非桌面 typecheck。
+
+继续二分 runtime 生产图后，`profile-dsl.ts` 单文件 typecheck 在 `MAX_SINGLE_RSS_KIB=1060976` 触发止损。根因是它为了三值 `FileChangeAwareness` 类型和三个基础消息构造器，分别加载 `profile-turn-context.ts` 与包含完整工具结果合同的 `message-utils.ts`。临时等价声明对照将同一检查降到 `514028 KiB` 并以退出码 `0` 完成；据此把轻量 turn-context 合同和消息构造器拆成独立模块，旧入口保留兼容导出。真实新边界下 `profile-dsl.ts` typecheck 退出码 `0`，`MAX_SINGLE_RSS_KIB=529260`、`MAX_GROUP_RSS_KIB=538340`、`MIN_MEM_AVAILABLE_KIB=3417576`；消息/DSL 聚焦回归实际匹配 `2` 个文件、`37` 个测试并全部通过。
+
+完整 `server/runtime/tsconfig.json` 在上述拆分后仍于 `MAX_SINGLE_RSS_KIB=1057192` 触发止损。剩余最小复现是 `profile-turn-context.ts` 本身：它单独检查达到 `1053668 KiB`，因为 Project Session 与 Project History 的组合根仍在同一源码图内。当前不能把 Profile DSL 边界通过写成完整 runtime typecheck 通过；下一轮需要单独设计 History 数据面与注册/组合根的拆分。
+
+GC 当前实现已覆盖 owner 判定、10 分钟最小安全年龄、`256 MiB` 可证明 orphan 预算、quarantine 双次 `lstat` 稳定性检查和未知/不安全内容保守保留；本轮没有把 GC report、warn 日志或不可回收超预算 fail-closed 扩展为运行时代码，因此稳定 Reference 只记录当前已实现合同。
+
+### Round 06：Phase 0 声明消费可行性闸门实测通过（2026-09-09）
+
+本轮接替 Round 05，先复核 Round 05 记录的资源数字，再实测 Phase 0 可行性闸门。**结论：闸门通过，可以继续创建其余项目。**
+
+**校正 Round 05 的三个数字。** Round 05 记录的 `MAX_SINGLE_RSS_KIB` 是止损线掐断时的截断值，不是真实峰值。放宽单进程上限后重测（`MemAvailable` 下限维持保护，全程未触及，最低 `1266096 KiB`）：
+
+| 对象 | Round 05 记录 | 本轮实测（跑完） | 退出码 |
+| --- | ---: | ---: | ---: |
+| `profile-turn-context.ts` 单文件 | `1053668`（截断） | `1205172` | `0` |
+| 全仓 `nuxt typecheck` | `1093576`（截断） | 触顶 `1966092`、再触顶 `2621500`，均未跑完 | `130` |
+
+四次测量累计 `0` 条 TS 错误；全仓 typecheck 在 CI（16 GiB runner）为绿。把 V8 堆压到 `1536 MiB` 后 Mark-Compact 只能从 `1510.7 MiB` 降到 `1471.4 MiB` 并 `FATAL ERROR: Ineffective mark-compacts near heap limit`，证明其内存需求是真实活跃对象，不是 V8 惰性增长。**全仓单体 typecheck 在本机（8 GiB，含生产 PM2 常驻约 `776 MiB`）无法带安全余量完成。**
+
+**样板超限的根因与修复。** 对 `profile-turn-context.ts` 的 11 个依赖逐个单文件测量：`message-utils` 为 `1254868 KiB`，其余（`project-history-data-plane` `911888`、`agent-change-diff` `846472`、`project-session-data-plane` `845884`、`project-lifecycle` `834288`）均在 `834`–`912 MiB` 区间。`message-utils` 因 `import type { NeuroToolResult } from 'nbook/server/agent/tools/types'` 把完整工具结果合同带进每个消费者的 Program。`profile-turn-context.ts` 只用到 `createStoredUserMessage`，改为从 Round 05 已建的 `message-constructors.ts` 导入后：`1205172` → `853740 KiB`、`31954` → `17613 ms`，落到 `1048576 KiB` 止损线内。`message-utils` 继续 re-export 构造器，调用方不变。
+
+**Phase 0 闸门四项验收实测。** 精确闭包由 `tsc --listFiles` 导出：`104` 个仓库文件（Program 总计 `1667` 个，其余为 `node_modules` 与 lib）。以其中 `103` 个（除样板自身）作为 `contracts` composite 项目的 `files`：
+
+| 层 | 退出码 | 时长 | MAX_SINGLE_RSS_KIB | MAX_GROUP_RSS_KIB | MIN_MEM_AVAILABLE_KIB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `contracts`（`emitDeclarationOnly`，产 `102` 个 `.d.ts`） | `0` | `24033 ms` | `903396` | `912044` | `2975672` |
+| `profile-turn-context` 样板消费者 | `0` | `4707 ms` | `406928` | `415588` | `3543016` |
+
+1. 下游解析到声明而非上游源码：消费者 `--listFiles` 中唯一的仓库 `.ts` 是 `server/agent/profiles/profile-turn-context.ts` 本身，其余全部落在声明输出目录。
+2. 完成真实 typecheck：两层退出码均为 `0`。
+3. 资源：两层单进程峰值均低于 `1048576 KiB`。
+4. 无需 `prepend`、无需 `paths` 指向源码、未把上下游文件列入同一项目，因此不构成 spec §4 的可行性失败。
+
+声明消费相对源码模式的实测收益：样板消费者 `853740` → `406928 KiB`（`-52%`）、`17613` → `4707 ms`（`-73%`）。据此修正 Round 05 遗留的推断——`834 MiB` 量级只是**源码模式**下加载整个闭包 typings 的开销，不是分层无法突破的地板。
+
+**本轮已知边界。** 上述为一次性脚手架实测，尚未落为仓库内的 `tsconfig.typecheck.base.json`、`typecheck/contracts/`、`typecheck/fixtures/`、`project-graph.test.ts` 与 runner CLI；Task 4-7 未开始；桌面端未跑；全量 Vitest 未跑；浏览器验收未跑；部署烟测未跑。实测中发现两处后续实现必须遵守的约束：composite 项目要求穷举 `files`（否则 `TS6307`），且 tsconfig 内相对路径按配置文件所在目录解析，runner 生成的 per-run 配置必须写绝对路径。
+
+
 
 - 原问题最初聚焦 `.agent` 缓存；深入后确认最大残留实际位于系统 `%TEMP%`，由测试 fixture 放大 `.compiled` 导致，因此任务范围从“缓存清理”扩展为三个 owner 的生命周期设计。
 - 原本可能只需修 cleanup；最小实验证明 Profile artifact 与 runtime import cache 自身也无界，因此单修测试会很快复发。
@@ -273,4 +333,7 @@ Phase 0 需要把 `defineAgentProfile -> profile-dsl / low-code-form / runtime s
 - [ ] Phase 2 补测：预算 GC 四条聚焦测试、`profile-artifact-store.test.ts`、fixture 所有权测试。
 - [x] Phase 3：Profile artifact 减重（Round 03：单 artifact 27.3→1.2 MiB、一代 release 382→17.24 MiB；「Product 只有 5.9 MB」的差距根因即渗漏边——Product 是对 Nitro tree-shake 后的 `.output/server` 编译，天然没有 jsdom/prisma；切边后 source 反而更小）。
 - [x] Phase 3 门禁：编译器 metafile 依赖白名单 + 禁止依赖族 + 4 MiB 字节上限，违规 `compile_failed`，合同见 `reference/agent/profile-compiled-artifacts.md` 的 Dependency Gate 小节。
-- [ ] Phase 4：跨环境验收（Source / Product Bun / Windows Portable 三形态 Profile 导入）与 5 轮空间收敛曲线。原 `bun:ffi` 阻塞已在 Round 02/03 解除（`isPlatformBuiltinModule` external + 依赖图切边），`catalog.test.ts` 已回到 44/44。
+- [x] Task 5：单 Worker 防线、Source 投影缓存冷/热资源验收和聚焦回归；冷/热均低于 `786432 KiB`。新增投影链的拆分 typecheck 已通过并修复 `6` 个严格类型错误；全仓 typecheck 和全量测试仍分别因 `1093576 KiB` / `1072504 KiB` 止损，均未完成。
+- [ ] Phase 4：跨环境验收（Source / Product Bun / Windows Portable 三形态 Profile 导入）与 5 轮空间收敛曲线。原 `bun:ffi` 阻塞已在 Round 02/03 解除（`isPlatformBuiltinModule` external + 依赖图切边），`catalog.test.ts` 已回到 44/44；本轮 typecheck 和受控全量测试仍未完成。
+- [x] Phase 0 可行性闸门（Round 06）：声明消费实测通过 — `contracts` 层 `903396 KiB` 产 `102` 个 `.d.ts`，样板消费者 `406928 KiB` 且只解析声明不解析上游源码，两层退出码 `0`，均低于 `1048576 KiB`。据此解除 Task 3 STOP GATE，允许创建其余项目。
+- [ ] Task 3 落地：把 Round 06 的脚手架实测落为 `tsconfig.typecheck.base.json`、`typecheck/contracts/tsconfig.json`、`typecheck/fixtures/profile-turn-context/tsconfig.json`、`scripts/typecheck/project-graph.test.ts`、`non-desktop-layers.ts` 层数据与 runner CLI（`--through`）。

@@ -8,7 +8,7 @@ import type {
 type WorkerRequest = {
   id: number
   mode?: 'single' | 'all' | 'entry'
-  input: (AgentProfileCompileRequestDto | AgentProfileCompileAllRequestDto) & { userProfileRoot?: string }
+  input: (AgentProfileCompileRequestDto | AgentProfileCompileAllRequestDto) & { userProfileRoot?: string, sourceRoot?: string }
 }
 
 if (!parentPort) {

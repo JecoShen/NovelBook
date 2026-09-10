@@ -22,6 +22,7 @@ import {
 import type { ProfileCompilePublishOptions, ProfileCompileWorkerResult } from 'nbook/server/agent/profiles/profile-compile-worker-types'
 import { appLogger } from 'nbook/server/app-logs/logger'
 import { resolveUserNbookRoot } from 'nbook/server/workspace-files/workspace-runtime-root'
+import { resolveApplicationRoot } from 'nbook/server/workspace-files/system-workspace-assets'
 import {
   isProjectNotOpenError,
   ProjectNotOpenError,
@@ -87,7 +88,7 @@ export function useProfileCompileWorker(): ProfileCompileWorkerService {
   const userProfileRoot = defaultUserProfileRoot()
   if (!service || service.version !== WORKER_VERSION || service.userProfileRoot !== userProfileRoot) {
     service?.dispose()
-    service = new ProfileCompileWorkerService(WORKER_VERSION, undefined, undefined, userProfileRoot)
+    service = new ProfileCompileWorkerService(WORKER_VERSION, undefined, undefined, userProfileRoot, resolveApplicationRoot())
   }
   return service
 }
@@ -112,6 +113,7 @@ export class ProfileCompileWorkerService {
     maxWorkers = defaultCompileWorkerCount(),
     private readonly cleanupStagedDir: CleanupStagedDir = defaultCleanupStagedDir,
     readonly userProfileRoot = defaultUserProfileRoot(),
+    readonly sourceRoot = resolveApplicationRoot(),
   ) {
     this.maxWorkers = Math.max(1, maxWorkers)
   }
@@ -243,7 +245,7 @@ export class ProfileCompileWorkerService {
       slot.worker.postMessage({
         id: task.id,
         mode: task.mode,
-        input: withWorkerRoot(task.input, this.userProfileRoot),
+        input: withWorkerRoot(task.input, this.userProfileRoot, this.sourceRoot),
       })
     }
   }
@@ -497,7 +499,7 @@ export class ProfileCompileWorkerService {
     slot.worker.postMessage({
       id: task.id,
       mode: task.mode,
-      input: withWorkerRoot(task.input, this.userProfileRoot),
+      input: withWorkerRoot(task.input, this.userProfileRoot, this.sourceRoot),
     })
     return promise
   }
@@ -711,10 +713,11 @@ function defaultUserProfileRoot(): string {
   return resolve(resolveUserNbookRoot(), 'agent', 'profiles')
 }
 
-function withWorkerRoot<T extends AgentProfileCompileRequestDto | AgentProfileCompileAllRequestDto>(input: T, userProfileRoot: string): T & { userProfileRoot: string } {
+function withWorkerRoot<T extends AgentProfileCompileRequestDto | AgentProfileCompileAllRequestDto>(input: T, userProfileRoot: string, sourceRoot: string): T & { userProfileRoot: string, sourceRoot: string } {
   return {
     ...input,
     userProfileRoot,
+    sourceRoot,
   }
 }
 

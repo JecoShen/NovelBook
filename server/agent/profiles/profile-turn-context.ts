@@ -1,13 +1,15 @@
 import type { StoredAgentMessage } from 'nbook/server/agent/messages/stored-types'
-import { createStoredUserMessage } from 'nbook/server/agent/messages/message-utils'
-import { requireReadyModuleHandle } from 'nbook/server/workspace-files/project-session'
-import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-types'
+import { createStoredUserMessage } from 'nbook/server/agent/messages/message-constructors'
+import { requireReadyModuleHandle } from 'nbook/server/workspace-files/project-session-data-plane'
+import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-contract'
+import {
+  PROJECT_HISTORY_MODULE_TOKEN,
+  type ProjectHistoryHandle,
+} from 'nbook/server/workspace-history/project-history-contract'
 import {
   advanceAgentCursor,
-  PROJECT_HISTORY_MODULE_TOKEN,
   readUnseenForAgent,
-  type ProjectHistoryHandle,
-} from 'nbook/server/workspace-history/project-history'
+} from 'nbook/server/workspace-history/project-history-data-plane'
 import {
   readAgentChangeDiffDetails,
   type AgentChangeDiffDetail,
@@ -20,7 +22,7 @@ import {
 } from 'nbook/shared/agent/file-change-policy'
 import type { OperationActor, UnseenGroup } from 'nbook/server/vendor/nb-history/index'
 
-export type FileChangeAwareness = 'off' | 'minimal' | 'full'
+export type { FileChangeAwareness } from 'nbook/server/agent/profiles/profile-turn-context-contract'
 
 export type ProfileTurnContextPlan = {
   kind: 'file-change-notice'

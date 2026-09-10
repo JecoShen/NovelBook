@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Usage } from '@earendil-works/pi-ai'
 import {
+  createAssistantTextMessage,
+  createStoredTextToolResult,
+  createStoredUserMessage,
+} from 'nbook/server/agent/messages/message-constructors'
+import {
   createStoredToolResultFromResult,
   createToolResultFromResult,
   normalizeToolResultDetails,
@@ -45,6 +50,40 @@ describe('createToolResultFromResult', () => {
     expect(storedMessage.content[0]).toMatchObject({ type: 'attachment', name: 'cover.png' })
     expect(eventMessage.details).toEqual({ path: 'cover.png', count: '2' })
     expect(storedMessage.details).toEqual({ path: 'cover.png', count: '2' })
+  })
+})
+
+describe('lightweight message constructors', () => {
+  it('preserves durable messages and assistant defaults without the tool-result implementation graph', () => {
+    expect(createStoredUserMessage('hello', 10)).toEqual({
+      role: 'user',
+      content: [{ type: 'text', text: 'hello' }],
+      timestamp: 10,
+    })
+    expect(createStoredTextToolResult({
+      toolCallId: 'tool-1',
+      toolName: 'read',
+      text: 'done',
+      details: { count: 2n },
+      timestamp: 11,
+    })).toEqual({
+      role: 'toolResult',
+      toolCallId: 'tool-1',
+      toolName: 'read',
+      content: [{ type: 'text', text: 'done' }],
+      details: { count: '2' },
+      isError: false,
+      timestamp: 11,
+    })
+    expect(createAssistantTextMessage({ text: 'answer', timestamp: 12 })).toMatchObject({
+      role: 'assistant',
+      content: [{ type: 'text', text: 'answer' }],
+      api: 'neuro-book',
+      provider: 'neuro-book',
+      model: 'neuro-agent',
+      stopReason: 'stop',
+      timestamp: 12,
+    })
   })
 })
 

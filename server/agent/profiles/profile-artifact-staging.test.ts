@@ -1,9 +1,10 @@
 import { access, mkdir, mkdtemp, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { basename, join, resolve } from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   cleanupProfileArtifactStaging,
+  compileProfileArtifacts,
   PROFILE_ARTIFACT_STAGING_DIR_NAME,
   PROFILE_ARTIFACT_STAGING_LEASE_LOCK,
   PROFILE_ARTIFACT_STAGING_MAX_AGE_MS,
@@ -50,6 +51,45 @@ async function seedOwnedStaging(stagingRoot: string, operationId: string, starte
 }
 
 describe('Profile artifact staging lifecycle', () => {
+  it('existing artifact 的 skipFresh/forbid 校验把 sourceRoot 传给 compiler context', async () => {
+    const { root } = await createStagingRoot()
+    const profileRoot = join(root, 'profiles')
+    const sourceRoot = resolve('.')
+    await mkdir(profileRoot, { recursive: true })
+    await writeFile(join(profileRoot, 'existing.profile.ts'), `import {Type, defineAgentProfile, toolset} from "nbook/profile-sdk";
+export default defineAgentProfile({
+    manifest: {key: "existing", name: "Existing"},
+    initialSchema: Type.Object({}),
+    tools: toolset(),
+    prepare: () => ({}),
+});
+`, 'utf8')
+    await compileProfileArtifacts({ profileRoot, sourceRoot })
+
+    const compilerContext = await import('nbook/server/utils/runtime-artifact-compiler-context')
+    const original = compilerContext.resolveRuntimeArtifactCompilerContext
+    const observedRoots: Array<string | undefined> = []
+    const spy = vi.spyOn(compilerContext, 'resolveRuntimeArtifactCompilerContext')
+      .mockImplementation(async (root?: string) => {
+        observedRoots.push(root)
+        return await original(root)
+      })
+    try {
+      const result = await compileProfileArtifacts({
+        profileRoot,
+        sourceRoot,
+        skipFresh: true,
+        writePolicy: 'forbid',
+      })
+      expect(result.compiled).toEqual([])
+    }
+    finally {
+      spy.mockRestore()
+    }
+
+    expect(observedRoots).toContain(sourceRoot)
+  })
+
   it('超过 24 小时且没有活跃 lease 的同 owner staging 会被回收', async () => {
     const { stagingRoot } = await createStagingRoot()
     const now = Date.now()

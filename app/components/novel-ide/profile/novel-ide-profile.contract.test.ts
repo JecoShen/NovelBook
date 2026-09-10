@@ -18,7 +18,7 @@ describe('Novel IDE profile frontend contract', () => {
       readFile(indexPagePath, 'utf8'),
     ])
 
-    expect(accountMenu).toContain('props.currentUser?.role === "admin"')
+    expect(accountMenu).toContain('props.currentUser?.role === \'admin\'')
     expect(accountMenu).toContain('ide.header.localLogout')
     expect(activityBar).toContain('<NovelIdeAccountMenu')
     expect(activityBar).not.toContain('const userMenuItems')
@@ -38,10 +38,10 @@ describe('Novel IDE profile frontend contract', () => {
 
   it('关联状态具有 loading、error、loaded 三态且错误可重试', async () => {
     const panel = await readFile(profilePanelPath, 'utf8')
-    expect(panel).toContain('const statusError = ref("")')
-    expect(panel).toContain('statusError.value = "";')
-    expect(panel).toContain('status.value = null;')
-    expect(panel).toContain('statusError.value = resolveApiErrorMessage(error, t("ide.profile.loadFailed"))')
+    expect(panel).toContain('const statusError = ref(\'\')')
+    expect(panel).toContain('statusError.value = \'\'')
+    expect(panel).toContain('status.value = null')
+    expect(panel).toContain('statusError.value = resolveApiErrorMessage(error, t(\'ide.profile.loadFailed\'))')
     expect(panel).toContain('v-if="statusLoading && !status"')
     expect(panel).toContain('v-else-if="statusError"')
     expect(panel).toContain('v-else-if="status"')

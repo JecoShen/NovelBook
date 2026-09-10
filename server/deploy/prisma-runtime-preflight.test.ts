@@ -163,7 +163,7 @@ describe('Prisma runtime preflight', () => {
   it('has-users 不再顶层导入 Prisma', async () => {
     const text = await readFile(resolve('scripts', 'cli', 'has-users.ts'), 'utf8')
 
-    expect(text).not.toContain('import {prisma} from "nbook/server/utils/prisma"')
-    expect(text).toContain('await import("nbook/server/utils/prisma")')
+    expect(text).not.toContain('import { prisma } from \'nbook/server/utils/prisma\'')
+    expect(text).toContain('await import(\'nbook/server/utils/prisma\')')
   })
 })

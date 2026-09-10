@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -44,6 +44,7 @@ describe('Authoring CLI blackbox', () => {
     const validPreview = await runCli(profileCommand, ['preview', 'valid.profile.ts', '--input-json', '{}'], fixture)
     expect(validPreview, `stdout:\n${validPreview.stdout}\nstderr:\n${validPreview.stderr}`).toMatchObject({ code: 0 })
     expect(validPreview.stdout).toContain('preview ok: yes')
+    await expectPublishedAuthoringTypes(fixture)
 
     await writeFile(validPath, `${validProfileSource()}\n// source changed\n`, 'utf8')
     const stale = await runCli(profileCommand, ['status', 'valid.profile.ts'], fixture)
@@ -66,6 +67,7 @@ describe('Authoring CLI blackbox', () => {
     const globalCompile = await runCli(variableCommand, ['definition', 'compile', '--global'], fixture)
     expect(globalCompile, `stdout:\n${globalCompile.stdout}\nstderr:\n${globalCompile.stderr}`).toMatchObject({ code: 0 })
     expect((await runCli(variableCommand, ['definition', 'status', '--global'], fixture)).code).toBe(0)
+    await expectPublishedAuthoringTypes(fixture)
 
     await writeFile(globalPath, `${validVariableSource('global-smoke')}\n// source changed\n`, 'utf8')
     expect((await runCli(variableCommand, ['definition', 'status', '--global'], fixture)).code).toBe(1)
@@ -76,6 +78,7 @@ describe('Authoring CLI blackbox', () => {
     await writeFile(join(projectVariableRoot, 'definitions.ts'), validVariableSource('project-smoke'), 'utf8')
     expect((await runCli(variableCommand, ['definition', 'compile', '--project', 'demo'], fixture, projectRoot)).code).toBe(0)
     expect((await runCli(variableCommand, ['definition', 'status', '--project', 'demo'], fixture, projectRoot)).code).toBe(0)
+    await expectPublishedAuthoringTypes(fixture)
     expect((await runCli(variableCommand, ['definition', 'status', '--project', '..'], fixture, projectRoot)).code).toBe(1)
   }, 180_000)
 
@@ -170,12 +173,54 @@ async function leaseEntries(cacheRoot: string, kind: string): Promise<string[]> 
   }
 }
 
+/** 确认真实 CLI 成功后发布 current 指针，并清空本轮 projection staging。 */
+async function expectPublishedAuthoringTypes(fixture: AuthoringFixture): Promise<void> {
+  const authoringRoot = join(fixture.cacheRoot, 'authoring-types')
+  const current = JSON.parse(await readFile(join(authoringRoot, 'current.json'), 'utf8')) as {
+    schema?: unknown
+    fingerprint?: unknown
+  }
+  expect(current).toMatchObject({
+    schema: 'nbook.source-authoring-types/v1',
+  })
+  expect(current.fingerprint).toEqual(expect.stringMatching(/^sha256:[0-9a-f]{64}$/u))
+  const publishedRoot = join(authoringRoot, String(current.fingerprint))
+  const manifest = JSON.parse(await readFile(join(publishedRoot, 'manifest.json'), 'utf8')) as {
+    schema?: unknown
+    fingerprint?: unknown
+    inputFiles?: unknown
+    files?: unknown
+  }
+  expect(manifest).toMatchObject({
+    schema: 'nbook.source-authoring-types/v1',
+    fingerprint: current.fingerprint,
+  })
+  expect(Array.isArray(manifest.inputFiles)).toBe(true)
+  expect(Array.isArray(manifest.files)).toBe(true)
+  await expect(directoryEntries(join(authoringRoot, '.staging'))).resolves.toEqual([])
+}
+
+async function directoryEntries(root: string): Promise<string[]> {
+  try {
+    return await readdir(root)
+  }
+  catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
+      return []
+    }
+    throw error
+  }
+}
+
 function validProfileSource(): string {
   return `
 import {ProfilePrompt, System, Type, defineAgentProfile, toolset} from "nbook/profile-sdk";
+import {readTitleOwner} from "nbook/profile-sdk/session";
+
+const titleOwner = readTitleOwner({});
 
 export default defineAgentProfile({
-    manifest: {key: "valid", name: "Valid"},
+    manifest: {key: "valid", name: titleOwner === "auto" ? "Valid" : "Owned"},
     initialSchema: Type.Object({}),
     tools: toolset(),
     context() { return ProfilePrompt({children: System({children: "ok"})}); },

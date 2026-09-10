@@ -22,14 +22,14 @@ describe('Jobs feed 页面接线合同', () => {
     expect(indexPage).not.toContain('const chromeJobsFeed = useAgentJobsFeed(projectSurfaceActive);')
     expect(activityBar).not.toContain('agentJobsActiveCount')
     expect(indexPage).not.toContain('<AgentJobsDialog')
-    expect(dialog).toContain('const feed = useAgentJobsFeed();')
+    expect(dialog).toContain('const feed = useAgentJobsFeed()')
   })
 
   it('工作面失活会关闭任务中心', async () => {
     const indexPage = await readFile(indexPagePath, 'utf8')
 
     expect(indexPage).toContain('watch(projectSurfaceActive, (active) => {')
-    expect(indexPage).toContain('if (!active) agentPanelOpen.value = false;')
+    expect(indexPage).toContain('if (!active) agentPanelOpen.value = false')
   })
 
   it('开发命令固定经过Source Dev launcher，并由内部入口启动单进程 Nuxt', async () => {
@@ -60,19 +60,21 @@ describe('Jobs feed 页面接线合同', () => {
       readFile(workflowPreviewPath, 'utf8'),
       readFile(workflowPanelPath, 'utf8'),
     ])
-    const listReads = workflowPreview.match(/\$fetch<AgentJobListResponseDto>\("\/api\/agent\/jobs"\)/gu) ?? []
+    const listReads = workflowPreview.match(/\$fetch<AgentJobListResponseDto>\(['"]\/api\/agent\/jobs['"]\)/gu) ?? []
 
     expect(listReads).toHaveLength(1)
-    expect(workflowPanel).toContain('const jobIdRef = computed(() => props.jobId || null);')
+    expect(workflowPanel).toContain('const jobIdRef = computed(() => props.jobId || null)')
     expect(workflowPanel).not.toContain('/api/agent/jobs')
-    expect(workflowPreview).toContain('<WorkflowRunPanel :run-id="activeRun.runId" :scenario-key="activeRun.scenarioKey" />')
+    expect(workflowPreview).toContain('<WorkflowRunPanel')
+    expect(workflowPreview).toContain(':run-id="activeRun.runId"')
+    expect(workflowPreview).toContain(':scenario-key="activeRun.scenarioKey"')
   })
 
   it('Workflow preview 首批 Catalog 失败会释放已打开 Project', async () => {
     const workflowPreview = await readFile(workflowPreviewPath, 'utf8')
 
-    expect(workflowPreview).toContain('const loaded = await loadFormalCatalog(projectRoot, ready.revision);')
-    expect(workflowPreview).toContain('if (revision !== formalProjectRevision || selectedProjectRoot.value !== projectRoot || loaded) return;')
-    expect(workflowPreview).toContain('await formalProjectSession.release();')
+    expect(workflowPreview).toContain('const loaded = await loadFormalCatalog(projectRoot, ready.revision)')
+    expect(workflowPreview).toContain('if (revision !== formalProjectRevision || selectedProjectRoot.value !== projectRoot || loaded) return')
+    expect(workflowPreview).toContain('await formalProjectSession.release()')
   })
 })

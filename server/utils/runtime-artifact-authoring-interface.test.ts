@@ -6,6 +6,7 @@ import {
   assertRuntimeArtifactAuthoringMetafile,
   validateRuntimeArtifactAuthoring,
 } from 'nbook/server/utils/runtime-artifact-authoring-interface'
+import { PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS } from 'nbook/server/agent/profiles/profile-authoring-sdk-specifiers'
 
 const roots: string[] = []
 
@@ -32,6 +33,23 @@ describe('Runtime Artifact Authoring Interface', () => {
 
     expect(graph.files).toHaveLength(2)
     expect(graph.files.some(file => file.endsWith('helper.ts'))).toBe(true)
+  })
+
+  it('Profile authoring 共享白名单允许公开 session 子入口', async () => {
+    const root = await fixtureRoot()
+    await writeFile(join(root, 'entry.ts'), [
+      'import {readTitleOwner} from "nbook/profile-sdk/session";',
+      'export const owner = readTitleOwner({});',
+    ].join('\n'), 'utf8')
+
+    await expect(validateRuntimeArtifactAuthoring({
+      kind: 'profile',
+      root,
+      entry: join(root, 'entry.ts'),
+      allowedSdkSpecifiers: PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS,
+    })).resolves.toMatchObject({
+      files: [join(root, 'entry.ts')],
+    })
   })
 
   it.each([

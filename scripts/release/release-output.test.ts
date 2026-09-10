@@ -87,27 +87,24 @@ describe('Release output generation', () => {
     }
   })
 
-  it('Release 与平台 workflow 只消费统一代次目录', async () => {
-    const [releaseWorkflow, platformWorkflow] = await Promise.all([
-      readFile(resolve(ROOT, '.github', 'workflows', 'release-container.yml'), 'utf8'),
-      readFile(resolve(ROOT, '.github', 'workflows', 'product-platforms.yml'), 'utf8'),
-    ])
+  it('Release workflow 只消费统一代次目录', async () => {
+    const releaseWorkflow = await readFile(
+      resolve(ROOT, '.github', 'workflows', 'release-container.yml'),
+      'utf8',
+    )
     expect(() => parse(releaseWorkflow)).not.toThrow()
-    expect(() => parse(platformWorkflow)).not.toThrow()
-    for (const workflow of [releaseWorkflow, platformWorkflow]) {
-      expect(workflow).toContain('release-output.ts prepare --github-env')
-      expect(workflow).toContain('NEURO_BOOK_RELEASE_DIR')
-      for (const oldRootAsset of [
-        'dist/neuro-book-source.zip',
-        'dist/neuro-book-product-windows-x64.zip',
-        'dist/neuro-book-product-linux-x64-glibc.tar.gz',
-        'dist/neuro-book-product-linux-aarch64-glibc.tar.gz',
-        'dist/neuro-book-product-darwin-x64.tar.gz',
-        'dist/neuro-book-product-darwin-aarch64.tar.gz',
-        'dist/neuro-book-windows-x64.zip',
-      ]) {
-        expect(workflow).not.toContain(oldRootAsset)
-      }
+    expect(releaseWorkflow).toContain('release-output.ts prepare --github-env')
+    expect(releaseWorkflow).toContain('NEURO_BOOK_RELEASE_DIR')
+    for (const oldRootAsset of [
+      'dist/neuro-book-source.zip',
+      'dist/neuro-book-product-windows-x64.zip',
+      'dist/neuro-book-product-linux-x64-glibc.tar.gz',
+      'dist/neuro-book-product-linux-aarch64-glibc.tar.gz',
+      'dist/neuro-book-product-darwin-x64.tar.gz',
+      'dist/neuro-book-product-darwin-aarch64.tar.gz',
+      'dist/neuro-book-windows-x64.zip',
+    ]) {
+      expect(releaseWorkflow).not.toContain(oldRootAsset)
     }
     const manifestCommand = releaseWorkflow.slice(
       releaseWorkflow.indexOf('bun scripts/release/release-assets.ts manifest'),

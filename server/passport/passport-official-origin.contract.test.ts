@@ -27,7 +27,7 @@ describe('official Passport origin contract', () => {
       readFile(sourcePaths.linkStart, 'utf8'),
     ])
 
-    expect(constants).toContain('OFFICIAL_PASSPORT_SITE_URL = "https://nbook.notnotype.com"')
+    expect(constants).toContain('OFFICIAL_PASSPORT_SITE_URL = \'https://nbook.notnotype.com\'')
     expect(constants).not.toContain('DEFAULT_PASSPORT_SITE_URL')
     for (const source of [dto, schema, sqliteSchema, client, linkStart]) {
       expect(source).not.toContain('siteBaseUrl')

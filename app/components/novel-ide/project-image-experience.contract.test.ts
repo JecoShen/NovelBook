@@ -14,14 +14,15 @@ describe('Project 与 Attachment 图片体验合同', () => {
   it('书架懒加载固定封面 preset，并由 Store 统一发布 Project mutation', async () => {
     const picker = await readFile(pickerPath, 'utf8')
 
-    expect(picker).toContain('new URLSearchParams({projectRoot, preset: "project-cover"})')
-    expect(picker).toContain('loading="lazy" decoding="async"')
+    expect(picker).toContain('new URLSearchParams({ projectRoot, preset: \'project-cover\' })')
+    expect(picker).toContain('loading="lazy"')
+    expect(picker).toContain('decoding="async"')
     expect(picker).toContain('updateProjectCover,')
     expect(picker).toContain('await updateProjectCover(project.projectRoot, file)')
     expect(picker).toContain('await updateProjectCover(project.projectRoot, null)')
     expect(picker.match(/applyCoverMutationResult\(updated\)/gu)).toHaveLength(2)
     expect(picker).toContain('coverRefreshVersions.value = {')
-    expect(picker).toContain('resolveProjectMutationCommitState(error, "cover-update")')
+    expect(picker).toContain('resolveProjectMutationCommitState(error, \'cover-update\')')
     expect(picker).toContain('await refreshCoverMutationState(projectRoot)')
     expect(picker).toContain('coverNeedsRefresh')
     expect(picker).toContain('coverRecoveries')
@@ -49,9 +50,10 @@ describe('Project 与 Attachment 图片体验合同', () => {
       readFile(attachmentPanelPath, 'utf8'),
     ])
 
-    expect(chatAttachment).toContain('"attachment-chat"')
+    expect(chatAttachment).toContain('\'attachment-chat\'')
     expect(chatAttachment).toContain('v-if="isImage"')
-    expect(chatAttachment).toContain('v-else class="flex w-full')
+    expect(chatAttachment).toContain('v-else')
+    expect(chatAttachment).toContain('class="flex w-full')
     expect(chatAttachment).toContain(':href="originalUrl"')
     expect(chatAttachment).toContain('t(\'agent.chat.downloadAttachment\')')
     expect(chatGallery).toContain('AgentAttachmentCard')
@@ -61,12 +63,12 @@ describe('Project 与 Attachment 图片体验合同', () => {
     expect(toolBubble).not.toContain('props.toolCall.resultEntryId && resultAttachments.length')
     expect(chatGallery).not.toContain('AgentAttachmentImage')
     expect(chatBubble).not.toContain('AgentAttachmentImage')
-    expect(attachmentPanel).toContain('"attachment-grid"')
+    expect(attachmentPanel).toContain('\'attachment-grid\'')
     expect(attachmentPanel).toContain('canonicalImageMime(item.attachment.mimeType)')
     expect(attachmentPanel).toContain('v-if="isImage(item)"')
     expect(attachmentPanel).toContain('t("agent.attachments.downloadFile")')
     for (const source of [chatAttachment, attachmentPanel]) {
-      expect(source).toContain('import OriginalImagePreviewDialog from "nbook/app/components/common/OriginalImagePreviewDialog.vue"')
+      expect(source).toContain('import OriginalImagePreviewDialog from \'nbook/app/components/common/OriginalImagePreviewDialog.vue\'')
       expect(source).toContain('<OriginalImagePreviewDialog')
     }
   })

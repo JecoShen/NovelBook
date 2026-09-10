@@ -23,7 +23,7 @@ export class ProfileFreshnessChecker {
   /**
      * 验证 manifest item 指向的源码、artifact 和依赖是否仍新鲜。
      */
-  async validate(profileRoot: string, item: ProfileArtifactManifestItem, options: { requireTypeArtifact?: boolean, checkDependencies?: boolean } = {}): Promise<ProfileArtifactFreshness> {
+  async validate(profileRoot: string, item: ProfileArtifactManifestItem, options: { requireTypeArtifact?: boolean, checkDependencies?: boolean, sourceRoot?: string } = {}): Promise<ProfileArtifactFreshness> {
     return validateProfileArtifact(profileRoot, item, options)
   }
 

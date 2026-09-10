@@ -5,13 +5,16 @@ import path from 'node:path'
 import sharp from 'sharp'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { absoluteFsPath } from 'nbook/server/runtime/paths/file-path'
-import type {
-  ImageVariantError,
+import {
   IMAGE_VARIANT_PRESETS,
   ImageVariantModule,
-  type ImageVariantModuleLimits,
-  type ImageVariantSource,
-  type ImageVariantSpec } from 'nbook/server/media/image-variant'
+} from 'nbook/server/media/image-variant'
+import type {
+  ImageVariantError,
+  ImageVariantModuleLimits,
+  ImageVariantSource,
+  ImageVariantSpec,
+} from 'nbook/server/media/image-variant'
 
 const roots: string[] = []
 const DEFAULT_TEST_LIMITS: ImageVariantModuleLimits = Object.freeze({
