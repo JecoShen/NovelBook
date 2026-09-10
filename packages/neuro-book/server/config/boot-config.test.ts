@@ -10,6 +10,7 @@ let tempDir: string | null = null;
 
 describe("Boot Config auth", () => {
     afterEach(async () => {
+        vi.unstubAllEnvs();
         process.chdir(originalCwd);
         restoreEnv("NEURO_BOOK_APPLICATION_ROOT", originalApplicationRoot);
         restoreEnv("NEURO_BOOK_STATE_ROOT", originalStateRoot);
@@ -34,7 +35,17 @@ describe("Boot Config auth", () => {
 
         expect(resolveBootAuthEnabled("development")).toBe(false);
         expect(resolveBootAuthEnabled("production")).toBe(true);
+    });
+
+    it("参数缺省时回落到 process.env.NODE_ENV", async () => {
+        await useConfig("server: {}\n");
+        const {resolveBootAuthEnabled} = await importFreshConfig();
+
+        // 必须显式 stub：不 stub 时断言会随运行者 shell 的 NODE_ENV 摇摆（本机 development 即误报）。
+        vi.stubEnv("NODE_ENV", "production");
         expect(resolveBootAuthEnabled(undefined)).toBe(true);
+        vi.stubEnv("NODE_ENV", "development");
+        expect(resolveBootAuthEnabled(undefined)).toBe(false);
     });
 
     it("非法 auth.enabled 会明确失败", async () => {

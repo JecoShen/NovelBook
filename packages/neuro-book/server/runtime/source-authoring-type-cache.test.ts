@@ -26,7 +26,7 @@ function mockInputBytes(sourceRoot = projectionMock.inputSourceRoot || process.c
   return readFileSync(resolve(sourceRoot, MOCK_INPUT_PATH))
 }
 
-vi.mock('nbook/scripts/build/authoring-sdk-type-projection', () => ({
+vi.mock('#scripts/build/authoring-sdk-type-projection', () => ({
   AUTHORING_SDK_TYPE_PROJECTION_SCHEMA: 'nbook.authoring-sdk-type-projection/v2',
   AUTHORING_SDK_DEPENDENCIES: [{
     name: 'mock-sdk',

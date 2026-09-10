@@ -137,15 +137,22 @@ export async function openSourceAuthoringTypeProjection(
   }
 }
 
-/** Worker 的 TS loader 可能不为运行时 dynamic import 应用 tsconfig alias；回退到同一 checkout 的源码文件。 */
-async function loadProjectionModule(sourceRoot: string): Promise<typeof import('nbook/scripts/build/authoring-sdk-type-projection')> {
+/** Worker 的 TS loader 可能不为运行时 dynamic import 应用 subpath imports；回退到同一 checkout 的源码文件。 */
+async function loadProjectionModule(sourceRoot: string): Promise<typeof import('#scripts/build/authoring-sdk-type-projection')> {
   try {
-    return await import('nbook/scripts/build/authoring-sdk-type-projection')
+    return await import('#scripts/build/authoring-sdk-type-projection')
   }
   catch (error) {
-    if (!(error instanceof Error) || !error.message.includes('Cannot find package \'nbook\'')) throw error
+    if (!isSpecifierResolutionFailure(error)) throw error
     return await import(pathToFileURL(resolve(sourceRoot, 'scripts/build/authoring-sdk-type-projection.ts')).href)
   }
+}
+
+/** 只吞说明符解析失败；模块自身的执行错误必须冒泡，否则回退会把真实缺陷伪装成路径问题。 */
+function isSpecifierResolutionFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const code = (error as NodeJS.ErrnoException).code
+  return code === 'ERR_MODULE_NOT_FOUND' || code === 'ERR_PACKAGE_IMPORT_NOT_DEFINED'
 }
 
 async function acquirePublishLock(authoringRoot: string): Promise<() => Promise<void>> {

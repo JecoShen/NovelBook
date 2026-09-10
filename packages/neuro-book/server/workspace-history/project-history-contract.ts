@@ -1,10 +1,10 @@
-import type { SnapshotRawEventBatch } from 'nbook/packages/file-snapshot-cache/src/index'
+import type { SnapshotRawEventBatch } from '@notnotype/file-snapshot-cache'
 import {
   projectModuleToken,
   type ProjectModuleHandle,
 } from 'nbook/server/workspace-files/project-module'
 import type { ProjectWorkspacePathPolicyResult } from 'nbook/server/workspace-files/project-workspace-path-policy'
-import type { WorkspaceHistory } from 'nbook/server/vendor/nb-history/index'
+import type { WorkspaceHistory } from '@notnotype/nb-history'
 import type { WorkspaceFileChangeEventDto } from 'nbook/shared/dto/workspace-file-events.dto'
 
 /** History generation warm-up当前所处的重工作阶段。 */

@@ -6,7 +6,7 @@ import {
   type OperationActor,
   type UnseenGroup,
   type WorkspaceHistory,
-} from 'nbook/server/vendor/nb-history/index'
+} from '@notnotype/nb-history'
 import type { ProjectHistoryHandle } from 'nbook/server/workspace-history/project-history-contract'
 import { isHistoryTrackedRelativePath } from 'nbook/server/workspace-history/history-paths'
 
