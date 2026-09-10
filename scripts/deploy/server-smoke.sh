@@ -41,8 +41,11 @@ require_command curl
 require_command node
 require_command pm2
 
-if [[ -z "$expected_version" && -f "$root/package.json" ]]; then
-    expected_version="v$(node -e "process.stdout.write(require(process.argv[1]).version)" "$root/package.json")"
+# 版本字段在应用包上；根 manifest 只是 workspace 容器，没有 version，
+# 读它会让 process.stdout.write(undefined) 抛错并在 set -e 下终止整个 smoke。
+app_manifest="$root/packages/neuro-book/package.json"
+if [[ -z "$expected_version" && -f "$app_manifest" ]]; then
+    expected_version="v$(node -e "process.stdout.write(require(process.argv[1]).version)" "$app_manifest")"
 fi
 
 pm2_json="$(pm2 jlist)"

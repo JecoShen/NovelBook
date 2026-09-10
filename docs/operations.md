@@ -50,7 +50,16 @@ pm2 start ecosystem.config.cjs --only book-neoshen
 pm2 save
 ```
 
-更新源码并重新构建后，用同一份 PM2 配置重启。PM2 7.0.3 在这台机器上执行 `pm2 restart ecosystem.config.cjs --only book-neoshen --update-env` 曾触发过 `Cannot read properties of undefined (reading 'pm2_env')`，可用删除再启动作为可恢复路径：
+更新源码后重新构建 Product `.output`。构建入口在应用包里，不在仓库根；`bun` 的 `--cwd` 必须写在 `run` 之后，否则只会打印用法并以 0 退出：
+
+```bash
+cd /www/wwwroot/book.neoshen.dpdns.org
+bun run --cwd packages/neuro-book nuxt:build
+```
+
+`nuxt:build` 才产出 `.output`。应用包的 `build` 脚本只做 prepare/generate/系统资产/tsc，不产出可部署镜像。构建通过 `LocalProductPublisher` 原子替换仓库根的 `.output`，旧镜像退到 `.deploy/local-publish/previous`。
+
+重新构建后，用同一份 PM2 配置重启。PM2 7.0.3 在这台机器上执行 `pm2 restart ecosystem.config.cjs --only book-neoshen --update-env` 曾触发过 `Cannot read properties of undefined (reading 'pm2_env')`，可用删除再启动作为可恢复路径：
 
 ```bash
 cd /www/wwwroot/book.neoshen.dpdns.org
@@ -59,10 +68,10 @@ pm2 start ecosystem.config.cjs --only book-neoshen
 pm2 save
 ```
 
-重启前先确认没有迁移锁被其它存活进程持有：
+重启前先确认没有迁移锁被其它存活进程持有。不带 `--force` 即为 dry-run；脚本不接受 `--dry-run`，传未知参数会以 2 退出：
 
 ```bash
-scripts/clean-stale-lease.sh --dry-run
+scripts/clean-stale-lease.sh
 ```
 
 重启后执行服务器 smoke：
