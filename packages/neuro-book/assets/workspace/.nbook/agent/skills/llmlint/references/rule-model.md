@@ -2,7 +2,7 @@
 
 本文件是规则数据形态的**活契约**：写规则、加 detector、加 handler、改 loader 之前先读这里。类型定义在 `src/types.ts`，加载与校验在 `src/rules.ts`。
 
-设计沿革与当初的权衡记录在 `docs/tasks/23-skill-loop-and-service/rule-model-v3-design.md`（历史文档，不随实现更新）。两者冲突时**以本文件和源码为准**。
+设计沿革与当初的权衡记录来自已迁出的历史 Task（旧目录不再作为活动入口）；两者冲突时**以本文件和源码为准**。
 
 规模数字（多少条 active、各桶分布）不写在这里，看 `PROJECT-STATUS.md`——那些会漂移。
 

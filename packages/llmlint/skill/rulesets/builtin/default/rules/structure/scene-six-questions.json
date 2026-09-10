@@ -1,0 +1,20 @@
+[
+  {
+    "id": "cn.structure.scene-six-questions",
+    "namespace": "structure.scene-six-questions",
+    "title": "场景 6 问 (P1-4: Story Grid 6 问 软提示)",
+    "level": "low",
+    "review": "agent",
+    "fixability": "manual",
+    "enabled": true,
+    "note": "P1-4 (2026-08-19) — 调研报告 §2.3 落地。level=low 永不变 medium/high, 抗 §7.4 过度 spec 化。detector 真实匹配 ## 场景 触发 trigger 测试 (I2 修复; 缺 ## 场景 段的章也触发软提示)。",
+    "detector": {
+      "type": "regex",
+      "targets": ["## 场景"]
+    },
+    "action": {
+      "type": "suggest",
+      "message": "建议为本章添加 ## 场景 段并填 6 问 (POV / 地点时间 / 想要什么 / 价值转换 / 新信息 / 下一步), 参考 reference/scene-six-questions.md"
+    }
+  }
+]
