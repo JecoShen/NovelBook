@@ -9,7 +9,8 @@
         "types": ["node", "bun", "vitest/globals"],
         "baseUrl": ".",
         "paths": {
-            "#owned-process/*": ["./src/*"]
+            "#owned-process/*": ["./src/*"],
+            "nbook/*": ["../../*"]
         }
     },
     "include": [

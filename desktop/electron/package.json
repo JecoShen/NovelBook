@@ -10,6 +10,10 @@
         "audit": "bun run build && bun -e \"import('./dist/main.mjs').catch(() => process.exit(0))\"",
         "headless": "bun run build && electron dist/main.mjs --headless"
     },
+    "dependencies": {
+        "@notnotype/neuro-book-contracts": "file:../../packages/neuro-book-contracts",
+        "@notnotype/neuro-book-manager": "file:../../packages/neuro-book-manager"
+    },
     "devDependencies": {
         "@electron/asar": "^4.2.1",
         "electron": "^43.2.0"

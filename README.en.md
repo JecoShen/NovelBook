@@ -15,7 +15,7 @@
 
 [简体中文](README.md) · **English**
 
-<img src="./docs/images/主页.png" width="100%" alt="The NeuroBook main window: lorebook file tree on the left, prose editor in the middle, AI writing assistant on the right" />
+<img src="./vitepress/public/images/主页.png" width="100%" alt="The NeuroBook main window: lorebook file tree on the left, prose editor in the middle, AI writing assistant on the right" />
 
 </div>
 
@@ -49,13 +49,13 @@ NeuroBook treats these as engineering problems — lore, plot, prose, and world 
 For multiple instances, Docker, or building from source, use NeuroBook Manager instead:
 
 ```powershell
-irm https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.ps1 | iex
 ```
 
 **Linux / macOS**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/notnotype/neuro-book/master/scripts/install/install.sh | sh
 ```
 
 **If you already have Bun (any platform)**:
@@ -64,7 +64,7 @@ curl -fsSL https://raw.githubusercontent.com/JecoShen/NovelBook/main/scripts/ins
 bunx --bun @notnotype/neuro-book-manager@canary
 ```
 
-The installer walks you through the directory, port, update channel, and authentication policy, and runs one shared preflight before you confirm. For multi-instance management, Docker deployment, building from source, and how to audit the bootstrap script against its SHA256, see the [deployment guide](docs/en/deployment.md). To have another AI Agent assist with deployment or troubleshooting, just send it [docs/en/operator-bridge.md](docs/en/operator-bridge.md).
+The installer walks you through the directory, port, update channel, and authentication policy, and runs one shared preflight before you confirm. For multi-instance management, Docker deployment, building from source, and SHA256 auditing, see the [deployment guide](vitepress/locales/en-US/deployment.md). To have another AI Agent assist with deployment or troubleshooting, send it the [operator bridge](vitepress/locales/en-US/operator-bridge.md).
 
 ## Four Core Capabilities
 
@@ -78,7 +78,7 @@ The biggest enemy of a long novel is lore drift. World Engine does event sourcin
 - Every change is a timestamped, auditable record — exactly when he obtained that sword is fully traceable.
 - Read/write separation for Agents: the leader can write, the writer is read-only — writing prose can never corrupt your world.
 
-<img src="./docs/images/World%20Engine%20Workbench.jpg" width="100%" alt="World Engine workbench: subject list on the left, world slice timeline in the middle, state snapshot and subject trace on the right" />
+<img src="./vitepress/public/images/World%20Engine%20Workbench.jpg" width="100%" alt="World Engine workbench: subject list on the left, world slice timeline in the middle, state snapshot and subject trace on the right" />
 
 ### 🧵 Plot Workbench: foreshadowing gets a ledger, decisions get an archive
 
@@ -89,7 +89,7 @@ Structure and causality are separate concerns: the **narrative tree** manages wh
 - **Chapter information control**: what the reader knows, what the protagonist knows, what must be hidden, what may only be hinted — Hitchcock's suspense theory, turned into fields.
 - Scenes anchor directly to the world timeline, locations, and cast — plot planning and world state interlock.
 
-<img src="./docs/images/剧情工作台.jpg" width="100%" alt="Plot Workbench: thread list on the left, scene cards with time ranges in the middle, writing brief and World Engine context on the right" />
+<img src="./vitepress/public/images/剧情工作台.jpg" width="100%" alt="Plot Workbench: thread list on the left, scene cards with time ranges in the middle, writing brief and World Engine context on the right" />
 
 ### ✍️ Multi-Agent writing studio: a good horse deserves a good saddle
 
@@ -131,13 +131,13 @@ NeuroBook's core features weren't invented on a whim — each one sits on a soft
 
 The rules your AI assistants work by are editable, and you don't need to write code. Each assistant has a Profile — it decides which tools the assistant may use, what context it can see, and what conventions it writes by. You can edit that in a visual editor, or let the built-in "user asset assistant" edit it for you. To bundle a multi-step chore like "draft → check → revise" into a single command, use a workflow.
 
-<img src="./docs/images/TSX可视化编辑器.png" width="100%" alt="The Profile visual editor: edit an assistant's context structure as a node tree with a live preview" />
+<img src="./vitepress/public/images/TSX可视化编辑器.png" width="100%" alt="The Profile visual editor: edit an assistant's context structure as a node tree with a live preview" />
 
 For details see [What is a profile](https://blog.notnotype.com/neuro-book/en/profile/) and [Workflows and Jobs](https://blog.notnotype.com/neuro-book/en/agent/workflow). To work on NeuroBook itself, see [Contributing](CONTRIBUTING.en.md).
 
 ## Documentation
 
-**The documentation site is fully translated: [English documentation](https://blog.notnotype.com/neuro-book/en/).** It is the same 37 pages as the Chinese site, with search and a language switcher in the top bar.
+**The documentation site is fully translated: [English documentation](https://blog.notnotype.com/neuro-book/en/).** Chinese and English use matching page sets, with search and a language switcher in the top bar.
 
 - [English docs home](https://blog.notnotype.com/neuro-book/en/) — start here
 - [Quick start](https://blog.notnotype.com/neuro-book/en/quick-start) — download, launch, configure a model
@@ -147,11 +147,21 @@ For details see [What is a profile](https://blog.notnotype.com/neuro-book/en/pro
 - [Agent mental model](https://blog.notnotype.com/neuro-book/en/agent/) / [Workflows and Jobs](https://blog.notnotype.com/neuro-book/en/agent/workflow) / [Three modes](https://blog.notnotype.com/neuro-book/en/agent/modes)
 - [What is a profile](https://blog.notnotype.com/neuro-book/en/profile/) / [Write a profile from scratch](https://blog.notnotype.com/neuro-book/en/profile-tsx/authoring)
 
-The Markdown sources live under [`docs/en/`](docs/en/) (English) and [`docs/`](docs/) (Chinese). Deeper implementation references are Chinese-only for now:
+The public documentation sources live under [`vitepress/locales/en-US/`](vitepress/locales/en-US/) (English) and [`vitepress/locales/zh-Hans/`](vitepress/locales/zh-Hans/) (Simplified Chinese). Deeper implementation references remain in their owning package or root engineering documentation:
 
-- [NeuroBook Reference Bookshelf](reference/README.md)
+- [NeuroBook Reference Bookshelf](packages/neuro-book/assets/reference/README.md)
 - [PROJECT-STATUS.md](PROJECT-STATUS.md)
 - [Contributing](CONTRIBUTING.en.md): issues, development conventions, coding-agent collaboration, tasks, and pull requests
+
+## Workspace Map
+
+All further development happens in these 12 workspaces. The pre-migration sibling checkouts are no longer development entry points.
+
+- Application and host: [main application](packages/neuro-book/AGENTS.md) · [Manager](packages/neuro-book-manager/README.md)
+- Internal packages: [Owned Process](packages/owned-process/package.json) · [File Snapshot Cache](packages/file-snapshot-cache/README.md) · [NeuroBook Contracts](packages/neuro-book-contracts/package.json) · [Test Support](packages/neuro-book-test-support/package.json)
+- Autonomous packages: [History](packages/nb-history/README.md) · [Workflow](packages/nb-workflow/README.md) · [Memory](packages/nb-memory/README.md) · [UI](packages/nb-ui/README.md) · [Agent Harness](packages/neuro-agent-harness/README.md) · [llmlint](packages/llmlint/README.md)
+
+See the [Monorepo Module boundaries](docs/modules/monorepo-boundaries.md) and [package governance](packages/AGENTS.md) for dependency direction, inherited governance, and runtime-state ownership.
 
 ## Community
 

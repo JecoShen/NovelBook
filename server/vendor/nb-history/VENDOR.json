@@ -1,6 +1,0 @@
-{
-    "package": "@notnotype/nb-history",
-    "sourceCommit": "68c54caed73c4499eac44e92931895aa130672b3",
-    "syncedAt": "2026-08-02T11:33:45.358Z",
-    "note": "机器同步产物,勿手改。真相源在 sibling 仓 ../nb-history;更新流程: 改源仓 -> bun run sync:nb-history -> commit。"
-}

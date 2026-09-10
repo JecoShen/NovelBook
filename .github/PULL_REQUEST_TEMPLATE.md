@@ -47,6 +47,7 @@ Thank you for contributing. Keep every section; write “none” or “not run�
 - [ ] 已更新或确认不需要更新用户文档 / User documentation updated or not needed
 - [ ] 已更新或确认不需要更新 Task walkthrough / Task walkthrough updated or not needed
 - [ ] 已更新或确认不需要更新 Reference、ADR 与 `PROJECT-STATUS.md` / Reference, ADR, and `PROJECT-STATUS.md` updated or not needed
+- [ ] 已链接受影响的具体 Spec 和 capability，或说明本 PR 为什么不改变行为合同 / Affected Spec and capability linked, or rationale provided for no behavior-contract change
 - [ ] 本 PR 不修改版本号或 `RELEASE.md`，除非维护者明确要求 / This PR does not change the version or `RELEASE.md` unless requested by a maintainer
 
 ## 风险与边界 / Risks and boundaries

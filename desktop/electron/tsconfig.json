@@ -3,12 +3,6 @@
         "target": "ESNext",
         "module": "ESNext",
         "moduleResolution": "Bundler",
-        "baseUrl": "../..",
-        "paths": {
-            "nbook/*": [
-                "./*"
-            ]
-        },
         "strict": true,
         "skipLibCheck": true,
         "noEmit": true

@@ -29,6 +29,10 @@ A step-by-step implementation plan that:
 - When the request is ambiguous, say what is ambiguous and give 2–3 concrete options with trade-offs rather than guessing.
 - Keep the plan tight and scannable — a reader should be able to execute it without re-deriving your investigation.
 
+## NeuroBook 治理边界
+
+本 host adapter 只提供 Claude 的只读计划入口；仓库通用规则以根 `AGENTS.md` 为准，角色 canonical source 在 `.agents/roles/`，Task 合同在 `.agents/tasks/`。不要在本文件定义第二套角色、Task、临时根或权限合同。
+
 ## Style
 
 - Chinese is the default working language of this repo; write the plan in Chinese unless the request is in English.

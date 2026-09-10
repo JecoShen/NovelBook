@@ -2,15 +2,30 @@ name: Deploy Docs
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - docs/**
-      - reference/**
+      - vitepress/**
+      - packages/neuro-book/assets/reference/**
+      - packages/llmlint/docs/promo/**
+      - AGENTS.md
+      - WATCHDOG.md
+      - CONTEXT.md
+      - CONTRIBUTING.md
+      - CONTRIBUTING.en.md
+      - PROJECT-STATUS.md
+      - README.md
+      - README.en.md
+      - RELEASE.md
+      - .omp/**
       - .github/workflows/deploy-docs.yml
       - patches/**
       - scripts/ci/validate-nitropack-patch.ts
-      - nuxt.config.ts
-      - tsconfig.json
+      - scripts/ci/check-documentation*
+      - scripts/ci/stage-docs-locales*
+      - packages/neuro-book/**
+      - packages/neuro-book/nuxt.config.ts
+      - packages/neuro-book/tsconfig.json
       - package.json
       - bun.lock
   workflow_dispatch:
@@ -23,9 +38,6 @@ permissions:
 concurrency:
   group: pages
   cancel-in-progress: false
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -55,7 +67,9 @@ jobs:
         run: bun scripts/ci/validate-nitropack-patch.ts
 
       - name: Prepare Nuxt types
-        run: bun run nuxt:prepare
+        run: bun run --cwd packages/neuro-book nuxt:prepare
+      - name: Check documentation governance
+        run: bun run docs:check
 
       - name: Build with VitePress
         env:
@@ -65,7 +79,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vitepress/dist
+          path: vitepress/.vitepress/dist
 
   deploy:
     environment:

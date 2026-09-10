@@ -1,0 +1,104 @@
+name: Workspace Packages
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/workspace-packages.yml"
+      - "package.json"
+      - "bun.lock"
+      - "bunfig.toml"
+      - "packages/nb-history/**"
+      - "packages/nb-workflow/**"
+      - "packages/nb-memory/**"
+      - "packages/nb-ui/**"
+      - "packages/neuro-agent-harness/**"
+      - "packages/llmlint/**"
+      - "packages/llmlint/web/**"
+      - "packages/llmlint/skill/**"
+      - "packages/llmlint/evals/report/**"
+      - "packages/neuro-book-test-support/**"
+      - "packages/neuro-book-contracts/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  select-packages:
+    name: Detect affected packages
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+      run_web_island: ${{ steps.select.outputs.run_web_island }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - id: select
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          {
+            base="$(git merge-base origin/master HEAD)"
+            git diff --name-only "${base}" HEAD | bun scripts/ci/workspace-package-matrix.ts
+          } >> "$GITHUB_OUTPUT"
+
+  package:
+    name: ${{ matrix.name }}
+    needs: select-packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.select-packages.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile --linker hoisted
+      - name: Install llmlint web island dependencies
+        if: matrix.name == 'llmlint'
+        working-directory: packages/llmlint/web
+        run: bun install --frozen-lockfile
+      - name: Prepare llmlint Nuxt types
+        if: matrix.name == 'llmlint'
+        working-directory: packages/llmlint/web
+        run: bunx nuxt prepare
+      - name: Run package checks
+        working-directory: ${{ matrix.directory }}
+        run: ${{ matrix.commands }}
+
+  llmlint-web:
+    name: llmlint web island
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: select-packages
+    if: needs.select-packages.outputs.run_web_island == 'true'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - name: Install root workspace dependencies
+        run: bun install --frozen-lockfile --linker hoisted
+      - name: Install web island dependencies
+        working-directory: packages/llmlint/web
+        run: bun install --frozen-lockfile
+      - name: Prepare Nuxt types
+        working-directory: packages/llmlint/web
+        run: bunx nuxt prepare
+      - name: Prepare registry and Nuxt types
+        working-directory: packages/llmlint/web
+        run: bun run typecheck
+      - name: Prepare server types
+        working-directory: packages/llmlint/web
+        run: bun run typecheck:server
+      - name: Build web island
+        working-directory: packages/llmlint/web
+        run: bun run build
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: llmlint-web-output
+          include-hidden-files: true
+          if-no-files-found: error
+          path: packages/llmlint/web/.output

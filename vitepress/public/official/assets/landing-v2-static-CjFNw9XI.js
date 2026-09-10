@@ -1,0 +1,1 @@
+import{a as e,i as t,n,r,t as i}from"./landing-v2-LAJJJtDe.js";var a=e(t(),1),o=r(),s=n();document.documentElement.classList.add(`dark`),document.documentElement.style.colorScheme=`dark`,(0,o.createRoot)(document.getElementById(`root`)).render((0,s.jsx)(a.StrictMode,{children:(0,s.jsx)(i,{locale:`zh`})}));

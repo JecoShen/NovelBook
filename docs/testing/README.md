@@ -1,35 +1,43 @@
 # NeuroBook 测试规范
 
-本文件是仓库测试约定真相源。所有 Vitest 配置、测试编写和验收脚本遵守这里；规则有冲突时以本文件为准，冲突本身按「变更本文件」处理。
+本文件是仓库测试、临时根、环境和验收约定的真相源。所有 Vitest 配置、测试编写、fixture 和验收脚本遵守这里；规则冲突时先更新本文件，不在 `AGENTS.md` 维护第二份正文。
 
-## 临时目录与生命周期
+## 用户视角人工评测
 
-**原则：任何人 clone 后运行 `bun run test`，不应在系统 Temp 根、用户目录或项目业务目录留下文件。**
+[`manual-eval/README.md`](manual-eval/README.md) 是测试体系中的人工验收子系统：`criteria.md` 定义判定与证据合同，`journeys/` 保存用户旅程用例，`agent-guide.md` 定义一次评测的执行步骤，`report-template.md` 约束结果格式。它不属于 `packages/neuro-book/docs/runbooks/`，因为整套资产不仅包含操作步骤，还包含测试判据、用例和报告合同。
 
-1. **测试临时根统一在 `<系统Temp>/neuro-book-vitest/<runId>/`**：
-   - 由 `server/workspace-files/vitest-tmpdir-setup.ts` 在每个 Vitest worker 启动时把
+1. **测试临时根统一在 `<系统Temp>/neuro-book/vitest/<runId>/`**：
+   - 由 `@notnotype/neuro-book-test-support/vitest` 在每个 Vitest worker 启动时把
      `TMPDIR`/`TEMP`/`TMP` 指向该目录；测试里 `os.tmpdir()` / `mkdtemp(tmpdir()...)`
      运行期自动收敛；
    - 受控根不放在仓库 `.agent/tmp`：worktree 深路径叠加测试内部 UUID 目录名会超过
      Windows MAX_PATH（git 对象与 release staging 报 "Filename too long" /
      ENAMETOOLONG），系统 Temp 路径最短且 OS 会定期清理；
-   - 每次 run 结束由 `server/workspace-files/vitest-global-setup.ts` 的 teardown 删除
+   - 每次 run 结束由 `@notnotype/neuro-book-test-support/vitest` 的 teardown 删除
      本 run 目录；并行 run 因 runId（8 位 hex）互不干扰；进程被强杀时由下一次 run 的
      setup 按 24 小时超窗兜底回收；
    - 所有 Vitest 配置的 `setupFiles` 第一项必须是该 setup 文件、`globalSetup` 必须包含
      该 globalSetup（含独立包配置）。
 2. **测试自身必须清理自己创建的目录**：`afterEach` 收集并 `rm`。清理失败视为测试问题，
    不依赖全局清理兜底。
-3. **进程被强杀等异常残留**由 `server/workspace-files/test-tmp-sweep.ts` 的
-   `sweepStaleTmpRoots()` 在每次 run 起点回收：无 owner marker 的目录超过 24 小时才回收；
-   有 marker 的目录要求 owner 进程已死且超窗。新增「目录 + marker」的测试根应使用
-   `createTestTmpRoot(repoRoot, name, purpose)`。
-4. **禁止在仓库根、`.worktree/`、快照目录或系统 Temp 创建业务临时数据**；仓库根下的
+3. **进程被强杀等异常残留**由 `@notnotype/neuro-book-test-support/tmp` 的
+   `sweepStaleTmpRoots()` 在每次 run 起点回收：只删除带合法 owner marker、超过 24 小时且
+   owner 进程已死的真实目录；无 marker、symlink/reparse point、普通文件、窗口内目录和活跃
+   owner 一律保留并报告。新增测试根使用 `createTestTmpRoot(name, purpose)`。
+4. **禁止在仓库根、`.worktree/`、快照目录或系统 Temp 根直接创建业务临时数据**；仓库根下的
    `cache/`、`workspace/`、`logs/` 等业务目录不能被测试写入。
-5. **脚本（非测试）的临时根**使用仓库 `.agent/tmp/`，并且必须在 `finally` 中清理
-   （参见 `packages/neuro-book-manager/scripts/pack-check.mjs`）。
-6. **验收/沙盒脚本**默认输出到 `.agent/tmp/<task>-<uuid>/`，禁止把用户公共目录写为默认值；
-   需要仓库外路径（如 Windows Sandbox 映射）时通过参数显式传入，并在脚本结尾打印实际路径。
+5. **脚本（非测试）的临时数据**使用 `@notnotype/neuro-book-test-support/paths` 分配的系统 Temp
+   子目录，并且必须在 `finally` 中清理。
+6. **验收/沙盒脚本**默认输出到 `<系统Temp>/neuro-book/acceptance/` 或 task/run 专用子目录，
+   禁止把用户公共目录写为默认值；需要仓库外路径时通过参数显式传入，并打印实际路径。
+7. **公开环境键由测试支持包拥有**：
+
+   | 环境键 | Owner 与约束 |
+   | --- | --- |
+   | `NBOOK_HOST_SYSTEM_TEMP_ROOT` | `neuro-book-test-support` 的宿主 Temp locator；只供隔离测试或验收宿主注入绝对路径 |
+   | `NBOOK_AGENT_TEMP_ROOT` | Agent 测试、fixture、cache、scratch 与 acceptance 的共同父根；必须是宿主 Temp 内的绝对真实路径 |
+   | `NBOOK_AGENT_WORKTREE_ROOT` | governance/worktree 工具的 repo-relative locator；默认 `.worktree`，不得指向包源码或运行数据根 |
+   | `NBOOK_TEST_TMPDIR` | Vitest global setup 为单次 run 写入；必须包含在 `NBOOK_AGENT_TEMP_ROOT` 内，普通测试不得长期覆盖 |
 
 ## 测试文件组织
 
@@ -54,13 +62,15 @@
 
 ## 验收脚本（Task 145 及后续 Desktop 任务）
 
-- `prepare-host.ps1` 等宿主机准备脚本：输入/证据默认落在 `<repoRoot>/.agent/tmp/`，
+- `prepare-host.ps1` 等宿主机准备脚本：输入/证据默认落在系统 Temp 下的 Agent 受控目录，
   所有路径可参数化；`.wsb` 等模板文件不得写死本机路径，运行说明要求按脚本输出修改。
-- 面向用户的下载产物（如最终 ZIP）不属于测试临时数据：放 `.agent/artifacts/` 或用户
-  指定目录，并同时给出 SHA-256 与构建身份（revision/imageId），不与其他 quick 构建混放。
+- 面向用户的下载产物（如最终 ZIP）不属于测试临时数据：放用户指定目录，并同时给出
+  SHA-256 与构建身份（revision/imageId），不与其他 quick 构建混放。
 
 ## 验证门禁
 
-- 提交前至少运行：受影响的聚焦测试、对应 typecheck、`git diff --check`。
-- 全量 `bun run test` 中的既有 advisory 失败（如 Harness 黑盒超时）单独登记 Issue，
-  不能把「focused 通过」写成「全量通过」。
+- 纯文档或治理修改检查链接、结构和规则语义；不运行产品测试、typecheck、产品构建或浏览器。修改 VitePress 投影时仍按 [`docs/AGENTS.md`](../AGENTS.md) 的目录合同运行 `bun run docs:build`。
+- 实现变化运行受影响测试；类型表面受影响才运行对应 typecheck。UI、迁移、集成和发布继续遵守各自合同及授权。
+- 长期测试覆盖可观察行为与可能回归，不为措辞或实现镜像增加测试。Bug 有合适切入点时保留复现为回归测试，否则用聚焦 smoke 并说明缺口。
+- 所需检查通过后，仅因后续改动使证据失效、出现失败或具体未解风险才重跑或扩大。仅叙事文档形成新 revision 不自动使代码测试证据失效。
+- 提交前运行 `git diff --cached --check`。既有失败与本次失败分开报告，不能把“focused 通过”写成“全量通过”；远端登记 Issue 仍需授权。
