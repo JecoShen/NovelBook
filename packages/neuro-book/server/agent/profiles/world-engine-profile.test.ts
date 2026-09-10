@@ -10,6 +10,11 @@ import {createTestRuntimeSession as testSession} from "nbook/server/agent/profil
 import {createTestVariableAccessor} from "nbook/server/agent/variables/test-utils";
 import {normalizeAgentProfile} from "nbook/server/agent/profiles/define-agent-profile";
 
+// profile-dsl 的 Import.path 要求显式仓库根（Product Runtime 不允许从 checkout 推断）。
+// 与上游 profile-dsl.test.ts 同法，用 ??= 避免覆盖外部已设的值。
+const TEST_REPOSITORY_ROOT = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
+process.env.NEURO_BOOK_REPOSITORY_ROOT ??= TEST_REPOSITORY_ROOT;
+
 const worldEngineProfile = normalizeAgentProfile(worldEngineProfileDefinition);
 
 describe("world.engine profile", () => {

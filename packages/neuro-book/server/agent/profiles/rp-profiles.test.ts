@@ -27,6 +27,10 @@ const rpWriterProfile = normalizeAgentProfile(rpWriterProfileDefinition);
 const simulatorActorProfile = normalizeAgentProfile(simulatorActorProfileDefinition);
 const simulatorLeaderProfile = normalizeAgentProfile(simulatorLeaderProfileDefinition);
 
+// profile-dsl 的 Import.path 要求显式仓库根。
+const TEST_REPOSITORY_ROOT = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
+process.env.NEURO_BOOK_REPOSITORY_ROOT ??= TEST_REPOSITORY_ROOT;
+
 function messagesText(messages: StoredMessageLike[] | undefined): string {
     return (messages ?? []).map((message) => storedMessageText(message)).join("\n");
 }

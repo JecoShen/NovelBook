@@ -1,4 +1,5 @@
 import {describe, expect, it} from "vitest";
+import {resolve} from "node:path";
 import {Value} from "typebox/value";
 import directorProfileDefinition from "../../../assets/workspace/.nbook/agent/profiles/builtin/director.profile";
 import simulatorLeaderProfileDefinition from "../../../assets/workspace/.nbook/agent/profiles/builtin/simulator.leader.profile";
@@ -10,6 +11,10 @@ import {normalizeAgentProfile} from "nbook/server/agent/profiles/define-agent-pr
 
 const directorProfile = normalizeAgentProfile(directorProfileDefinition);
 const simulatorLeaderProfile = normalizeAgentProfile(simulatorLeaderProfileDefinition);
+
+// profile-dsl 的 Import.path 要求显式仓库根。
+const TEST_REPOSITORY_ROOT = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
+process.env.NEURO_BOOK_REPOSITORY_ROOT ??= TEST_REPOSITORY_ROOT;
 
 function messagesText(messages: StoredMessageLike[] | undefined): string {
     return (messages ?? []).map((message) => storedMessageText(message)).join("\n");
