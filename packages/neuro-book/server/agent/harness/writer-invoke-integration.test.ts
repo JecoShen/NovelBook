@@ -8,6 +8,7 @@
 import { randomUUID } from 'node:crypto'
 import { rm, mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { testHostPath } from '@notnotype/neuro-book-test-support/test-path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { NeuroAgentHarness } from 'nbook/server/agent/harness/neuro-agent-harness'
 import type { AgentInvocationResult } from 'nbook/server/agent/harness/types'
@@ -19,12 +20,13 @@ import { fauxAssistantMessage, fauxText, fauxToolCall } from '@earendil-works/pi
 import { profileToolsFromKeys } from 'nbook/server/agent/test/profile-tools'
 import { defineAgentProfile } from 'nbook/server/agent/profiles/define-agent-profile'
 import { resolveProfileArtifactPathContext } from 'nbook/server/agent/profiles/profile-artifact-compiler'
+import { createVariableDefinitionArtifactPathContextResolver } from 'nbook/server/agent/variables/definition-artifact'
 import { closeAllProjects, openProject, resetProjectSessionsForTest } from 'nbook/server/workspace-files/project-session'
 import { projectWorkspaceRef } from 'nbook/server/workspace-files/project-identity'
 import { Type } from 'typebox'
 import { WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema } from 'nbook/server/agent/profiles/builtin-contracts'
 
-const TEST_ROOT = resolve('.agent', 'test-writer-invoke')
+const TEST_ROOT = 'writer-invoke-integration'
 
 /**
  * 创建一个最小但完整的 Writer profile，用于集成测试。
@@ -100,7 +102,7 @@ describe('Writer Agent invoke 集成测试', () => {
   let testRoot: string
 
   beforeEach(async () => {
-    testRoot = resolve(TEST_ROOT, randomUUID())
+    testRoot = testHostPath(TEST_ROOT, randomUUID())
     projectSlug = `test-novel-${randomUUID()}`
     // projectPath = workspace/<slug>, 对应的物理路径是 <workspaceRoot>/<slug>/
     projectRoot = resolve(testRoot, projectSlug)
@@ -146,6 +148,7 @@ describe('Writer Agent invoke 集成测试', () => {
         (profileRoot, rootLabel) => resolveProfileArtifactPathContext(profileRoot, rootLabel, testRoot),
         { install: 'workspace/.nbook/agent/profiles' },
       ),
+      definitionArtifactPathContextProvider: createVariableDefinitionArtifactPathContextResolver(testRoot),
       modelResolver: () => faux.getModel(),
       runtimeResolver: () => faux.runtime,
       enableSessionSummarizer: false,

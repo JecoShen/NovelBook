@@ -8,6 +8,11 @@ import {runProfileCompile} from "nbook/server/agent/profiles/profile-compile-wor
 import type {ProfileCompileWorkerResult} from "nbook/server/agent/profiles/profile-compile-worker-types";
 import {withIsolatedWorkspaceAssets, type IsolatedWorkspaceAssets} from "nbook/server/workspace-files/test-workspace-fixture";
 
+// dry-run preview 会在临时 root 上真实 prepare profile；profile-dsl 的 Import.path
+// 要求显式仓库根，Product Runtime 不再从 import.meta.dirname 推断。
+const TEST_REPOSITORY_ROOT = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
+process.env.NEURO_BOOK_REPOSITORY_ROOT ??= TEST_REPOSITORY_ROOT;
+
 describe("profile compile worker preview 与 lifecycle", () => {
     // 原「源码覆盖编译不写入全局 profile module cache」用例已删除（Task 125）。
     // 它守的 `.agent/profile-module-cache` 全仓再无任何写入方，断言恒真；
@@ -75,8 +80,9 @@ describe("profile compile worker preview 与 lifecycle", () => {
             expect(result.ok).toBe(true);
             expect(result.preview?.ok).toBe(true);
             await expect(readFile(sourcePath, "utf8")).resolves.toBe(source);
-            // 上游编译不认 dryRun，（写），因此不断言 compiledManifest 不存在；
-            // preview 的核心契约已由源码不改行验证。
+            // dry-run 全程在 `<profileRoot>/../.staging/profile-source-check/<uuid>` 上编译并在
+            // finally 里删除，真实用户 `.compiled` 不应被创建。
+            expect(await pathExists(compiledManifest)).toBe(false);
         });
     }, 120_000);
 
