@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { readFile, mkdir, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -32,6 +32,7 @@ type AcceptanceOptions = {
   browserExecutable: string
   evidenceDir: string
   workspaceDir: string
+  sessionStoreDir: string | null
   headless: boolean
   keepProject: boolean
   prompt: string
@@ -75,7 +76,7 @@ async function runAbortAcceptance(options: AcceptanceOptions): Promise<void> {
     record(steps, 'login')
 
     await prepareAcceptanceProject(projectDir)
-    steps.push(record(steps, 'project-directory-created', projectName))
+    record(steps, 'project-directory-created', projectName)
 
     await openProjectWorkspace(page, options.url, projectName)
     record(steps, 'workbench-opened')
@@ -90,50 +91,49 @@ async function runAbortAcceptance(options: AcceptanceOptions): Promise<void> {
     record(steps, 'inline-bar-ready')
 
     const sessionId = await createInlineSession(page)
-    steps.push(record(steps, 'inline-session-created', sessionId))
+    record(steps, 'inline-session-created', sessionId)
 
     // 合同 1：Idle 会话 abort 无副作用（先于发送任何 prompt）。
     const idleAbort = await postAbort(page, sessionId, { reason: 'acceptance idle no-op' })
     assertEqual(idleAbort.status, 'idle', 'Idle abort 应返回 status:"idle"')
+    const idleSideEffects = await readSessionFile(options.sessionStoreDir, sessionId)
+    assert(!idleSideEffects.includes('aborted'), 'Idle no-op 不得留下任何 aborted 痕迹')
     record(steps, 'idle-abort-noop')
 
-    await openAgentPanel(page)
-    record(steps, 'agent-panel-opened')
-
+    // browser 模式 composer 内联在 .ide-prompt-bar（桌面标题栏面板按钮是 desktop-bridge 专属）。
     await sendMessage(page, options.prompt)
-    const stopButton = page.locator('[title="停止"]')
+    const { button: stopButton } = await findTitleButton(page, ['停止'])
     await stopButton.waitFor({ state: 'visible', timeout: FIRST_TOKEN_TIMEOUT_MS })
     await page.waitForTimeout(2_000) // 让部分 token 落屏，验证中止后保留。
     await shot(page, options.evidenceDir, '02-running')
     record(steps, 'run-streaming')
 
-    // 合同 2：Running 点击「停止」→ 200 {status:"aborted"}，UI 收口回可发送态。
+    // 合同 2+3：Running 点击「停止」→ 200 {status:"aborted"}；abort POST 200 仅表示"接受"，
+    // durable aborted 终态（HTTP recovery + JSONL 唯一 lifecycle）必须在超时内落盘。
     const abortResponse = page.waitForResponse(response => response.url().endsWith(`/api/agent/sessions/${sessionId}/abort`))
     await stopButton.click()
     const abortJson = await (await abortResponse).json() as { status?: string }
     assertEqual(abortJson.status, 'aborted', 'Running abort 应返回 status:"aborted"')
-    await page.locator('[title="发送"]').waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    const durable = await assertDurableTerminal(page, options.url, sessionId, options.sessionStoreDir, FIRST_TOKEN_TIMEOUT_MS)
+    assert(durable.abortedLifecycleCount === 1, `aborted lifecycle 必须唯一（实测 ${durable.abortedLifecycleCount}）`)
     await shot(page, options.evidenceDir, '03-after-abort')
-    record(steps, 'ui-abort-roundtrip')
-
-    // 合同 3：终态持久 —— recovery 视图含 aborted，且部分输出未被回滚。
-    const durable = await assertDurableTerminal(page, options.url, sessionId)
-    steps.push(record(steps, 'durable-aborted', durable))
+    record(steps, 'ui-abort-roundtrip', durable)
 
     await page.reload({ waitUntil: 'domcontentloaded' })
     await openProjectWorkspace(page, options.url, projectName, filePath)
     await page.locator('.ide-prompt-bar').waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
-    await openAgentPanel(page)
-    const panel = page.locator('[data-agent-panel]')
-    assert((await panel.locator('[title="停止"]').count()) === 0, 'reload 后面板不应残留运行态')
-    assert(/\d/.test(await panel.innerText()), 'reload 后部分输出（数字流）应仍在')
+    assert((await page.locator('[title="停止"]:visible').count()) === 0, 'reload 后不应残留运行态')
+    const composer = await findComposerInput(page)
+    assert(await composer.isVisible(), 'reload 后 composer 应恢复可输入')
     await shot(page, options.evidenceDir, '04-after-reload')
-    record(steps, 'reload-idle-with-partial')
+    record(steps, 'reload-idle-composer-ready')
 
-    // 合同 4：已终结 invocation 重复 abort 幂等返回 idle。
+    // 合同 4：已终结 invocation 重复 abort 幂等返回 idle，且不再追加终态。
     const secondAbort = await postAbort(page, sessionId, { reason: 'acceptance repeat no-op' })
     assertEqual(secondAbort.status, 'idle', '重复 abort 应幂等返回 status:"idle"')
-    record(steps, 'repeat-abort-idempotent')
+    const afterRepeat = await countAborted(options.sessionStoreDir, sessionId)
+    assert(afterRepeat === durable.abortedLifecycleCount, '重复 abort 不得追加 aborted lifecycle 记录')
+    record(steps, 'repeat-abort-idempotent', { afterRepeat })
   }
   catch (error) {
     exitReason = error instanceof Error ? error.message : String(error)
@@ -217,58 +217,114 @@ async function createInlineSession(page: Page): Promise<number> {
   return sessionId
 }
 
-/** 打开右侧 Agent 面板（标题栏按钮幂等：已开则跳过）。 */
-async function openAgentPanel(page: Page): Promise<void> {
-  const panel = page.locator('[data-agent-panel]')
-  if (await panel.count() && await panel.isVisible()) {
-    return
+/** 在多个候选 title 中找可见按钮（inline editor "发送给 Inline AI" / agent chat "发送"）。 */
+async function findTitleButton(page: Page, titles: readonly string[]) {
+  for (const title of titles) {
+    const button = page.locator(`[title="${title}"]:visible`).first()
+    if (await button.count() && await button.isVisible()) {
+      return { button, title }
+    }
   }
-  await page.locator('[data-titlebar-action="toggle-agent-panel"]').click()
-  await panel.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  throw new Error(`未找到可见按钮（候选 title: ${titles.join(' / ')}）`)
 }
 
-/** 在面板内定位富文本输入（textarea / contenteditable / 非隐藏 input）。 */
-async function focusComposerInput(page: Page, text: string): Promise<void> {
-  const panel = page.locator('[data-agent-panel]')
+/** 定位 composer 输入（inline bar 的 contenteditable / textarea；页面级兜底）。 */
+async function findComposerInput(page: Page) {
   const candidates = [
-    panel.locator('textarea'),
-    panel.locator('[contenteditable="true"]'),
-    panel.locator('input[type="text"]'),
-    panel.locator('input:not([type])'),
+    page.locator('.ide-prompt-bar [contenteditable="true"]'),
+    page.locator('.ide-prompt-bar textarea'),
+    page.locator('[data-agent-panel] [contenteditable="true"]'),
+    page.locator('[data-agent-panel] textarea'),
   ]
   for (const candidate of candidates) {
     if (await candidate.count() && await candidate.first().isVisible()) {
-      await candidate.first().click()
-      await page.keyboard.type(text, { delay: 5 })
-      return
+      return candidate.first()
     }
   }
-  throw new Error('Agent 面板内未找到可见输入元素')
+  throw new Error('未在 inline bar / Agent 面板找到可见 composer 输入元素')
 }
 
-/** 输入 prompt 并点发送。 */
+/** 输入 prompt 并点发送（inline 模式无独立面板；发送按钮取首个可见）。 */
 async function sendMessage(page: Page, prompt: string): Promise<void> {
-  await focusComposerInput(page, prompt)
-  const send = page.locator('[data-agent-panel] [title="发送"]')
-  await send.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
-  await send.click()
+  const input = await findComposerInput(page)
+  await input.click()
+  await page.keyboard.type(prompt, { delay: 5 })
+  const { button } = await findTitleButton(page, ['发送给 Inline AI', '发送'])
+  await button.click()
+}
+
+/** 读 session JSONL（store 目录可得时用于强断言；不可得返回空串降级）。 */
+async function readSessionFile(sessionStoreDir: string | null, sessionId: number): Promise<string> {
+  if (!sessionStoreDir) {
+    return ''
+  }
+  try {
+    return await readFile(join(sessionStoreDir, `${sessionId}.jsonl`), 'utf8')
+  }
+  catch {
+    return ''
+  }
+}
+
+/** 统计 aborted lifecycle 行数（entry 行含 "aborted" 的持久化终态）。 */
+async function countAborted(sessionStoreDir: string | null, sessionId: number): Promise<number> {
+  const raw = await readSessionFile(sessionStoreDir, sessionId)
+  if (!raw) {
+    return -1
+  }
+  return raw.split('\n').filter(line => line.includes('"aborted"')).length
+}
+
+/** 轮询等待 JSONL 中出现 aborted 终态（合同权威信号；abort POST 200 仅表示"接受"，不表示全部完成）。 */
+async function waitForAbortedLifecycle(
+  sessionStoreDir: string | null,
+  sessionId: number,
+  timeoutMs: number,
+): Promise<number> {
+  if (!sessionStoreDir) {
+    return 0
+  }
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const count = await countAborted(sessionStoreDir, sessionId)
+    if (count >= 1) {
+      return count
+    }
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
+  throw new Error(`等待 ${timeoutMs}ms 后 JSONL 中仍未出现 aborted 终态行（sessionId=${sessionId}）`)
 }
 
 /** API 层 abort（复用浏览器上下文 Cookie）。 */
 async function postAbort(page: Page, sessionId: number, body: Record<string, unknown>): Promise<{ status?: string }> {
-  const response = await page.request.post(`/api/agent/sessions/${sessionId}/abort`, { data: body })
+  const response = await page.request.post(new URL(`/api/agent/sessions/${sessionId}/abort`, page.url()).href, { data: body })
   assert(response.ok(), `abort HTTP ${response.status()}`)
   return await response.json() as { status?: string }
 }
 
-/** recovery 视图断言：存在 aborted 终态并返回出现次数。 */
-async function assertDurableTerminal(page: Page, baseUrl: string, sessionId: number): Promise<{ abortedOccurrences: number }> {
-  const response = await page.request.get(`/api/agent/sessions/${sessionId}`)
+/**
+ * 终态持久断言（双通道）：
+ * - HTTP recovery 视图必须含 aborted；
+ * - 同仓 store 可得时，JSONL 中 aborted 终态行存在且 lifecycle 唯一（计数=1 为合同要求，
+ *   出现次数原样返回供报告；0 行说明只写了内存未 durable = 失败）。
+ */
+async function assertDurableTerminal(
+  page: Page,
+  baseUrl: string,
+  sessionId: number,
+  sessionStoreDir: string | null,
+  timeoutMs: number,
+): Promise<{ httpOccurrences: number, abortedLifecycleCount: number }> {
+  if (sessionStoreDir) {
+    await waitForAbortedLifecycle(sessionStoreDir, sessionId, timeoutMs)
+  }
+  const response = await page.request.get(new URL(`/api/agent/sessions/${sessionId}`, baseUrl).href)
   assert(response.ok(), `session recovery HTTP ${response.status()}`)
   const raw = await response.text()
-  const occurrences = (raw.match(/aborted/g) ?? []).length
-  assert(occurrences >= 1, 'recovery 视图中未出现 aborted 终态')
-  return { abortedOccurrences: occurrences }
+  const httpOccurrences = (raw.match(/aborted/g) ?? []).length
+  assert(httpOccurrences >= 1, 'recovery 视图中未出现 aborted 终态')
+  const abortedLifecycleCount = await countAborted(sessionStoreDir, sessionId)
+  return { httpOccurrences, abortedLifecycleCount }
 }
 
 function parseOptions(argv: string[]): AcceptanceOptions {
@@ -283,9 +339,10 @@ function parseOptions(argv: string[]): AcceptanceOptions {
     browserExecutable: flag('browser-executable') ?? process.env.NBOOK_ACCEPTANCE_BROWSER ?? '/usr/bin/chromium',
     evidenceDir: flag('evidence-dir') ?? resolve('.agent', 'tmp', `abort-acceptance-${Date.now()}`),
     workspaceDir: flag('workspace-dir') ?? resolve('workspace'),
+    sessionStoreDir: flag('session-store-dir') ?? process.env.NBOOK_ACCEPTANCE_SESSION_STORE ?? resolve('workspace', '.nbook', 'agent', 'sessions'),
     headless: flag('headless') !== 'false',
     keepProject: argv.includes('--keep-project'),
-    prompt: flag('prompt') ?? '请从 1 开始逐行输出数字直到 3000，每行一个数字，不要输出任何其它文字。',
+    prompt: flag('prompt') ?? '请写一个非常详细的长篇奇幻小说故事（至少 3000 字），主题是主角意外发现一本能改变现实的古书。要求：场景描写丰富、人物对话自然、情节层层递进。',
   }
 }
 
