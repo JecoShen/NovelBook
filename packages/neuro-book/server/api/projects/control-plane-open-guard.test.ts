@@ -13,6 +13,8 @@ describe("Project 控制面不要求 open", () => {
         }));
     });
 
+    // 本用例是同文件里第一个动态 import 整张 route 依赖图的，冷 transform 实测 10.7s；
+    // 第二个用例走热缓存只要 0.2s。默认 5s 预算覆盖不了这个冷启动成本。
     it("POST /api/projects 未 open 时仍可创建 Project", async () => {
         const createProject = vi.fn(async () => ({
             revision: 4,
@@ -41,7 +43,7 @@ describe("Project 控制面不要求 open", () => {
             title: "New Book",
             summary: "control",
         });
-    });
+    }, 30_000);
 
     it("DELETE /api/projects/item 未 open 时仍可通过 Lifecycle 删除 Project", async () => {
         const closeProject = vi.fn(async () => undefined);
