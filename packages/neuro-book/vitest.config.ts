@@ -1,5 +1,5 @@
 import {fileURLToPath} from "node:url";
-import {defineConfig} from "vitest/config";
+import {defaultExclude, defineConfig} from "vitest/config";
 
 const rootDir = fileURLToPath(new URL("./", import.meta.url));
 
@@ -47,6 +47,12 @@ export default defineConfig({
             "shared/**/*.test.ts",
             "scripts/**/*.test.ts",
             "scripts/**/*.test.tsx",
+        ],
+        exclude: [
+            ...defaultExclude,
+            // lore 套件是 bun:test 原生（runner = bun，入口 = bun run test:lore）；
+            // vitest 收进来越界解析不了 'bun:test'，只会把 agent 门禁染红。
+            "server/agent/lore/**/*.test.ts",
         ],
         coverage: {
             provider: "v8",
