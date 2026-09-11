@@ -8,8 +8,8 @@ import type {
   AuthoringDependencyRegistration,
   ProjectedAuthoringDependency,
   ProjectedAuthoringDependencyInstance,
-} from 'nbook/scripts/build/product-authoring-type-projection'
-import { containsSourceRootDescendant } from 'nbook/scripts/build/product-source-path-contract'
+} from '#scripts/build/product-authoring-type-projection'
+import { containsSourceRootDescendant } from '#scripts/build/product-source-path-contract'
 
 export const AUTHORING_SDK_TYPE_PROJECTION_SCHEMA = 'nbook.authoring-sdk-type-projection/v2'
 
@@ -78,7 +78,7 @@ export async function buildAuthoringSdkTypeProjection(
   const nodeModulesRoot = resolve(targetRoot, 'node_modules')
   const [typescriptModule, { projectAuthoringDependencies }] = await Promise.all([
     import('typescript'),
-    import('nbook/scripts/build/product-authoring-type-projection'),
+    import('#scripts/build/product-authoring-type-projection'),
   ])
   const ts = typescriptModule.default
   const declarationDependencies = await emitAuthoringTypes(typeRoot, ts, sourceRoot)

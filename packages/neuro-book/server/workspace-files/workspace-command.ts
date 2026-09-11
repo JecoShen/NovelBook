@@ -30,8 +30,10 @@ import {
     ProjectLifecycle,
     ProjectLifecycleTransactionError,
     projectWorkspaceRef,
+    type ProjectEnsureResult,
     type ProjectListEntry,
     type ProjectLifecycleDiagnostics,
+    type ProjectMetadataUpdateResult,
     type ProjectValidationResult,
 } from "nbook/server/workspace-files/project-lifecycle";
 import type {ProjectManifest, ProjectManifestIssue} from "nbook/server/workspace-files/project-lifecycle-manifest";
@@ -80,7 +82,7 @@ type WorkspaceProjectOptions = {
 };
 
 type ResolvedWorkspaceTarget = {
-    root: string;
+    root: AbsoluteFsPath;
     relativePath: string;
 };
 
@@ -195,7 +197,7 @@ projectCommand
                 }
                 return ensured;
             });
-            const actions = "change" in result && result.change !== "none" ? [result.change] : [];
+            const actions = isProjectEnsureResult(result) && result.change !== "none" ? [result.change] : [];
             emitProjectSuccess(result.project, actions, diagnostics, options.json);
         } catch (error) {
             emitProjectFailure(error, options.json);
@@ -480,7 +482,7 @@ async function resolveSingleWorkspaceTarget(target: string): Promise<ResolvedWor
 /**
  * 相对输入固定从本次内容File Scope解析；绝对输入不得越过该内容根。
  */
-function resolveWorkspaceCliTarget(root: ReturnType<typeof resolveWorkspaceContainerRoot>, target: string): string {
+function resolveWorkspaceCliTarget(root: ReturnType<typeof resolveWorkspaceContainerRoot>, target: string): AbsoluteFsPath {
     const value = target.trim();
     if (!value) {
         throw new Error("内容节点路径不能为空");
@@ -517,6 +519,19 @@ function normalizeProjectTemplateName(template: string | undefined): "default" {
         false,
         `未知 Project 模板：${value}`,
     );
+}
+
+/**
+ * 区分 ensure 与 updateMetadata 的返回。
+ *
+ * 只有 ensure 带可解释的 manifest 动作。裸 `"change" in result` 不足以收窄：
+ * TS 会给未声明该属性的联合成员补 `Record<"change", unknown>`，`change` 因此退化成
+ * unknown，动作数组也随之变成 unknown[]。
+ */
+function isProjectEnsureResult(
+    result: ProjectEnsureResult | ProjectMetadataUpdateResult,
+): result is ProjectEnsureResult {
+    return "change" in result;
 }
 
 /** 统一输出Project JSON协议；非JSON调用只输出面向人的一行结果。 */
@@ -623,10 +638,10 @@ async function resolveWorkspaceContentRoot(): Promise<AbsoluteFsPath> {
 /**
  * 将目录或 index.md 输入统一成内容节点目录绝对路径。
  */
-function normalizeContentNodeDirectoryPath(root: string, absoluteTarget: string): string {
+function normalizeContentNodeDirectoryPath(root: AbsoluteFsPath, absoluteTarget: string): AbsoluteFsPath {
     const safeTarget = resolveWorkspacePath(root, absoluteTarget);
     if (path.basename(safeTarget).toLowerCase() === "index.md") {
-        return path.dirname(safeTarget);
+        return absoluteFsPath(path.dirname(safeTarget));
     }
     return safeTarget;
 }
@@ -634,7 +649,7 @@ function normalizeContentNodeDirectoryPath(root: string, absoluteTarget: string)
 /**
  * 确认所有目标都属于同一个 workspace，并返回该 root。
  */
-function assertSingleWorkspaceRoot(targets: ResolvedWorkspaceTarget[]): string {
+function assertSingleWorkspaceRoot(targets: ResolvedWorkspaceTarget[]): AbsoluteFsPath {
     const root = targets[0]?.root;
     if (!root) {
         throw new Error("至少需要提供一个内容节点路径");

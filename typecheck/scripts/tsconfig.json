@@ -1,0 +1,102 @@
+{
+  "extends": "../../tsconfig.typecheck.base.json",
+  "compilerOptions": {
+    "paths": {
+      "nbook/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "${configDir}/workspace-history/packages/neuro-book/*",
+        "${configDir}/agent-support/packages/neuro-book/*",
+        "${configDir}/agent/packages/neuro-book/*",
+        "${configDir}/agent-composition/packages/neuro-book/*",
+        "${configDir}/runtime/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "neuro_book/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "${configDir}/workspace-history/packages/neuro-book/*",
+        "${configDir}/agent-support/packages/neuro-book/*",
+        "${configDir}/agent/packages/neuro-book/*",
+        "${configDir}/agent-composition/packages/neuro-book/*",
+        "${configDir}/runtime/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "#scripts/*": [
+        "${configDir}/contracts/scripts/*",
+        "${configDir}/workspace-history/scripts/*",
+        "${configDir}/agent-support/scripts/*",
+        "${configDir}/agent/scripts/*",
+        "${configDir}/agent-composition/scripts/*",
+        "${configDir}/runtime/scripts/*",
+        "./scripts/*"
+      ]
+    }
+  },
+  "references": [
+    {
+      "path": "../contracts"
+    },
+    {
+      "path": "../workspace-history"
+    },
+    {
+      "path": "../agent-support"
+    },
+    {
+      "path": "../agent"
+    },
+    {
+      "path": "../agent-composition"
+    },
+    {
+      "path": "../runtime"
+    }
+  ],
+  "files": [
+    "../../packages/neuro-book/proper-lockfile.d.ts",
+    "../../packages/neuro-book/server/agent/tools/web-extraction-modules.d.ts",
+    "../../scripts/build/product-runtime-module-closure.d.mts",
+    "../../packages/neuro-book-manager/package.json",
+    "../../packages/neuro-book-manager/src/app-sqlite-location.ts",
+    "../../packages/neuro-book-manager/src/files.ts",
+    "../../packages/neuro-book-manager/src/installation-path.ts",
+    "../../packages/neuro-book-manager/src/manifest-store.ts",
+    "../../packages/neuro-book-manager/src/paths.ts",
+    "../../packages/neuro-book-manager/src/platform.ts",
+    "../../packages/neuro-book-manager/src/root-locators.ts",
+    "../../packages/neuro-book-manager/src/schema.ts",
+    "../../packages/neuro-book-manager/src/source-docker-image.ts",
+    "../../packages/neuro-book-manager/src/version-info.ts",
+    "../../packages/owned-process/src/index.ts",
+    "../../packages/owned-process/src/posix-adapter.ts",
+    "../../packages/owned-process/src/posix-supervisor-source.ts",
+    "../../packages/owned-process/src/types.ts",
+    "../../packages/owned-process/src/windows-adapter.ts",
+    "../../packages/owned-process/src/windows-supervisor-source.ts",
+    "../../scripts/build/build-product-runtime-image.ts",
+    "../../scripts/build/check-product-runtime-policies.ts",
+    "../../scripts/build/local-product-publisher.ts",
+    "../../scripts/build/measure-product-runtime-image.ts",
+    "../../scripts/build/product-platform-matrix.ts",
+    "../../scripts/build/product-runtime-image-builder.ts",
+    "../../scripts/ci/agent-governance-contract.ts",
+    "../../scripts/ci/agent-governance.ts",
+    "../../scripts/ci/baseline-change-scope.ts",
+    "../../scripts/ci/validate-proper-lockfile-patch.ts",
+    "../../packages/neuro-book/scripts/cli/source-dev.ts",
+    "../../scripts/deploy/windows-owned-process-smoke.ts",
+    "../../scripts/maintenance/migrate-agent-tasks.ts",
+    "../../scripts/maintenance/migrate-task-ownership.ts",
+    "../../scripts/release/create-interrupted-operation.ts",
+    "../../scripts/release/desktop-contract-vitest.config.ts",
+    "../../scripts/release/install-dependencies.ts",
+    "../../scripts/release/manager-release-contract.test.ts",
+    "../../scripts/release/manager-release-vitest.config.ts",
+    "../../scripts/release/normalize-bun-lockfile.ts",
+    "../../scripts/release/verify-windows-portable-restart.ts",
+    "../../scripts/utils/application-package.ts",
+    "../../scripts/utils/product-platform.ts",
+    "../../scripts/utils/workspace-roots.ts",
+    "../../packages/neuro-book/server/workspace-files/workspace-command.ts",
+    "../../packages/neuro-book/shared/product-runtime-shutdown.ts"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "extends": "../../tsconfig.typecheck.base.json",
+  "compilerOptions": {
+    "paths": {
+      "nbook/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "${configDir}/workspace-history/packages/neuro-book/*",
+        "${configDir}/agent-support/packages/neuro-book/*",
+        "${configDir}/agent/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "neuro_book/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "${configDir}/workspace-history/packages/neuro-book/*",
+        "${configDir}/agent-support/packages/neuro-book/*",
+        "${configDir}/agent/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "#scripts/*": [
+        "${configDir}/contracts/scripts/*",
+        "${configDir}/workspace-history/scripts/*",
+        "${configDir}/agent-support/scripts/*",
+        "${configDir}/agent/scripts/*",
+        "./scripts/*"
+      ]
+    }
+  },
+  "references": [
+    {
+      "path": "../contracts"
+    },
+    {
+      "path": "../workspace-history"
+    },
+    {
+      "path": "../agent-support"
+    },
+    {
+      "path": "../agent"
+    }
+  ],
+  "files": [
+    "../../packages/neuro-book/proper-lockfile.d.ts",
+    "../../packages/neuro-book/server/agent/bridge/bridge-service.ts",
+    "../../packages/neuro-book/server/agent/profiles/profile-command.ts",
+    "../../packages/neuro-book/server/agent/profiles/profile-compile-worker-entry.ts",
+    "../../packages/neuro-book/server/agent/profiles/profile-compile-worker-runtime.ts",
+    "../../packages/neuro-book/server/agent/profiles/profile-http-service.ts",
+    "../../packages/neuro-book/server/agent/profiles/profile-workbench-roots.ts",
+    "../../packages/neuro-book/server/agent/profiles/test/runtime-session.ts",
+    "../../packages/neuro-book/server/agent/profiles/workbench-service.ts",
+    "../../packages/neuro-book/server/agent/session/migrations/session-v2-review-repair/migration.ts",
+    "../../packages/neuro-book/server/agent/session/migrations/session-v2/journal.ts",
+    "../../packages/neuro-book/server/agent/session/migrations/session-v2/legacy-decoder.ts",
+    "../../packages/neuro-book/server/agent/session/migrations/session-v2/migration.ts",
+    "../../packages/neuro-book/server/agent/session/migrations/session-v2/types.ts",
+    "../../packages/neuro-book/server/agent/test/profile-tools.ts",
+    "../../packages/neuro-book/server/api/projects/project-http-error.ts",
+    "../../packages/neuro-book/server/workspace-files/project-open-guard.ts",
+    "../../packages/neuro-book/server/workspace-history/tracked-workspace-files.ts",
+    "../../packages/neuro-book/server/workspace-history/user-file-recorder.ts"
+  ]
+}

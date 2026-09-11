@@ -1,10 +1,12 @@
 # Project Status
 
-截至 2026-08-17。本文只记录仓库级现状；具体 TODO 以 GitHub Issue 为准，实现过程与证据以对应 Task 为准，当前版本发布载荷以 [`RELEASE.md`](RELEASE.md) 为准。
+截至 2026-09-11。本文只记录仓库级现状；具体 TODO 以 GitHub Issue 为准，实现过程与证据以对应 Task 为准，当前版本发布载荷以 [`RELEASE.md`](RELEASE.md) 为准。
+
+下方“核心模块状态”表中未在本轮标注更新日期的行，仍以其引用的 Task 文档为准，不代表 2026-09-11 重新取证。
 
 ## 一句话结论
 
-NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作模式 v1；核心数据与运行时合同基本落地，主要缺口是 stable 发布、真实 Provider、完整浏览器流程和持续作者试用。
+NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作模式 v1；核心数据与运行时合同基本落地。仓库已从单体拆为 12 个 workspace 包。主要缺口是 stable 发布、真实 Provider、完整浏览器流程和持续作者试用。
 
 ## 产品基线
 
@@ -23,7 +25,7 @@ NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作
 | Plot | 两棵树模型已落地：承载树负责章节呈现，因果树负责剧情组织，`StoryScene` 连接两者 | [Task 78](packages/neuro-book/.agents/tasks/78-plot-scene-world-engine-bridge/README.md)、[Task 93](packages/neuro-book/.agents/tasks/93-plot-planning-layer/README.md)、[Task 99](packages/neuro-book/.agents/tasks/99-plot-planning-ui/README.md) |
 | Agent / Workflow | 主要链路已实现；Provider API / Automatic Model Discovery 已在 PR #101 合并并完成 Task 104 收尾，真实 Project、外部 Provider 和完整浏览器产品流程仍待做 | [Task 104](packages/neuro-book/.agents/tasks/104-pi-models-runtime-upgrade/README.md)、[Task 111](packages/neuro-book/.agents/tasks/111-workflow-agent-integration/README.md)、[Task 116](packages/neuro-book/.agents/tasks/116-agent-workflow-reliability/README.md)、[Task 139](packages/neuro-book/.agents/tasks/139-agent-abort-error-projection/README.md) |
 | Project 生命周期与存储 | 生命周期、快照、路径和运行产物合同已实现；跨环境发布验收未完成 | [Task 118](packages/neuro-book/.agents/tasks/118-project-catalog-snapshot-path-integration/README.md)、[Task 125](packages/neuro-book/.agents/tasks/125-runtime-artifact-storage-lifecycle/README.md) |
-| Product Runtime / Manager | `0.9.6-canary.20260814.024826Z.9653191d` 已完成五平台 Product、Windows Portable、容器和公开资产验收；stable、公开签名安装器和正式 Desktop 发行方案仍未完成 | [Task 105](.agents/tasks/105-unified-installation-manager/README.md)、[Task 145](.agents/tasks/145-electron-desktop-productization/README.md) |
+| Product Runtime / Manager | 当前版本 `0.10.2-canary.20260908.091411Z.2e86c254`（2026-09-11 核对 `packages/neuro-book/package.json`）。`0.9.6-canary.20260814.024826Z.9653191d` 已完成五平台 Product、Windows Portable、容器和公开资产验收；stable、公开签名安装器和正式 Desktop 发行方案仍未完成 | [Task 105](.agents/tasks/105-unified-installation-manager/README.md)、[Task 145](.agents/tasks/145-electron-desktop-productization/README.md) |
 | Task 143 Desktop Envelope | Windows-first Electron/Tauri spike 已完成合同和共享 Workbench Chrome 验收；内部 Desktop 产品化证据继续由 Task 145维护 | [Task 143](.agents/tasks/143-desktop-envelope-installation-spike/README.md)、[Task 145](.agents/tasks/145-electron-desktop-productization/README.md) |
 | Task 145 Electron Desktop Productization | Windows x64 内部 Desktop beta 的安装、UAC、Repair、卸载和 Sandbox `--delete-data` 验收已收口；公开 Application Canary `v0.9.6-canary.20260814.024826Z.9653191d` 已发布，但不包含 Electron Desktop ZIP/Depot。原生 Snap、真实外部 Provider、公开签名、updater 和 macOS 实包仍未完成 | [Task 145](.agents/tasks/145-electron-desktop-productization/README.md)、[ADR 0014](packages/neuro-book/docs/adr/0014-electron-desktop-productization.md)、[ADR 0016](packages/neuro-book/docs/adr/0016-windows-desktop-uac-broker.md)、[#87](https://github.com/notnotype/neuro-book/issues/87) |
 | Agent 资产安装协议 | 方案已起草并完成自审，尚未实施 | [Task 135](packages/neuro-book/.agents/tasks/135-agent-asset-install-protocol/README.md) |
@@ -56,8 +58,18 @@ NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作
 - 测试写入 Project Workspace 的高风险路径已切换到隔离 Runtime Workspace Root；相关清理竞态和真实根残留已有专项记录，详见 [Task 125 Round 04](packages/neuro-book/.agents/tasks/125-runtime-artifact-storage-lifecycle/walkthroughs/round-04-workspace-test-isolation.md)。
 - 2026-08-25：Issue [#109](https://github.com/notnotype/neuro-book/issues/109) 收口——release-container 新增 `verify-public-ghcr-podman-delegate` job，以 PATH 屏蔽 podman-compose 的方式真机验收 `podman compose` 委托路径；`verify-public-ghcr.sh` 以第 6 参选择 provider 合同。发版过程暴露并修复 tarball 内部 `file:` 依赖（[#179](https://github.com/notnotype/neuro-book/pull/179)）与 bun.lock Windows 分隔符（[#181](https://github.com/notnotype/neuro-book/pull/181)）两个发布链缺陷；Manager canary.55/.56 为未过门禁的审计记录，canary.57 已公开。详见 [Task 105](.agents/tasks/105-unified-installation-manager/README.md)。
 
+## 仓库结构与上游关系（2026-09-11 核对）
+
+- **拆包**：2026-09-10 的 `9076c082` 跟随上游重构，仓库从单体拆为 12 个 workspace 包（根 `package.json` 的 `workspaces` 声明与 `packages/` 实际目录一致；该合并的提交信息沿用上游 “13-package” 说法，多算了不在根 workspaces 的 `desktop/electron`）。包边界正文见 [`docs/modules/monorepo-boundaries.md`](docs/modules/monorepo-boundaries.md)。
+- **上游关系**：`main` 是 `upstream/master` 的**严格超集**——重新 fetch 后 `git rev-list --left-right --count main...upstream/master` 为 `218 / 0`，上游 HEAD `106f5e7b` 是 `main` 的祖先。不存在“落后上游”的待同步量。
+- **fork 独有增量的性质**：218 条中 docs 61、fix 58、chore 39、test 23、feat 15。产品增量集中在中文写作质量工程（llmlint 规则集、lore 上下文注入、场景六问模板、scene-master-list schema、Writer 避讳词），平台能力主要来自上游。
+- **门禁现状**：
+  - 分层 typecheck 已恢复并入 `main`（此前被 `9076c082` 静默覆盖）。`bun run typecheck` 走 `scripts/typecheck/non-desktop-runner.ts`，八层全绿、聚合退出码 0；最重的 `agent` 层峰值 RSS 1105056 KiB，位于 1310720 KiB 上限的 84%，无资源止损。
+  - lint 门禁已恢复。`bun run lint` 基线为 **3428 error / 1517 warning，覆盖 2939 个文件**，`@stylistic/*` 残留为 0。配置是根目录单一 flat config，用 `@nuxt/eslint-config/flat` 的独立入口而非 `withNuxt`——后者会让全仓 lint 先依赖应用包跑通 `nuxt prepare`，而 `packages/nb-history` 这类非 Nuxt 包不该被应用构建态卡住。格式规则整体关闭，完整实测理由见 `eslint.config.mjs` 注释。error 级全部是语义问题，warning 级以 `vue/html-self-closing` 为主（排版类，不阻断）。
+
 ## 当前风险与验收缺口
 
+- **门禁覆盖**：`Code Baseline` workflow 只在 `pull_request` 上触发，而本仓多数改动直推 `main`，因此 main 上的代码推送实际只跑 `Community and Docs Checks` 与 `Deploy Docs`。2026-09-11 核对：最近 5 次 `Code Baseline`（均在 PR 上）全部失败，失败 job 是 `Full tests (advisory)` 与 `Typecheck (advisory)`——两者在 workflow 里都是 advisory，不阻断合并。要让门禁真正生效，需要把 main push 纳入触发面并把 advisory 转为必检。
 - **发布**：当前公开版本仍是 canary；stable、公开签名、后台 updater 与正式 Desktop 发行未完成。历史版本和精确资产身份见 `vitepress/locales/zh-Hans/changelog/` 与对应 Task。
 - **产品验收**：聚焦测试、typecheck 和构建不能代替浏览器、真实 Project Workspace、真实 Provider/Model 与作者视角写作 smoke。
 - **Desktop**：Windows x64 内部 beta 已有阶段证据；原生 Snap、完整 SSE/WebSocket 断连矩阵、macOS 实包和公开 Desktop 资产仍缺。

@@ -1,0 +1,24 @@
+{
+  "extends": "../../../tsconfig.typecheck.base.json",
+  "compilerOptions": {
+    "paths": {
+      "nbook/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "neuro_book/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ]
+    }
+  },
+  "references": [
+    {
+      "path": "../../contracts"
+    }
+  ],
+  "files": [
+    "../../../packages/neuro-book/proper-lockfile.d.ts",
+    "../../../packages/neuro-book/server/agent/profiles/profile-turn-context.ts"
+  ]
+}

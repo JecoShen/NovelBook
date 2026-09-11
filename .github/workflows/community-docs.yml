@@ -2,7 +2,9 @@ name: Community and Docs Checks
 
 on:
   push:
-    branches: [master]
+    # 本仓默认分支是 main；上游用 master。跟随上游合并时此处会被改回 master，
+    # 那样本仓不存在该分支，workflow 静默失效。改动本行前先确认 origin 分支名。
+    branches: [main]
     paths:
       - "CONTRIBUTING.md"
       - "CONTRIBUTING.en.md"

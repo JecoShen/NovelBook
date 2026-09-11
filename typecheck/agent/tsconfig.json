@@ -1,0 +1,123 @@
+{
+  "extends": "../../tsconfig.typecheck.base.json",
+  "compilerOptions": {
+    "paths": {
+      "nbook/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "${configDir}/workspace-history/packages/neuro-book/*",
+        "${configDir}/agent-support/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "neuro_book/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "${configDir}/workspace-history/packages/neuro-book/*",
+        "${configDir}/agent-support/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "#scripts/*": [
+        "${configDir}/contracts/scripts/*",
+        "${configDir}/workspace-history/scripts/*",
+        "${configDir}/agent-support/scripts/*",
+        "./scripts/*"
+      ]
+    }
+  },
+  "references": [
+    {
+      "path": "../contracts"
+    },
+    {
+      "path": "../workspace-history"
+    },
+    {
+      "path": "../agent-support"
+    }
+  ],
+  "files": [
+    "../../packages/neuro-book/proper-lockfile.d.ts",
+    "../../packages/neuro-book/profile-sdk/index.ts",
+    "../../packages/neuro-book/server/agent/attachments/session-attachment-authority.ts",
+    "../../packages/neuro-book/server/agent/context-access/profile-context-access.ts",
+    "../../packages/neuro-book/server/agent/events/public-event-projection.ts",
+    "../../packages/neuro-book/server/agent/events/public-invocation-result-projection.ts",
+    "../../packages/neuro-book/server/agent/harness/agent-visible-models.ts",
+    "../../packages/neuro-book/server/agent/harness/compaction.ts",
+    "../../packages/neuro-book/server/agent/harness/model-resolver.ts",
+    "../../packages/neuro-book/server/agent/harness/neuro-agent-harness.ts",
+    "../../packages/neuro-book/server/agent/harness/prepare-next-turn.ts",
+    "../../packages/neuro-book/server/agent/harness/prepare-run.ts",
+    "../../packages/neuro-book/server/agent/harness/run-frame-state.ts",
+    "../../packages/neuro-book/server/agent/harness/run-kernel-error.ts",
+    "../../packages/neuro-book/server/agent/harness/run-kernel-types.ts",
+    "../../packages/neuro-book/server/agent/harness/turn-continuation.ts",
+    "../../packages/neuro-book/server/agent/harness/turn-failure.ts",
+    "../../packages/neuro-book/server/agent/harness/turn-transaction.ts",
+    "../../packages/neuro-book/server/agent/harness/types.ts",
+    "../../packages/neuro-book/server/agent/http.ts",
+    "../../packages/neuro-book/server/agent/index.ts",
+    "../../packages/neuro-book/server/agent/jobs/agent-job-manager.ts",
+    "../../packages/neuro-book/server/agent/messages/message-utils.ts",
+    "../../packages/neuro-book/server/agent/profiles/adhoc-profile.ts",
+    "../../packages/neuro-book/server/agent/profiles/default-profile.ts",
+    "../../packages/neuro-book/server/agent/profiles/profile-build-coordinator.ts",
+    "../../packages/neuro-book/server/agent/profiles/profile-compile-worker.ts",
+    "../../packages/neuro-book/server/agent/profiles/profile-tools.ts",
+    "../../packages/neuro-book/server/agent/profiles/summarizer-profile.ts",
+    "../../packages/neuro-book/server/agent/session/dialogue-content.ts",
+    "../../packages/neuro-book/server/agent/session/session-identity.ts",
+    "../../packages/neuro-book/server/agent/session/session-repo.ts",
+    "../../packages/neuro-book/server/agent/session/tool-session-write-sink.ts",
+    "../../packages/neuro-book/server/agent/session/write-plan.ts",
+    "../../packages/neuro-book/server/agent/tools/agent-collaboration-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/apply-patch.ts",
+    "../../packages/neuro-book/server/agent/tools/approval.ts",
+    "../../packages/neuro-book/server/agent/tools/control-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/file-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/index.ts",
+    "../../packages/neuro-book/server/agent/tools/job-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/lore-resolver-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/plot-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/project-sql-schema-summary.ts",
+    "../../packages/neuro-book/server/agent/tools/request-user-input-result.ts",
+    "../../packages/neuro-book/server/agent/tools/sql-tool.ts",
+    "../../packages/neuro-book/server/agent/tools/subject-memory-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/subject-rag-index.ts",
+    "../../packages/neuro-book/server/agent/tools/task-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/tool-registry.ts",
+    "../../packages/neuro-book/server/agent/tools/types.ts",
+    "../../packages/neuro-book/server/agent/tools/web-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/workflow-tools.ts",
+    "../../packages/neuro-book/server/agent/tools/world-engine-tools.ts",
+    "../../packages/neuro-book/server/agent/variables/accessor.ts",
+    "../../packages/neuro-book/server/agent/variables/tools.ts",
+    "../../packages/neuro-book/server/agent/workflow/workflow-agent-port.ts",
+    "../../packages/neuro-book/server/agent/workflow/workflow-demo-scenarios.ts",
+    "../../packages/neuro-book/server/agent/workflow/workflow-demo-service.ts",
+    "../../packages/neuro-book/server/agent/workflow/workflow-job.ts",
+    "../../packages/neuro-book/server/agent/workflow/workflow-run-vm.ts",
+    "../../packages/neuro-book/server/agent/workflow/workflow-session-port.ts",
+    "../../packages/neuro-book/server/agent/world-engine-tool-description.ts",
+    "../../packages/neuro-book/server/config/config-service.ts",
+    "../../packages/neuro-book/server/plot/facade/plot.facade.ts",
+    "../../packages/neuro-book/server/plot/index.ts",
+    "../../packages/neuro-book/server/plot/services/chapter-bootstrap.service.ts",
+    "../../packages/neuro-book/server/plot/services/chapter-prose.service.ts",
+    "../../packages/neuro-book/server/plot/services/chapter-writer-brief.service.ts",
+    "../../packages/neuro-book/server/plot/services/scene-world-anchor-resolution.service.ts",
+    "../../packages/neuro-book/server/plot/services/scene-world-context.service.ts",
+    "../../packages/neuro-book/server/utils/model-settings.ts",
+    "../../packages/neuro-book/server/workspace-files/authorized-file-operation.ts",
+    "../../packages/neuro-book/server/workspace-files/project-data-plane-guard.ts",
+    "../../packages/neuro-book/server/workspace-files/project-file-index.ts",
+    "../../packages/neuro-book/server/workspace-files/project-session-service.ts",
+    "../../packages/neuro-book/server/workspace-files/project-session.ts",
+    "../../packages/neuro-book/server/workspace-files/project-workspace-index.ts",
+    "../../packages/neuro-book/server/workspace-history/agent-file-recorder.ts",
+    "../../packages/neuro-book/server/workspace-history/project-history.ts",
+    "../../packages/neuro-book/server/world-engine/codeact-api.ts",
+    "../../packages/neuro-book/server/world-engine/index.ts",
+    "../../packages/neuro-book/server/world-engine/world-embedding.ts",
+    "../../packages/neuro-book/server/world-engine/world-engine.facade.ts",
+    "../../packages/neuro-book/server/world-engine/world-engine.service.ts"
+  ]
+}

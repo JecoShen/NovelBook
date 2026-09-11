@@ -36,6 +36,7 @@ export {
     FIXTURE_ROOT_PREFIX,
     SNAPSHOT_ROOT_PREFIX,
     TEST_RUN_ID_ENV,
+    isProcessAlive,
     removeFixtureTree,
     sweepStaleFixtureRoots,
 } from "@notnotype/neuro-book-test-support/tmp";

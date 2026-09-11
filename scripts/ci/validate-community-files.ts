@@ -230,6 +230,11 @@ const docsRuntimePaths = [
 
 const communityOnlyPaths = [".agents/**"] as const;
 
+// 本仓默认分支是 main，上游是 master。这里必须与 .github/workflows/ 的分支过滤同步，
+// 否则跟随上游整树合并时两边会各改一半：workflow 被改回 master 而校验器留在 main（或反之），
+// 前者会让 push 型 workflow 静默失效，后者会让本校验器把正确配置判为违约。
+const defaultBranch = "main";
+
 const nitroPatchTestCommand = "bun scripts/ci/validate-nitropack-patch.ts";
 const documentationCheckCommand = "bun run docs:check";
 
@@ -461,7 +466,7 @@ async function validateWorkflows(): Promise<void> {
     ensure(Object.keys(community.permissions).length === 1, "Community workflow 不得获得写权限");
     const communityPush = community.on.push;
     const communityPullRequest = community.on.pull_request;
-    ensure(communityPush?.branches?.includes("master") === true, "Community workflow 必须监听 master push");
+    ensure(communityPush?.branches?.includes(defaultBranch) === true, `Community workflow 必须监听 ${defaultBranch} push`);
     const communityPushPaths = communityPush?.paths ?? [];
     const communityPullRequestPaths = communityPullRequest?.paths ?? [];
     ensure(haveSamePaths(communityPushPaths, communityPullRequestPaths), "Community workflow 的 push 与 PR paths 必须完全一致");
@@ -484,7 +489,7 @@ async function validateWorkflows(): Promise<void> {
     ensure(deployDocs.permissions.contents === "read", "Deploy Docs 必须保持 contents: read");
     ensure(deployDocs.permissions.pages === "write", "Deploy Docs 必须声明 pages: write");
     ensure(deployDocs.permissions["id-token"] === "write", "Deploy Docs 必须声明 id-token: write");
-    ensure(deployDocs.on.push?.branches?.includes("master") === true, "Deploy Docs 必须监听 master push");
+    ensure(deployDocs.on.push?.branches?.includes(defaultBranch) === true, `Deploy Docs 必须监听 ${defaultBranch} push`);
     const deployPaths = deployDocs.on.push?.paths ?? [];
     for (const path of docsRuntimePaths) {
         ensure(deployPaths.includes(path), `Deploy Docs 缺少运行时 path: ${path}`);

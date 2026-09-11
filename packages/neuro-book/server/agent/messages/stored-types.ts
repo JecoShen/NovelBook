@@ -1,6 +1,6 @@
 import type {AssistantMessage, JsonValue, TextContent, UserMessage} from "nbook/server/agent/messages/types";
 import type {AttachmentRef} from "nbook/shared/dto/agent-attachment.dto";
-import type {AgentMessageIdentity} from "nbook/server/agent/harness/invocation-caller";
+import type {AgentMessageIdentity} from "nbook/server/agent/invocation-caller-contract";
 
 /**
  * Session truth 中的附件内容块。文件名描述本次使用场景，不参与 blob identity。

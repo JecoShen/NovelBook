@@ -6,7 +6,7 @@ import {
   authoringSdkTsconfig,
   authoringSdkTypeProjectionInputFiles,
   buildAuthoringSdkTypeProjection,
-} from 'nbook/scripts/build/authoring-sdk-type-projection'
+} from '#scripts/build/authoring-sdk-type-projection'
 
 const temporaryRoots: string[] = []
 

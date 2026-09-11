@@ -93,8 +93,9 @@ neuro-book/
 
 ## Git 注意事项
 
-- Git 完整流程见 [`docs/standards/repository-workflow.md`](docs/standards/repository-workflow.md)。主工作区保持 `master`，保护用户已有改动和未跟踪文件。
-- 代码改动在 worktree 完成；治理文档和用户明确指定的主工作区改动可以直接在当前工作区完成。只暂存 Task 范围文件，不使用 `git add -A`。
+- Git 完整流程见 [`docs/standards/repository-workflow.md`](docs/standards/repository-workflow.md)。本仓默认分支是 `main`，上游用 `master`；跟随上游整树合并时这个差异会把配置里的分支名改回 `master`（`.github/workflows/` 已因此静默失效过一次）。保护用户已有改动和未跟踪文件。
+- 默认直接在主工作区改，不为每件事开分支或 worktree。只有大型改造或确实需要并行推进时才开，且用完立即删除分支与 worktree。只暂存 Task 范围文件，不使用 `git add -A`。
+- 接手任何既有分支或 worktree 前，先 `git -C <path> status` 看目录内容。残留 worktree 很容易被当成"待合并分支的容器"，从而漏掉里面未提交的在制品并重复劳动。
 - 统一评审通过后，获远端元数据授权的 Leader 或 PM 才能把 Issue 项目条目标为 Done。
 - 命令从相应 `package.json` 查询。Bun 的 `--cwd` 必须放在 `run` 之后；`bun --cwd <dir> run <script>` 可能只打印用法并以 0 退出。
 

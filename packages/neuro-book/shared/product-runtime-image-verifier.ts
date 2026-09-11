@@ -13,7 +13,7 @@ import { isAbsolute, posix, relative, resolve, sep, win32 } from 'node:path'
 import {
   PRODUCT_PLATFORMS,
   type ProductPlatform,
-} from 'nbook/packages/neuro-book-manager/src/types'
+} from '@notnotype/neuro-book-contracts/platform'
 import {
   assertProductRuntimeContractFiles,
   parseProductRuntimeContract,

@@ -3,7 +3,7 @@ import {isAbsolute, resolve, join, relative} from "node:path";
 import type {AgentToolCall} from "@earendil-works/pi-agent-core";
 import type {AssistantMessage, JsonValue} from "nbook/server/agent/messages/types";
 import type {StoredAgentMessage} from "nbook/server/agent/messages/stored-types";
-import {createAssistantTextMessage, createStoredTextToolResult, createStoredUserMessage} from "nbook/server/agent/messages/message-utils";
+import {createAssistantTextMessage, createStoredTextToolResult, createStoredUserMessage} from "nbook/server/agent/messages/message-constructors";
 import {storedMessageText} from "nbook/server/agent/messages/stored-message-presentation";
 import type {AgentCatalogItem, AgentProfile, ProfilePrepareContext, ProfileTurnPlan} from "nbook/server/agent/profiles/types";
 import {planModeToolDirectory} from "nbook/server/agent/plan-mode-directory";
@@ -11,7 +11,7 @@ import {AGENT_MODE_STATE_KEY, AGENT_TASKS_STATE_KEY} from "nbook/server/agent/se
 import type {NeuroSessionContext, SessionEntryDraft} from "nbook/server/agent/session/types";
 import type {ProfileVariablePathInput} from "nbook/server/agent/variables/types";
 import type {AgentMode} from "nbook/shared/dto/agent-session.dto";
-import type {FileChangeAwareness} from "nbook/server/agent/profiles/profile-turn-context";
+import type {FileChangeAwareness} from "nbook/server/agent/profiles/profile-turn-context-contract";
 import {absoluteFsPath, resolveContainedFilePath} from "nbook/server/runtime/paths/file-path";
 import {resolveApplicationRoot, resolveSystemNbookRoot, resolveSystemReferenceRoot} from "nbook/server/workspace-files/system-workspace-assets";
 import type {

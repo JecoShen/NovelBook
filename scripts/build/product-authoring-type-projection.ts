@@ -315,7 +315,7 @@ async function resolveTypeReference(
     if (!topLevelOwner) throw new Error(`${importer.owner.registration.name} 声明引用未登记 types：${reference}`);
     const resolved = ts.resolveTypeReferenceDirective(reference, importer.sourcePath, TYPESCRIPT_OPTIONS, ts.sys)
         .resolvedTypeReferenceDirective;
-    if (!resolved || !isDeclarationPath(resolved.resolvedFileName)) {
+    if (!resolved || !resolved.resolvedFileName || !isDeclarationPath(resolved.resolvedFileName)) {
         throw new Error(`${importer.owner.registration.name} 无法解析 types：${reference}`);
     }
     if (!resolved.packageId || resolved.packageId.name !== topLevelOwner.registration.name) {
@@ -339,10 +339,14 @@ async function resolvedPackageInstance(
 ): Promise<SourcePackage> {
     const version = resolved.packageId?.version;
     if (!version) throw new Error(`Authoring dependency 缺少解析版本：${topLevelOwner.registration.name}`);
-    if (version === topLevelOwner.version && isPathInside(topLevelOwner.sourceRoot, resolved.resolvedFileName)) {
+    // Type Reference Directive 的 resolvedFileName 在 TS API 里可选，module 解析的则必填；
+    // 两条调用路径共用本函数，只能在这里收敛。
+    const resolvedFileName = resolved.resolvedFileName;
+    if (!resolvedFileName) throw new Error(`Authoring dependency 缺少解析路径：${topLevelOwner.registration.name}`);
+    if (version === topLevelOwner.version && isPathInside(topLevelOwner.sourceRoot, resolvedFileName)) {
         return topLevelOwner;
     }
-    const sourceRoot = await realpath(packageRootForResolvedFile(resolved.resolvedFileName, topLevelOwner.registration.name));
+    const sourceRoot = await realpath(packageRootForResolvedFile(resolvedFileName, topLevelOwner.registration.name));
     const targetRoot = resolve(importerOwner.targetRoot, "node_modules", ...topLevelOwner.registration.name.split("/"));
     const key = packageInstanceKey(targetRoot, version);
     const existing = packageInstances.get(key);

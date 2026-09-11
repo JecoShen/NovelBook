@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { AUTHORING_SDK_DEPENDENCIES } from 'nbook/scripts/build/authoring-sdk-type-projection'
-import { projectAuthoringDependencies } from 'nbook/scripts/build/product-authoring-type-projection'
+import { AUTHORING_SDK_DEPENDENCIES } from '#scripts/build/authoring-sdk-type-projection'
+import { projectAuthoringDependencies } from '#scripts/build/product-authoring-type-projection'
 
 const temporaryRoots: string[] = []
 

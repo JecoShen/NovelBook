@@ -1,0 +1,96 @@
+{
+  "extends": "../../tsconfig.typecheck.base.json",
+  "compilerOptions": {
+    "paths": {
+      "nbook/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "neuro_book/*": [
+        "${configDir}/contracts/packages/neuro-book/*",
+        "./packages/neuro-book/*"
+      ],
+      "#scripts/*": [
+        "${configDir}/contracts/scripts/*",
+        "./scripts/*"
+      ]
+    }
+  },
+  "references": [
+    {
+      "path": "../contracts"
+    }
+  ],
+  "files": [
+    "../../packages/neuro-book/proper-lockfile.d.ts",
+    "../../packages/neuro-book/yazl.d.ts",
+    "../../packages/neuro-book/server/assets/asset-resolver.ts",
+    "../../packages/neuro-book/server/generated/project-prisma/client.ts",
+    "../../packages/neuro-book/server/generated/project-prisma/enums.ts",
+    "../../packages/neuro-book/server/media/image-variant-contract.ts",
+    "../../packages/neuro-book/server/media/raster-image.ts",
+    "../../packages/neuro-book/server/plot/assemblers/plot-dto.assembler.ts",
+    "../../packages/neuro-book/server/plot/contracts/plot-repositories.ts",
+    "../../packages/neuro-book/server/plot/core/constants.ts",
+    "../../packages/neuro-book/server/plot/core/errors.ts",
+    "../../packages/neuro-book/server/plot/core/types.ts",
+    "../../packages/neuro-book/server/plot/http/plot-input.parser.ts",
+    "../../packages/neuro-book/server/plot/http/plot-route.ts",
+    "../../packages/neuro-book/server/plot/repositories/includes.ts",
+    "../../packages/neuro-book/server/plot/repositories/prisma-chapter.repository.ts",
+    "../../packages/neuro-book/server/plot/repositories/prisma-decision.repository.ts",
+    "../../packages/neuro-book/server/plot/repositories/prisma-promise.repository.ts",
+    "../../packages/neuro-book/server/plot/repositories/prisma-scene.repository.ts",
+    "../../packages/neuro-book/server/plot/repositories/prisma-story.repository.ts",
+    "../../packages/neuro-book/server/plot/repositories/prisma-thread.repository.ts",
+    "../../packages/neuro-book/server/plot/repositories/thread-tags.ts",
+    "../../packages/neuro-book/server/plot/services/chapter.service.ts",
+    "../../packages/neuro-book/server/plot/services/decision.service.ts",
+    "../../packages/neuro-book/server/plot/services/order.service.ts",
+    "../../packages/neuro-book/server/plot/services/plot-scope.guard.ts",
+    "../../packages/neuro-book/server/plot/services/promise.service.ts",
+    "../../packages/neuro-book/server/plot/services/ref-resolver.service.ts",
+    "../../packages/neuro-book/server/plot/services/scene-world-anchor.validator.ts",
+    "../../packages/neuro-book/server/plot/services/scene.service.ts",
+    "../../packages/neuro-book/server/plot/services/story.service.ts",
+    "../../packages/neuro-book/server/plot/services/thread.service.ts",
+    "../../packages/neuro-book/server/utils/novel-chapter.ts",
+    "../../packages/neuro-book/server/workspace-files/content-node-schema.ts",
+    "../../packages/neuro-book/server/workspace-files/content-node-templates.ts",
+    "../../packages/neuro-book/server/workspace-files/llmlint-skill-projection.ts",
+    "../../packages/neuro-book/server/workspace-files/project-cover-upload.ts",
+    "../../packages/neuro-book/server/workspace-files/project-cover.ts",
+    "../../packages/neuro-book/server/workspace-files/project-database-module.ts",
+    "../../packages/neuro-book/server/workspace-files/system-assets-preflight.ts",
+    "../../packages/neuro-book/server/workspace-files/system-assets-projection.ts",
+    "../../packages/neuro-book/server/workspace-files/tracked-prisma-libsql.ts",
+    "../../packages/neuro-book/server/workspace-files/workspace-archive.ts",
+    "../../packages/neuro-book/server/workspace-files/workspace-file-conflict.ts",
+    "../../packages/neuro-book/server/workspace-files/workspace-file-index-key.ts",
+    "../../packages/neuro-book/server/workspace-files/workspace-files.ts",
+    "../../packages/neuro-book/server/workspace-files/workspace-upload.ts",
+    "../../packages/neuro-book/server/workspace-history/history-dto.ts",
+    "../../packages/neuro-book/server/workspace-history/history-inbox.ts",
+    "../../packages/neuro-book/server/world-engine/calendar-strategy.ts",
+    "../../packages/neuro-book/server/world-engine/calendar.ts",
+    "../../packages/neuro-book/server/world-engine/calendars/custom.ts",
+    "../../packages/neuro-book/server/world-engine/calendars/gregorian.ts",
+    "../../packages/neuro-book/server/world-engine/calendars/legacy-simple.ts",
+    "../../packages/neuro-book/server/world-engine/calendars/simple.ts",
+    "../../packages/neuro-book/server/world-engine/codeact-sandbox.ts",
+    "../../packages/neuro-book/server/world-engine/embedding-vector.ts",
+    "../../packages/neuro-book/server/world-engine/patch-operations.ts",
+    "../../packages/neuro-book/server/world-engine/schema-loader.ts",
+    "../../packages/neuro-book/server/world-engine/single-file-typescript-config-import.ts",
+    "../../packages/neuro-book/server/world-engine/types.ts",
+    "../../packages/neuro-book/server/world-engine/world-engine.repository.ts",
+    "../../packages/neuro-book/server/world-engine/world-issue-builder.ts",
+    "../../packages/neuro-book/server/world-engine/world-issue-catalog.ts",
+    "../../packages/neuro-book/shared/dto/plot.dto.ts",
+    "../../packages/neuro-book/shared/dto/workspace-file-conflict.dto.ts",
+    "../../packages/neuro-book/shared/dto/workspace-tree.dto.ts",
+    "../../packages/neuro-book/shared/dto/write-response.ts",
+    "../../packages/neuro-book/shared/media/raster-image.ts",
+    "../../packages/neuro-book/shared/reference-core.ts"
+  ]
+}
