@@ -149,11 +149,20 @@ async function loadProjectionModule(): Promise<typeof import('#scripts/build/aut
   }
 }
 
-/** 只吞说明符解析失败；模块自身的执行错误必须冒泡，否则回退会把真实缺陷伪装成路径问题。 */
+const PROJECTION_SPECIFIER = '#scripts/build/authoring-sdk-type-projection'
+
+/**
+ * 只吞说明符解析失败；模块自身的执行错误必须冒泡，否则回退会把真实缺陷伪装成路径问题。
+ * Bun 的 ResolveMessage 带 ERR_MODULE_NOT_FOUND code 但 instanceof Error 为 false（1.3.14
+ * 实测），不能用 Error 窄化当先决；其 "Cannot find module" 消息精确包含未能解析的说明符，
+ * 模块内部传递依赖解析失败时消息里是内层说明符，不会误吞。
+ */
 function isSpecifierResolutionFailure(error: unknown): boolean {
-  if (!(error instanceof Error)) return false
+  if (typeof error !== 'object' || error === null) return false
   const code = (error as NodeJS.ErrnoException).code
-  return code === 'ERR_MODULE_NOT_FOUND' || code === 'ERR_PACKAGE_IMPORT_NOT_DEFINED'
+  if (code === 'ERR_MODULE_NOT_FOUND' || code === 'ERR_PACKAGE_IMPORT_NOT_DEFINED') return true
+  const message = (error as { message?: unknown }).message
+  return typeof message === 'string' && message.includes(`Cannot find module '${PROJECTION_SPECIFIER}'`)
 }
 
 async function acquirePublishLock(authoringRoot: string): Promise<() => Promise<void>> {

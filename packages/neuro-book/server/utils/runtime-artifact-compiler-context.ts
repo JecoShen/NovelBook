@@ -98,7 +98,12 @@ export async function resolveRuntimeArtifactCompilerContext(
             authoringTypeRoot: projection.typeRoot,
             artifactRuntimeRequireRoot: resolve(absoluteRoot, "package.json"),
             tsconfigPath: projection.tsconfigPath,
-            sourcePathMappings: sourcePathMappingsFor(absoluteRoot),
+            // 声明投影是 Source 编译输入根（tsconfig/types/node_modules 会记入 manifest）；
+            // 逻辑根固定，物理位置随缓存目录与内容指纹漂移。
+            sourcePathMappings: Object.freeze([
+                {physicalRoot: projection.root, logicalRoot: "authoring-types"},
+                ...sourcePathMappingsFor(absoluteRoot),
+            ]),
         });
     }
 
