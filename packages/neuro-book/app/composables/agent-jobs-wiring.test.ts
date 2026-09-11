@@ -44,7 +44,7 @@ describe("Jobs feed 页面接线合同", () => {
         expect(runtimeSource.lastIndexOf('"nuxt", "dev", "--no-fork"')).toBeGreaterThan(
             runtimeSource.indexOf("await seedSystemAssets"),
         );
-        expect(runtimeSource).toContain('import {findRepositoryRoot} from "#scripts/utils/workspace-roots";');
+        expect(runtimeSource).toContain('const repositoryRoot = resolve(packageRoot, "../..");');
         expect(runtimeSource).toContain("process.env.NEURO_BOOK_REPOSITORY_ROOT = repositoryRoot;");
     });
 
