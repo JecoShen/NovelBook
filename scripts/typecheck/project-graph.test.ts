@@ -1,11 +1,12 @@
 import { spawnSync } from 'node:child_process'
 import { access, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 
-import { materializeTypecheckLayers } from '#scripts/typecheck/layer-project-configs'
+import { materializeTypecheckLayers, repositoryTypeRoots } from '#scripts/typecheck/layer-project-configs'
 import {
   NON_DESKTOP_TYPECHECK_LAYERS,
   type TypecheckProjectLayer,
@@ -20,7 +21,7 @@ import { runNonDesktopTypecheck, type TypecheckRunReport } from '#scripts/typech
  * - `collectResolvedGraph` 只建 Program 收集闭包文件名，不跑语义检查（省内存）。
  *
  * 与 runner 的 per-run 配置注入保持同一套约定：
- * - 生成物一律落 `.agent/tmp/typecheck/<runId>/`，committed 配置不写持久输出目录；
+ * - 生成物一律落 `<系统Temp>/neuro-book/typecheck/<runId>/`，committed 配置不写持久输出目录；
  * - 生成的 per-run 配置一律用**绝对路径**注入 outDir / declarationDir / tsBuildInfoFile
  *   （相对路径会被按“声明它的那个配置文件所在目录”解析，落进嵌套的错误位置，
  *   表现为 build 退出 0 但一个 .d.ts 都没产出）；
@@ -490,6 +491,7 @@ async function buildAndTraceSample(runRoot: string): Promise<ResolutionTrace> {
       outDir: declarationRoot,
       declarationDir: declarationRoot,
       tsBuildInfoFile: join(runRoot, 'contracts.tsbuildinfo'),
+      typeRoots: repositoryTypeRoots(repoRoot),
     },
   })
   buildDeclarations(contractsConfig.path, contractsConfig.text)
@@ -518,6 +520,7 @@ async function buildAndTraceSample(runRoot: string): Promise<ResolutionTrace> {
       outDir: consumerOutput,
       declarationDir: consumerOutput,
       tsBuildInfoFile: join(runRoot, 'consumer.tsbuildinfo'),
+      typeRoots: repositoryTypeRoots(repoRoot),
       // TypeScript 默认让 project reference 重定向回上游源码；本项目要证明的恰好
       // 是“只消费声明输出”，所以显式关掉源码重定向。
       disableSourceOfProjectReferenceRedirect: true,
@@ -914,7 +917,7 @@ async function writePerRunConfig(
 }
 
 async function createRunRoot(): Promise<string> {
-  const typecheckTemporaryRoot = resolveRepoPath('.agent/tmp/typecheck')
+  const typecheckTemporaryRoot = join(tmpdir(), 'neuro-book', 'typecheck')
   await mkdir(typecheckTemporaryRoot, { recursive: true })
   // realpath：Program 里的文件名是 realpath 化的，前缀断言必须比较同一形态。
   return realpath(await mkdtemp(join(typecheckTemporaryRoot, 'project-graph-')))

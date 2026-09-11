@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import type { Readable } from 'node:stream'
 import { parseArgs } from 'node:util'
@@ -52,8 +53,13 @@ export const RESOURCE_LIMITS = Object.freeze({
  */
 export const MAX_LAYER_OUTPUT_BYTES = 1_048_576
 
-/** `.agent/tmp/typecheck/<runId>` 的固定前缀；runner 拥有并在 finally 清理该目录。 */
-export const TYPECHECK_RUN_ROOT_RELATIVE = join('.agent', 'tmp', 'typecheck')
+/**
+ * 本次运行根的父目录 `<系统Temp>/neuro-book/typecheck/`；runner 拥有并在 finally 清理其下的 runId 目录。
+ *
+ * 不落仓库 `.agent/tmp`：worktree 深路径叠加 runId 目录名会顶出路径长度上限，
+ * 该位置同时被 governance 合同禁止。真相源见 docs/testing/README.md。
+ */
+export const TYPECHECK_RUN_ROOT_PARENT = join(tmpdir(), 'neuro-book', 'typecheck')
 
 /** 参数或层注册无效时的退出码：这一类失败发生在任何 run report 存在之前。 */
 export const CLI_USAGE_EXIT_CODE = 2
@@ -371,12 +377,21 @@ export function selectLayersThrough<T extends { readonly name: string }>(
   return layers.slice(0, index + 1)
 }
 
-/** 创建本次运行独占的 `.agent/tmp/typecheck/<runId>`；mkdtemp 保证 runId 唯一。 */
+/**
+ * 创建本次运行独占的 `<系统Temp>/neuro-book/typecheck/<runId>`；mkdtemp 保证 runId 唯一。
+ *
+ * runRoot 里额外放一个指向仓库 `node_modules` 的符号链接。层间产出的 `.d.ts` 落在 runRoot 下，
+ * 它们自身还要解析 zod、Prisma 这类第三方类型，而 TypeScript 是从**该文件所在目录**向上找
+ * `node_modules` 的：runRoot 在系统临时根下时一路找不到，第三方类型全退化成 unknown，
+ * 症状会伪装成业务代码的 TS7006 / TS18046 / TS2739。链接让 runRoot 成为解析边界。
+ * 清理走 `fs.rm`，它不跟随符号链接，删的是链接本身。
+ */
 export async function createTypecheckRunRoot(repoRoot: string = process.cwd()): Promise<string> {
-  const parent = resolve(repoRoot, TYPECHECK_RUN_ROOT_RELATIVE)
-  await mkdir(parent, { recursive: true })
+  await mkdir(TYPECHECK_RUN_ROOT_PARENT, { recursive: true })
   const stamp = new Date().toISOString().replace(/[:.]/gu, '-')
-  return await mkdtemp(join(parent, `${stamp}-`))
+  const runRoot = await mkdtemp(join(TYPECHECK_RUN_ROOT_PARENT, `${stamp}-`))
+  await symlink(resolve(repoRoot, 'node_modules'), join(runRoot, 'node_modules'), 'dir')
+  return runRoot
 }
 
 export function formatRunReport(report: TypecheckRunReport): string {

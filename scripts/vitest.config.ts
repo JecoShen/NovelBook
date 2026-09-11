@@ -27,6 +27,7 @@ export default defineConfig({
             "scripts/install/**/*.test.ts",
             "scripts/maintenance/**/*.test.ts",
             "scripts/release/**/*.test.ts",
+            "scripts/typecheck/**/*.test.ts",
             "scripts/utils/**/*.test.ts",
         ],
     },

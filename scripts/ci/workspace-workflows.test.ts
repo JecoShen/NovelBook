@@ -6,6 +6,7 @@ import {parse} from "yaml";
 
 import {selectProductPlatformMatrix} from "#scripts/build/product-platform-matrix";
 import {selectBaselineScopes} from "#scripts/ci/baseline-change-scope";
+import {DEFAULT_BRANCH} from "#scripts/ci/default-branch";
 import {WORKSPACE_PACKAGE_CHECKS, selectWorkspaceMatrix} from "#scripts/ci/workspace-package-matrix";
 
 type WorkflowStep = {
@@ -160,6 +161,28 @@ describe("迁移后九个 CI 工作流结构合同", () => {
         expect(invalid).toEqual([]);
     });
 
+    it("CI workflow 不写死上游分支名，且 main 直推受代码门禁覆盖", async () => {
+        const workflows = await readWorkflows();
+        // 上游用 master，本仓用 main。整树跟随上游合并会把分支名带回 master，而本仓无该 ref：
+        // merge-base 解析失败会让作用域探测整步失败，连带 typecheck 与 tests 被静默跳过——
+        // 门禁看起来在，实际从不执行。分支名的单一取值见 #scripts/ci/default-branch。
+        const hardcoded = [...workflows.entries()]
+            .filter(([, workflow]) => /origin\/master|refs\/heads\/master/u.test(commands(workflow)))
+            .map(([name]) => name);
+        expect(hardcoded).toEqual([]);
+        // 只校验声明了 branches 的 push 触发；tag 触发的发布类 workflow（release-manager.yml）
+        // 本来就不带 branches，不属于分支名失配的风险面。
+        const wrongBranch = [...workflows.entries()]
+            .filter(([, workflow]) => workflow.on?.push?.branches !== undefined)
+            .filter(([, workflow]) => (workflow.on?.push?.branches ?? []).join(",") !== DEFAULT_BRANCH)
+            .map(([name]) => name);
+        expect(wrongBranch).toEqual([]);
+        // main 允许直推、无 PR 评审，这两个代码门禁必须覆盖 push 才有约束力。
+        for (const name of ["code-baseline.yml", "workspace-packages.yml"]) {
+            expect((await readWorkflow(name)).on?.push?.branches, name).toEqual([DEFAULT_BRANCH]);
+        }
+    });
+
     it("Electron 独立 lockfile 使用 POSIX workspace 路径", async () => {
         const lockfile = await readFile(resolve(root, "desktop/electron/bun.lock"), "utf8");
         expect(lockfile).not.toContain("file:..\\\\");
@@ -304,7 +327,7 @@ describe("迁移后九个 CI 工作流结构合同", () => {
             "darwin-aarch64",
         ]);
         expect(selectProductPlatformMatrix("workflow_dispatch")).toEqual(selectProductPlatformMatrix("push"));
-        expect(platforms.on?.push?.branches).toEqual(["master"]);
+        expect(platforms.on?.push?.branches).toEqual([DEFAULT_BRANCH]);
         expect(platforms.on?.push?.paths).toEqual(platforms.on?.pull_request?.paths);
         expect(commands(platforms)).toContain("bun run --cwd packages/neuro-book nuxt:build");
         expect(commands(platforms)).toContain("./packages/neuro-book/package.json");

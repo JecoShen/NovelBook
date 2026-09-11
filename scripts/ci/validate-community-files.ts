@@ -3,6 +3,7 @@ import {basename, resolve} from "node:path";
 import {parse} from "yaml";
 
 import {readLabelManifest} from "#scripts/ci/community-labels";
+import {DEFAULT_BRANCH as defaultBranch} from "#scripts/ci/default-branch";
 
 interface FormOption {
     label: string;
@@ -229,11 +230,6 @@ const docsRuntimePaths = [
 ];
 
 const communityOnlyPaths = [".agents/**"] as const;
-
-// 本仓默认分支是 main，上游是 master。这里必须与 .github/workflows/ 的分支过滤同步，
-// 否则跟随上游整树合并时两边会各改一半：workflow 被改回 master 而校验器留在 main（或反之），
-// 前者会让 push 型 workflow 静默失效，后者会让本校验器把正确配置判为违约。
-const defaultBranch = "main";
 
 const nitroPatchTestCommand = "bun scripts/ci/validate-nitropack-patch.ts";
 const documentationCheckCommand = "bun run docs:check";

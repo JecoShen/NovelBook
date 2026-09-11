@@ -1,6 +1,11 @@
 name: Code Baseline
 
 on:
+  # main 允许直推、没有 PR 评审，代码门禁必须覆盖 push 才有约束力。
+  # 这里不加 paths 过滤：baseline-change-scope.ts 对非 pull_request 事件一律返回全量作用域，
+  # 过滤只会让部分 main 提交完全不过门禁。
+  push:
+    branches: [main]
   pull_request:
     paths:
       - ".agents/**"
@@ -74,10 +79,15 @@ jobs:
         id: scope
         env:
           EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           {
-            base="$(git merge-base origin/master HEAD)"
-            git diff --name-only "${base}" HEAD | bun scripts/ci/baseline-change-scope.ts
+            # base 取 PR 的目标分支，不写死分支名：本仓默认分支是 main，上游是 master，
+            # 写死会让其中一侧解析不到 ref，整步失败并连带静默跳过 typecheck 与 tests。
+            # 只有 pull_request 需要 diff——baseline-change-scope.ts 对其余事件一律返回全量作用域。
+            if [ "${EVENT_NAME}" = "pull_request" ]; then
+              git diff --name-only "$(git merge-base "origin/${BASE_REF}" HEAD)" HEAD
+            fi | bun scripts/ci/baseline-change-scope.ts
           } >> "$GITHUB_OUTPUT"
 
   governance:
@@ -102,7 +112,9 @@ jobs:
       - name: Typecheck repository scripts
         run: bun x tsc --noEmit -p scripts/tsconfig.json
       - name: Check workflow and Docker contracts
-        run: bun x vitest run --config scripts/vitest.config.ts scripts/ci/agent-governance.test.ts scripts/ci/workspace-workflows.test.ts scripts/build/dockerfile-contract.test.ts
+        # scripts/typecheck/** 的两个用例此前不在任何 vitest 收集面内（scripts/vitest.config.ts
+        # 的 include 漏了该目录，且全仓没有一处跑该 config 的全量）——测试在仓库里却从不执行。
+        run: bun x vitest run --config scripts/vitest.config.ts scripts/ci/agent-governance.test.ts scripts/ci/workspace-workflows.test.ts scripts/build/dockerfile-contract.test.ts scripts/typecheck/non-desktop-runner.test.ts scripts/typecheck/project-graph.test.ts
 
   typecheck:
     name: Typecheck

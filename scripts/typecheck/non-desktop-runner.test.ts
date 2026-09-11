@@ -1,11 +1,12 @@
 import { spawn } from 'node:child_process'
 import { access, mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   MAX_LAYER_OUTPUT_BYTES,
-  TYPECHECK_RUN_ROOT_RELATIVE,
+  TYPECHECK_RUN_ROOT_PARENT,
   createTypecheckRunRoot,
   formatRunReport,
   runNonDesktopTypecheck,
@@ -196,15 +197,14 @@ describe('non-desktop typecheck runner cli', () => {
     expect(result.output).toContain('definitely-missing')
   })
 
-  it('creates a unique run root under .agent/tmp/typecheck', async () => {
-    const repoRoot = await createRunRoot()
+  it('creates a unique run root under the system temp root', async () => {
+    const first = await createTypecheckRunRoot()
+    const second = await createTypecheckRunRoot()
+    temporaryRoots.push(first, second)
 
-    const first = await createTypecheckRunRoot(repoRoot)
-    const second = await createTypecheckRunRoot(repoRoot)
-
-    expect(TYPECHECK_RUN_ROOT_RELATIVE).toBe(join('.agent', 'tmp', 'typecheck'))
+    expect(TYPECHECK_RUN_ROOT_PARENT).toBe(join(tmpdir(), 'neuro-book', 'typecheck'))
     expect(first).not.toBe(second)
-    expect(first.startsWith(join(repoRoot, TYPECHECK_RUN_ROOT_RELATIVE))).toBe(true)
+    expect(first.startsWith(TYPECHECK_RUN_ROOT_PARENT)).toBe(true)
     await expect(pathExists(first)).resolves.toBe(true)
     await expect(pathExists(second)).resolves.toBe(true)
   })
@@ -300,7 +300,7 @@ async function runCliProcess(args: readonly string[]): Promise<{ exitCode: numbe
 }
 
 async function createRunRoot(): Promise<string> {
-  const temporaryRoot = resolve('.agent/tmp')
+  const temporaryRoot = join(tmpdir(), 'neuro-book', 'typecheck')
   await mkdir(temporaryRoot, { recursive: true })
   const runRoot = await mkdtemp(join(temporaryRoot, 'non-desktop-runner-'))
   temporaryRoots.push(runRoot)

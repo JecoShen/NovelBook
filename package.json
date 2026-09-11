@@ -29,7 +29,7 @@
     "postinstall": "bun run --cwd packages/neuro-agent-harness build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "typecheck": "bun scripts/typecheck/non-desktop-runner.ts",
+    "typecheck:layers": "bun scripts/typecheck/non-desktop-runner.ts",
     "github:labels": "bun scripts/ci/github-labels.ts",
     "governance:check": "bun scripts/ci/agent-governance.ts",
     "governance:context": "bun scripts/cli/agent-context.ts",

@@ -64,12 +64,12 @@ NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作
 - **上游关系**：`main` 是 `upstream/master` 的**严格超集**——重新 fetch 后 `git rev-list --left-right --count main...upstream/master` 为 `218 / 0`，上游 HEAD `106f5e7b` 是 `main` 的祖先。不存在“落后上游”的待同步量。
 - **fork 独有增量的性质**：218 条中 docs 61、fix 58、chore 39、test 23、feat 15。产品增量集中在中文写作质量工程（llmlint 规则集、lore 上下文注入、场景六问模板、scene-master-list schema、Writer 避讳词），平台能力主要来自上游。
 - **门禁现状**：
-  - 分层 typecheck 已恢复并入 `main`（此前被 `9076c082` 静默覆盖）。`bun run typecheck` 走 `scripts/typecheck/non-desktop-runner.ts`，八层全绿、聚合退出码 0；最重的 `agent` 层峰值 RSS 1105056 KiB，位于 1310720 KiB 上限的 84%，无资源止损。
+  - 分层 typecheck 已恢复并入 `main`（此前被 `9076c082` 静默覆盖）。`bun run typecheck:layers` 走 `scripts/typecheck/non-desktop-runner.ts`，八层全绿、聚合退出码 0；最重的 `agent` 层峰值 RSS 1105056 KiB，位于 1310720 KiB 上限的 84%，无资源止损。命名带 `:layers` 后缀是因为根 workspace 是 orchestrator，`typecheck` 属于应用包，被 monorepo 边界合同列为根禁用名。
   - lint 门禁已恢复。`bun run lint` 基线为 **3428 error / 1517 warning，覆盖 2939 个文件**，`@stylistic/*` 残留为 0。配置是根目录单一 flat config，用 `@nuxt/eslint-config/flat` 的独立入口而非 `withNuxt`——后者会让全仓 lint 先依赖应用包跑通 `nuxt prepare`，而 `packages/nb-history` 这类非 Nuxt 包不该被应用构建态卡住。格式规则整体关闭，完整实测理由见 `eslint.config.mjs` 注释。error 级全部是语义问题，warning 级以 `vue/html-self-closing` 为主（排版类，不阻断）。
 
 ## 当前风险与验收缺口
 
-- **门禁覆盖**：`Code Baseline` workflow 只在 `pull_request` 上触发，而本仓多数改动直推 `main`，因此 main 上的代码推送实际只跑 `Community and Docs Checks` 与 `Deploy Docs`。2026-09-11 核对：最近 5 次 `Code Baseline`（均在 PR 上）全部失败，失败 job 是 `Full tests (advisory)` 与 `Typecheck (advisory)`——两者在 workflow 里都是 advisory，不阻断合并。要让门禁真正生效，需要把 main push 纳入触发面并把 advisory 转为必检。
+- **门禁覆盖**：2026-09-11 修复。此前 `Code Baseline` 与 `Workspace Packages` 只在 `pull_request` 上触发，而本仓多数改动直推 `main`，两者在 fork 的 `main` 上**从未运行过**；且它们的作用域探测步骤写死 `git merge-base origin/master HEAD`，而 fork 的 origin 没有 `master` 分支，即便触发也会在探测步整步失败并连带跳过 `typecheck` 与 `tests`。现两者均已加 `push: branches: [main]`，分支名改为取 PR 目标分支，`scripts/ci/workspace-workflows.test.ts` 增合同测试禁止再写死上游分支名；分支名单一取值见 `scripts/ci/default-branch.ts`。**遗留**：`bun run governance:check` 有 11 项既有失败（`docs/tasks` 旧目录、3 个迁移前 `scripts/cli/sync-*` 入口、4 项应用跨根 `#scripts` 导入、2 项活文件引用仓库临时根、1 个 Work Task 缺 README），在这些清零前 main 的 `Code Baseline` 会持续显示失败。
 - **发布**：当前公开版本仍是 canary；stable、公开签名、后台 updater 与正式 Desktop 发行未完成。历史版本和精确资产身份见 `vitepress/locales/zh-Hans/changelog/` 与对应 Task。
 - **产品验收**：聚焦测试、typecheck 和构建不能代替浏览器、真实 Project Workspace、真实 Provider/Model 与作者视角写作 smoke。
 - **Desktop**：Windows x64 内部 beta 已有阶段证据；原生 Snap、完整 SSE/WebSocket 断连矩阵、macOS 实包和公开 Desktop 资产仍缺。
