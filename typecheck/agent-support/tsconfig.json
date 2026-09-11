@@ -151,7 +151,6 @@
     "../../packages/neuro-book/server/utils/frontmatter-document.ts",
     "../../packages/neuro-book/server/utils/pi-model-cost.ts",
     "../../packages/neuro-book/server/utils/server-timing-sink.ts",
-    "../../packages/neuro-book/server/workspace-files/test-tmp-sweep.ts",
     "../../packages/neuro-book/server/workspace-files/test-workspace-fixture.ts",
     "../../packages/neuro-book/shared/agent/agent-image-markdown.ts",
     "../../packages/neuro-book/shared/agent/agent-image-policy.ts",
