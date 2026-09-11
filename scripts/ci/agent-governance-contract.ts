@@ -648,17 +648,29 @@ export function verifyMonorepoCutover(repoRoot: string): string[] {
     return failures;
 }
 
-/** 应用只允许 Source Dev 通过 #scripts 读取根 workspace locator。 */
+/**
+ * 应用只允许两处跨根 #scripts 桥：
+ * - Source Dev launcher 读取根 workspace locator；
+ * - Source 声明投影缓存按 2026-09-04 spec 与 Product 共用同一个投影生成核心
+ *   （`scripts/build/authoring-sdk-type-projection`），其测试必须按同说明符 mock。
+ * 除此之外应用不得越包引用根 workspace 脚本。
+ */
 export function verifyApplicationScriptBoundary(repoRoot: string): string[] {
     const failures: string[] = [];
     const applicationRoot = resolve(repoRoot, "packages", "neuro-book");
-    const allowedPath = "scripts/cli/source-dev.ts";
-    const allowedImport = "#scripts/utils/workspace-roots";
+    const allowedBridges: ReadonlyArray<readonly [string, string]> = [
+        ["scripts/cli/source-dev.ts", "#scripts/utils/workspace-roots"],
+        ["server/runtime/source-authoring-type-cache.ts", "#scripts/build/authoring-sdk-type-projection"],
+        ["server/runtime/source-authoring-type-cache.test.ts", "#scripts/build/authoring-sdk-type-projection"],
+    ];
     for (const relativePath of walkSourceFiles(applicationRoot)) {
         const text = readFileSync(resolve(applicationRoot, relativePath), "utf8");
         const imports = [...text.matchAll(/["'](#scripts\/[^"']+)["']/gu)].map((match) => match[1]);
         if (imports.length === 0) continue;
-        if (relativePath !== allowedPath || imports.some((specifier) => specifier !== allowedImport)) {
+        const allowedSpecifiers = allowedBridges
+            .filter(([path]) => path === relativePath)
+            .map(([, specifier]) => specifier);
+        if (allowedSpecifiers.length === 0 || imports.some((specifier) => !allowedSpecifiers.includes(specifier))) {
             failures.push(`应用跨根 #scripts 导入违规：packages/neuro-book/${relativePath} -> ${imports.join(", ")}`);
         }
     }

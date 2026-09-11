@@ -22,16 +22,26 @@ vi.mock("nbook/server/interfaces/product-runtime-image-verifier", () => ({
         openSelfVerified = verifier.openSelfVerified;
     },
 }));
+
+const sourceProjectionMock = vi.hoisted(() => ({
+    open: vi.fn(),
+}));
+
+vi.mock("nbook/server/runtime/source-authoring-type-cache", () => ({
+    openSourceAuthoringTypeProjection: sourceProjectionMock.open,
+}));
 import {
     resolveRuntimeArtifactCompilerContext,
     resolveRuntimeArtifactNbookPath,
 } from "nbook/server/utils/runtime-artifact-compiler-context";
+import {resolveApplicationRoot} from "nbook/server/workspace-files/system-workspace-assets";
 
 describe("runtime artifact compiler context", () => {
     const roots: string[] = [];
 
     afterEach(async () => {
         await Promise.all(roots.splice(0).map((root) => rm(root, {recursive: true, force: true})));
+        sourceProjectionMock.open.mockReset();
     });
 
     it("Product build只使用Authoring Kit编译上下文，artifact require继续指向Product runtime", async () => {
@@ -63,6 +73,7 @@ describe("runtime artifact compiler context", () => {
             nbookRoot: join(authoringRoot, "nbook"),
             compilerPackageRoot: join(authoringRoot, "package.json"),
             compilerNodeModulesRoot: join(authoringRoot, "node_modules"),
+            authoringTypeRoot: join(authoringRoot, "types"),
             artifactRuntimeRequireRoot: join(outputRoot, "index.mjs"),
             tsconfigPath: join(authoringRoot, "tsconfig.json"),
         }));
@@ -118,10 +129,62 @@ describe("runtime artifact compiler context", () => {
         await writeFile(join(root, "package.json"), '{"name":"neuro-book-product"}\n', "utf8");
         await writeFile(join(outputRoot, "package.json"), '{"name":"neuro-book-output"}\n', "utf8");
         await writeFile(join(outputRoot, "index.mjs"), "", "utf8");
+        sourceProjectionMock.open.mockResolvedValueOnce({
+            fingerprint: "sha256:source-default",
+            root: join(root, "cache", "authoring-types", "sha256:source-default"),
+            typeRoot: join(root, "cache", "authoring-types", "sha256:source-default", "types"),
+            nodeModulesRoot: join(root, "cache", "authoring-types", "sha256:source-default", "node_modules"),
+            tsconfigPath: join(root, "cache", "authoring-types", "sha256:source-default", "tsconfig.json"),
+        });
 
         await expect(resolveRuntimeArtifactCompilerContext(root)).resolves.toMatchObject({
             kind: "source",
             productRuntime: false,
         });
+    });
+
+    it("Source使用Cache Root中的声明投影，但runtime bundle根仍指向checkout", async () => {
+        const root = testHostPath("tmp", "artifact-context-source-projection-test", randomUUID());
+        roots.push(root);
+        const cacheRoot = join(root, "isolated-cache");
+        const projectionRoot = join(cacheRoot, "authoring-types", "sha256:source-context");
+        sourceProjectionMock.open.mockResolvedValueOnce({
+            fingerprint: "sha256:source-context",
+            root: projectionRoot,
+            typeRoot: join(projectionRoot, "types"),
+            nodeModulesRoot: join(projectionRoot, "node_modules"),
+            tsconfigPath: join(projectionRoot, "tsconfig.json"),
+        });
+        await mkdir(root, {recursive: true});
+        await writeFile(join(root, "package.json"), '{"name":"neuro-book-source"}\n', "utf8");
+
+        const context = await resolveRuntimeArtifactCompilerContext(root, {
+            NEURO_BOOK_CACHE_ROOT: cacheRoot,
+        });
+
+        expect(context).toMatchObject({
+            kind: "source",
+            nbookRoot: root,
+            compilerPackageRoot: join(root, "package.json"),
+            artifactRuntimeRequireRoot: join(root, "package.json"),
+            authoringTypeRoot: join(projectionRoot, "types"),
+            compilerNodeModulesRoot: join(projectionRoot, "node_modules"),
+            tsconfigPath: join(projectionRoot, "tsconfig.json"),
+        });
+        expect(sourceProjectionMock.open).toHaveBeenCalledWith(cacheRoot, resolveApplicationRoot(root));
+    });
+
+    it("Source声明投影生成失败时拒绝回退仓库tsconfig", async () => {
+        const root = testHostPath("tmp", "artifact-context-source-failure-test", randomUUID());
+        roots.push(root);
+        const cacheRoot = join(root, "isolated-cache");
+        sourceProjectionMock.open.mockRejectedValueOnce(new Error("injected projection failure"));
+        await mkdir(root, {recursive: true});
+        await writeFile(join(root, "package.json"), '{"name":"neuro-book-source"}\n', "utf8");
+
+        await expect(resolveRuntimeArtifactCompilerContext(root, {
+            NEURO_BOOK_CACHE_ROOT: cacheRoot,
+        })).rejects.toThrow("injected projection failure");
+        expect(sourceProjectionMock.open).toHaveBeenCalledWith(cacheRoot, resolveApplicationRoot(root));
     });
 });

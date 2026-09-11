@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { lstat, mkdir, readFile, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { lock } from 'proper-lockfile'
 import { absoluteFsPath, type AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 
@@ -81,7 +80,7 @@ export async function openSourceAuthoringTypeProjection(
   const stagingRoot = join(authoringRoot, STAGING_DIRECTORY, randomUUID())
   try {
     await mkdir(stagingRoot, { recursive: true })
-    const projectionModule = await loadProjectionModule(absoluteSourceRoot)
+    const projectionModule = await loadProjectionModule()
     const result = await projectionModule.buildAuthoringSdkTypeProjection({ targetRoot: stagingRoot, sourceRoot: absoluteSourceRoot })
     const files = await projectionFiles(stagingRoot)
     const inputFiles = normalizeFiles(result.inputFiles)
@@ -138,13 +137,15 @@ export async function openSourceAuthoringTypeProjection(
 }
 
 /** Worker 的 TS loader 可能不为运行时 dynamic import 应用 subpath imports；回退到同一 checkout 的源码文件。 */
-async function loadProjectionModule(sourceRoot: string): Promise<typeof import('#scripts/build/authoring-sdk-type-projection')> {
+async function loadProjectionModule(): Promise<typeof import('#scripts/build/authoring-sdk-type-projection')> {
   try {
     return await import('#scripts/build/authoring-sdk-type-projection')
   }
   catch (error) {
     if (!isSpecifierResolutionFailure(error)) throw error
-    return await import(pathToFileURL(resolve(sourceRoot, 'scripts/build/authoring-sdk-type-projection.ts')).href)
+    // 本模块固定位于 <repo>/packages/neuro-book/server/runtime/，仓库根脚本在其上四级；
+    // 回退路径相对模块 URL 推导，与调用方传入的 sourceRoot（应用包根）无关。
+    return await import(new URL('../../../../scripts/build/authoring-sdk-type-projection.ts', import.meta.url).href)
   }
 }
 

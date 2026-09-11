@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { init, parse } from 'es-module-lexer'
 import type * as TypeScript from 'typescript'
 import type {
@@ -25,10 +26,13 @@ const AUTHORING_SDK_EMITTER_ROOT_PATHS = [
   'server/agent/tools/web-extraction-modules.d.ts',
 ] as const
 
-const AUTHORING_SDK_FIXED_INPUT_PATHS = [
-  'bun.lock',
-  'proper-lockfile.d.ts',
-] as const
+// 拆包后 lockfile 只在仓库根，SDK 源码与 proper-lockfile.d.ts 在应用包根；
+// 两组固定输入必须分别从各自根读取，但 manifest 里仍记录同一组稳定逻辑路径。
+const AUTHORING_SDK_REPOSITORY_FIXED_INPUT_PATHS = ['bun.lock'] as const
+const AUTHORING_SDK_APPLICATION_FIXED_INPUT_PATHS = ['proper-lockfile.d.ts'] as const
+
+/** 本模块位于 <repo>/scripts/build/，仓库根固定为上两级；与 workspace-roots 同一推导。 */
+const MODULE_REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 const AUTHORING_RUNTIME_TYPE_STUB_FILES = {
   'nbook/server/agent/profiles/writer-writing-reference': 'writer-writing-reference.d.ts',
@@ -70,10 +74,11 @@ export type AuthoringSdkTypeProjectionResult = Readonly<{
 }>
 
 export async function buildAuthoringSdkTypeProjection(
-  input: { targetRoot: string, sourceRoot: string },
+  input: { targetRoot: string, sourceRoot: string, repositoryRoot?: string },
 ): Promise<AuthoringSdkTypeProjectionResult> {
   const targetRoot = resolve(input.targetRoot)
   const sourceRoot = resolve(input.sourceRoot)
+  const repositoryRoot = resolve(input.repositoryRoot ?? MODULE_REPOSITORY_ROOT)
   const typeRoot = resolve(targetRoot, 'types')
   const nodeModulesRoot = resolve(targetRoot, 'node_modules')
   const [typescriptModule, { projectAuthoringDependencies }] = await Promise.all([
@@ -81,7 +86,7 @@ export async function buildAuthoringSdkTypeProjection(
     import('#scripts/build/product-authoring-type-projection'),
   ])
   const ts = typescriptModule.default
-  const declarationDependencies = await emitAuthoringTypes(typeRoot, ts, sourceRoot)
+  const declarationDependencies = await emitAuthoringTypes(typeRoot, ts, sourceRoot, repositoryRoot)
   assertDeclaredTypeDependencies(declarationDependencies)
   await cp(resolve(sourceRoot, 'proper-lockfile.d.ts'), resolve(typeRoot, 'proper-lockfile.d.ts'))
   const dependencyProjection = await projectAuthoringDependencies({
@@ -106,7 +111,7 @@ export async function buildAuthoringSdkTypeProjection(
     dependencyBytes: dependencies.bytes,
     dependencies: dependencyProjection.dependencies,
     dependencyInstances: dependencyProjection.instances,
-    inputFiles: await authoringSdkTypeProjectionInputFiles({ sourceRoot }),
+    inputFiles: await authoringSdkTypeProjectionInputFiles({ sourceRoot, repositoryRoot }),
   }
 }
 
@@ -115,14 +120,18 @@ export async function buildAuthoringSdkTypeProjection(
  * Source cache 可以在验证 current 前调用它，决定是否需要动态加载生成器。
  */
 export async function authoringSdkTypeProjectionInputFiles(
-  input: { sourceRoot?: string } = {},
+  input: { sourceRoot?: string, repositoryRoot?: string } = {},
 ): Promise<Array<{ path: string, sha256: string, bytes: number }>> {
   const sourceRoot = resolve(input.sourceRoot ?? '.')
-  const sourcePaths = await reachableAuthoringSdkSourcePaths(sourceRoot)
-  return await sourceInputFiles(sourceRoot, [
-    ...AUTHORING_SDK_FIXED_INPUT_PATHS,
+  const repositoryRoot = resolve(input.repositoryRoot ?? MODULE_REPOSITORY_ROOT)
+  const sourcePaths = await reachableAuthoringSdkSourcePaths(sourceRoot, repositoryRoot)
+  const applicationInputs = await sourceInputFiles(sourceRoot, [
+    ...AUTHORING_SDK_APPLICATION_FIXED_INPUT_PATHS,
     ...sourcePaths,
   ])
+  const repositoryInputs = await sourceInputFiles(repositoryRoot, AUTHORING_SDK_REPOSITORY_FIXED_INPUT_PATHS)
+  return [...applicationInputs, ...repositoryInputs]
+    .sort((left, right) => left.path.localeCompare(right.path))
 }
 
 export function authoringSdkTsconfig(): string {
@@ -158,7 +167,12 @@ export function authoringSdkTsconfig(): string {
  * 使用 TypeScript semantic gate 与声明 emitter 建立候选图，再从 SDK 公开入口精确投影可达声明。
  * `program.emit()` 会写出 Program 中所有源码；不能直接把那棵树当成 SDK 闭包。
  */
-async function emitAuthoringTypes(typeRoot: string, ts: typeof TypeScript, sourceRoot: string): Promise<Set<string>> {
+async function emitAuthoringTypes(
+  typeRoot: string,
+  ts: typeof TypeScript,
+  sourceRoot: string,
+  repositoryRoot: string,
+): Promise<Set<string>> {
   const root = resolve(sourceRoot)
   const emittedRoot = resolve(dirname(typeRoot), '.types-emitted')
   const stubRoot = resolve(dirname(typeRoot), '.authoring-runtime-stubs')
@@ -182,7 +196,8 @@ async function emitAuthoringTypes(typeRoot: string, ts: typeof TypeScript, sourc
     outDir: emittedRoot,
     lib: ['lib.esnext.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts'],
     types: ['bun', 'node'],
-    typeRoots: [resolve(root, 'node_modules', '@types')],
+    // 拆包后 @types hoist 在仓库根 node_modules；应用包根向上查找依赖 cwd，不稳定。
+    typeRoots: [resolve(repositoryRoot, 'node_modules', '@types')],
     skipLibCheck: true,
     strict: true,
     declaration: true,
@@ -395,7 +410,7 @@ async function sourceInputFiles(
 }
 
 /** 从与 declaration emitter 相同的 roots 沿公开静态 import/re-export 图收集 Source 输入。 */
-async function reachableAuthoringSdkSourcePaths(sourceRoot: string): Promise<string[]> {
+async function reachableAuthoringSdkSourcePaths(sourceRoot: string, repositoryRoot: string): Promise<string[]> {
   await init
   const queue = AUTHORING_SDK_EMITTER_ROOT_PATHS.map(path => resolve(sourceRoot, path))
   const visited = new Set<string>()
@@ -408,7 +423,7 @@ async function reachableAuthoringSdkSourcePaths(sourceRoot: string): Promise<str
     const [imports] = parse(source)
     for (const item of imports) {
       if (!item.n) continue
-      const dependency = resolveAuthoringSdkSourceImport(sourceRoot, normalized, item.n)
+      const dependency = resolveAuthoringSdkSourceImport(sourceRoot, repositoryRoot, normalized, item.n)
       if (dependency) queue.push(dependency)
     }
   }
@@ -419,6 +434,7 @@ async function reachableAuthoringSdkSourcePaths(sourceRoot: string): Promise<str
 
 function resolveAuthoringSdkSourceImport(
   sourceRoot: string,
+  repositoryRoot: string,
   importerPath: string,
   specifier: string,
 ): string | null {
@@ -426,7 +442,7 @@ function resolveAuthoringSdkSourceImport(
   let basePath: string
   if (specifier.startsWith('.')) basePath = resolve(dirname(importerPath), specifier)
   else if (specifier.startsWith('nbook/')) basePath = resolve(sourceRoot, specifier.slice('nbook/'.length))
-  else if (specifier.startsWith('#cache/')) basePath = resolve(sourceRoot, 'packages', 'file-snapshot-cache', 'src', specifier.slice('#cache/'.length))
+  else if (specifier.startsWith('#cache/')) basePath = resolve(repositoryRoot, 'packages', 'file-snapshot-cache', 'src', specifier.slice('#cache/'.length))
   else return null
   const candidates = [
     ...(extname(basePath) ? [basePath] : []),
@@ -440,8 +456,10 @@ function resolveAuthoringSdkSourceImport(
   ]
   const sourcePath = candidates.find(candidate => existsSync(candidate))
   if (!sourcePath) return null
+  // #cache/* 在拆包后位于仓库根 packages/ 下，合法的 checkout 边界是两个根的并集。
   const withinSource = relative(sourceRoot, sourcePath)
-  if (withinSource.startsWith('..')) {
+  const withinRepository = relative(repositoryRoot, sourcePath)
+  if (withinSource.startsWith('..') && withinRepository.startsWith('..')) {
     throw new Error(`Authoring Source input 越出 checkout：${specifier}`)
   }
   return sourcePath

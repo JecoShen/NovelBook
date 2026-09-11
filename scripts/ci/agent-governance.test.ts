@@ -1498,7 +1498,7 @@ describe("最终 monorepo 收敛门禁", () => {
         ]));
     });
 
-    it("只允许 source-dev 读取根 workspace locator", async () => {
+    it("只允许登记过的跨根桥读取根 workspace 脚本", async () => {
         const repoRoot = await createTestTmpRoot("governance-app-scripts", "governance-app-scripts-test");
         fixtureRoots.push(repoRoot);
         await writeText(repoRoot, "packages/neuro-book/scripts/cli/source-dev.ts", [
@@ -1506,13 +1506,23 @@ describe("最终 monorepo 收敛门禁", () => {
             'import type {WorkspaceRoots} from "#scripts/utils/workspace-roots";',
             "export {resolveWorkspaceRoots};",
         ].join("\n"));
+        await writeText(repoRoot, "packages/neuro-book/server/runtime/source-authoring-type-cache.ts", [
+            'async function load(): Promise<typeof import("#scripts/build/authoring-sdk-type-projection")> {',
+            '    return await import("#scripts/build/authoring-sdk-type-projection");',
+            "}",
+        ].join("\n"));
+        await writeText(repoRoot, "packages/neuro-book/server/runtime/source-authoring-type-cache.test.ts", [
+            'vi.mock("#scripts/build/authoring-sdk-type-projection", () => ({}));',
+        ].join("\n"));
         expect(verifyApplicationScriptBoundary(repoRoot)).toEqual([]);
 
         await writeText(repoRoot, "packages/neuro-book/scripts/smoke/agent.ts", 'import "#scripts/utils/workspace-roots";\n');
         await writeText(repoRoot, "packages/neuro-book/scripts/cli/source-dev.ts", 'import "#scripts/utils/process.mjs";\n');
+        await writeText(repoRoot, "packages/neuro-book/server/runtime/source-authoring-type-cache.ts", 'import "#scripts/utils/workspace-roots";\n');
         expect(verifyApplicationScriptBoundary(repoRoot)).toEqual([
             "应用跨根 #scripts 导入违规：packages/neuro-book/scripts/cli/source-dev.ts -> #scripts/utils/process.mjs",
             "应用跨根 #scripts 导入违规：packages/neuro-book/scripts/smoke/agent.ts -> #scripts/utils/workspace-roots",
+            "应用跨根 #scripts 导入违规：packages/neuro-book/server/runtime/source-authoring-type-cache.ts -> #scripts/utils/workspace-roots",
         ]);
     });
 

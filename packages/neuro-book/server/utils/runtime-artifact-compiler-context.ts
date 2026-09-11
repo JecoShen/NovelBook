@@ -4,6 +4,9 @@ import {dirname, isAbsolute, join, relative, resolve, sep} from "node:path";
 import {pathToFileURL} from "node:url";
 import {ProductRuntimeImageVerifier} from "nbook/server/interfaces/product-runtime-image-verifier";
 import type {ProductRuntimeImageManifest} from "@notnotype/neuro-book-contracts/product-runtime";
+import {openSourceAuthoringTypeProjection} from "nbook/server/runtime/source-authoring-type-cache";
+import {runtimePathsFromEnv} from "nbook/server/runtime/paths/runtime-paths";
+import {resolveApplicationRoot} from "nbook/server/workspace-files/system-workspace-assets";
 
 export type RuntimeArtifactPathMapping = Readonly<{
     physicalRoot: string;
@@ -18,6 +21,8 @@ export type RuntimeArtifactCompilerPaths = Readonly<{
     compilerPackageRoot: string;
     /** 仅供 esbuild 解析批准 authoring 依赖的 node_modules。 */
     compilerNodeModulesRoot: string;
+    /** 编译 Profile/Variable 时唯一允许的 authoring 声明投影根。 */
+    authoringTypeRoot: string;
     /** 已生成 artifact 在 Product 运行时建立 require 的根。 */
     artifactRuntimeRequireRoot: string;
     tsconfigPath: string;
@@ -76,6 +81,12 @@ export async function resolveRuntimeArtifactCompilerContext(
     const outputEntry = resolve(outputRoot, "index.mjs");
     const outputPackage = resolve(outputRoot, "package.json");
     if (!explicitImageRoot) {
+        // Source 模式必须复用有界声明投影，禁止回退完整 checkout 类型图（内存封顶）；
+        // 投影失败直接向调用方冒泡，不在此兜底。
+        const projection = await openSourceAuthoringTypeProjection(
+            runtimePathsFromEnv(absoluteRoot, env).cacheRoot,
+            resolveApplicationRoot(absoluteRoot),
+        );
         return Object.freeze({
             kind: "source",
             root: absoluteRoot,
@@ -83,9 +94,10 @@ export async function resolveRuntimeArtifactCompilerContext(
             outputRoot,
             nbookRoot: absoluteRoot,
             compilerPackageRoot: resolve(absoluteRoot, "package.json"),
-            compilerNodeModulesRoot: resolve(absoluteRoot, "node_modules"),
+            compilerNodeModulesRoot: projection.nodeModulesRoot,
+            authoringTypeRoot: projection.typeRoot,
             artifactRuntimeRequireRoot: resolve(absoluteRoot, "package.json"),
-            tsconfigPath: resolve(absoluteRoot, "tsconfig.json"),
+            tsconfigPath: projection.tsconfigPath,
             sourcePathMappings: sourcePathMappingsFor(absoluteRoot),
         });
     }
@@ -152,6 +164,7 @@ function productCompilerPaths(root: string, outputRoot: string, outputEntry: str
         nbookRoot: resolve(authoringRoot, "nbook"),
         compilerPackageRoot: authoringPackagePath,
         compilerNodeModulesRoot: resolve(authoringRoot, "node_modules"),
+        authoringTypeRoot: resolve(authoringRoot, "types"),
         artifactRuntimeRequireRoot: outputEntry,
         tsconfigPath,
         sourcePathMappings: Object.freeze([

@@ -1,6 +1,7 @@
 import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   authoringSdkTsconfig,
@@ -9,6 +10,10 @@ import {
 } from '#scripts/build/authoring-sdk-type-projection'
 
 const temporaryRoots: string[] = []
+
+// 拆包后 SDK 源码在应用包根，lockfile 在仓库根；两处固定输入分别归属两个根。
+const CHECKOUT_REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const CHECKOUT_APPLICATION_ROOT = resolve(CHECKOUT_REPOSITORY_ROOT, 'packages', 'neuro-book')
 
 afterEach(async () => {
   await Promise.all(temporaryRoots.splice(0).map(root => rm(root, { recursive: true, force: true })))
@@ -20,19 +25,24 @@ describe('Authoring SDK type projection', () => {
     temporaryRoots.push(sourceRoot)
     await writeSourceInputs(sourceRoot)
 
-    const before = await authoringSdkTypeProjectionInputFiles({ sourceRoot })
+    const before = await authoringSdkTypeProjectionInputFiles({ sourceRoot, repositoryRoot: sourceRoot })
     expect(before.map(file => file.path)).toContain('profile-sdk/session.ts')
     const sessionPath = join(sourceRoot, 'profile-sdk', 'session.ts')
     await writeFile(sessionPath, 'changed public re-export\n', 'utf8')
-    const after = await authoringSdkTypeProjectionInputFiles({ sourceRoot })
+    const after = await authoringSdkTypeProjectionInputFiles({ sourceRoot, repositoryRoot: sourceRoot })
 
     expect(after).not.toEqual(before)
     expect(after.find(file => file.path === 'profile-sdk/session.ts')?.sha256)
       .not.toBe(before.find(file => file.path === 'profile-sdk/session.ts')?.sha256)
     expect(after.map(file => file.path)).toContain('bun.lock')
 
-    const checkoutInputs = await authoringSdkTypeProjectionInputFiles()
-    expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/session.ts')
+    // 当前应用包 SDK 表面：session.ts 已不从公开入口 re-export（上游 SDK 演进后的现状），
+    // 与 workspace/runtime-paths/lore 一样不属于投影输入闭包。
+    const checkoutInputs = await authoringSdkTypeProjectionInputFiles({ sourceRoot: CHECKOUT_APPLICATION_ROOT })
+    expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/index.ts')
+    expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/constructors.ts')
+    expect(checkoutInputs.map(file => file.path)).toContain('bun.lock')
+    expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/session.ts')
     expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/workspace.ts')
     expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/runtime-paths.ts')
     expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/lore.ts')
@@ -44,14 +54,15 @@ describe('Authoring SDK type projection', () => {
     const unrelatedCwd = await mkdtemp(join(tmpdir(), 'nbook-authoring-cwd-'))
     temporaryRoots.push(unrelatedCwd)
 
-    const sourceRoot = process.cwd()
+    const sourceRoot = CHECKOUT_APPLICATION_ROOT
+    const previousCwd = process.cwd()
     process.chdir(unrelatedCwd)
     let result
     try {
       result = await buildAuthoringSdkTypeProjection({ targetRoot: target, sourceRoot })
     }
     finally {
-      process.chdir(sourceRoot)
+      process.chdir(previousCwd)
     }
 
     expect(result.inputFiles).toEqual(await authoringSdkTypeProjectionInputFiles({ sourceRoot }))
@@ -68,6 +79,7 @@ describe('Authoring SDK type projection', () => {
   }, 360_000)
 })
 
+// fixture 同时扮演应用包根与仓库根（repositoryRoot: sourceRoot），bun.lock 因此仍需在列。
 const sourceInputPaths = [
   'bun.lock',
   'proper-lockfile.d.ts',
