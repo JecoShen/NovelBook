@@ -155,7 +155,7 @@ export type RuntimeSessionFacade = RuntimeSessionContext & {
 };
 
 export type AgentInvokeCaller = {
-    kind: "user" | "agent" | "system";
+    kind: "user" | "agent" | "system" | "external-cli";
     sessionId?: number;
     profileKey?: string;
     toolCallId?: string;

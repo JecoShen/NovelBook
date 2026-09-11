@@ -37,7 +37,7 @@ export type StoredAgentMessage = StoredUserMessage | AssistantMessage | StoredTo
 
 /** 可持久化的 invocation 调用方身份；旧队列可能没有该字段，恢复时按未知身份兼容。 */
 export type StoredInvocationCaller = {
-    kind: "user" | "agent" | "system";
+    kind: "user" | "agent" | "system" | "external-cli";
     sessionId?: number;
     profileKey?: string;
     toolCallId?: string;

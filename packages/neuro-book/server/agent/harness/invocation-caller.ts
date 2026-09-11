@@ -1,18 +1,11 @@
-/** Agent invocation 的调用方类别。 */
-export type AgentInvokeCallerKind = "user" | "agent" | "system";
-
-/** Durable message 的投影身份；与调用来源 caller.kind 分离。 */
-export type AgentMessageIdentity = "user" | "system";
-
 /**
- * Agent invocation 的稳定调用方身份。
+ * 兼容入口：类型本体已下沉到 `nbook/server/agent/invocation-caller-contract`。
  *
- * 该合同被 Profile authoring 直接消费，因此保持为不依赖 Harness、HTTP DTO
- * 或运行时实现的纯类型 Module。
+ * 保留本文件是为了不改动现有调用方；contracts 声明项目消费合同文件本身，
+ * 避免把 `server/agent/harness/` 前缀带进它的闭包。
  */
-export type AgentInvokeCaller = {
-    kind: AgentInvokeCallerKind;
-    sessionId?: number;
-    profileKey?: string;
-    toolCallId?: string;
-};
+export type {
+    AgentInvokeCaller,
+    AgentInvokeCallerKind,
+    AgentMessageIdentity,
+} from "nbook/server/agent/invocation-caller-contract";
