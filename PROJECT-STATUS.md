@@ -69,7 +69,7 @@ NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作
 
 ## 当前风险与验收缺口
 
-- **门禁覆盖**：2026-09-11 修复。此前 `Code Baseline` 与 `Workspace Packages` 只在 `pull_request` 上触发，而本仓多数改动直推 `main`，两者在 fork 的 `main` 上**从未运行过**；且它们的作用域探测步骤写死 `git merge-base origin/master HEAD`，而 fork 的 origin 没有 `master` 分支，即便触发也会在探测步整步失败并连带跳过 `typecheck` 与 `tests`。现两者均已加 `push: branches: [main]`，分支名改为取 PR 目标分支，`scripts/ci/workspace-workflows.test.ts` 增合同测试禁止再写死上游分支名；分支名单一取值见 `scripts/ci/default-branch.ts`。**遗留**：`bun run governance:check` 有 11 项既有失败（`docs/tasks` 旧目录、3 个迁移前 `scripts/cli/sync-*` 入口、4 项应用跨根 `#scripts` 导入、2 项活文件引用仓库临时根、1 个 Work Task 缺 README），在这些清零前 main 的 `Code Baseline` 会持续显示失败。
+- **门禁覆盖**：2026-09-11 修复。此前 `Code Baseline` 与 `Workspace Packages` 只在 `pull_request` 上触发，而本仓多数改动直推 `main`，两者在 fork 的 `main` 上**从未运行过**；且它们的作用域探测步骤写死 `git merge-base origin/master HEAD`，而 fork 的 origin 没有 `master` 分支，即便触发也会在探测步整步失败并连带跳过 `typecheck` 与 `tests`。现两者均已加 `push: branches: [main]`，分支名改为取 PR 目标分支，`scripts/ci/workspace-workflows.test.ts` 增合同测试禁止再写死上游分支名；分支名单一取值见 `scripts/ci/default-branch.ts`。**遗留**：`bun run governance:check` 有 7 项既有失败，在清零前 main 的 `Code Baseline` 会持续显示失败。其中 4 项是应用跨根 `#scripts` 导入（`scripts/utils/workspace-roots` 与 `scripts/build/authoring-sdk-type-projection` 需先决定归属包），1 项是同一文件引用仓库临时根；另两项需开发者决定：`docs/tasks` 仍有 81 个未迁入 `.agents/tasks/` 的目录，`t14-agent-profile-nav-lab-migration` 是上游经 `4b10ab1d` 带入的半截 Task，README 在本仓与 upstream 均从未存在，不宜代为补写。
 - **发布**：当前公开版本仍是 canary；stable、公开签名、后台 updater 与正式 Desktop 发行未完成。历史版本和精确资产身份见 `vitepress/locales/zh-Hans/changelog/` 与对应 Task。
 - **产品验收**：聚焦测试、typecheck 和构建不能代替浏览器、真实 Project Workspace、真实 Provider/Model 与作者视角写作 smoke。
 - **Desktop**：Windows x64 内部 beta 已有阶段证据；原生 Snap、完整 SSE/WebSocket 断连矩阵、macOS 实包和公开 Desktop 资产仍缺。
