@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { lstat, mkdir, readFile, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { lock } from 'proper-lockfile'
 import { absoluteFsPath, type AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 
@@ -136,10 +137,24 @@ export async function openSourceAuthoringTypeProjection(
   }
 }
 
+type ProjectionModuleLoader = () => Promise<AuthoringSdkTypeProjectionModule>
+let projectionModuleLoaderForTest: ProjectionModuleLoader | null = null
+
+/**
+ * 仅供缓存测试注入受控投影模块；生产调用方不应设置。
+ * 说明符必须保持非常量间接（见类型声明处注释），vi.mock 无法拦截非常量
+ * dynamic import，测试因此需要显式接缝——与 GC hook 同一模式。
+ */
+export function setSourceAuthoringTypeCacheProjectionLoaderForTest(loader: ProjectionModuleLoader | null): void {
+  projectionModuleLoaderForTest = loader
+}
+
 /** Worker 的 TS loader 可能不为运行时 dynamic import 应用 subpath imports；回退到同一 checkout 的源码文件。 */
-async function loadProjectionModule(): Promise<typeof import('#scripts/build/authoring-sdk-type-projection')> {
+async function loadProjectionModule(): Promise<AuthoringSdkTypeProjectionModule> {
+  if (projectionModuleLoaderForTest) return await projectionModuleLoaderForTest()
   try {
-    return await import('#scripts/build/authoring-sdk-type-projection')
+    // 说明符经常量间接引用：tsc 不解析非常量 dynamic import，运行时解析行为不变。
+    return await import(PROJECTION_SPECIFIER)
   }
   catch (error) {
     if (!isSpecifierResolutionFailure(error)) throw error
@@ -150,6 +165,26 @@ async function loadProjectionModule(): Promise<typeof import('#scripts/build/aut
 }
 
 const PROJECTION_SPECIFIER = '#scripts/build/authoring-sdk-type-projection'
+
+/**
+ * 投影生成器按治理合同登记豁免跨根引用，但编译期不静态链接它：任何把本模块纳入
+ * 类型闭包的 tsc 程序（如 Product Authoring Kit 的声明 emitter）都没有 #scripts
+ * 路径映射，静态 typeof import 或字面量 dynamic import 会让那些程序报 TS2307。
+ * 这里只描述缓存实际消费的三个成员。
+ */
+type AuthoringSdkTypeProjectionModule = Readonly<{
+  AUTHORING_SDK_TYPE_PROJECTION_SCHEMA: string
+  authoringSdkTsconfig: () => string
+  buildAuthoringSdkTypeProjection: (input: {
+    targetRoot: string
+    sourceRoot: string
+    repositoryRoot?: string
+  }) => Promise<Readonly<{
+    dependencies: readonly Record<string, unknown>[]
+    dependencyInstances: readonly Record<string, unknown>[]
+    inputFiles: readonly { path: string, sha256: string, bytes: number }[]
+  }>>
+}>
 
 /**
  * 只吞说明符解析失败；模块自身的执行错误必须冒泡，否则回退会把真实缺陷伪装成路径问题。
@@ -238,16 +273,32 @@ async function validateProjection(root: string, fingerprint: string, sourceRoot:
   }
   for (const input of manifest.inputFiles) {
     if (!isSafeRelativePath(input.path)) return null
-    const sourcePath = resolve(sourceRoot, input.path)
+    const bytes = await readProjectionInput(sourceRoot, input.path)
+    if (!bytes || bytes.length !== input.bytes || sha256(bytes) !== input.sha256) return null
+  }
+  return projectionFromRoot(root, fingerprint)
+}
+
+/** 本模块固定位于 <repo>/packages/neuro-book/server/runtime/，仓库根在其上四级。 */
+const MODULE_REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
+
+/**
+ * 输入清单按稳定逻辑路径记录，但拆包后 bun.lock 只在仓库根、SDK 源码在应用包根；
+ * 先按应用包根读，ENOENT 再按仓库根读（两根源文件不重叠，无歧义）。
+ */
+async function readProjectionInput(sourceRoot: string, inputPath: string): Promise<Buffer | null> {
+  try {
+    return await readFile(resolve(sourceRoot, inputPath))
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code !== 'ENOENT') return null
     try {
-      const bytes = await readFile(sourcePath)
-      if (bytes.length !== input.bytes || sha256(bytes) !== input.sha256) return null
+      return await readFile(resolve(MODULE_REPOSITORY_ROOT, inputPath))
     }
     catch {
       return null
     }
   }
-  return projectionFromRoot(root, fingerprint)
 }
 
 function parseManifest(raw: string): ProjectionManifest {

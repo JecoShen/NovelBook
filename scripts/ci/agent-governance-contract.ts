@@ -661,7 +661,6 @@ export function verifyApplicationScriptBoundary(repoRoot: string): string[] {
     const allowedBridges: ReadonlyArray<readonly [string, string]> = [
         ["scripts/cli/source-dev.ts", "#scripts/utils/workspace-roots"],
         ["server/runtime/source-authoring-type-cache.ts", "#scripts/build/authoring-sdk-type-projection"],
-        ["server/runtime/source-authoring-type-cache.test.ts", "#scripts/build/authoring-sdk-type-projection"],
     ];
     for (const relativePath of walkSourceFiles(applicationRoot)) {
         const text = readFileSync(resolve(applicationRoot, relativePath), "utf8");

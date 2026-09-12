@@ -3,7 +3,7 @@ import { access, copyFile, cp, mkdir, mkdtemp, readFile, readdir, rename, symlin
 import { readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { absoluteFsPath, type AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 import {
   SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS,
@@ -11,6 +11,7 @@ import {
   SOURCE_AUTHORING_TYPE_CACHE_SCHEMA,
   openSourceAuthoringTypeProjection,
   setSourceAuthoringTypeCacheGcTestHook,
+  setSourceAuthoringTypeCacheProjectionLoaderForTest,
 } from 'nbook/server/runtime/source-authoring-type-cache'
 
 const projectionMock = vi.hoisted(() => ({
@@ -27,20 +28,11 @@ function mockInputBytes(sourceRoot: string): Buffer {
   return readFileSync(resolve(sourceRoot, MOCK_INPUT_PATH))
 }
 
-vi.mock('#scripts/build/authoring-sdk-type-projection', () => ({
+// 生产路径的说明符保持非常量间接（编译期不对 #scripts 静态链接），vi.mock 拦截不到；
+// 改用缓存模块的显式测试接缝注入。
+const projectionModuleMock = {
   AUTHORING_SDK_TYPE_PROJECTION_SCHEMA: 'nbook.authoring-sdk-type-projection/v2',
-  AUTHORING_SDK_DEPENDENCIES: [{
-    name: 'mock-sdk',
-    kind: 'types',
-    purpose: 'test',
-    smoke: 'test',
-  }],
   authoringSdkTsconfig: () => `${JSON.stringify({ compilerOptions: { strict: true }, sourceVersion: projectionMock.sourceVersion })}\n`,
-  authoringSdkTypeProjectionInputFiles: async ({ sourceRoot }: { sourceRoot?: string } = {}) => [{
-    path: MOCK_INPUT_PATH,
-    sha256: createHash('sha256').update(mockInputBytes(sourceRoot ?? '.')).digest('hex'),
-    bytes: mockInputBytes(sourceRoot ?? '.').length,
-  }],
   buildAuthoringSdkTypeProjection: async ({ targetRoot, sourceRoot }: { targetRoot: string, sourceRoot: string }) => {
     if (projectionMock.failBuild) throw new Error('injected projection failure')
     projectionMock.buildCalls += 1
@@ -76,11 +68,16 @@ vi.mock('#scripts/build/authoring-sdk-type-projection', () => ({
       }],
     }
   },
-}))
+}
 
 const roots: string[] = []
 
+beforeEach(() => {
+  setSourceAuthoringTypeCacheProjectionLoaderForTest(async () => projectionModuleMock)
+})
+
 afterEach(async () => {
+  setSourceAuthoringTypeCacheProjectionLoaderForTest(null)
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
   projectionMock.buildCalls = 0
   projectionMock.sourceVersion = 'one'

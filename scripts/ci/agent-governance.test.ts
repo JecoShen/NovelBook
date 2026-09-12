@@ -1507,12 +1507,10 @@ describe("最终 monorepo 收敛门禁", () => {
             "export {resolveWorkspaceRoots};",
         ].join("\n"));
         await writeText(repoRoot, "packages/neuro-book/server/runtime/source-authoring-type-cache.ts", [
-            'async function load(): Promise<typeof import("#scripts/build/authoring-sdk-type-projection")> {',
-            '    return await import("#scripts/build/authoring-sdk-type-projection");',
+            'const specifier = "#scripts/build/authoring-sdk-type-projection";',
+            "async function load() {",
+            "    return await import(specifier);",
             "}",
-        ].join("\n"));
-        await writeText(repoRoot, "packages/neuro-book/server/runtime/source-authoring-type-cache.test.ts", [
-            'vi.mock("#scripts/build/authoring-sdk-type-projection", () => ({}));',
         ].join("\n"));
         expect(verifyApplicationScriptBoundary(repoRoot)).toEqual([]);
 
