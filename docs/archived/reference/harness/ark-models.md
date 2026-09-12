@@ -154,5 +154,4 @@ warn 是 best-effort，**不**阻塞 harness 启动。用户在 settings 页看�
 - [invoke-http.md](./invoke-http.md)：bridge 端点、鉴权、caller kind。
 - `server/agent/harness/model-resolver.ts`：compat 解析 + 启发式 warn。
 - `shared/dto/agent-session.dto.ts`：`AgentUserMessageInputDtoSchema` 是
-  `{text: string}`——bridge CLI `send` 必须按这个形状发（已修，见
-  [bridge-ark-e2e-verified](../../.claude/projects/-www-wwwroot-book-neoshen-dpdns-org/memory/bridge-ark-e2e-verified.md)）。
+  `{text: string}`——bridge CLI `send` 必须按这个形状发（已经 bridge ARK E2E 验证）。
