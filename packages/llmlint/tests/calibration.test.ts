@@ -163,6 +163,9 @@ describe("story-deslop calibration rules", () => {
         tempRoots.push(root);
         const humanPath = join(root, "human.md");
         const aiPath = join(root, "leak.md");
+        // 末行必须是对白句：fixture 是无章节结构的句表，但 chapter-hook.short-drop（high）
+        // 会把任何「末句 <12 字符」的文本当章末短钩；对白句的闭引号使 EOF 不以句末标点结尾，
+        // 句表顺序本身不承载校准语义。
         await writeFile(humanPath, [
             "是的，他还记得。",
             "这件事不是A就是B。",
@@ -171,8 +174,8 @@ describe("story-deslop calibration rules", () => {
             "但是结果，不是问题。",
             "你是不是看错了？",
             "这不是吗？",
-            "「不是我干的，是他。」",
             "钟声再度响起，比赛正式拉开序幕。",
+            "「不是我干的，是他。」",
         ].join("\n"), "utf-8");
         await writeFile(aiPath, [
             "这不是普通的雨，而是一场预谋。",

@@ -881,7 +881,10 @@ describe("llmlint", () => {
             counts[rule.fixability] += 1;
         }
 
-        expect(counts).toEqual({auto: 2, candidate: 0, manual: 243});
+        // manual 计数是漂移探测器：新增规则时必须逐条核对 fixability 分类后更新。
+        // 247 = 243 + 4 条 fork structure 规则（chapter-hook.reversal/suspense/short-drop +
+        // scene-six-questions），均为语义建议，manual 分类已逐条核对。
+        expect(counts).toEqual({auto: 2, candidate: 0, manual: 247});
         expect(loadedRules.regexRules
             .filter((rule) => rule.fixability === "auto")
             .every((rule) => rule.action.type === "replace")).toBe(true);

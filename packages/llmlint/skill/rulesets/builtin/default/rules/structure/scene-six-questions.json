@@ -2,7 +2,7 @@
   {
     "id": "cn.structure.scene-six-questions",
     "namespace": "structure.scene-six-questions",
-    "title": "场景 6 问 (P1-4: Story Grid 6 问 软提示)",
+    "title": "场景六问（Story Grid 软提示）",
     "level": "low",
     "review": "agent",
     "fixability": "manual",
