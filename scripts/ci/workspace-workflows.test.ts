@@ -115,7 +115,8 @@ describe("迁移后九个 CI 工作流结构合同", () => {
         }
         expect(commands(workflow)).toContain("bun run --cwd packages/neuro-book generate");
         expect(commands(workflow)).toContain("bun run --cwd packages/neuro-book typecheck");
-        expect(commands(workflow)).toContain("bun run --cwd packages/neuro-book test -- --reporter=dot");
+        // CI 全量测试在 7GB runner 上 --maxWorkers=1 串行（2 重 worker + 4GB heap = 抖动濒停，见 workflow 注释）。
+        expect(commands(workflow)).toContain("bun run --cwd packages/neuro-book test -- --reporter=dot --maxWorkers=1");
         expect(commands(workflow)).not.toMatch(/bun --cwd packages\/neuro-book run/u);
         expect(commands(workflow)).not.toContain("bun install --cwd desktop/electron");
         expect(workflow.name).toBe("Code Baseline");

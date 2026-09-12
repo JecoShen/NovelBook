@@ -517,7 +517,8 @@ async function validateWorkflows(): Promise<void> {
     ensure(typecheck?.name?.toLocaleLowerCase("en-US").includes("advisory") !== true, "Typecheck job 不得标记 advisory");
     ensure(test?.name?.toLocaleLowerCase("en-US").includes("advisory") !== true, "Test job 不得标记 advisory");
     ensure(typecheck?.["timeout-minutes"] === 15, "Typecheck 超时必须为 15 分钟");
-    ensure(test?.["timeout-minutes"] === 30, "Full tests 超时必须为 30 分钟");
+    // 60 分钟是 worker=1 串行后的诊断性预算（区分抖动濒停与真挂死），收敛后应随形态定版回写。
+    ensure(test?.["timeout-minutes"] === 60, "Full tests 超时必须为 60 分钟");
     ensureRuntimeSetup(typecheck, "Code Baseline typecheck");
     ensureRuntimeSetup(test, "Code Baseline test");
     ensureRuntimeSetup(governance, "Code Baseline governance");
@@ -527,7 +528,7 @@ async function validateWorkflows(): Promise<void> {
         ensure(governanceCommands.some((actual) => actual.includes(command)), `Code Baseline governance 缺少命令：${command}`);
     }
     ensure(jobCommands(typecheck, "code-baseline/typecheck").includes("bun run --cwd packages/neuro-book typecheck"), "缺少应用 typecheck 命令");
-    ensure(jobCommands(test, "code-baseline/test").includes("bun run --cwd packages/neuro-book test -- --reporter=dot"), "缺少应用全量测试命令");
+    ensure(jobCommands(test, "code-baseline/test").includes("bun run --cwd packages/neuro-book test -- --reporter=dot --maxWorkers=1"), "缺少应用全量测试命令");
     const changesJob = baseline.jobs.changes;
     ensure(Boolean(changesJob?.steps?.length), "Code Baseline 缺少 changes 变更作用域 job");
     ensure(changesJob?.steps?.some((step) => step.uses === "actions/checkout@v5" && step.with?.["fetch-depth"] === 0), "changes job 必须全量 checkout 以计算 merge-base");

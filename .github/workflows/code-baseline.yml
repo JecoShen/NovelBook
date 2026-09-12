@@ -141,7 +141,9 @@ jobs:
   test:
     name: Full tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 60 分钟不是放宽质量标准，是诊断性预算：worker=1 串行后墙钟拉长，
+    # 用于区分「内存抖动濒停」与「真挂死」（30 分钟超时四轮全灭，死前 7 分钟零输出）。
+    timeout-minutes: 60
     needs: changes
     if: needs.changes.outputs.tests == 'true'
     steps:
@@ -164,7 +166,9 @@ jobs:
         # Agent bash 合同会真实执行 rg；GitHub Ubuntu runner 不保证预装 ripgrep。
         run: sudo apt-get update && sudo apt-get install --yes ripgrep
       - name: Run full tests
-        run: bun run --cwd packages/neuro-book test -- --reporter=dot
+        # --maxWorkers=1：7GB runner 上 2 个重 worker（单 Project fixture 加载 14×27.3MiB
+        # profile artifact）+ 每进程 4GB heap 上限 = 内存抖动濒停。串行牺牲墙钟换确定性。
+        run: bun run --cwd packages/neuro-book test -- --reporter=dot --maxWorkers=1
       - name: Run bun-native tests
         # lore 套件用 bun:test，已被 vitest.config.ts exclude（vitest 解析不了 'bun:test'）；
         # 独立 runner 补回覆盖，勿并入 vitest 全量。
