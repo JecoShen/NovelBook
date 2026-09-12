@@ -6,12 +6,14 @@ const mocks = vi.hoisted(() => ({
     readUnseenForAgent: vi.fn(async () => []),
 }));
 
-vi.mock("nbook/server/workspace-files/project-session", () => ({
+// 本仓把 project-session 拆成 contract/data-plane 两层（上游仍是单模块）；
+// 实现从 data-plane 取 requireReadyModuleHandle，mock 必须拦截同一模块说明符。
+vi.mock("nbook/server/workspace-files/project-session-data-plane", () => ({
     requireReadyModuleHandle: mocks.requireReadyModuleHandle,
 }));
 
-vi.mock("nbook/server/workspace-history/project-history", () => ({
-    PROJECT_HISTORY_MODULE_TOKEN: {name: "history", kind: "required"},
+// project-history 同样拆为 contract/data-plane；token 用真实 contract，数据函数拦截 data-plane。
+vi.mock("nbook/server/workspace-history/project-history-data-plane", () => ({
     readUnseenForAgent: mocks.readUnseenForAgent,
     advanceAgentCursor: vi.fn(async () => undefined),
 }));

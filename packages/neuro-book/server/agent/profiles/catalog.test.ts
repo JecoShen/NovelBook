@@ -51,7 +51,9 @@ function defineAgentProfile(profile: any): ReturnType<typeof defineRuntimeAgentP
     });
 }
 
-describe("AgentProfileCatalog", {timeout: 15_000}, () => {
+// 60s 与 vitest.config 的 testTimeout 对齐：Source 模式编译前会即时构建有界声明投影
+// （冷 10s+，进程内 memo 后秒级），依赖重编译链路多次解析编译上下文，15s 不再成立。
+describe("AgentProfileCatalog", {timeout: 60_000}, () => {
     let root: string;
     let installRoot: string;
     let projectProfileRoot: string;
@@ -914,12 +916,21 @@ describe("AgentProfileCatalog", {timeout: 15_000}, () => {
     });
 
     it("compileProfileArtifacts full replacement 发布前发现 source file set 变化时不发布", async () => {
-        await writeProfile(installRoot, "aaa.slow.profile.tsx", `await new Promise((resolve) => setTimeout(resolve, 300));\n${profileSource("custom.slow", "Slow")}`);
+        // 注入时序用编译执行 marker 同步，不用 wall-clock sleep：路径上下文解析会即时
+        // 构建声明投影（秒级），50ms sleep 可能早于源文件集合快照，产生假阴性。
+        const markerPath = join(root, "source-set-compile-started.txt");
+        await writeProfile(installRoot, "aaa.slow.profile.tsx", `${profileSource("custom.slow", "Slow")}
+
+const {writeFile: __writeSourceSetMarker} = await import("node:fs/promises");
+const {setTimeout: __waitSourceSet} = await import("node:timers/promises");
+await __writeSourceSetMarker(${JSON.stringify(markerPath)}, "ready", "utf8");
+await __waitSourceSet(300);
+`);
         const running = compileProfileArtifacts({
             profileRoot: installRoot,
             rootLabel: "assets/workspace/.nbook/agent/profiles",
         });
-        await new Promise((resolvePromise) => setTimeout(resolvePromise, 50));
+        await waitForPath(markerPath);
         await writeProfile(installRoot, "zzz.added.profile.tsx", profileSource("custom.added", "Added"));
 
         await expect(running).rejects.toBeInstanceOf(ProfileArtifactSourceFileSetChangedError);
@@ -1749,6 +1760,18 @@ async function waitFor(assertion: () => Promise<void> | void, timeoutMs = 1_000)
         throw lastError;
     }
     throw new Error(String(lastError));
+}
+
+async function waitForPath(path: string, timeoutMs = 30_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        const exists = await readFile(path).then(() => true, () => false);
+        if (exists) {
+            return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    throw new Error(`等待路径超时：${path}`);
 }
 
 async function sleep(ms: number): Promise<void> {

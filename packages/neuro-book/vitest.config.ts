@@ -25,6 +25,10 @@ export default defineConfig({
         // 而单个 artifact 目前有 27.3 MiB（宿主实现被打进 bundle，见 Task 125 Phase 3）。
         // 这是承认当前 artifact 体积的真实成本，不是掩盖挂起——真正的修复是把 artifact 压小。
         hookTimeout: 60_000,
+        // 默认 5s 不够：Source 模式编译上下文解析会即时构建有界声明投影（TS declaration
+        // emit 约 330 文件，冷构建 10s+），且隔离 fixture 各自持有 cacheRoot 不共享产物。
+        // 超时截断的 teardown 会与在途构建竞态（ENOTEMPTY/ENOENT unhandled rejection）。
+        testTimeout: 60_000,
         // run 级：先由 Agent fixture 设置 runId，再注册受控临时根清理；teardown 逆序执行。
         globalSetup: [
             "server/agent/test/global-setup.ts",
