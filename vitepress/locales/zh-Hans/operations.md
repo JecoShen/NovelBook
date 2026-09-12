@@ -24,6 +24,84 @@ Manager v1 **不接管 systemd、pm2 或通用后台进程**。要开机自启�
 
 反向代理和 HTTPS 同样不在 Manager 职责内：把反代指向监听端口即可，注意放行 SSE（Agent 的流式输出依赖长连接，反代要关掉对应路径的缓冲）。
 
+### PM2 服务器部署
+
+本项目如果只在一台 Linux 服务器上以 Web 方式运行，可以把仓库根目录作为 Installation Root 和 State Root，用 PM2 托管 Product `.output`。这条路线不需要 Windows/macOS 本地安装包，也不需要 Electron/Tauri。
+
+当前服务器约定如下：
+
+| 项 | 值 |
+| --- | --- |
+| 仓库根目录 | `/www/wwwroot/book.neoshen.dpdns.org` |
+| PM2 进程名 | `book-neoshen` |
+| 监听端口 | `3001` |
+| 公网入口 | `https://book.neoshen.dpdns.org` |
+| State Root | `/www/wwwroot/book.neoshen.dpdns.org` |
+| Cache Root | `/www/wwwroot/book.neoshen.dpdns.org/cache` |
+
+PM2 配置应显式设置 `NEURO_BOOK_APPLICATION_ROOT`、`NEURO_BOOK_STATE_ROOT` 和 `NEURO_BOOK_CACHE_ROOT`。不要依赖 SSH 当前目录或临时 shell 环境来决定数据路径。
+
+常用操作：
+
+```bash
+cd /www/wwwroot/book.neoshen.dpdns.org
+node -c ecosystem.config.cjs
+pm2 start ecosystem.config.cjs --only book-neoshen
+pm2 save
+```
+
+更新源码后重新构建 Product `.output`。构建入口在应用包里，不在仓库根；`bun` 的 `--cwd` 必须写在 `run` 之后，否则只会打印用法并以 0 退出：
+
+```bash
+cd /www/wwwroot/book.neoshen.dpdns.org
+bun run --cwd packages/neuro-book nuxt:build
+```
+
+`nuxt:build` 才产出 `.output`。应用包的 `build` 脚本只做 prepare/generate/系统资产/tsc，不产出可部署镜像。构建通过 `LocalProductPublisher` 原子替换仓库根的 `.output`，旧镜像退到 `.deploy/local-publish/previous`。
+
+重新构建后，用同一份 PM2 配置重启。PM2 7.0.3 在这台机器上执行 `pm2 restart ecosystem.config.cjs --only book-neoshen --update-env` 曾触发过 `Cannot read properties of undefined (reading 'pm2_env')`，可用删除再启动作为可恢复路径：
+
+```bash
+cd /www/wwwroot/book.neoshen.dpdns.org
+pm2 delete book-neoshen
+pm2 start ecosystem.config.cjs --only book-neoshen
+pm2 save
+```
+
+重启前先确认没有迁移锁被其它存活进程持有。不带 `--force` 即为 dry-run；脚本不接受 `--dry-run`，传未知参数会以 2 退出：
+
+```bash
+scripts/clean-stale-lease.sh
+```
+
+重启后执行服务器 smoke：
+
+```bash
+NEURO_BOOK_PUBLIC_URL=https://book.neoshen.dpdns.org \
+NEURO_BOOK_PM2_NAME=book-neoshen \
+PORT=3001 \
+scripts/deploy/server-smoke.sh
+```
+
+该 smoke 只检查 PM2 online、端口监听、本地和公网版本接口、根路径 HTTP 状态以及 `nginx -t`。它不登录、不改数据、不重启服务。
+
+Nginx 反代需要保留真实 Host，并关闭缓冲以支持 Agent 流式输出：
+
+```nginx
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_buffering off;
+```
+
+如果公网版本接口返回 502，先查 PM2 状态、端口监听和最近错误日志：
+
+```bash
+pm2 status book-neoshen
+ss -ltnp | grep ':3001'
+pm2 logs book-neoshen --lines 80
+```
+
 ## 更新与版本通道
 
 ```bash

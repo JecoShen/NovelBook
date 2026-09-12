@@ -1,4 +1,4 @@
-> 历史状态：2026-06-27 的一次项目实践记录，不是当前规范。当前 World Engine 合同见 [`../../../reference/world-engine/`](../../../reference/world-engine/)。
+> 历史状态：2026-06-27 的一次项目实践记录，不是当前规范。当前 World Engine 合同见 [`../../../reference/world-engine/`](../../../assets/reference/world-engine/)。
 
 # 写作模式 + World Engine 实战记录
 

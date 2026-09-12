@@ -106,7 +106,7 @@ run_workflow({
 }
 ```
 
-后台完成通知与 `get_job` 共享同一份完整结构化 JSON；Job 列表中的 preview 只用于轻量展示，不能作为结果真相源。
+`result` 只包含 workflow `run` 的自定义返回值。`sessions`、`usage` 与 `chartMermaid` 由平台附加，workflow 不要自行伪造或重复包装这些元数据。后台完成通知与 `get_job` 共享同一份完整结构化 JSON；Job 列表中的 preview 只用于轻量展示，不能作为结果真相源。
 `WorkflowUsage` 只包含输入、输出、缓存和总 token 字段，以及 provider 实际提供的可选 token 明细；公开 Workflow 返回不包含价格 `cost`。这条投影同时作用于 Run HTTP 的 `journal`、增量 `events`、工具 details、Job result/detail 和前端模型；普通用户自定义结果中名为 `cost` 的字段不会被误删。价格仍可在普通 Session 的内部 usage 中累计，但不是 Workflow 的用户展示合同。
 Run journal 的 `ActivityRecord.fingerprint` 始终是不可逆的 `sha256:<hex>` 摘要；新的运行记录另外保留 canonical JSON 参数观测字段 `params`，它不参与 Activity identity。公开 Run、事件和前端观测投影必须移除 `params`，避免提示词和正文泄露；旧记录没有 `params` 时，内部观测层可仅兼容 inline JSON fingerprint，SHA-256 摘要不可解析。
 

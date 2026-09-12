@@ -205,3 +205,4 @@ forced lifecycle 已入队但 physical append、after-write 或 live-state 阶�
 
 - [ADR 0019：Agent abort mutation boundary](../../../packages/neuro-book/docs/adr/0019-agent-abort-mutation-boundary.md)
 - [Current Task：Agent abort mutation 合同闭合](../../../.agents/works/w00004-agent-abort-mutation-contract/tasks/t01-agent-abort-mutation-contract/README.md)
+- 上游合同链：`notnotype/neuro-book` `6a79bfd9` → `ffef1fb3`（本 fork 经 port batch 4 移植）。

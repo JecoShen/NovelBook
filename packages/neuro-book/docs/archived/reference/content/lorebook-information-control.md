@@ -5,4 +5,4 @@
 - [directory-protocol.md](directory-protocol.md)：Project Workspace 目录职责、lorebook 类型、simulation subjects/entities/runs。
 - [information-control.md](information-control.md)：Prototype / Entity / Subject 信息控制模型、关系记录和可见性原则。
 
-旧长版协议已归档到 [../../packages/neuro-book/docs/archived/reference/lorebook-information-control-v0.md](../../packages/neuro-book/docs/archived/reference/lorebook-information-control-v0.md)。
+旧长版协议已归档到 [../../packages/neuro-book/docs/archived/reference/lorebook-information-control-v0.md](../lorebook-information-control-v0.md)。

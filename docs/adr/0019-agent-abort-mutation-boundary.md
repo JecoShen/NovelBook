@@ -3,7 +3,7 @@
 - 状态：Accepted
 - 日期：2026-08-25
 - 关联任务：上游 `notnotype/neuro-book` 合同链 `6a79bfd9` → `aff29c41` → `ffef1fb3`（本 fork 经 port batch 4 fork-native 移植）
-- 关联规范：[Agent Session Abort](../../reference/agent/session-abort.md)
+- 关联规范：[Agent Session Abort](../specs/agent/session-abort.md)
 
 ## 背景
 

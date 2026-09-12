@@ -22,6 +22,7 @@
 - [runtime-hooks.md](runtime-hooks.md)：Run Kernel / runtime hooks 稳定心智模型，覆盖 harness、session、profile、turn loop 的生命周期阶段。
 - [`.agents/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md`](../../../.agents/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md)：prompt / continue / steer / followup 的外部行为合同。
 - [attachments.md](attachments.md)：Session 图片附件的存储、Markdown、授权、目录、Composer 与模型预算合同。
+- [Agent Session Abort Spec](../../../../../docs/specs/agent/session-abort.md)：Agent Session abort 的 admission、两阶段取消、forced queue recovery 与 HTTP/SSE 行为合同（[ADR 0019](../../../docs/adr/0019-agent-abort-mutation-boundary.md)）。
 - [sse.md](sse.md)：Agent session SSE / snapshot / event contract。
 - [jobs.md](jobs.md)：后台 Job 快照、全局 Jobs SSE、游标恢复、背压和 Manager 生命周期合同。
 - [pi-trace-observability.md](pi-trace-observability.md)：Pi 请求 trace 的存储布局、隐私边界、统一入口约束与抽库 runbook。

@@ -474,5 +474,5 @@ AI 批注只修改草稿，不应绕过用户确认直接保存。
 
 稳定实现契约仍以以下文档为准：
 
-- [../../../reference/plot/system.md](../../../reference/plot/system.md)
-- [../../../reference/plot/frontend.md](../../../reference/plot/frontend.md)
+- [../../../reference/plot/system.md](../../../packages/neuro-book/assets/reference/plot/system.md)
+- [../../../reference/plot/frontend.md](../../../packages/neuro-book/assets/reference/plot/frontend.md)

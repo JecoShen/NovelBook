@@ -1,4 +1,4 @@
-> 历史状态：本文件记录旧 Plot 对象模型，其中 `chapterPath` 等合同已被当前实现取代。当前 Plot 真相源见 [`../../../reference/plot/system.md`](../../../reference/plot/system.md) 与 [`../../../reference/plot/frontend.md`](../../../reference/plot/frontend.md)。
+> 历史状态：本文件记录旧 Plot 对象模型，其中 `chapterPath` 等合同已被当前实现取代。当前 Plot 真相源见 [`../../../reference/plot/system.md`](../../../assets/reference/plot/system.md) 与 [`../../../reference/plot/frontend.md`](../../../assets/reference/plot/frontend.md)。
 
 # Plot 系统功能说明
 
@@ -476,5 +476,5 @@ AI 批注只修改草稿，不应绕过用户确认直接保存。
 
 稳定实现契约仍以以下文档为准：
 
-- [../../../reference/plot/system.md](../../../reference/plot/system.md)
-- [../../../reference/plot/frontend.md](../../../reference/plot/frontend.md)
+- [../../../reference/plot/system.md](../../../assets/reference/plot/system.md)
+- [../../../reference/plot/frontend.md](../../../assets/reference/plot/frontend.md)

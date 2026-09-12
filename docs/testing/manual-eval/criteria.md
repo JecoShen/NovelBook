@@ -57,7 +57,7 @@ Agent 走查时用 playwright-cli 收集证据，体系不重复定义浏览器�
 | 录屏 | 复杂交互流（停止/恢复、Workflow 多 Run） | `playwright-cli video-start` / `video-stop` |
 | 文件系统旁证 | 产物是否落盘（章节文件、lorebook 条目、World 时间线） | 读取 Project Workspace 对应路径 |
 
-- 证据存放：临时评测放系统 Temp 下的 Agent 受控目录；current 正式任务放 `.agents/works/<work>/tasks/<task>/evidences/`，legacy Task 继续写原 `.agents/tasks/` evidence 目录。
+- 证据存放：临时评测放系统 Temp 下的 Agent 受控目录；current 正式任务放 `.agents/works/<work>/tasks/<task>/evidences/`，legacy Task 继续写原 evidence 目录（根任务 `.agents/tasks/`，应用任务 `packages/neuro-book/.agents/tasks/`）。
 - 证据进入 Issue/PR 前必须脱敏（CONTRIBUTING 要求）。
 - 未验证项不得用 focused 测试或静态分析结果冒充浏览器证据。
 

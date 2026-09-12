@@ -3,7 +3,7 @@
 - 状态：Accepted
 - 日期：2026-07-29
 - 关联任务：[Task 88](../../.agents/tasks/88-workshop-platform/README.md)、[Task 120](../../packages/neuro-book/.agents/tasks/120-agent-skill-package-contract/README.md)
-- 协议真相源：[Agent Asset Package Protocol](../../reference/agent/agent-asset-package.md)
+- 协议真相源：[Agent Asset Package Protocol](../../packages/neuro-book/assets/reference/agent/agent-asset-package.md)
 
 ## 背景
 
@@ -38,7 +38,7 @@ Profile 的真实 key 已使用 `leader.default`、`world.engine` 等点分形�
 - 决策 5 对 Skill 修订为：`package.json` 存在时，其 `name` 必须等于 frontmatter `name`；不存在时不做该项校验。Workflow 的 `key` 必须等于 `package.json.name` 不变。
 - 新增：Skill 的展示名是 `metadata.displayName`，允许中文；它**不是**身份，不参与任何安装、更新或覆盖判断。版本读取顺序为 `metadata.version` → `package.json.version`，两处并存时以前者为准。
 
-决策 2、3、4、6、7、8 不变。站点侧尚未实施本修订，详见 [Agent Asset Package Protocol](../../reference/agent/agent-asset-package.md) 的 Pending Site Changes 小节。
+决策 2、3、4、6、7、8 不变。站点侧尚未实施本修订，详见 [Agent Asset Package Protocol](../../packages/neuro-book/assets/reference/agent/agent-asset-package.md) 的 Pending Site Changes 小节。
 
 ## 未采用方案
 

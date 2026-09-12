@@ -8,3 +8,5 @@
 - [Content / Project Workspace](content/README.md)：内容节点、Workspace、Lorebook、Manuscript 与检索协议。
 - [Plot](plot/README.md)：Story、Thread、Scene、Writer Brief 与 Agent 协作协议。
 - [World Engine](world-engine/README.md)：时间线、Subject、Schema、Calendar 与写作协作协议。
+- [scene-six-questions.md](scene-six-questions.md)：场景六问模板（POV / 地点时间 / 想要什么 / 价值转换 / 新信息 / 下一步），llmlint structure 规则的写作参考。
+- [scene-master-list.md](scene-master-list.md)：场景总表 schema 与填写规范。
