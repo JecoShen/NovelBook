@@ -320,11 +320,9 @@ describe("迁移后九个 CI 工作流结构合同", () => {
                 browser: "playwright",
             },
         ]);
+        // 本仓只部署本机 linux-x64：push/dispatch 矩阵收窄到目标平台（恢复路径见矩阵脚本注释）。
         expect(selectProductPlatformMatrix("push").map((entry) => entry.platform)).toEqual([
             "linux-x64-glibc",
-            "linux-aarch64-glibc",
-            "darwin-x64",
-            "darwin-aarch64",
         ]);
         expect(selectProductPlatformMatrix("workflow_dispatch")).toEqual(selectProductPlatformMatrix("push"));
         expect(platforms.on?.push?.branches).toEqual([DEFAULT_BRANCH]);

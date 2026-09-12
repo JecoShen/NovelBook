@@ -13,7 +13,7 @@ import {
     productRuntimeBuildPolicy,
     type ProductRuntimeImageManifest,
 } from "#scripts/build/product-runtime-image-builder";
-import {selectProductPlatformMatrix} from "#scripts/build/product-platform-matrix";
+import {PRODUCT_PLATFORM_MATRIX_ENTRIES} from "#scripts/build/product-platform-matrix";
 import {createProductRuntimeContract} from "@notnotype/neuro-book-contracts/product-runtime";
 import {
     buildProductArchive,
@@ -536,7 +536,8 @@ describe("Product Release宿主合同", () => {
     it("Linux AArch64 Product必须安装并执行真实浏览器smoke", async () => {
         const workflow = parse(await readFile(resolve(ROOT, ".github/workflows/product-platforms.yml"), "utf8")) as ProductWorkflow;
         const releaseWorkflow = parse(await readFile(resolve(ROOT, ".github/workflows/release-container.yml"), "utf8")) as ReleaseWorkflow;
-        const linuxArm = selectProductPlatformMatrix("push").find(({platform}) => platform === "linux-aarch64-glibc");
+        // 查全量条目表而非 fork CI 矩阵：发布资产合同与 fork 只跑本机平台的 CI 收窄无关。
+        const linuxArm = PRODUCT_PLATFORM_MATRIX_ENTRIES.find(({platform}) => platform === "linux-aarch64-glibc");
         expect(linuxArm?.browser).toBe("playwright");
         const matrixNode = workflow.jobs.product.strategy?.matrix;
         expect(String(matrixNode)).toContain("fromJSON(needs.select-platforms.outputs.matrix)");

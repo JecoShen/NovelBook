@@ -45,8 +45,9 @@ describe("Product Runtime Image measurement contracts", () => {
         expect(platformChecks).toContain("steps.runtime_policy.outputs.registered != 'true'");
         expect(platformChecks).toContain("steps.runtime_policy.outputs.registered == 'true'");
         expect(platformChecks).toContain("bun run product:measure --output");
+        // 全量注册表仍覆盖 PRODUCT_PLATFORMS（上方循环校验），但 fork CI 只跑本机部署平台。
         expect(selectProductPlatformMatrix("push").map((entry) => entry.platform).sort())
-            .toEqual(PRODUCT_PLATFORMS.filter((candidate) => candidate !== "windows-x64").sort());
+            .toEqual(["linux-x64-glibc"]);
         expect(platformChecks).toMatch(
             /name: Verify Manager platform contracts\r?\n\s+if: steps\.runtime_policy\.outputs\.registered == 'true'/u,
         );

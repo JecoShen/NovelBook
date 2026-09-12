@@ -46,10 +46,17 @@ export const PRODUCT_PLATFORM_MATRIX_ENTRIES: ProductPlatformMatrixEntry[] = [
     },
 ];
 
+/**
+ * 本仓只部署到本机 linux-x64（无桌面端/其他服务器平台），CI 矩阵只跑目标平台。
+ * 其余平台条目保留在 ENTRIES 里作为上游合同数据与恢复路径；
+ * 需要重新支持某平台时把它加回本集合即可，注册表与基线无需改动。
+ */
+const FORK_CI_TARGET_PLATFORMS: ReadonlySet<string> = new Set(["linux-x64-glibc"]);
+
 export function selectProductPlatformMatrix(eventName: string): Array<SelectedProductPlatformEntry> {
-    const selected = eventName === "pull_request"
-        ? PRODUCT_PLATFORM_MATRIX_ENTRIES.filter((entry) => entry.prGate === true)
-        : PRODUCT_PLATFORM_MATRIX_ENTRIES;
+    const selected = PRODUCT_PLATFORM_MATRIX_ENTRIES
+        .filter((entry) => FORK_CI_TARGET_PLATFORMS.has(entry.platform))
+        .filter((entry) => eventName !== "pull_request" || entry.prGate === true);
     return selected.map(({prGate: _prGate, ...entry}) => entry);
 }
 
