@@ -101,7 +101,7 @@
   {
     "id": "cn.structure.chapter-hook.suspense",
     "namespace": "structure.chapter-hook",
-    "title": "章末钩子 · 未解悬念（suspense）",
+    "title": "章末钩子 · 悬念（suspense）",
     "level": "high",
     "review": "agent",
     "fixability": "manual",
@@ -128,7 +128,7 @@
   {
     "id": "cn.structure.chapter-hook.short-drop",
     "namespace": "structure.chapter-hook",
-    "title": "章末钩子 · 短句落幅（short-drop）",
+    "title": "章末钩子 · 短句落幅",
     "level": "high",
     "review": "agent",
     "fixability": "manual",
