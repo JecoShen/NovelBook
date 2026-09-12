@@ -194,8 +194,10 @@ export async function runProfileCompileAll(input: InternalProfileCompileAllReque
     const startedAt = performance.now();
     try {
         const profileRoot = resolveProfileRoot(input);
-        const artifactPathContext = await resolveWorkerArtifactPathContext(input, profileRoot);
+        // 新鲜度观察窗口从任务提交开始：路径上下文解析会即时构建声明投影（秒级），
+        // 先列源文件，迟于此刻的集合变化才能被发布前门禁捕获。
         const sourceFilesAtStart = await listProfileArtifactSourceFiles(profileRoot);
+        const artifactPathContext = await resolveWorkerArtifactPathContext(input, profileRoot);
         const files = await listProfileFiles({
             profileRoot: profileRoot,
             artifactPathContextResolver: async (profileRoot, rootLabel) => resolveProfileArtifactPathContext(profileRoot, rootLabel, input.runtimePaths!.applicationRoot),

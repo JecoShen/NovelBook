@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { lstat, mkdir, readFile, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { lock } from 'proper-lockfile'
@@ -82,29 +83,45 @@ export async function openSourceAuthoringTypeProjection(
   try {
     await mkdir(stagingRoot, { recursive: true })
     const projectionModule = await loadProjectionModule()
-    const result = await projectionModule.buildAuthoringSdkTypeProjection({ targetRoot: stagingRoot, sourceRoot: absoluteSourceRoot })
-    const files = await projectionFiles(stagingRoot)
-    const inputFiles = normalizeFiles(result.inputFiles)
-    const tsconfig = projectionModule.authoringSdkTsconfig()
-    const fingerprint = projectionFingerprint({
-      projectionSchema: projectionModule.AUTHORING_SDK_TYPE_PROJECTION_SCHEMA,
-      tsconfig,
-      dependencies: result.dependencies,
-      dependencyInstances: result.dependencyInstances,
-      inputFiles,
-    })
-    const manifest: ProjectionManifest = {
-      schema: SOURCE_AUTHORING_TYPE_CACHE_SCHEMA,
-      fingerprint,
-      projectionSchema: projectionModule.AUTHORING_SDK_TYPE_PROJECTION_SCHEMA,
-      tsconfig,
-      dependencies: result.dependencies,
-      dependencyInstances: result.dependencyInstances,
-      inputFiles,
-      files,
-      generatedAt: new Date().toISOString(),
+    // 构建结果只取决于内容身份（schema/tsconfig/输入清单，bun.lock 已含 TS 版本）；
+    // 进程内 memo 让隔离 fixture/新 cacheRoot 免于重复 TS declaration emit（冷构建 10s+），
+    // 命中时拷贝 memo 持有的完整快照并照常走验证发布，不产生未验证产物。
+    // memo key 需要构建前输入清单；测试注入的投影模块可能不实现该成员，此时退化为无 memo 直建。
+    const preInputs = typeof projectionModule.authoringSdkTypeProjectionInputFiles === 'function'
+      ? normalizeFiles(await projectionModule.authoringSdkTypeProjectionInputFiles({ sourceRoot: absoluteSourceRoot }))
+      : null
+    const memoKey = preInputs ? projectionBuildMemoKey(projectionModule, preInputs) : null
+    let fingerprint: string
+    const memoHit = memoKey ? readProjectionBuildMemo(memoKey) : null
+    if (memoHit && await memoPayloadIntoStaging(memoHit, stagingRoot, absoluteSourceRoot)) {
+      fingerprint = memoHit.fingerprint
     }
-    await writeFile(join(stagingRoot, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    else {
+      const result = await projectionModule.buildAuthoringSdkTypeProjection({ targetRoot: stagingRoot, sourceRoot: absoluteSourceRoot })
+      const files = await projectionFiles(stagingRoot)
+      const inputFiles = normalizeFiles(result.inputFiles)
+      const tsconfig = projectionModule.authoringSdkTsconfig()
+      fingerprint = projectionFingerprint({
+        projectionSchema: projectionModule.AUTHORING_SDK_TYPE_PROJECTION_SCHEMA,
+        tsconfig,
+        dependencies: result.dependencies,
+        dependencyInstances: result.dependencyInstances,
+        inputFiles,
+      })
+      const manifest: ProjectionManifest = {
+        schema: SOURCE_AUTHORING_TYPE_CACHE_SCHEMA,
+        fingerprint,
+        projectionSchema: projectionModule.AUTHORING_SDK_TYPE_PROJECTION_SCHEMA,
+        tsconfig,
+        dependencies: result.dependencies,
+        dependencyInstances: result.dependencyInstances,
+        inputFiles,
+        files,
+        generatedAt: new Date().toISOString(),
+      }
+      await writeFile(join(stagingRoot, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+      if (memoKey) await rememberProjectionBuild(memoKey, fingerprint, stagingRoot)
+    }
 
     const release = await acquirePublishLock(authoringRoot)
     try {
@@ -166,15 +183,89 @@ async function loadProjectionModule(): Promise<AuthoringSdkTypeProjectionModule>
 
 const PROJECTION_SPECIFIER = '#scripts/build/authoring-sdk-type-projection'
 
+type ProjectionBuildMemoEntry = Readonly<{
+  memoKey: string
+  fingerprint: string
+  payloadRoot: string
+}>
+
+/** memo 只按内容身份保留少量快照；源文件变更产生新 key，旧条目按插入序淘汰。 */
+const PROJECTION_BUILD_MEMO_LIMIT = 4
+const projectionBuildMemo = new Map<string, ProjectionBuildMemoEntry>()
+
+function projectionBuildMemoKey(
+  projectionModule: AuthoringSdkTypeProjectionModule,
+  inputFiles: readonly ProjectionFile[],
+): string {
+  const identity = stableStringify({
+    projectionSchema: projectionModule.AUTHORING_SDK_TYPE_PROJECTION_SCHEMA,
+    tsconfig: projectionModule.authoringSdkTsconfig(),
+    inputFiles,
+  })
+  return `sha256:${sha256(Buffer.from(identity, 'utf8'))}`
+}
+
+function readProjectionBuildMemo(memoKey: string): ProjectionBuildMemoEntry | null {
+  const entry = projectionBuildMemo.get(memoKey)
+  if (!entry) return null
+  projectionBuildMemo.delete(memoKey)
+  projectionBuildMemo.set(memoKey, entry)
+  return entry
+}
+
+/** 把 memo 快照拷入 staging 并整树验证；任何一步失败都丢弃条目并清空 staging，由调用方回退完整构建。 */
+async function memoPayloadIntoStaging(
+  entry: ProjectionBuildMemoEntry,
+  stagingRoot: string,
+  sourceRoot: string,
+): Promise<boolean> {
+  try {
+    await cp(entry.payloadRoot, stagingRoot, { recursive: true })
+    if (await validateProjection(stagingRoot, entry.fingerprint, sourceRoot)) return true
+  }
+  catch {
+    // fall through to rebuild
+  }
+  projectionBuildMemo.delete(entry.memoKey)
+  await rm(entry.payloadRoot, { recursive: true, force: true }).catch(() => undefined)
+  await rm(stagingRoot, { recursive: true, force: true }).catch(() => undefined)
+  await mkdir(stagingRoot, { recursive: true })
+  return false
+}
+
+/** memo 是优化不是正确性依赖：快照拷贝失败只意味着下次重建，不影响本次发布。 */
+async function rememberProjectionBuild(memoKey: string, fingerprint: string, stagingRoot: string): Promise<void> {
+  try {
+    const payloadRoot = await mkdtemp(join(tmpdir(), 'nbook-authoring-projection-'))
+    await cp(stagingRoot, payloadRoot, { recursive: true })
+    projectionBuildMemo.set(memoKey, { memoKey, fingerprint, payloadRoot })
+    while (projectionBuildMemo.size > PROJECTION_BUILD_MEMO_LIMIT) {
+      const oldestKey = projectionBuildMemo.keys().next().value
+      if (oldestKey === undefined) break
+      const evicted = projectionBuildMemo.get(oldestKey)
+      projectionBuildMemo.delete(oldestKey)
+      if (evicted) await rm(evicted.payloadRoot, { recursive: true, force: true }).catch(() => undefined)
+    }
+  }
+  catch {
+    // 见函数注释
+  }
+}
+
 /**
  * 投影生成器按治理合同登记豁免跨根引用，但编译期不静态链接它：任何把本模块纳入
  * 类型闭包的 tsc 程序（如 Product Authoring Kit 的声明 emitter）都没有 #scripts
  * 路径映射，静态 typeof import 或字面量 dynamic import 会让那些程序报 TS2307。
- * 这里只描述缓存实际消费的三个成员。
+ * 这里只描述缓存实际消费的成员。
  */
 type AuthoringSdkTypeProjectionModule = Readonly<{
   AUTHORING_SDK_TYPE_PROJECTION_SCHEMA: string
   authoringSdkTsconfig: () => string
+  /** 构建前输入清单，仅供进程内 memo；测试注入的最小投影模块可不实现（退化为无 memo）。 */
+  authoringSdkTypeProjectionInputFiles?: (input?: {
+    sourceRoot?: string
+    repositoryRoot?: string
+  }) => Promise<{ path: string, sha256: string, bytes: number }[]>
   buildAuthoringSdkTypeProjection: (input: {
     targetRoot: string
     sourceRoot: string

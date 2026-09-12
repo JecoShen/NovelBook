@@ -1,12 +1,12 @@
 import {existsSync, readFileSync} from "node:fs";
 import {createRequire} from "node:module";
 import {dirname, isAbsolute, join, relative, resolve, sep} from "node:path";
-import {pathToFileURL} from "node:url";
+import {fileURLToPath, pathToFileURL} from "node:url";
 import {ProductRuntimeImageVerifier} from "nbook/server/interfaces/product-runtime-image-verifier";
 import type {ProductRuntimeImageManifest} from "@notnotype/neuro-book-contracts/product-runtime";
 import {openSourceAuthoringTypeProjection} from "nbook/server/runtime/source-authoring-type-cache";
+import {absoluteFsPath} from "nbook/server/runtime/paths/file-path";
 import {runtimePathsFromEnv} from "nbook/server/runtime/paths/runtime-paths";
-import {resolveApplicationRoot} from "nbook/server/workspace-files/system-workspace-assets";
 
 export type RuntimeArtifactPathMapping = Readonly<{
     physicalRoot: string;
@@ -67,6 +67,9 @@ export type RuntimeArtifactPathContext = Readonly<{
     mappings: readonly RuntimeArtifactPathMapping[];
 }>;
 
+/** 本模块固定位于 <appRoot>/server/utils/；checkout 应用包根与运行时 Application Root 解耦。 */
+const MODULE_APPLICATION_ROOT = absoluteFsPath(resolve(dirname(fileURLToPath(import.meta.url)), "..", ".."));
+
 const verifiedContexts = new Map<string, Promise<ProductRuntimeArtifactAuthoringContext>>();
 
 export async function resolveRuntimeArtifactCompilerContext(
@@ -83,9 +86,12 @@ export async function resolveRuntimeArtifactCompilerContext(
     if (!explicitImageRoot) {
         // Source 模式必须复用有界声明投影，禁止回退完整 checkout 类型图（内存封顶）；
         // 投影失败直接向调用方冒泡，不在此兜底。
+        // SDK 声明输入根 = 当前 checkout 应用包根（模块位置推导），不跟随运行时
+        // Application Root：后者在物理 Workspace 测试/稀疏安装里是无源码的空目录，
+        // 投影器会在其中寻找不存在的 profile-sdk 源码（TS6053）。
         const projection = await openSourceAuthoringTypeProjection(
             runtimePathsFromEnv(absoluteRoot, env).cacheRoot,
-            resolveApplicationRoot(absoluteRoot),
+            MODULE_APPLICATION_ROOT,
         );
         return Object.freeze({
             kind: "source",

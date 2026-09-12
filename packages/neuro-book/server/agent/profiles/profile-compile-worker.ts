@@ -396,9 +396,12 @@ export class ProfileCompileWorkerService {
         const buildCompiledDir = join(dirname(this.profileRoot), ".staging", "profile-artifact-fan-in", randomUUID());
         const stagedDirs: string[] = [buildCompiledDir];
         try {
+            // 新鲜度观察窗口从任务提交开始：路径上下文解析会即时构建声明投影（秒级），
+            // 源文件列举与上下文解析并发，迟于此刻的集合变化才能被发布前门禁捕获。
+            const filesAtStartPromise = listProfileArtifactSourceFiles(this.profileRoot);
             const artifactPathContext = await this.resolveArtifactPathContext();
             const [files, existingManifest] = await Promise.all([
-                listProfileArtifactSourceFiles(this.profileRoot),
+                filesAtStartPromise,
                 readProfileArtifactManifest(this.profileRoot, artifactPathContext),
             ]);
             await mkdir(buildCompiledDir, {recursive: true});
