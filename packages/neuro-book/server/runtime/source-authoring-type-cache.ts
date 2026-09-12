@@ -55,10 +55,33 @@ export function setSourceAuthoringTypeCacheGcTestHook(hook: SourceAuthoringTypeC
   sourceAuthoringTypeCacheGcTestHook = hook
 }
 
+/**
+ * 同一模块实例内按 cacheRoot 串行化 open。发布锁的临界区含 GC 与整树验证（秒级）：
+ * 同进程并发 open 会被 proper-lockfile 的进程内登记立即以 ELOCKED 拒绝（不重试），
+ * 串行化把并发折叠为顺序，跨进程仲裁仍交给 .publish.lock。
+ */
+const openProjectionQueues = new Map<string, Promise<unknown>>()
+
 /** 打开一个已经逐文件验证过的不可变声明投影。 */
 export async function openSourceAuthoringTypeProjection(
   cacheRoot: AbsoluteFsPath,
   sourceRoot: AbsoluteFsPath = absoluteFsPath(process.cwd()),
+): Promise<SourceAuthoringTypeProjection> {
+  const queueKey = resolve(cacheRoot)
+  const previous = openProjectionQueues.get(queueKey) ?? Promise.resolve()
+  const current = previous.catch(() => undefined).then(() => openSourceAuthoringTypeProjectionSerialized(cacheRoot, sourceRoot))
+  openProjectionQueues.set(queueKey, current)
+  try {
+    return await current
+  }
+  finally {
+    if (openProjectionQueues.get(queueKey) === current) openProjectionQueues.delete(queueKey)
+  }
+}
+
+async function openSourceAuthoringTypeProjectionSerialized(
+  cacheRoot: AbsoluteFsPath,
+  sourceRoot: AbsoluteFsPath,
 ): Promise<SourceAuthoringTypeProjection> {
   const absoluteSourceRoot = resolve(sourceRoot)
   const authoringRoot = resolve(cacheRoot, AUTHORING_TYPES_DIRECTORY)

@@ -167,7 +167,44 @@ describe('Source authoring type projection cache', () => {
     expect(left.fingerprint).toBe(right.fingerprint)
     expect(left.root).toBe(right.root)
     expect(await projectionDirectories(fixture.cacheRoot)).toEqual([left.fingerprint])
-    expect(projectionMock.buildCalls).toBe(2)
+    // 同进程按 cacheRoot 串行化后，第二个 open 直接命中首个发布，不再重复构建。
+    expect(projectionMock.buildCalls).toBe(1)
+  })
+
+  it('并发 open 同一 cacheRoot 串行化，持锁 GC 期间不再 ELOCKED', async () => {
+    const fixture = await fixtureRoots()
+    const first = await openFixture(fixture)
+    await setSourceVersion('two', fixture.sourceRoot)
+    await openFixture(fixture)
+    await truncate(join(first.root, 'types', 'profile-sdk', 'index.d.ts'), SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES)
+    const old = new Date(Date.now() - SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS - 1_000)
+    await utimes(first.root, old, old)
+
+    // 让首个 open 在持锁 GC 里停留；无串行化时第二个 open 被 proper-lockfile
+    // 进程内登记立即以 ELOCKED 拒绝（不重试），且多为无人 await 的 unhandled rejection。
+    let releaseGc: (() => void) | undefined
+    let injected = false
+    setSourceAuthoringTypeCacheGcTestHook(async (stage) => {
+      if (stage !== 'after-first-scan' || injected) return
+      injected = true
+      await new Promise<void>((resolvePromise) => {
+        releaseGc = resolvePromise
+      })
+    })
+    try {
+      const holding = openFixture(fixture)
+      await vi.waitFor(() => {
+        expect(injected).toBe(true)
+      })
+      const contender = openFixture(fixture)
+      await new Promise(resolvePromise => setTimeout(resolvePromise, 200))
+      releaseGc!()
+      const [heldResult, contenderResult] = await Promise.all([holding, contender])
+      expect(contenderResult.fingerprint).toBe(heldResult.fingerprint)
+    }
+    finally {
+      setSourceAuthoringTypeCacheGcTestHook(null)
+    }
   })
 
   it('GC 保留 current、年轻 owned orphan 和未知目录，超预算时删除最旧 owned orphan', async () => {
