@@ -1,6 +1,6 @@
 # Agent 会话与 Composer
 
-> 依据：Task 141 浏览器验收记录（`docs/tasks/141-merged-pr-browser-acceptance/README.md`）
+> 依据：Task 141 浏览器验收记录（`.agents/tasks/141-merged-pr-browser-acceptance/README.md`）
 > 目的：对话交互的边界情况——键盘、图片门禁、停止/恢复、错误、刷新、Workflow/Jobs。
 > 依赖：部分检查项需要真实 provider；无法稳定复现的边界（IME、metadata 失败、预算超限）标「未验证」。
 

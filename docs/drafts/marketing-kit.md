@@ -178,7 +178,7 @@
 | --- | --- | --- |
 | 360 / 266 | llmlint 规则总数 / 默认启用数 | `llmlint rules --format json` 的 `registry` 字段 |
 | 4 | 部署方式（Portable / ghcr / Product Bun / Source） | README、docs/deployment.md |
-| 4 | World Engine 写入操作原语（replace / increment / remove / append） | docs/tasks/56 |
+| 4 | World Engine 写入操作原语（replace / increment / remove / append） | packages/neuro-book/.agents/tasks/56-world-engine |
 | 3 | SillyTavern 迁移阶段（inspect / unpack / import） | README |
 | 4 | token 计量维度（输入 / 输出 / 缓存创建 / 缓存命中），支持货币换算 | ✅已核实代码：model-cost-draft.ts（inputTokens/outputTokens/cacheWrite/cacheRead）+ NovelIdeCostSettingsPanel.vue（USD/CNY + 汇率刷新） |
 | v0.5.x | 当前版本线（canary 快速迭代中） | GitHub Releases |

@@ -2,7 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-07-27
-- 关联任务：[Task 111 Plan G](../tasks/111-workflow-agent-integration/PLAN-G-job-sse.md)
+- 关联任务：[Task 111 Plan G](../../packages/neuro-book/.agents/tasks/111-workflow-agent-integration/PLAN-G-job-sse.md)
 
 ## 背景
 

@@ -2,7 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-07-28
-- 关联任务：[Task 118](../tasks/118-project-catalog-snapshot-path-integration/README.md)、[Task 129](../tasks/129-project-picker-and-session-entry/README.md)
+- 关联任务：[Task 118](../../packages/neuro-book/.agents/tasks/118-project-catalog-snapshot-path-integration/README.md)、[Task 129](../../packages/neuro-book/.agents/tasks/129-project-picker-and-session-entry/README.md)
 - 取代：[ADR 0004](0004-project-activation-handoff.md)
 
 ## 背景

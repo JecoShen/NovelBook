@@ -211,4 +211,4 @@ export default {
 - [README.md](README.md)：World Engine reference 书架入口
 - [subject-lifecycle.md](subject-lifecycle.md)：subject 注册、切面演化、reduce、查询契约
 - [workflow.md](workflow.md)：写作模式整体工作流与时间透明原则
-- [docs/tasks/65-world-engine-calendar-enhancement/design-v2.md](../../docs/tasks/65-world-engine-calendar-enhancement/design-v2.md)：Calendar 系统重构设计文档
+- [docs/tasks/65-world-engine-calendar-enhancement/design-v2.md](../../packages/neuro-book/.agents/tasks/65-world-engine-calendar-enhancement/design-v2.md)：Calendar 系统重构设计文档

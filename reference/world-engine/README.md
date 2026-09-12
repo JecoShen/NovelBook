@@ -39,8 +39,8 @@ Product 发布时，`world-engine/schema/index.ts` 与 `world-engine/calendar.ts
 
 本目录是面向 Agent / 作者的稳定 reference。底层实现契约、所有 Decisions 定论与 Agent 工具完整签名见：
 
-- [docs/tasks/56-world-engine/README.md](../../docs/tasks/56-world-engine/README.md)：核心模型与所有 Decisions 定论。
-- [docs/tasks/56-world-engine/schema-design.md](../../docs/tasks/56-world-engine/schema-design.md)：schema 字段格式与完整示例。
-- [docs/tasks/67-world-engine-zod-schema-codeact/README.md](../../docs/tasks/67-world-engine-zod-schema-codeact/README.md)：Zod schema 与 8→2 Agent 工具迁移来源。
-- [docs/tasks/69-world-engine-tool-cleanup/README.md](../../docs/tasks/69-world-engine-tool-cleanup/README.md)：旧协议清理、`WorldPatch` 表名、collection 按值删与 P0-P3 收口。
-- [docs/tasks/56-world-engine/sqlite-and-api.md](../../docs/tasks/56-world-engine/sqlite-and-api.md)：Project SQLite 表结构与 HTTP API 契约。
+- [docs/tasks/56-world-engine/README.md](../../packages/neuro-book/.agents/tasks/56-world-engine/README.md)：核心模型与所有 Decisions 定论。
+- [docs/tasks/56-world-engine/schema-design.md](../../packages/neuro-book/.agents/tasks/56-world-engine/schema-design.md)：schema 字段格式与完整示例。
+- [docs/tasks/67-world-engine-zod-schema-codeact/README.md](../../packages/neuro-book/.agents/tasks/67-world-engine-zod-schema-codeact/README.md)：Zod schema 与 8→2 Agent 工具迁移来源。
+- [docs/tasks/69-world-engine-tool-cleanup/README.md](../../packages/neuro-book/.agents/tasks/69-world-engine-tool-cleanup/README.md)：旧协议清理、`WorldPatch` 表名、collection 按值删与 P0-P3 收口。
+- [docs/tasks/56-world-engine/sqlite-and-api.md](../../packages/neuro-book/.agents/tasks/56-world-engine/sqlite-and-api.md)：Project SQLite 表结构与 HTTP API 契约。

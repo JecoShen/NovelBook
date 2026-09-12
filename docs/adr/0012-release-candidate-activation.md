@@ -2,7 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-08-02
-- 关联任务：[Task 130](../tasks/130-desktop-application-foundation/README.md)、[Task 105](../tasks/105-unified-installation-manager/README.md)、[ADR 0009](0009-product-runtime-image-generation.md)、[ADR 0010](0010-desktop-storage-loopback-shutdown.md)
+- 关联任务：[Task 130](../../.agents/tasks/130-desktop-application-foundation/README.md)、[Task 105](../../.agents/tasks/105-unified-installation-manager/README.md)、[ADR 0009](0009-product-runtime-image-generation.md)、[ADR 0010](0010-desktop-storage-loopback-shutdown.md)
 
 ## 背景
 

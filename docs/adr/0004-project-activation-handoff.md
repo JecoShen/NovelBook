@@ -2,7 +2,7 @@
 
 - 状态：Superseded by [ADR 0007](0007-project-close-then-open.md)
 - 日期：2026-07-28
-- 关联任务：[Task 118](../tasks/118-project-catalog-snapshot-path-integration/README.md)
+- 关联任务：[Task 118](../../packages/neuro-book/.agents/tasks/118-project-catalog-snapshot-path-integration/README.md)
 
 ## 背景
 

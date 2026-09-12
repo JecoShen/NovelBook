@@ -1,6 +1,6 @@
 # World Engine — Schema 系统
 
-> ⚠️ **部分过时（Task 67 / 2026-06）**：schema 已硬切到 **TypeScript + Zod**，运行时只加载 `world-engine/schema/index.ts`，**不再支持 `schema.yaml`**。本文中关于 YAML 格式、`subjectTypes/attrs/kind` 写法的章节描述的是旧格式，仅供理解 reduce/op/ref 等**底层契约**（这些语义不变）。新 schema 写法见 [docs/tasks/67-world-engine-zod-schema-codeact](../../docs/tasks/67-world-engine-zod-schema-codeact/README.md)。本文的全面重写是该任务的 follow-up。
+> ⚠️ **部分过时（Task 67 / 2026-06）**：schema 已硬切到 **TypeScript + Zod**，运行时只加载 `world-engine/schema/index.ts`，**不再支持 `schema.yaml`**。本文中关于 YAML 格式、`subjectTypes/attrs/kind` 写法的章节描述的是旧格式，仅供理解 reduce/op/ref 等**底层契约**（这些语义不变）。新 schema 写法见 [docs/tasks/67-world-engine-zod-schema-codeact](../../packages/neuro-book/.agents/tasks/67-world-engine-zod-schema-codeact/README.md)。本文的全面重写是该任务的 follow-up。
 
 > 本文讲清 World Engine 中 **schema（主体模式）** 的概念与契约：subject type / path / kind / op / reduce 语义 / ref / default。读者是需要设计或理解某个项目 schema 的 Agent 与作者。本文只教原理与契约，不教「第一步做什么」的操作步骤（那是 skill 的职责）；理解这里的概念后，你应能自己判断该怎么写 schema、怎么打 patch。
 
@@ -253,4 +253,4 @@ reduce 出的状态：hp 在前值上减 30、inventory 含 `subject://sword-01`
 - [subject-lifecycle.md](subject-lifecycle.md)：subject 注册、init slice、切面演化、reduce、查询契约。
 - [recording-principles.md](recording-principles.md)：记录什么、记录到什么粒度。
 - [calendar-system.md](calendar-system.md)：时间真相源与时间入参边界。
-- [docs/tasks/56-world-engine/schema-design.md](../../docs/tasks/56-world-engine/schema-design.md)：schema 字段格式、kind/op 语义、ref 规则与完整示例（底层契约真相源）。
+- [docs/tasks/56-world-engine/schema-design.md](../../packages/neuro-book/.agents/tasks/56-world-engine/schema-design.md)：schema 字段格式、kind/op 语义、ref 规则与完整示例（底层契约真相源）。

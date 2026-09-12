@@ -510,4 +510,4 @@ writer 写每个角色的言行、心理时只能基于该角色已知的信息�
 - [schema-system.md](schema-system.md)：schema、kind、op、ref、default 契约。
 - [subject-lifecycle.md](subject-lifecycle.md)：subject 注册、切面演化、reduce、issues、查询契约。
 - [calendar-system.md](calendar-system.md)：Instant、纪元锚点、Calendar 与时间入参边界。
-- [docs/tasks/56-world-engine/README.md](../../docs/tasks/56-world-engine/README.md)：World Engine 模型与 Decisions 定论（契约真相源）。
+- [docs/tasks/56-world-engine/README.md](../../packages/neuro-book/.agents/tasks/56-world-engine/README.md)：World Engine 模型与 Decisions 定论（契约真相源）。

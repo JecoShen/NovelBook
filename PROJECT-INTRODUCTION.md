@@ -162,7 +162,7 @@ neuro-book 的 Agent prompt 不是普通字符串，而是用 TSX 组件树表�
 
 - `PROJECT-STATUS.md`：仓库级现状和风险。
 - `spec/`：稳定规范。
-- `docs/tasks/`：任务 walkthrough。
+- `.agents/tasks/` 与 `packages/neuro-book/.agents/tasks/`：任务 walkthrough 与历史 provenance。
 - `docs/research/`：调研资料。
 - `docs/drafts/`：草案。
 

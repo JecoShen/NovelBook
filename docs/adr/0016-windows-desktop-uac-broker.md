@@ -2,7 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-08-08
-- 关联任务：[Task 145](../tasks/145-electron-desktop-productization/README.md)
+- 关联任务：[Task 145](../../.agents/tasks/145-electron-desktop-productization/README.md)
 - 相关决策：[ADR 0014](0014-electron-desktop-productization.md)
 - 生产 Issue：[Issue #87](https://github.com/notnotype/neuro-book/issues/87)
 

@@ -71,4 +71,4 @@ Profile 可通过 `ProfileTurnPlan.turnContexts` 声明依赖运行时外部数�
 - 当前用户输入是 Harness durable prompt，不是 Profile `AppendingSet` 数据；Profile 不应复制 `ctx.invocation.message`。
 - 新 hook 能力要先对照 [harness-black-box-contract.md](harness-black-box-contract.md) 检查外部行为。
 
-历史设计过程见 [../../docs/tasks/18-agent-runtime-pipeline-hooks/README.md](../../docs/tasks/18-agent-runtime-pipeline-hooks/README.md)。
+历史设计过程见 [../../docs/tasks/18-agent-runtime-pipeline-hooks/README.md](../../packages/neuro-book/.agents/tasks/18-agent-runtime-pipeline-hooks/README.md)。

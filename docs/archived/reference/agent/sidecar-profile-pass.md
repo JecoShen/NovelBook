@@ -103,4 +103,4 @@ V1 推荐只在 `prepareRun` 使用 `persistedMessages`，用于“本轮需要�
 
 Subject RAG 的索引、embedding 配置和工具合同见 [../content/subject-rag-memory.md](../content/subject-rag-memory.md)。
 
-历史设计过程见 [../../docs/tasks/23-agent-sidecar-profile-pass/README.md](../../docs/tasks/23-agent-sidecar-profile-pass/README.md)。
+历史设计过程见 [../../../../packages/neuro-book/.agents/tasks/23-agent-sidecar-profile-pass/README.md](../../../../packages/neuro-book/.agents/tasks/23-agent-sidecar-profile-pass/README.md)。

@@ -276,4 +276,4 @@ The goal is not to have the AI generate a longer block of text in one shot. It i
 - [Subject RAG Memory](https://github.com/JecoShen/NovelBook/blob/main/reference/content/subject-rag-memory.md)
 - [Novel Writing Workflow](https://github.com/JecoShen/NovelBook/blob/main/reference/agent/novel-writing-workflow.md)
 - [Content Reference](https://github.com/JecoShen/NovelBook/blob/main/reference/content/README.md)
-- [Agent RP Mode Task](https://github.com/JecoShen/NovelBook/blob/main/docs/tasks/01-agent-roleplay-mode/README.md)
+- [Agent RP Mode Task](https://github.com/JecoShen/NovelBook/blob/main/packages/neuro-book/.agents/tasks/01-agent-roleplay-mode/README.md)

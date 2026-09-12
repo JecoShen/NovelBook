@@ -2,7 +2,7 @@
 
 本文是 NeuroBook 客户端**本地安装、更新、卸载和来源记账**的唯一协议真相源。它取代原先「Bundled Workspace Template 逐文件投影进 Workspace Root `.nbook`」的同步模型。
 
-发布侧（Workshop ZIP 外壳、静态校验、版本递增）仍由 [Agent Asset Package Protocol](agent-asset-package.md) 定义。任务过程记录见 [Task 135](../../docs/tasks/135-agent-asset-install-protocol/README.md)。
+发布侧（Workshop ZIP 外壳、静态校验、版本递增）仍由 [Agent Asset Package Protocol](agent-asset-package.md) 定义。任务过程记录见 [Task 135](../../packages/neuro-book/.agents/tasks/135-agent-asset-install-protocol/README.md)。
 
 ## Core Model
 

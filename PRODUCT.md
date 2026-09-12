@@ -104,7 +104,7 @@ New projects no longer generate a `simulation/` directory. Default templates cre
 - **Chinese-default UI and copy**: 简体中文 is the default surface; English is supported but is the secondary language. The product copy speaks the author's language.
 - **Local-first data ownership**: the manuscript and worldview never leave the author's machine as a precondition of using the product. Cloud sync, if it ever lands, must be opt-in and never the only path to the manuscript.
 - **AI as assistant, not author**: llmlint rules are enforced as a hard gate on AI-generated text. The author decides; the AI proposes. Style rules are public, vendored, and audited (5 模式 detector v0.3, scene six questions level=low, lore-resolver with carryOverPaths JSONL + 3-章 sliding window).
-- **Open documentation surface**: docs/, reference/, docs/tasks/, docs/adr/, and the published Release notes are part of the product, not afterthoughts.
+- **Open documentation surface**: docs/, reference/, .agents/tasks/, docs/adr/, and the published Release notes are part of the product, not afterthoughts.
 - **Theme system, not ad-hoc colors**: Novel IDE colors consume the variables registered in `app/utils/theme/README.md`; the 8 built-in themes are the contract. New themes register, not override.
 - **Status color semantics are stable**: `warning` (草稿/待审/未保存), `success` (完成/已同步), `danger` (错误/删除/冲突), `info` (运行中/引用/说明), `accent` (选中/当前/主操作). Content / editor / chip category colors are exceptions, not violations.
 - **Honest gaps**: capabilities still pending (stable release, macOS, signing, real external Provider, full browser-verified author flow) are documented in `PROJECT-STATUS.md` and `RELEASE.md`, not papered over. Future work must not invent evidence that does not exist.
@@ -115,7 +115,7 @@ Real evidence paths and counts; future work must not fabricate any of these:
 
 - **Published Release**: `v0.9.6-canary.20260814.024826Z.9653191d` — 12 public assets, 22 jobs green, source revision `778ef7d413650472df847601607e5983aa31e949`, GHCR digest `sha256:34294b4a...`. See `PROJECT-STATUS.md` § "2026-08-14 `0.9.6-canary` 发布状态".
 - **Manager**: `0.1.0-canary.54` public provenance verified.
-- **llmlint 3.0.0** vendored (sibling `llmlint` repo). 5 模式 detector TP 100% / FP 0% on the locked baseline; P1-4 scene-six-questions baseline 0/80 (V1 + V2). Source: `docs/tasks/51-anti-ai-slop-skill/README.md`.
+- **llmlint 3.0.0** vendored (sibling `llmlint` repo). 5 模式 detector TP 100% / FP 0% on the locked baseline; P1-4 scene-six-questions baseline 0/80 (V1 + V2). Source: `.agents/tasks/51-anti-ai-slop-skill/README.md`.
 - **P1-3 lore-resolver + I-1 wiring**: 14 commits merged into `main` (`49e62466` etc.), spec v4.5 → v4.7, 32/32 lore + 16/16 writer profile tests, tsc 0 errors, i134 perf far under threshold. Source: `docs/superpowers/specs/2026-08-19-p1-3-lore-resolver.md`.
 - **5 批次 audit archive**: 12 批次 archive-worktree 闭包, 0 push / 0 merge / 0 force-push policy intact; 4 protected assets shared mutable on main is the one documented exception. `main` HEAD `b25456a7..e7157647` pushed 2026-08-20.
 - **A 区 fork-native tests**: e.g. profile-template-responsive fork-native contract test, 14/14 vitest pass, 0 new lint, 0 new typecheck. Source: `.agent/plan/a-5693eec-test-2026-08-27/`.

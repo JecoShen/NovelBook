@@ -2,7 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-07-24
-- 关联任务：[Task 108](../tasks/108-agent-image-attachment-references/README.md)
+- 关联任务：[Task 108](../../packages/neuro-book/.agents/tasks/108-agent-image-attachment-references/README.md)
 
 ## 背景
 

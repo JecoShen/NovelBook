@@ -2,7 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-08-07
-- 关联任务：[Task 145](../tasks/145-electron-desktop-productization/README.md)
+- 关联任务：[Task 145](../../.agents/tasks/145-electron-desktop-productization/README.md)
 - 继承 spike：[ADR 0013](0013-desktop-envelope-distribution-and-interaction.md)、[Issue #66](https://github.com/notnotype/neuro-book/issues/66)
 - 生产 Issue：[Issue #87](https://github.com/notnotype/neuro-book/issues/87)
 

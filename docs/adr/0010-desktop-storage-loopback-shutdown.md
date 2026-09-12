@@ -3,7 +3,7 @@
 - 状态：Accepted
 - 日期：2026-07-29
 - 更新：2026-08-07（Installation Mutation、Windows 自卸载、Candidate 验收、Session Store lease 失效关闭、Desktop Envelope root 边界与 Source Dev Cache Root）
-- 关联任务：[Task 130](../tasks/130-desktop-application-foundation/README.md)、[Task 105](../tasks/105-unified-installation-manager/README.md)、[Task 117](../tasks/117-windows-process-tree-lifecycle/README.md)、[ADR 0002](0002-bounded-rebuildable-runtime-artifacts.md)
+- 关联任务：[Task 130](../../.agents/tasks/130-desktop-application-foundation/README.md)、[Task 105](../../.agents/tasks/105-unified-installation-manager/README.md)、[Task 117](../../.agents/tasks/117-windows-process-tree-lifecycle/README.md)、[ADR 0002](0002-bounded-rebuildable-runtime-artifacts.md)
 - 取代范围：[ADR 0006](0006-image-variant-and-original-ownership.md) 中 Image Variant Cache 的物理 locator 由本 ADR 的 Cache Root 决定；其 512 MiB、10000 项等领域预算不变。
 
 ## 背景

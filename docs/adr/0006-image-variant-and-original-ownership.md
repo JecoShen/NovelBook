@@ -2,7 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-07-28
-- 关联任务：[Task 132](../tasks/132-shared-image-variants-project-covers/README.md)、[Task 108](../tasks/108-agent-image-attachment-references/README.md)、[Task 129](../tasks/129-project-picker-and-session-entry/README.md)、[ADR 0010](0010-desktop-storage-loopback-shutdown.md)
+- 关联任务：[Task 132](../../packages/neuro-book/.agents/tasks/132-shared-image-variants-project-covers/README.md)、[Task 108](../../packages/neuro-book/.agents/tasks/108-agent-image-attachment-references/README.md)、[Task 129](../../packages/neuro-book/.agents/tasks/129-project-picker-and-session-entry/README.md)、[ADR 0010](0010-desktop-storage-loopback-shutdown.md)
 
 ## 背景
 

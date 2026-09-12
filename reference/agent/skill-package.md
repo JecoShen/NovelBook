@@ -4,7 +4,7 @@
 
 - 本地安装、更新、卸载和来源记账见 [Agent Asset Install Protocol](agent-asset-install.md)。
 - 通过 Workshop 发布的外壳与静态校验见 [Agent Asset Package Protocol](agent-asset-package.md)。
-- 任务过程记录见 [Task 120](../../docs/tasks/120-agent-skill-package-contract/README.md) 与 [Task 135](../../docs/tasks/135-agent-asset-install-protocol/README.md)。
+- 任务过程记录见 [Task 120](../../packages/neuro-book/.agents/tasks/120-agent-skill-package-contract/README.md) 与 [Task 135](../../packages/neuro-book/.agents/tasks/135-agent-asset-install-protocol/README.md)。
 
 ## Compatibility Baseline
 

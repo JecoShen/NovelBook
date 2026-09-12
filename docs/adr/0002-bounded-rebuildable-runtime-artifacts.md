@@ -2,7 +2,7 @@
 
 - 状态：Accepted（2026-07-27 随 Task 125 Round 02 实施）
 - 日期：2026-07-26
-- 关联任务：[Task 125](../tasks/125-runtime-artifact-storage-lifecycle/README.md)
+- 关联任务：[Task 125](../../packages/neuro-book/.agents/tasks/125-runtime-artifact-storage-lifecycle/README.md)
 
 ## 背景
 

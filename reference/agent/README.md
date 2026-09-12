@@ -20,7 +20,7 @@
 ## Runtime
 
 - [runtime-hooks.md](runtime-hooks.md)：Run Kernel / runtime hooks 稳定心智模型，覆盖 harness、session、profile、turn loop 的生命周期阶段。
-- [../../docs/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md](../../docs/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md)：prompt / continue / steer / followup 的外部行为合同。
+- [../../docs/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md](../../packages/neuro-book/.agents/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md)：prompt / continue / steer / followup 的外部行为合同。
 - [attachments.md](attachments.md)：Session 图片附件的存储、Markdown、授权、目录、Composer 与模型预算合同。
 - [sse.md](sse.md)：Agent session SSE / snapshot / event contract。
 - [session-abort.md](session-abort.md)：Agent Session abort 的 admission、两阶段取消、forced queue recovery 与 HTTP/SSE 行为合同（[ADR 0019](../../docs/adr/0019-agent-abort-mutation-boundary.md)）。
@@ -42,7 +42,7 @@
 - 处理 Plot System：读 [../plot/system.md](../plot/system.md) 和 [../plot/agent-spec.md](../plot/agent-spec.md)。
 - 处理小说写作流程、剧情推进、emulation tick 或 workflow skill 命名：读 [novel-writing-workflow.md](novel-writing-workflow.md)。
 - 处理 RP Tick 交互协议、LOD 世界模拟、actor-facing packet 格式或 Writer Brief 格式：读 [rp-tick/README.md](rp-tick/README.md)。
-- 处理 harness 行为、runtime hooks 或队列语义：先读 [HARNESS-BLACK-BOX-CONTRACT.md](../../docs/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md)，再读 [runtime-hooks.md](runtime-hooks.md)。
+- 处理 harness 行为、runtime hooks 或队列语义：先读 [HARNESS-BLACK-BOX-CONTRACT.md](../../packages/neuro-book/.agents/tasks/18-agent-runtime-pipeline-hooks/HARNESS-BLACK-BOX-CONTRACT.md)，再读 [runtime-hooks.md](runtime-hooks.md)。
 - 处理图片上传、Session 附件目录、Composer 图片 Markdown 或附件读取授权：读 [attachments.md](attachments.md)。
 - 处理后台 Job 列表、任务中心、Jobs SSE、preview 合并或事件恢复：读 [jobs.md](jobs.md)。
 - 编写、运行或排查 Agent Workflow：先读 [workflow/README.md](workflow/README.md)，写源码继续读 [workflow/authoring.md](workflow/authoring.md)，画运行图继续读 [workflow/chart.md](workflow/chart.md)。

@@ -3,7 +3,7 @@
 - 状态：Accepted
 - 日期：2026-08-07
 - 复核：2026-09-02 第 1 轮重新评估 — 维持延期（见下方「复核记录」）
-- 关联任务：[Task 123](../tasks/123-repo-structure-optimization/README.md)、[Task 142](../tasks/142-post-merge-reliability-hardening/README.md)、[Task 143](../tasks/143-desktop-envelope-installation-spike/README.md)
+- 关联任务：[Task 123](../../.agents/tasks/123-repo-structure-optimization/README.md)、[Task 142](../../.agents/tasks/142-post-merge-reliability-hardening/README.md)、[Task 143](../../.agents/tasks/143-desktop-envelope-installation-spike/README.md)
 - 相关决策：[ADR 0010](0010-desktop-storage-loopback-shutdown.md)、[ADR 0014](0014-agent-job-durable-history.md)
 
 ## 背景

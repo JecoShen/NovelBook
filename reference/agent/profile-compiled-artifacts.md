@@ -128,11 +128,11 @@ Source 模式的 Profile / Variable 类型检查使用独立的 Source authoring
 
 GC 只处理不被 `current.json` 引用的、目录名和 manifest fingerprint 均匹配的 owned projection。最小安全年龄为 `10` 分钟，用于保护并发读者；orphan 预算为 `256 MiB`，超预算时按最旧投影优先回收可证明归属的 orphan。GC 必须先把候选移入 `.gc-quarantine`，对 `lstat` 得到的完整树做两次稳定性检查，拒绝符号链接、特殊文件、manifest/fingerprint 不匹配或发生变化的候选；不安全或无法证明归属的内容保守保留。删除失败不影响源码和 current 指针，也不能通过无条件清空缓存来替代 owner 生命周期。
 
-缓存只降低 Source 类型检查的生成成本；删除缓存不会删除作者源码、发布 Profile artifact、Variable 定义或 Project 数据。实际单核单 Worker Profile CLI 测量中，冷缓存 `MAX_SINGLE_RSS_KIB=761120`、热缓存 `MAX_SINGLE_RSS_KIB=459036`，两次退出码均为 `0` 且无目标进程组残留；完整验证数字和未完成的 typecheck/full 边界见 [Task 125](../../docs/tasks/125-runtime-artifact-storage-lifecycle/README.md)。
+缓存只降低 Source 类型检查的生成成本；删除缓存不会删除作者源码、发布 Profile artifact、Variable 定义或 Project 数据。实际单核单 Worker Profile CLI 测量中，冷缓存 `MAX_SINGLE_RSS_KIB=761120`、热缓存 `MAX_SINGLE_RSS_KIB=459036`，两次退出码均为 `0` 且无目标进程组残留；完整验证数字和未完成的 typecheck/full 边界见 [Task 125](../../packages/neuro-book/.agents/tasks/125-runtime-artifact-storage-lifecycle/README.md)。
 
 ## Sync
 
-> 本节描述**当前生产行为**（system → user 逐文件投影同步）。[Task 135](../../docs/tasks/135-agent-asset-install-protocol/README.md) 已决定把 Profile 改为包安装模型，届时本节的触发入口会被 [agent-asset-install.md](agent-asset-install.md) 的安装事务 Post-install 阶段取代。**下面三条不可回滚边界与 Publisher 约束在新模型中原样保留**，安装器同样不得直接写 manifest 或在锁外动 artifact。
+> 本节描述**当前生产行为**（system → user 逐文件投影同步）。[Task 135](../../packages/neuro-book/.agents/tasks/135-agent-asset-install-protocol/README.md) 已决定把 Profile 改为包安装模型，届时本节的触发入口会被 [agent-asset-install.md](agent-asset-install.md) 的安装事务 Post-install 阶段取代。**下面三条不可回滚边界与 Publisher 约束在新模型中原样保留**，安装器同样不得直接写 manifest 或在锁外动 artifact。
 
 Profile assets sync 不直接写 `manifest.json`。它把 system artifact copy 到 staging，经 Publisher 发布 user manifest。
 
