@@ -13,6 +13,7 @@ import {messageText} from "nbook/server/agent/messages/message-utils";
 import {createTestRuntimeSession as testSession} from "nbook/server/agent/profiles/test/runtime-session";
 import {DEFAULT_WRITING_REFERENCE_PRESET, homeReferenceKeyToLegacyKey, loadWritingReferencePresets} from "nbook/server/agent/profiles/writer-writing-reference";
 import {DEFAULT_WRITING_STYLE_PRESET, homeStyleKeyToLegacyKey, loadWritingStylePresets} from "nbook/server/agent/profiles/writer-writing-style";
+import {DEFAULT_AVOID_WORDS_PRESET} from "nbook/server/agent/profiles/writer-writing-avoid-words";
 import {createTestVariableAccessor} from "nbook/server/agent/variables/test-utils";
 import {createLayeredProfileHomeFacade, ensureGlobalProfileHome, ensureProfileHome} from "nbook/server/agent/profiles/profile-home";
 import {validateLowCodeFormValue} from "nbook/server/low-code-form";
@@ -944,6 +945,7 @@ describe("assets builtin v3 profiles", () => {
                     paragraphRhythm: "自定义段落节奏：一拍一行。",
                     wordCountControl: "3200-3600 字",
                     polishingWorkflow: "自定义润色流程：先按 stop-slop 检查，再逐句修正。",
+                    avoidWordsPreset: DEFAULT_AVOID_WORDS_PRESET,
                     adultStylePrompt: "自定义成人风格：强调温柔互动和关系变化。",
                     fileChangeAwareness: "minimal",
                 },
@@ -1237,6 +1239,7 @@ function defaultWriterSettings() {
         paragraphRhythm: "段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段。",
         wordCountControl: "2000-2600 字",
         polishingWorkflow: "润色时使用 .nbook/agent/skills/stop-slop/SKILL.md 作为自查流程，并优先在原文基础上做最小必要修改。",
+        avoidWordsPreset: DEFAULT_AVOID_WORDS_PRESET,
         adultStylePrompt: "",
         fileChangeAwareness: "minimal" as const,
     };

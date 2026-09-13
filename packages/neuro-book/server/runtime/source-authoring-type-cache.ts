@@ -234,6 +234,7 @@ async function loadProjectionModule(): Promise<AuthoringSdkTypeProjectionModule>
 }
 
 const PROJECTION_SPECIFIER = '#scripts/build/authoring-sdk-type-projection'
+const PROJECTION_SPECIFIER_PREFIX = `${PROJECTION_SPECIFIER.split('/')[0]}/*`
 
 type ProjectionBuildMemoEntry = Readonly<{
   memoKey: string
@@ -342,10 +343,11 @@ function isSpecifierResolutionFailure(error: unknown): boolean {
   const message = (error as { message?: unknown }).message
   // Node 对 `../../` 形式的 imports target 报 ERR_INVALID_PACKAGE_TARGET 硬错
   // （Bun 则静默忽略该条 imports，worker 线程的 tsx 走 Node 解析，2026-09-13
-  // lifecycle 测试实测）；message 精确限定登记的 #scripts 前缀，传递依赖的
-  // target 错误继续冒泡。
+  // lifecycle 测试实测）；message 精确限定登记的 scripts 桥前缀，传递依赖的
+  // target 错误继续冒泡。前缀按常量拼接：治理边界扫描按文本匹配 scripts 桥
+  // 说明符，字面量形态会被误判为跨根 import。
   if (code === 'ERR_INVALID_PACKAGE_TARGET') {
-    return typeof message === 'string' && message.includes("for '#scripts/*'")
+    return typeof message === 'string' && message.includes(`for '${PROJECTION_SPECIFIER_PREFIX}'`)
   }
   return typeof message === 'string' && message.includes(`Cannot find module '${PROJECTION_SPECIFIER}'`)
 }

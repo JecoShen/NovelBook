@@ -6,6 +6,7 @@ import writerProfileDefinition from "../../../assets/workspace/.nbook/agent/prof
 import inlineEditorProfileDefinition from "../../../assets/workspace/.nbook/agent/profiles/builtin/inline.editor.profile";
 import {DEFAULT_WRITING_REFERENCE_PRESET} from "nbook/server/agent/profiles/writer-writing-reference";
 import {DEFAULT_WRITING_STYLE_PRESET} from "nbook/server/agent/profiles/writer-writing-style";
+import {DEFAULT_AVOID_WORDS_PRESET} from "nbook/server/agent/profiles/writer-writing-avoid-words";
 import {messageText} from "nbook/server/agent/messages/message-utils";
 import {createTestVariableAccessor} from "nbook/server/agent/variables/test-utils";
 import {createTestRuntimeSession as testSession} from "nbook/server/agent/profiles/test/runtime-session";
@@ -158,6 +159,7 @@ function defaultWriterSettings() {
         paragraphRhythm: "段落节奏偏短段分行。",
         wordCountControl: "2000-2600 字",
         polishingWorkflow: "使用 stop-slop 做自查。",
+        avoidWordsPreset: DEFAULT_AVOID_WORDS_PRESET,
         adultStylePrompt: "",
         fileChangeAwareness: "minimal" as const,
     };

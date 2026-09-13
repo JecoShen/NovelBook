@@ -3,13 +3,16 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { ProfilePrepareContext, ReadyProjectSessionRef } from 'nbook/profile-sdk'
+import type { ProfilePrepareContext } from 'nbook/profile-sdk'
+import type { ReadyProjectSessionRef } from 'nbook/server/workspace-files/project-session-types'
 import type { NeuroAgentTool } from 'nbook/server/agent/tools/types'
 import { buildWriterPrompt } from 'nbook/assets/workspace/.nbook/agent/profiles/builtin/writer.profile'
 import type { Payload, Initial, Settings } from 'nbook/assets/workspace/.nbook/agent/profiles/builtin/writer.profile'
 import { invalidateLoreResolverIndex } from 'nbook/server/agent/lore/lore-resolver-cache'
 
 const PROJECT_ROOT = join(tmpdir(), `writer-lore-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+
+type ToolExecute = NonNullable<NeuroAgentTool['executeWithContext']>
 
 function makeProjectRef(): ReadyProjectSessionRef {
   return {
@@ -184,8 +187,8 @@ describe('writer.profile.tsx — lore auto-injection', () => {
     const { createLoreResolverTools } = await import('nbook/server/agent/tools/lore-resolver-tools')
     const tools = createLoreResolverTools()
     const tool = tools[0]!
-    const ctx = { currentProject: project, session: {} } as unknown as Parameters<NeuroAgentTool['executeWithContext']>[0]
-    const result = await tool.executeWithContext(ctx, 'test-call-id', { extra_triggers: ['陆深', '飞鸟站'] })
+    const ctx = { currentProject: project, session: {} } as unknown as Parameters<ToolExecute>[0]
+    const result = await tool.executeWithContext!(ctx, 'test-call-id', { extra_triggers: ['陆深', '飞鸟站'] })
     const content = (result as { content: Array<{ text: string }> }).content[0]?.text ?? ''
     expect(content).toContain('陆深')
   })
@@ -194,8 +197,8 @@ describe('writer.profile.tsx — lore auto-injection', () => {
     const { createLoreResolverTools } = await import('nbook/server/agent/tools/lore-resolver-tools')
     const tools = createLoreResolverTools()
     const tool = tools[0]!
-    const ctx = { currentProject: null, session: {} } as unknown as Parameters<NeuroAgentTool['executeWithContext']>[0]
-    const result = await tool.executeWithContext(ctx, 'test-call-id', { extra_triggers: ['陆深'] })
+    const ctx = { currentProject: null, session: {} } as unknown as Parameters<ToolExecute>[0]
+    const result = await tool.executeWithContext!(ctx, 'test-call-id', { extra_triggers: ['陆深'] })
     const content = (result as { content: Array<{ text: string }> }).content[0]?.text ?? ''
     // 友好提示而不是 throw
     expect(content).toContain('没有已就绪的 Project')
