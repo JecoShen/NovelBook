@@ -60,6 +60,16 @@
 - CI 与本地跑同一套配置：clean-runner 不生成 `.nuxt/tsconfig.json` 时，相关配置使用独立
   esbuild transform（`oxc: false`），不依赖 Nuxt prepare 产物。
 
+## 重资源命令与宿主机内存
+
+全量测试、分层 typecheck 和产品构建的峰值内存可达约 6 GiB。在内存受限宿主机（如 8 GiB 生产本机）上统一经 `scripts/heavy-run.sh` 包装运行：
+
+```bash
+scripts/heavy-run.sh bun run typecheck:layers
+```
+
+包装做两件事：`oom_score_adj` 抬 0（agent 宿主默认 -1000 且被后代继承，不抬会让重命令对 earlyoom 隐形，内存紧张时 earlyoom 转杀生产进程，2026-09-10 实测）+ flock 串行化防并发贴线。CI runner 相互独立且内存充足，不需要包装。
+
 ## 验收脚本（Task 145 及后续 Desktop 任务）
 
 - `prepare-host.ps1` 等宿主机准备脚本：输入/证据默认落在系统 Temp 下的 Agent 受控目录，
