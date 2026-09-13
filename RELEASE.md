@@ -2,6 +2,42 @@
 
 这里只放当前版本。更早的版本见 [中文 changelog](vitepress/locales/zh-Hans/changelog/) 与 [English changelog](vitepress/locales/en-US/changelog/)。
 
+## 0.10.3-canary（限量 canary） - 2026-09-13
+
+这一轮完成仓库从单体到 12 个 workspace 包的拆包迁移收口，恢复迁移中被覆盖的运行时接线与质量门禁，并带来 Agent 会话中止持久性合同、lore 写作注入与一批上游 UI 修复。它仍是限量 canary。
+
+### 新功能
+
+- Agent 写作链路接入 lore 解析与注入：章节写作提示词自动携带 lorebook 上下文，支持三章法滑动窗口的 carryOverPaths 记忆，lore 缓存带 TTL 与 LRU 上限。
+- llmlint 新增中文结构「场景六问」软提示规则，以及场景总表、关系/状态等跨实体模板。
+
+### 改进
+
+- Source Authoring 类型投影缓存落地：Profile 与写作 SDK 的类型检查按内容指纹复用投影，Authoring 链路的类型检查成本显著下降。
+- Agent 会话中止（abort）持久性合同移植收口：取消、清队列与断线恢复行为按 SSE 合同一致，附 33 项合同测试（上游 t159 fork-native 移植）。
+- 通知卡片改用主题状态色并满足 WCAG AA 对比度；Provider 列表长滚动保持可见；剧本编排面板窄视口自动换行；Profile 编辑器按钮补 Tooltip、响应式布局与嵌套主题宿主防御（上游移植）。
+
+### 修复
+
+- 恢复拆包整树合并覆盖的 Source Authoring 类型投影接线；修复投影加载器并发打开时的 ELOCKED 文件锁错误（按 cacheRoot 进程内串行化）。
+- 修复 Source 投影根与仓库根耦合导致的运行时不稳定；投影模块改为编译期解耦，Product Authoring Kit 与 Product 镜像构建恢复通过。
+- 修复 external-cli 调用方三处类型定义在整树合并中被收窄的问题。
+- 修复 lore-carryover 使用相对项目根导致的 lore-writer-proj 目录泄漏。
+- 修复 summarizer 写回中断：profile-sdk 暴露 writePlan session_update 与 readTitleOwner，14/14 内置 Profile 恢复 0 违规。
+- 修复 Product Runtime 在 stdio 破损（EPIPE）下的隔离问题（上游 #230）；修复 Manager 打包产物的 Node 兼容导入（上游 #231/#232）。
+- llmlint 规则漂移修平：title 守卫、calibration fixture、manual 计数，并同步到产品 workspace 投影。
+
+### 内部维护
+
+- 仓库从单体拆分为 12 个 workspace 包并完成 fork 适配；恢复被合并抹掉的门禁：lint（stylistic 关闭）、分层 typecheck 八层、docs:check 清零、代码门禁覆盖 main 直推；Full tests 单 worker 串行首次完整全绿。
+- 清理公开仓历史用户数据残留；生产 PM2 配置显式声明 Application/State/Cache Root 并关闭进程内 APM（Bun 下每 800ms 空烧半核）。
+
+### 升级须知
+
+- 这是限量 canary。升级前请备份完整 State Root 和重要 Project Workspace 的 `.nbook/`、`project.yaml`；先在可丢弃的 Project 上测试。
+- 本版本无数据库 schema 迁移：`packages/neuro-book/prisma/` 自上版部署以来零改动。
+- 真实外部 Provider 连接与完整 Agent/Workflow 浏览器流程验收仍未完成；不要把自动化门禁结果当成人工全流程验收。
+
 ## 0.10.2-canary（限量 canary） - 2026-09-08
 
 这一轮修复 0.10.1-canary Windows Portable 发行包在无构建机 `node_modules` 环境首轮启动失败的问题，并继续覆盖 Windows Product/Portable 运行边界。
