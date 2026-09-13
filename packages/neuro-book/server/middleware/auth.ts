@@ -1,5 +1,6 @@
 import {getCurrentUser, isAuthEnabled} from "nbook/server/utils/auth";
 import {PRODUCT_SHUTDOWN_PATH} from "@notnotype/neuro-book-contracts/product-runtime";
+import {BRIDGE_API_PREFIX} from "nbook/server/agent/bridge/bridge-auth";
 
 const publicApiPaths = new Set([
     "/api/app/version",
@@ -29,6 +30,15 @@ export function isPublicPath(pathname: string): boolean {
 }
 
 /**
+ * Agent Bridge 前缀不走浏览器 session：桥路由由 requireBridgeAuth 用
+ * loopback 地址 + bearer token 自行鉴权。边界收紧到精确前缀，
+ * 避免误豁免 /api/agent/bridge 之外的 agent 路由。
+ */
+function isBridgeApiPath(pathname: string): boolean {
+    return pathname === BRIDGE_API_PREFIX || pathname.startsWith(`${BRIDGE_API_PREFIX}/`);
+}
+
+/**
  * 判断请求是否绕过用户 session 鉴权。
  *
  * Product shutdown 不是公开路由；它只是不使用浏览器 session，随后仍由路由自身的
@@ -36,6 +46,7 @@ export function isPublicPath(pathname: string): boolean {
  */
 export function isUserSessionAuthExemptRequest(pathname: string, method: string): boolean {
     return isPublicPath(pathname)
+        || isBridgeApiPath(pathname)
         || (pathname === PRODUCT_SHUTDOWN_PATH && method.toUpperCase() === "POST");
 }
 

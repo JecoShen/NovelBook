@@ -24,4 +24,16 @@ describe("auth middleware user session exemptions", () => {
 
         vi.unstubAllGlobals();
     });
+
+    it("豁免 Agent Bridge 精确前缀，其余 agent 路由仍需登录", async () => {
+        vi.stubGlobal("defineEventHandler", (handler: unknown) => handler);
+        const {isUserSessionAuthExemptRequest} = await import("nbook/server/middleware/auth");
+
+        expect(isUserSessionAuthExemptRequest("/api/agent/bridge", "GET")).toBe(true);
+        expect(isUserSessionAuthExemptRequest("/api/agent/bridge/sessions", "POST")).toBe(true);
+        expect(isUserSessionAuthExemptRequest("/api/agent/bridge-evil", "GET")).toBe(false);
+        expect(isUserSessionAuthExemptRequest("/api/agent/sessions", "POST")).toBe(false);
+
+        vi.unstubAllGlobals();
+    });
 });
