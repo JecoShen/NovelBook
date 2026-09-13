@@ -1,3 +1,11 @@
+// NEURO_BOOK_BRIDGE_TOKEN 不进 git：从未跟踪的 .local/neuro-book-bridge-token（chmod 600）读取；
+// 缺文件即空串 → Agent Bridge 控制面 fail-closed（503 BRIDGE_DISABLED）。
+const fs = require('node:fs');
+const path = require('node:path');
+function readLocalSecret(rel) {
+  try { return fs.readFileSync(path.join(__dirname, rel), 'utf8').trim(); } catch { return ''; }
+}
+
 module.exports = {
   apps: [
     {
@@ -8,6 +16,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
+        NEURO_BOOK_BRIDGE_TOKEN: readLocalSecret('.local/neuro-book-bridge-token'),
         HOST: '0.0.0.0',
         NITRO_PORT: 3001,
         NEURO_BOOK_APPLICATION_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
