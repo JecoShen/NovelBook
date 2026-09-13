@@ -18,6 +18,8 @@ server/generated/prisma/
 server/agent/variables/generated-profile-variable-types.d.ts
 server/.agent/
 workspace/
+# 测试 global-setup 在 TEMP/TMP 缺失时把 app-cache 落到包根（mkdtemp 随机后缀）
+nbook-app-cache-*/
 
 # Package-local governance and runtime state
 .agent/
