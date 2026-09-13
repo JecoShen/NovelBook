@@ -94,8 +94,13 @@ async function openSourceAuthoringTypeProjectionSerialized(
   const projectionModule = await loadProjectionModule()
   const expectedSchema = projectionModule.AUTHORING_SDK_TYPE_PROJECTION_SCHEMA
   const expectedTsconfig = projectionModule.authoringSdkTsconfig()
+  // 输入清单收集依赖 sourceRoot 下的完整 SDK 源码；稀疏 fixture/物理 Workspace 里
+  // 源码可能不存在，此时降级为只比 schema/tsconfig——validateProjection 的逐项
+  // inputFiles 验证仍是内容正确性的最终把关（预检是增强，不是新的硬依赖）。
   const expectedInputs = typeof projectionModule.authoringSdkTypeProjectionInputFiles === 'function'
-    ? normalizeFiles(await projectionModule.authoringSdkTypeProjectionInputFiles({ sourceRoot: absoluteSourceRoot }))
+    ? await projectionModule.authoringSdkTypeProjectionInputFiles({ sourceRoot: absoluteSourceRoot })
+        .then(normalizeFiles)
+        .catch(() => null)
     : null
   const currentIdentityMatches = async (): Promise<boolean> => {
     const identity = await readCurrentIdentity(authoringRoot)
@@ -335,6 +340,13 @@ function isSpecifierResolutionFailure(error: unknown): boolean {
   const code = (error as NodeJS.ErrnoException).code
   if (code === 'ERR_MODULE_NOT_FOUND' || code === 'ERR_PACKAGE_IMPORT_NOT_DEFINED') return true
   const message = (error as { message?: unknown }).message
+  // Node 对 `../../` 形式的 imports target 报 ERR_INVALID_PACKAGE_TARGET 硬错
+  // （Bun 则静默忽略该条 imports，worker 线程的 tsx 走 Node 解析，2026-09-13
+  // lifecycle 测试实测）；message 精确限定登记的 #scripts 前缀，传递依赖的
+  // target 错误继续冒泡。
+  if (code === 'ERR_INVALID_PACKAGE_TARGET') {
+    return typeof message === 'string' && message.includes("for '#scripts/*'")
+  }
   return typeof message === 'string' && message.includes(`Cannot find module '${PROJECTION_SPECIFIER}'`)
 }
 
