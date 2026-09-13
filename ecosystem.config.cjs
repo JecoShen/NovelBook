@@ -13,6 +13,12 @@ module.exports = {
         NEURO_BOOK_APPLICATION_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
         NEURO_BOOK_STATE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
         NEURO_BOOK_CACHE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org/cache',
+        // 裸跑 index.mjs 也必须声明 Product 运行态身份（对齐 product-command.mjs 的注入）：
+        // 缺 PRODUCT_IMAGE_ROOT 时运行路径会误判为 Source 模式，去加载仓库源码投影
+        // （#scripts 解析失败 → Agent API 全 500，2026-09-13 事故）；REPOSITORY_ROOT
+        // 是 profile-dsl Import.path 在 Product Runtime 下的强制显式根。
+        NEURO_BOOK_REPOSITORY_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
+        NEURO_BOOK_PRODUCT_IMAGE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org/.output',
       },
       // ── 关闭 PM2 进程内 APM（pmx）：Bun 下每 800ms 烧掉半个核 ──
       // 2026-09-09 根因：进程 7.15 天累计烧 4 天 1 小时 CPU（均值 56.6%），空载、无请求、
