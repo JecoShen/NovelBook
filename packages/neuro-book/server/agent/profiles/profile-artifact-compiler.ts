@@ -7,6 +7,7 @@ import {setTimeout as sleep} from "node:timers/promises";
 import {build, type Metafile} from "esbuild";
 import {lock as lockFile, type LockOptions} from "proper-lockfile";
 import {normalizeAgentProfile} from "nbook/server/agent/profiles/define-agent-profile";
+import {PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS} from "nbook/server/agent/profiles/profile-authoring-sdk-specifiers";
 import type {AgentProfile, AgentProfileDefinition} from "nbook/server/agent/profiles/types";
 import {generateVariableTypes, VARIABLE_TYPES_FILE_NAME, type VariableTypeGenerationDiagnostic} from "nbook/server/agent/variables/generated-types";
 import {appLogger} from "nbook/server/app-logs/logger";
@@ -1258,6 +1259,9 @@ async function mapConcurrent<TInput, TOutput>(items: TInput[], concurrency: numb
  */
 const PROFILE_ARTIFACT_ALLOWED_SERVER_PREFIXES = [
     "server/agent/messages/",
+    // lore resolver 是 prepare 期只读查询服务，与 writer-writing-* 同构；
+    // profile-sdk/lore 子入口的 host 实现，闭包小且无 npm/网络/写依赖。
+    "server/agent/lore/",
     "server/agent/profiles/",
     "server/agent/session/",
     "server/agent/plan-mode-directory.ts",
@@ -1386,7 +1390,7 @@ async function compileProfileFile(profileRoot: string, compiledDir: string, file
         kind: "profile",
         root: profileRoot,
         entry: file.absolutePath,
-        allowedSdkSpecifiers: ["nbook/profile-sdk", "nbook/profile-sdk/writing"],
+        allowedSdkSpecifiers: PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS,
     });
     const temporaryStem = stableArtifactStem(file.fileName, /\.profile\.(tsx|ts|mjs|js)$/);
     const temporaryOutputPath = join(compiledDir, `${temporaryStem}.${randomUUID()}.building.mjs`);

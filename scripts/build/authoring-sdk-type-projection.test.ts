@@ -36,16 +36,17 @@ describe('Authoring SDK type projection', () => {
       .not.toBe(before.find(file => file.path === 'profile-sdk/session.ts')?.sha256)
     expect(after.map(file => file.path)).toContain('bun.lock')
 
-    // 当前应用包 SDK 表面：session.ts 已不从公开入口 re-export（上游 SDK 演进后的现状），
-    // 与 workspace/runtime-paths/lore 一样不属于投影输入闭包。
+    // 当前应用包 SDK 表面：lore/runtime-paths/session 是 PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS
+    // 登记的作者可用子入口，必须属于投影输入闭包；workspace.ts 因 @libsql native 闭包被有意排除。
+    // （此前本断言反向锁定「四者都不在投影」——那是清单断线事故，2026-09-13 writer/lore TS2307。）
     const checkoutInputs = await authoringSdkTypeProjectionInputFiles({ sourceRoot: CHECKOUT_APPLICATION_ROOT })
     expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/index.ts')
     expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/constructors.ts')
     expect(checkoutInputs.map(file => file.path)).toContain('bun.lock')
-    expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/session.ts')
+    expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/session.ts')
+    expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/runtime-paths.ts')
+    expect(checkoutInputs.map(file => file.path)).toContain('profile-sdk/lore.ts')
     expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/workspace.ts')
-    expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/runtime-paths.ts')
-    expect(checkoutInputs.map(file => file.path)).not.toContain('profile-sdk/lore.ts')
   })
 
   it('生成一次可移植的声明投影', async () => {
@@ -87,6 +88,8 @@ const sourceInputPaths = [
   'profile-sdk/contracts.ts',
   'profile-sdk/constructors.ts',
   'profile-sdk/writing.ts',
+  'profile-sdk/lore.ts',
+  'profile-sdk/runtime-paths.ts',
   'profile-sdk/jsx-runtime.ts',
   'profile-sdk/jsx-dev-runtime.ts',
   'profile-sdk/session.ts',

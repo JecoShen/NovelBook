@@ -25,6 +25,7 @@ import {resolveAgentInstallRoot, resolveApplicationRoot, resolveProjectAgentRoot
 import {resolveRuntimeArtifactCompilerContext} from "nbook/server/utils/runtime-artifact-compiler-context";
 import {runtimePathsFromEnv, type RuntimePaths} from "nbook/server/runtime/paths/runtime-paths";
 import {prepareAuthoringCacheLease} from "nbook/server/runtime/authoring-cache";
+import {PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS} from "nbook/server/agent/profiles/profile-authoring-sdk-specifiers";
 import {validateRuntimeArtifactAuthoring} from "nbook/server/utils/runtime-artifact-authoring-interface";
 
 const runtimeRequire = createRequire(import.meta.url);
@@ -552,7 +553,7 @@ async function runTypecheckFiles(filePaths: string[], target: ProfileTarget, opt
             kind: "profile",
             root: target.root,
             entry: filePath,
-            allowedSdkSpecifiers: ["nbook/profile-sdk", "nbook/profile-sdk/writing"],
+            allowedSdkSpecifiers: PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS,
         });
     }
     const variableTypes = await prepareVariableTypeEnvironment(target, options);

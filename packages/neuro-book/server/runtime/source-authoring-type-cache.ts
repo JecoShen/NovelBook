@@ -87,32 +87,52 @@ async function openSourceAuthoringTypeProjectionSerialized(
   const authoringRoot = resolve(cacheRoot, AUTHORING_TYPES_DIRECTORY)
   await mkdir(authoringRoot, { recursive: true })
 
-  const current = await readCurrent(authoringRoot, absoluteSourceRoot)
-  if (current) {
-    const release = await acquirePublishLock(authoringRoot)
-    try {
-      const lockedCurrent = await readCurrent(authoringRoot, absoluteSourceRoot)
-      if (lockedCurrent) {
-        await garbageCollect(authoringRoot, lockedCurrent.fingerprint, absoluteSourceRoot).catch(() => undefined)
-        return lockedCurrent
+  // 采纳预检：投影模块的廉价身份（schema/tsconfig/输入清单）必须先于内容验证比较。
+  // 构建后指纹含 dependencies（不构建算不出），采纳路径无法用它判过期；没有这道
+  // 预检时，投影生成器的清单类常量变更（不触碰任何既有输入文件内容）会让旧投影
+  // 被无限期采纳——2026-09-13 lore 子入口接入时实测复现。
+  const projectionModule = await loadProjectionModule()
+  const expectedSchema = projectionModule.AUTHORING_SDK_TYPE_PROJECTION_SCHEMA
+  const expectedTsconfig = projectionModule.authoringSdkTsconfig()
+  const expectedInputs = typeof projectionModule.authoringSdkTypeProjectionInputFiles === 'function'
+    ? normalizeFiles(await projectionModule.authoringSdkTypeProjectionInputFiles({ sourceRoot: absoluteSourceRoot }))
+    : null
+  const currentIdentityMatches = async (): Promise<boolean> => {
+    const identity = await readCurrentIdentity(authoringRoot)
+    if (!identity) return false
+    if (identity.projectionSchema !== expectedSchema || identity.tsconfig !== expectedTsconfig) return false
+    if (expectedInputs !== null && !sameFiles(expectedInputs, identity.inputFiles)) return false
+    return true
+  }
+
+  if (await currentIdentityMatches()) {
+    const current = await readCurrent(authoringRoot, absoluteSourceRoot)
+    if (current) {
+      const release = await acquirePublishLock(authoringRoot)
+      try {
+        if (await currentIdentityMatches()) {
+          const lockedCurrent = await readCurrent(authoringRoot, absoluteSourceRoot)
+          if (lockedCurrent) {
+            await garbageCollect(authoringRoot, lockedCurrent.fingerprint, absoluteSourceRoot).catch(() => undefined)
+            return lockedCurrent
+          }
+        }
       }
-    }
-    finally {
-      await release().catch(() => undefined)
+      finally {
+        await release().catch(() => undefined)
+      }
     }
   }
 
   const stagingRoot = join(authoringRoot, STAGING_DIRECTORY, randomUUID())
   try {
     await mkdir(stagingRoot, { recursive: true })
-    const projectionModule = await loadProjectionModule()
     // 构建结果只取决于内容身份（schema/tsconfig/输入清单，bun.lock 已含 TS 版本）；
     // 进程内 memo 让隔离 fixture/新 cacheRoot 免于重复 TS declaration emit（冷构建 10s+），
     // 命中时拷贝 memo 持有的完整快照并照常走验证发布，不产生未验证产物。
     // memo key 需要构建前输入清单；测试注入的投影模块可能不实现该成员，此时退化为无 memo 直建。
-    const preInputs = typeof projectionModule.authoringSdkTypeProjectionInputFiles === 'function'
-      ? normalizeFiles(await projectionModule.authoringSdkTypeProjectionInputFiles({ sourceRoot: absoluteSourceRoot }))
-      : null
+    // preInputs 复用采纳预检已算的输入清单；测试注入的最小投影模块未实现该成员时为 null，退化为无 memo 直建。
+    const preInputs = expectedInputs
     const memoKey = preInputs ? projectionBuildMemoKey(projectionModule, preInputs) : null
     let fingerprint: string
     const memoHit = memoKey ? readProjectionBuildMemo(memoKey) : null
@@ -148,7 +168,11 @@ async function openSourceAuthoringTypeProjectionSerialized(
 
     const release = await acquirePublishLock(authoringRoot)
     try {
-      const lockedCurrent = await readCurrent(authoringRoot, absoluteSourceRoot)
+      // 锁内重读同样要过身份预检：构建期间没人发布新投影时，current 仍是开头判定
+      // 已过期的那个，自洽验证通过不代表内容未过期。
+      const lockedCurrent = await currentIdentityMatches()
+        ? await readCurrent(authoringRoot, absoluteSourceRoot)
+        : null
       if (lockedCurrent) return lockedCurrent
 
       const targetRoot = join(authoringRoot, fingerprint)
@@ -332,6 +356,22 @@ function projectionFromRoot(root: string, fingerprint: string): SourceAuthoringT
     typeRoot: join(root, 'types'),
     nodeModulesRoot: join(root, 'node_modules'),
     tsconfigPath: join(root, 'tsconfig.json'),
+  }
+}
+
+/** 只读 current 指针与 manifest 的廉价身份字段，供采纳预检；不做逐文件内容验证。 */
+async function readCurrentIdentity(authoringRoot: string): Promise<Pick<ProjectionManifest, 'projectionSchema' | 'tsconfig' | 'inputFiles'> | null> {
+  try {
+    const pointer = parseCurrent(await readFile(join(authoringRoot, CURRENT_FILE), 'utf8'))
+    const manifest = parseManifest(await readFile(join(authoringRoot, pointer.fingerprint, 'manifest.json'), 'utf8'))
+    return {
+      projectionSchema: manifest.projectionSchema,
+      tsconfig: manifest.tsconfig,
+      inputFiles: manifest.inputFiles,
+    }
+  }
+  catch {
+    return null
   }
 }
 

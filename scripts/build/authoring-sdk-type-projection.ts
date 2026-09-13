@@ -12,13 +12,22 @@ import type {
 } from '#scripts/build/product-authoring-type-projection'
 import { containsSourceRootDescendant } from '#scripts/build/product-source-path-contract'
 
-export const AUTHORING_SDK_TYPE_PROJECTION_SCHEMA = 'nbook.authoring-sdk-type-projection/v2'
+// 投影产物指纹 = {schema, tsconfig, dependencies, inputFiles}：文件清单类常量（如
+// copyReachableDeclarations 入口队列）不在指纹内，改动它们必须 bump 本 schema，
+// 否则磁盘上的旧投影会被同指纹命中（2026-09-13 lore 子入口接入时实测复现）。
+export const AUTHORING_SDK_TYPE_PROJECTION_SCHEMA = 'nbook.authoring-sdk-type-projection/v3'
 
+// 清单必须与 PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS 登记的作者可用子入口对齐，
+// 并与 product-authoring-kit.ts 的 SDK 清单保持一致；漏掉的子入口会在 typecheck 报
+// TS2307（2026-09-13 writer/lore 事故）。workspace.ts 故意不在列（@libsql native 闭包）。
 const AUTHORING_SDK_EMITTER_ROOT_PATHS = [
   'profile-sdk/index.ts',
   'profile-sdk/contracts.ts',
   'profile-sdk/constructors.ts',
   'profile-sdk/writing.ts',
+  'profile-sdk/lore.ts',
+  'profile-sdk/runtime-paths.ts',
+  'profile-sdk/session.ts',
   'profile-sdk/jsx-runtime.ts',
   'profile-sdk/jsx-dev-runtime.ts',
   'variable-sdk/index.ts',
@@ -271,9 +280,14 @@ async function copyReachableDeclarations(
   ts: typeof TypeScript,
   sourceRoot: string,
 ): Promise<Set<string>> {
+  // 入口清单必须与 AUTHORING_SDK_EMITTER_ROOT_PATHS 的 profile-sdk 子入口保持一致；
+  // 只发射不登记会把子入口挡在投影外（2026-09-13 writer/lore TS2307）。
   const queue = [
     resolve(emittedRoot, 'profile-sdk', 'index.d.ts'),
     resolve(emittedRoot, 'profile-sdk', 'writing.d.ts'),
+    resolve(emittedRoot, 'profile-sdk', 'lore.d.ts'),
+    resolve(emittedRoot, 'profile-sdk', 'runtime-paths.d.ts'),
+    resolve(emittedRoot, 'profile-sdk', 'session.d.ts'),
     resolve(emittedRoot, 'profile-sdk', 'jsx-runtime.d.ts'),
     resolve(emittedRoot, 'profile-sdk', 'jsx-dev-runtime.d.ts'),
     resolve(emittedRoot, 'variable-sdk', 'index.d.ts'),

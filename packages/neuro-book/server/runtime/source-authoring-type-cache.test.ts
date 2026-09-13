@@ -19,20 +19,25 @@ const projectionMock = vi.hoisted(() => ({
   sourceVersion: 'one',
   failBuild: false,
   sourceRoots: [] as string[],
+  schema: 'nbook.authoring-sdk-type-projection/v2',
+  inputPaths: ['source-authoring-type-cache-input.txt'] as string[],
 }))
 // manifest 中记录的是相对 sourceRoot 的稳定逻辑路径；fixture 把它写进系统临时根里的
 // fake source root，不落仓库工作区（仓库临时根合同）。
 const MOCK_INPUT_PATH = 'source-authoring-type-cache-input.txt'
 
-function mockInputBytes(sourceRoot: string): Buffer {
-  return readFileSync(resolve(sourceRoot, MOCK_INPUT_PATH))
-}
-
 // 生产路径的说明符保持非常量间接（编译期不对 #scripts 静态链接），vi.mock 拦截不到；
 // 改用缓存模块的显式测试接缝注入。
 const projectionModuleMock = {
-  AUTHORING_SDK_TYPE_PROJECTION_SCHEMA: 'nbook.authoring-sdk-type-projection/v2',
+  get AUTHORING_SDK_TYPE_PROJECTION_SCHEMA() { return projectionMock.schema },
   authoringSdkTsconfig: () => `${JSON.stringify({ compilerOptions: { strict: true }, sourceVersion: projectionMock.sourceVersion })}\n`,
+  authoringSdkTypeProjectionInputFiles: async ({ sourceRoot }: { sourceRoot?: string } = {}) => {
+    const root = sourceRoot ?? ''
+    return await Promise.all(projectionMock.inputPaths.map(async (path) => {
+      const bytes = readFileSync(resolve(root, path))
+      return { path, sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length }
+    }))
+  },
   buildAuthoringSdkTypeProjection: async ({ targetRoot, sourceRoot }: { targetRoot: string, sourceRoot: string }) => {
     if (projectionMock.failBuild) throw new Error('injected projection failure')
     projectionMock.buildCalls += 1
@@ -61,11 +66,11 @@ const projectionModuleMock = {
         location: 'mock-sdk',
         topLevel: true,
       }],
-      inputFiles: [{
-        path: MOCK_INPUT_PATH,
-        sha256: createHash('sha256').update(mockInputBytes(sourceRoot)).digest('hex'),
-        bytes: mockInputBytes(sourceRoot).length,
-      }],
+      inputFiles: projectionMock.inputPaths.map(path => ({
+        path,
+        sha256: createHash('sha256').update(readFileSync(resolve(sourceRoot, path))).digest('hex'),
+        bytes: readFileSync(resolve(sourceRoot, path)).length,
+      })),
     }
   },
 }
@@ -83,15 +88,22 @@ afterEach(async () => {
   projectionMock.sourceVersion = 'one'
   projectionMock.failBuild = false
   projectionMock.sourceRoots = []
+  projectionMock.schema = 'nbook.authoring-sdk-type-projection/v2'
+  projectionMock.inputPaths = [MOCK_INPUT_PATH]
 })
 
 type FixtureRoots = Readonly<{ cacheRoot: AbsoluteFsPath, sourceRoot: AbsoluteFsPath }>
+
+let fixtureCounter = 0
 
 async function fixtureRoots(): Promise<FixtureRoots> {
   const cacheRoot = await mkdtemp(join(tmpdir(), 'nbook-source-authoring-types-'))
   const sourceRoot = await mkdtemp(join(tmpdir(), 'nbook-source-authoring-source-'))
   roots.push(cacheRoot, sourceRoot)
-  await writeFile(join(sourceRoot, MOCK_INPUT_PATH), projectionMock.sourceVersion, 'utf8')
+  // 输入内容带 fixture 唯一后缀：投影 memo 按内容身份跨 fixture 共享，
+  // 各用例要观察真实 build 就必须让 memoKey 天然不同。
+  fixtureCounter += 1
+  await writeFile(join(sourceRoot, MOCK_INPUT_PATH), `${projectionMock.sourceVersion}#${fixtureCounter}`, 'utf8')
   return { cacheRoot: absoluteFsPath(cacheRoot), sourceRoot: absoluteFsPath(sourceRoot) }
 }
 
@@ -152,7 +164,8 @@ describe('Source authoring type projection cache', () => {
 
     expect(rebuilt.fingerprint).toBe(first.fingerprint)
     expect(rebuilt.root).toBe(first.root)
-    expect(projectionMock.buildCalls).toBe(2)
+    // 内容身份未变，memo 快照经完整验证后恢复发布，与重新 build 同为合法恢复路径。
+    expect(projectionMock.buildCalls).toBe(1)
     await expect(readFile(join(rebuilt.root, 'manifest.json'), 'utf8')).resolves.toContain(SOURCE_AUTHORING_TYPE_CACHE_SCHEMA)
   })
 
@@ -356,6 +369,37 @@ describe('Source authoring type projection cache', () => {
 
     await expect(access(unknownRoot)).resolves.toBeUndefined()
     await expect(access(unsafeRoot)).resolves.toBeUndefined()
+  })
+
+  it('输入清单变化（既有输入内容不变）使已发布投影失效并重建', async () => {
+    const fixture = await fixtureRoots()
+    const first = await openFixture(fixture)
+    expect(projectionMock.buildCalls).toBe(1)
+
+    // 只扩清单、不动既有输入内容：复刻 2026-09-13 lore 子入口接入时
+    // 「清单常量变化不进指纹」的失效盲区。
+    const extraPath = 'source-authoring-type-cache-extra.txt'
+    await writeFile(join(fixture.sourceRoot, extraPath), 'extra\n', 'utf8')
+    projectionMock.inputPaths = [MOCK_INPUT_PATH, extraPath]
+
+    const second = await openFixture(fixture)
+
+    expect(second.fingerprint).not.toBe(first.fingerprint)
+    expect(projectionMock.buildCalls).toBe(2)
+    await expect(access(join(second.typeRoot, 'profile-sdk', 'index.d.ts'))).resolves.toBeUndefined()
+  })
+
+  it('投影 schema 变化使已发布投影失效并重建', async () => {
+    const fixture = await fixtureRoots()
+    const first = await openFixture(fixture)
+    expect(projectionMock.buildCalls).toBe(1)
+
+    projectionMock.schema = 'nbook.authoring-sdk-type-projection/v3'
+
+    const second = await openFixture(fixture)
+
+    expect(second.fingerprint).not.toBe(first.fingerprint)
+    expect(projectionMock.buildCalls).toBe(2)
   })
 
   it('生成失败时只清理本次 staging，不留下 staging 目录', async () => {

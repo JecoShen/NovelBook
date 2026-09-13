@@ -90,7 +90,10 @@ export async function buildProductAuthoringKit(outputRoot: string): Promise<Prod
     );
 
     const sdkEntries = [
-        {name: "profile-sdk", files: ["index.ts", "contracts.ts", "constructors.ts", "writing.ts", "jsx-runtime.ts", "jsx-dev-runtime.ts"]},
+        // 清单必须与 PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS 登记的作者可用子入口对齐；
+        // 漏掉的子入口在 Source 模式编译正常、Product 模式 typecheck 报 TS2307（2026-09-13 writer/lore 事故）。
+        // workspace.ts 故意不在列：其闭包含 @libsql native 依赖，Product Authoring Kit 无法承载。
+        {name: "profile-sdk", files: ["index.ts", "contracts.ts", "constructors.ts", "writing.ts", "lore.ts", "runtime-paths.ts", "session.ts", "jsx-runtime.ts", "jsx-dev-runtime.ts"]},
         {name: "variable-sdk", files: ["index.ts", "contracts.ts"]},
     ] as const;
     for (const sdk of sdkEntries) {
@@ -314,6 +317,9 @@ async function emitAuthoringTypes(typeRoot: string, applicationSourceRoot: strin
         resolve(applicationSourceRoot, "profile-sdk", "contracts.ts"),
         resolve(applicationSourceRoot, "profile-sdk", "constructors.ts"),
         resolve(applicationSourceRoot, "profile-sdk", "writing.ts"),
+        resolve(applicationSourceRoot, "profile-sdk", "lore.ts"),
+        resolve(applicationSourceRoot, "profile-sdk", "runtime-paths.ts"),
+        resolve(applicationSourceRoot, "profile-sdk", "session.ts"),
         resolve(applicationSourceRoot, "profile-sdk", "jsx-runtime.ts"),
         resolve(applicationSourceRoot, "profile-sdk", "jsx-dev-runtime.ts"),
         resolve(applicationSourceRoot, "variable-sdk", "index.ts"),
@@ -343,6 +349,9 @@ async function copyReachableDeclarations(emittedRoot: string, typeRoot: string):
     const entryFiles = [
         resolve(emittedRoot, "profile-sdk", "index.d.ts"),
         resolve(emittedRoot, "profile-sdk", "writing.d.ts"),
+        resolve(emittedRoot, "profile-sdk", "lore.d.ts"),
+        resolve(emittedRoot, "profile-sdk", "runtime-paths.d.ts"),
+        resolve(emittedRoot, "profile-sdk", "session.d.ts"),
         resolve(emittedRoot, "profile-sdk", "jsx-runtime.d.ts"),
         resolve(emittedRoot, "profile-sdk", "jsx-dev-runtime.d.ts"),
         resolve(emittedRoot, "variable-sdk", "index.d.ts"),
