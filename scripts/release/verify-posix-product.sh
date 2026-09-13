@@ -132,6 +132,29 @@ if [ "$ready" != true ]; then
     exit 1
 fi
 
+# Agent API 冒烟：覆盖 profile 编译状态与会话创建链路。2026-09-13 事故证明
+# 「进程存活 + 版本探活 + 浏览器 smoke」抓不到 Agent 路径故障（运行态模式误判
+# 导致 /api/agent/* 全 500，leader.default 编译产物 stale）。invocation 需要真实
+# 模型凭据，不在发布门禁内；session 创建本身已触发 profile 加载与 staleness 判定。
+agent_session="$SMOKE_ROOT/agent-session.json"
+if ! curl --fail --silent -X POST "http://127.0.0.1:$PORT/api/agent/sessions" \
+    -H "content-type: application/json" \
+    -d '{"profileKey":"leader.default"}' >"$agent_session"; then
+    echo "Product Agent API smoke失败：POST /api/agent/sessions 非 2xx" >&2
+    cat "$SMOKE_ROOT/product.log" >&2
+    exit 1
+fi
+if ! grep -q '"sessionId"' "$agent_session"; then
+    echo "Product Agent API smoke失败：创建会话响应缺少 sessionId" >&2
+    cat "$agent_session" >&2
+    exit 1
+fi
+if ! curl --fail --silent "http://127.0.0.1:$PORT/api/agent/sessions" >/dev/null; then
+    echo "Product Agent API smoke失败：GET /api/agent/sessions 非 2xx" >&2
+    cat "$SMOKE_ROOT/product.log" >&2
+    exit 1
+fi
+
 node --import tsx scripts/deploy/product-browser-smoke.ts \
     --url "http://127.0.0.1:$PORT" \
     --expected-version "$VERSION" \
