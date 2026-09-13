@@ -141,8 +141,9 @@ jobs:
   test:
     name: Full tests
     runs-on: ubuntu-latest
-    # 60 分钟不是放宽质量标准，是诊断性预算：worker=1 串行后墙钟拉长，
-    # 用于区分「内存抖动濒停」与「真挂死」（30 分钟超时四轮全灭，死前 7 分钟零输出）。
+    # worker=1 串行全量实测约 27 分钟；60 分钟保留两倍以上余量，
+    # 用于区分「内存抖动濒停」与「真挂死」（30 分钟超时曾四轮全灭，死前 7 分钟零输出）。
+    # 恢复并行或测试规模显著变化时应重测后回写此值。
     timeout-minutes: 60
     needs: changes
     if: needs.changes.outputs.tests == 'true'

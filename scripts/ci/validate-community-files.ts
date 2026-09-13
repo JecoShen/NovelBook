@@ -517,7 +517,8 @@ async function validateWorkflows(): Promise<void> {
     ensure(typecheck?.name?.toLocaleLowerCase("en-US").includes("advisory") !== true, "Typecheck job 不得标记 advisory");
     ensure(test?.name?.toLocaleLowerCase("en-US").includes("advisory") !== true, "Test job 不得标记 advisory");
     ensure(typecheck?.["timeout-minutes"] === 15, "Typecheck 超时必须为 15 分钟");
-    // 60 分钟是 worker=1 串行后的诊断性预算（区分抖动濒停与真挂死），收敛后应随形态定版回写。
+    // worker=1 串行全量实测约 27 分钟，60 分钟保留两倍以上余量以区分抖动濒停与真挂死；
+    // 恢复并行或测试规模显著变化时应重测后回写。
     ensure(test?.["timeout-minutes"] === 60, "Full tests 超时必须为 60 分钟");
     ensureRuntimeSetup(typecheck, "Code Baseline typecheck");
     ensureRuntimeSetup(test, "Code Baseline test");
