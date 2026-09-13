@@ -1,8 +1,8 @@
 # Project Status
 
-截至 2026-09-11。本文只记录仓库级现状；具体 TODO 以 GitHub Issue 为准，实现过程与证据以对应 Task 为准，当前版本发布载荷以 [`RELEASE.md`](RELEASE.md) 为准。
+截至 2026-09-13。本文只记录仓库级现状；具体 TODO 以 GitHub Issue 为准，实现过程与证据以对应 Task 为准，当前版本发布载荷以 [`RELEASE.md`](RELEASE.md) 为准。
 
-下方“核心模块状态”表中未在本轮标注更新日期的行，仍以其引用的 Task 文档为准，不代表 2026-09-11 重新取证。
+下方“核心模块状态”表中未在本轮标注更新日期的行，仍以其引用的 Task 文档为准，不代表对应日期重新取证；2026-09-13 的更新只覆盖门禁现状与发布缺口。
 
 ## 一句话结论
 
@@ -66,6 +66,7 @@ NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作
 - **门禁现状**：
   - 分层 typecheck 已恢复并入 `main`（此前被 `9076c082` 静默覆盖）。`bun run typecheck:layers` 走 `scripts/typecheck/non-desktop-runner.ts`，八层全绿、聚合退出码 0；最重的 `agent` 层峰值 RSS 1105056 KiB，位于 1310720 KiB 上限的 84%，无资源止损。命名带 `:layers` 后缀是因为根 workspace 是 orchestrator，`typecheck` 属于应用包，被 monorepo 边界合同列为根禁用名。
   - lint 门禁已恢复。`bun run lint` 基线为 **3428 error / 1517 warning，覆盖 2939 个文件**，`@stylistic/*` 残留为 0。配置是根目录单一 flat config，用 `@nuxt/eslint-config/flat` 的独立入口而非 `withNuxt`——后者会让全仓 lint 先依赖应用包跑通 `nuxt prepare`，而 `packages/nb-history` 这类非 Nuxt 包不该被应用构建态卡住。格式规则整体关闭，完整实测理由见 `eslint.config.mjs` 注释。error 级全部是语义问题，warning 级以 `vue/html-self-closing` 为主（排版类，不阻断）。
+  - Full tests 已首次完整跑绿并于 2026-09-13 定版超时预算。worker=1 串行全量实测约 27 分钟（首次完整绿 26m42s）；此前 30 分钟超时曾四轮全灭且死前 7 分钟零输出，无法区分内存抖动濒停与真挂死，故 `code-baseline.yml` 超时定为 60 分钟（两倍以上余量），`scripts/ci/validate-community-files.ts` 同步断言该值。恢复并行或测试规模显著变化时应重测后回写。
 
 ## 当前风险与验收缺口
 
@@ -73,6 +74,7 @@ NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作
 - **门禁覆盖**：2026-09-11 修复。此前 `Code Baseline` 与 `Workspace Packages` 只在 `pull_request` 上触发，而本仓多数改动直推 `main`，两者在 fork 的 `main` 上**从未运行过**；且它们的作用域探测步骤写死 `git merge-base origin/master HEAD`，而 fork 的 origin 没有 `master` 分支，即便触发也会在探测步整步失败并连带跳过 `typecheck` 与 `tests`。现两者均已加 `push: branches: [main]`，分支名改为取 PR 目标分支，`scripts/ci/workspace-workflows.test.ts` 增合同测试禁止再写死上游分支名；分支名单一取值见 `scripts/ci/default-branch.ts`。**governance:check 两项遗留已于 2026-09-12 清零**：`docs/tasks` 的 127 个条目系整树合并 `9076c082` 从上游老树回魂的副本——密封迁移（`514092ba`，992 映射）本就完整，canonical 分存 `.agents/tasks/`、`packages/neuro-book/.agents/tasks/`（`56a56c35` ownership 移交）与 `archived/`；逐字节校验 932/992 一致、其余为上游密封后对自家归档的演进（git 历史可溯），已按开发者批准删除副本并把 18 条入链改指 canonical；`t14-agent-profile-nav-lab-migration` 已按其失败排除扫描证据重建 README（标注非原始合同），Lab 排除事实在源码树零残留。
 - **CI 平台范围**：2026-09-12 收窄。本仓只部署到本机 linux-x64（无桌面端、无其他服务器平台），`Product Platform Checks` 的 push/PR 矩阵由 4 平台减为 `linux-x64-glibc` 单平台（`scripts/build/product-platform-matrix.ts` 的 `FORK_CI_TARGET_PLATFORMS`）；darwin 既有 owned-process 时序 flake 随之退出日常视线。平台注册表、基线测量 workflow（`product-runtime-baselines.yml`）与发布资产合同保持全平台不变——收窄的只是日常门禁，重新支持某平台时把它加回该集合即可。
 - **发布**：当前公开版本仍是 canary；stable、公开签名、后台 updater 与正式 Desktop 发行未完成。历史版本和精确资产身份见 `vitepress/locales/zh-Hans/changelog/` 与对应 Task。
+- **fork 发布门禁**：2026-09-13 登记，`manager:verify-public` 在 fork 上结构性不可通过——它要求 npm 公开 Manager 的 gitHead 与仓库构建输入零漂移，而上游自己的 i229 修复（build.mjs + bun.lock）落在其 npm 公开 gitHead `d0b93d2c` 之后，上游本身处于 mid-train，fork 无法替上游发 npm 包。0.10.3-canary 发布载荷已签入 `RELEASE.md`（`0f6ba2c3`）但版本未切；裁剪门禁属合同任务（触点：`scripts/release/release.ts`、release-assets 测试、`release-container.yml`、ADR 0015），待立项。生产已按 9/10 先例在不提升版本号的情况下部署 `0f6ba2c3`（版本串不变）。
 - **产品验收**：聚焦测试、typecheck 和构建不能代替浏览器、真实 Project Workspace、真实 Provider/Model 与作者视角写作 smoke。
 - **Desktop**：Windows x64 内部 beta 已有阶段证据；原生 Snap、完整 SSE/WebSocket 断连矩阵、macOS 实包和公开 Desktop 资产仍缺。
 - **写作产品线**：下一阶段是 dogfooding、章节写作与修订反馈、World Engine 体验，以及运行状态是否显式提交等产品决策。

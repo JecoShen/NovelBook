@@ -57,18 +57,22 @@ cd /www/wwwroot/book.neoshen.dpdns.org
 bun run --cwd packages/neuro-book nuxt:build
 ```
 
-`nuxt:build` 才产出 `.output`。应用包的 `build` 脚本只做 prepare/generate/系统资产/tsc，不产出可部署镜像。构建通过 `LocalProductPublisher` 原子替换仓库根的 `.output`，旧镜像退到 `.deploy/local-publish/previous`。
+`nuxt:build` 才产出 `.output`。应用包的 `build` 脚本只做 prepare/generate/系统资产/tsc，不产出可部署镜像。构建通过 `LocalProductPublisher` 原子替换仓库根的 `.output`：旧镜像只在发布过程中暂存到 `.deploy/local-publish/previous` 供发布失败时回退，验证成功后立即删除。checkout 部署不保留安装级回滚镜像，回滚只能重新构建旧 commit，因此切换前值得先做两步预演：用临时 State Root 和空闲端口试启新镜像确认能监听，再用 `ecosystem.config.cjs` 里的生产环境变量跑 `bun .output/server/commands/check-migrations.mjs`（纯断言、零写入，与服务启动时过的是同一道迁移门）。
 
-重新构建后，用同一份 PM2 配置重启。PM2 7.0.3 在这台机器上执行 `pm2 restart ecosystem.config.cjs --only book-neoshen --update-env` 曾触发过 `Cannot read properties of undefined (reading 'pm2_env')`，可用删除再启动作为可恢复路径：
+重新构建后，用同一份 PM2 配置重启。PM2 7.0.3 在这台机器上执行 `pm2 restart ecosystem.config.cjs --only book-neoshen --update-env` 曾触发过 `Cannot read properties of undefined (reading 'pm2_env')`，可用删除再启动作为可恢复路径。
+
+注意 delete 与 start 之间的窗口：`pm2 delete` 之后旧进程还要优雅停机约 50 秒，期间它持续刷新 `workspace/.nbook/agent/migrations/runtime.lease.lock/` 的 mtime（即报错里的 heartbeat）。在窗口内 `pm2 start` 会让新进程看到「owner pid 存在 + 心跳新鲜」而 fail-closed——`/api/app/version` 等路由返回 500，但进程不死、PM2 显示 online。标准序列是 delete 后先确认旧 pid 已退出，再清一次租约，然后才 start：
 
 ```bash
 cd /www/wwwroot/book.neoshen.dpdns.org
 pm2 delete book-neoshen
+# 等旧进程退出（ps -p <旧pid> 无输出）后：
+scripts/clean-stale-lease.sh --force --archive
 pm2 start ecosystem.config.cjs --only book-neoshen
 pm2 save
 ```
 
-重启前先确认没有迁移锁被其它存活进程持有。不带 `--force` 即为 dry-run；脚本不接受 `--dry-run`，传未知参数会以 2 退出：
+平时只想检查有没有迁移锁被其它存活进程持有时，不带 `--force` 运行即为 dry-run；脚本不接受 `--dry-run`，传未知参数会以 2 退出：
 
 ```bash
 scripts/clean-stale-lease.sh
