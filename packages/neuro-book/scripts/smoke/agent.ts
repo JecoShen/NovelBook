@@ -8,7 +8,12 @@ import {resolvePiModelsFromConfig} from "nbook/server/agent/harness/pi-runtime-r
 import {JsonlSessionRepository} from "nbook/server/agent/session/session-repo";
 import {messageText} from "nbook/server/agent/messages/message-utils";
 import {loadGlobalEffectiveConfigSync} from "nbook/server/config/config-service";
+import type {EffectiveConfig} from "nbook/server/config/types";
+import {createVariableDefinitionArtifactPathContextResolver} from "nbook/server/agent/variables/definition-artifact";
+import {resolveUserNbookRoot} from "nbook/server/workspace-files/workspace-runtime-root";
+import {resolveApplicationRoot} from "nbook/server/workspace-files/system-workspace-assets";
 import type {AgentInvocationResult} from "nbook/server/agent/harness/types";
+import type {ResolvedPiModel} from "nbook/server/agent/harness/model-resolver";
 
 const PROFILE_KEY = "leader.default";
 
@@ -37,6 +42,38 @@ export type AgentSmokeReport = {
 
 export function resolveAgentSmokeWorkspaceRoot(stamp = new Date().toISOString().replace(/[:.]/g, "-")): string {
     return path.resolve(resolveAgentTempRoot(), "agent-smoke", stamp);
+}
+
+/**
+ * 组装 smoke 的 Harness 构造参数。
+ *
+ * 两处容易随运行期硬化断线的接线，改 harness 合同时先改这里：
+ * - repo 模式没有 runtimePaths，harness 不会自动派生 variable definition 的 artifact 编译
+ *   上下文（pre_loop 报「Variable registry 缺少显式 artifact path context」）；
+ * - harness 调用期按 session workspace 读 .nbook/config.json，隔离 workspace 必须由
+ *   linkGlobalConfigIntoSmokeWorkspace 软链全局配置，否则报「Provider Config不存在」。
+ */
+export function createSmokeHarnessOptions(input: {
+    config: EffectiveConfig;
+    model: ResolvedPiModel;
+    workspaceRoot: string;
+    applicationRoot: string;
+}): ConstructorParameters<typeof NeuroAgentHarness>[0] {
+    return {
+        repo: new JsonlSessionRepository(input.workspaceRoot),
+        modelResolver: () => input.model,
+        runtimeResolver: () => resolvePiModelsFromConfig(input.config, input.model),
+        definitionArtifactPathContextProvider: createVariableDefinitionArtifactPathContextResolver(input.applicationRoot),
+    };
+}
+
+/** 软链而非复制全局配置进 smoke workspace：provider 密钥不落第二份磁盘副本，清理时随 workspace 一起消失。 */
+async function linkGlobalConfigIntoSmokeWorkspace(workspaceRoot: string): Promise<void> {
+    await fs.mkdir(path.join(workspaceRoot, ".nbook"), {recursive: true});
+    await fs.symlink(
+        path.join(resolveUserNbookRoot(), "config.json"),
+        path.join(workspaceRoot, ".nbook", "config.json"),
+    );
 }
 
 /**
@@ -97,7 +134,9 @@ export async function runAgentSmoke(options: AgentSmokeOptions): Promise<AgentSm
         ].join("\n");
         await harness.drainBackgroundTasks();
         return {
-            ok: result.status !== "error" && compactionStatus !== "error" && finalText.includes("smoke"),
+            // 链路 smoke 只断言确定部分：调用完成 + 模型回了非空内容。
+            // 不断言回复包含特定字面量——模型对同一 prompt 的合法复述不保证带原词（实测会翻成全中文）。
+            ok: result.status !== "error" && compactionStatus !== "error" && finalText.trim().length > 0,
             modelLabel: options.modelLabel,
             status: result.status,
             compactionStatus,
@@ -123,15 +162,18 @@ async function main(): Promise<void> {
         if (!apiKey) {
             throw new Error(`provider ${model.provider} 未配置 apiKey，请先在 workspace/.nbook/config.json 或设置页中填写真实 Provider 密钥`);
         }
+        const workspaceRoot = resolveAgentSmokeWorkspaceRoot();
+        await linkGlobalConfigIntoSmokeWorkspace(workspaceRoot);
         const report = await runAgentSmoke({
-            workspaceRoot: resolveAgentSmokeWorkspaceRoot(),
+            workspaceRoot,
             modelLabel: `${model.provider}/${model.id}`,
             compact: process.env.AGENT_SMOKE_COMPACT === "1",
-            createHarness: (workspaceRoot) => new NeuroAgentHarness({
-                repo: new JsonlSessionRepository(workspaceRoot),
-                modelResolver: () => model,
-                runtimeResolver: () => resolvePiModelsFromConfig(config, model),
-            }),
+            createHarness: (root) => new NeuroAgentHarness(createSmokeHarnessOptions({
+                config,
+                model,
+                workspaceRoot: root,
+                applicationRoot: resolveApplicationRoot(),
+            })),
         });
         console.log(report.output);
         if (!report.ok) process.exitCode = 1;

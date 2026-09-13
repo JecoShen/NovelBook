@@ -3,6 +3,7 @@ import {describe, expect, it, vi} from "vitest";
 import type {AgentInvocationResult} from "nbook/server/agent/harness/types";
 import {
     type AgentSmokeHarness,
+    createSmokeHarnessOptions,
     resolveAgentSmokeWorkspaceRoot,
     runAgentSmoke,
 } from "nbook/scripts/smoke/agent";
@@ -57,6 +58,22 @@ describe("Agent smoke 生命周期", () => {
 
         expect(harness.dispose).toHaveBeenCalledTimes(1);
         await expect(access(workspaceRoot)).rejects.toThrow();
+    });
+
+    // 钉住 2026-09-13 实测发现的两处断线之一：repo 模式必须显式提供
+    // definitionArtifactPathContextProvider，否则真实调用 pre_loop 即失败而 mock 测试照绿。
+    it("harness options 携带显式 artifact 编译上下文与固定模型解析器", () => {
+        const model = {provider: "faux", id: "faux-model"};
+        const options = createSmokeHarnessOptions({
+            config: {} as never,
+            model: model as never,
+            workspaceRoot: "/tmp/agent-smoke-options",
+            applicationRoot: "/tmp/agent-smoke-app",
+        });
+
+        expect(typeof options.definitionArtifactPathContextProvider).toBe("function");
+        expect(options.modelResolver?.({} as never, "leader.default")).toBe(model);
+        expect(options.repo).toBeDefined();
     });
 });
 
