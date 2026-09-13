@@ -1,15 +1,20 @@
 /** @jsxImportSource nbook/profile-sdk */
 /** @jsxRuntime automatic */
-import {isAbsolute, posix} from "node:path";
+import {existsSync} from "node:fs";
+import {readFile} from "node:fs/promises";
+import {isAbsolute, join, posix} from "node:path";
 import {Type, type Static} from "nbook/profile-sdk";
 import {defineAgentProfile} from "nbook/profile-sdk";
-import {builtin, plotReadBindings, toolset} from "nbook/profile-sdk";
+import {builtin, plotReadBindings, pluginTool, toolset} from "nbook/profile-sdk";
 import {WriterInitialSchema, WriterOutputSchema, WriterPayloadSchema} from "nbook/profile-sdk";
 import {AppendingSet, FileChangeNotice, HistorySet, If, Import, Message, ProfilePrompt, System} from "nbook/profile-sdk";
 import type {ProfileHomeContext, ProfilePrepareContext} from "nbook/profile-sdk";
 import {profileText} from "nbook/profile-sdk";
 import {DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey} from "nbook/profile-sdk/writing";
 import {DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey} from "nbook/profile-sdk/writing";
+import {DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords} from "nbook/profile-sdk/writing";
+import {resolveForChapter, renderInjectedMarkdown} from "nbook/profile-sdk/lore";
+import type {ReadyProjectSessionRef as LoreReadyProjectSessionRef} from "nbook/profile-sdk/lore";
 import {defineLowCodeForm, profileHomeResource} from "nbook/profile-sdk";
 import {defineProfileHome} from "nbook/profile-sdk";
 import type {ReadyProjectSessionRef} from "nbook/profile-sdk";
@@ -40,6 +45,7 @@ export const SettingsSchema = Type.Object({
     paragraphRhythm: Type.String(),
     wordCountControl: Type.String(),
     polishingWorkflow: Type.String(),
+    avoidWordsPreset: Type.String(),
     adultStylePrompt: Type.String(),
     fileChangeAwareness: Type.Union([
         Type.Literal("off"),
@@ -63,6 +69,7 @@ export const WriterSettingsForm = defineLowCodeForm({
         paragraphRhythm: DEFAULT_PARAGRAPH_RHYTHM,
         wordCountControl: DEFAULT_WORD_COUNT_CONTROL,
         polishingWorkflow: DEFAULT_POLISHING_WORKFLOW,
+        avoidWordsPreset: DEFAULT_AVOID_WORDS_PRESET,
         adultStylePrompt: "",
         fileChangeAwareness: "minimal",
     },
@@ -133,6 +140,18 @@ export const WriterSettingsForm = defineLowCodeForm({
             placeholder: "描述写完后如何复查和润色。",
         },
         {
+            path: "avoidWordsPreset",
+            component: "resource-preset",
+            label: "避讳词与禁用句式",
+            description: "写作时需要避免的词汇、句式和表达模式。",
+            placeholder: "选择避讳词预设",
+            resource: profileHomeResource({
+                directory: "avoid-words",
+                extension: ".md",
+                template: "在这里写入需要避免的词汇、句式和表达模式。",
+            }),
+        },
+        {
             path: "adultStylePrompt",
             component: "text",
             label: "成人风格增强",
@@ -193,6 +212,12 @@ async function initializeWriterHome(ctx: ProfileHomeContext): Promise<void> {
     for (const reference of references) {
         await ctx.home.writeText(legacyReferenceKeyToHomeKey(reference.key), renderReferenceResource(reference), {mode: "create"});
     }
+    // 内置默认避讳词 preset；用户可在 home 中派生自己的变体并经 settings.avoidWordsPreset 切换。
+    await ctx.home.writeText(DEFAULT_AVOID_WORDS_PRESET, [
+        "禁止使用以下词汇：一丝、不容置疑、不易察觉、几不可察。",
+        "禁止使用以下句式：他没有……，而是……；不是……，而是……；与其说……不如说是……。",
+        "如果想表达转折、对比或修正，直接写实际发生的动作、事实或判断，请换一种表述方式。",
+    ].join("\n"), {mode: "create"});
 }
 
 function renderStyleResource(style: Awaited<ReturnType<typeof loadWritingStylePresets>>[number]): string {
@@ -253,6 +278,8 @@ export default defineAgentProfile({
         builtin.world.execute("readonly"),
         // autonomous 模式:writer 只 spread Plot 读 bundle(Task 97 D7),可自取章节 brief 与场景/世界上下文;不含 save_* 写工具。
         ...plotReadBindings,
+        // 按额外实体名(trigger)追加检索 lore 卡片;实现注册在 server/agent/tools/lore-resolver-tools.ts。
+        pluginTool("lore_resolver_query"),
         builtin.result.main(),
     ),
     async context(ctx) {
@@ -266,10 +293,12 @@ export default defineAgentProfile({
 export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payload, Settings>) {
     const writingStyle = await buildWritingStyle({preset: ctx.settings.writingStylePreset, home: ctx.home});
     const writingReference = await buildWritingReference({preset: ctx.settings.writingReferencePreset, home: ctx.home});
+    const avoidWords = await buildAvoidWords({preset: ctx.settings.avoidWordsPreset, home: ctx.home});
     const narrativePerson = narrativePersonText(ctx.settings.narrativePerson);
     const customTopPrompt = ctx.settings.customTopSystemPrompt.trim();
     const adultStylePrompt = ctx.settings.adultStylePrompt.trim();
     const inputContext = await renderInputContext(ctx);
+    const chapterLoreContext = await renderChapterLoreContext(ctx);
     return (
         <ProfilePrompt>
             <System>
@@ -328,6 +357,7 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                         - **bash**：执行 CLI 工具（如 llmlint）
                         - **execute_world**：World Engine 只读查询（CodeAct 沙盒）
                         - **get_chapter_writer_brief / get_story_chapter / get_story_scene_context / get_scene_world_context / get_story_tree / get_story_thread / get_story_promise / get_story_decision**：Plot 只读。brief 已含本章 Promise 任务与未决决策警告；需要核对某条线的 payoffExpectation 或某条决策（D-x）的详情时，再用 get_story_promise / get_story_decision 按需查询
+                        - **lore_resolver_query**：按额外实体名（trigger）追加检索 lore 卡片，返回可直接复制到上下文的 Markdown 片段；写场景中如需补充设定可调用
                         - **report_result**：提交最终结果
 
                         核心约束：
@@ -382,9 +412,7 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                     </writing_style>
                     
                     <avoid_words>
-                        禁止使用以下词汇：一丝、不容置疑、不易察觉、几不可察。
-                        禁止使用以下句式：他没有……，而是……；不是……，而是……；与其说……不如说是……。
-                        如果想表达转折、对比或修正，直接写实际发生的动作、事实或判断，请换一种表述方式。
+                        ${avoidWords}
                     </avoid_words>
                     
                     <paragraph_rhythm>
@@ -450,9 +478,75 @@ export async function buildWriterPrompt(ctx: ProfilePrepareContext<Initial, Payl
                 <If condition={!ctx.invocation?.message}>
                     <Message>本轮没有收到 invoke_agent.message。不要写文件；请通过 report_result.result 要求调用方补充本轮写作任务。</Message>
                 </If>
+                <If condition={chapterLoreContext.length > 0}>
+                    <Message>{chapterLoreContext}</Message>
+                </If>
             </AppendingSet>
         </ProfilePrompt>
     );
+}
+
+/**
+ * 读取章节正文；文件不存在（新章起笔）或读取失败时返回空串，由调用方降级。
+ */
+async function readFileSafely(
+    relativePath: string,
+    project: LoreReadyProjectSessionRef,
+): Promise<string> {
+    const absPath = join(project.workspace.ref.projectRoot, relativePath);
+    if (!existsSync(absPath)) {
+        return "";
+    }
+    const content = await readFile(absPath, "utf8");
+    // 去掉 frontmatter 部分, 只留正文
+    return content.replace(/^---\n[\s\S]*?\n---\n?/u, "").trim();
+}
+
+/**
+ * 渲染 chapter-level lore 上下文 markdown, 供 writer prompt 注入。
+ * - payload 缺失 / project 缺失 / file 不存在 / < 100 chars → return ""
+ * - resolveForChapter 失败 / 0 命中 → return ""
+ * - renderInjectedMarkdown 失败 → return ""
+ * - 任何失败 → console.warn + return "" (per spec §4 降级)
+ */
+async function renderChapterLoreContext(
+    ctx: ProfilePrepareContext<Initial, Payload, Settings>,
+): Promise<string> {
+    const payload = ctx.invocation?.payload;
+    if (!payload?.path) {
+        return "";
+    }
+    const project = ctx.session.currentProject;
+    if (!project) {
+        return "";
+    }
+    try {
+        const chapterText = await readFileSafely(payload.path, project as LoreReadyProjectSessionRef);
+        if (chapterText.length < 100) {
+            return "";
+        }
+        const resolved = await resolveForChapter({
+            project: project as LoreReadyProjectSessionRef,
+            chapterText,
+            maxPaths: 8,
+        });
+        if (resolved.paths.length === 0) {
+            return "";
+        }
+        const injected = await renderInjectedMarkdown({
+            project: project as LoreReadyProjectSessionRef,
+            paths: resolved.paths,
+            maxChars: 8000,
+        });
+        return injected.markdown;
+    }
+    catch (error: unknown) {
+        console.warn(
+            "[writer.lore-injection] skipped:",
+            error instanceof Error ? error.message : String(error),
+        );
+        return "";
+    }
 }
 
 /**
