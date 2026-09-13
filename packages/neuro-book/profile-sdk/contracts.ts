@@ -398,13 +398,19 @@ export type ProfileTurnPlan = {
 
 export type AgentRuntimeHookStage = "prepareRun" | "prepareTurn" | "ingestTurn" | "prepareNextTurn" | "settleRun";
 export type AgentRuntimeHookResult = {
+    // 类型面与运行时 write-plan.ts 对齐：harness 内置 summarizer 本身就写
+    // session_update entry（projection 限定 activeLeaf），类型收窄为 custom-only
+    // 会让依赖运行时真实能力的 profile（如 overlay summarizer）编译失败。
     writePlans?: Array<{
         target: {sessionId: number};
         cause: string;
         durability?: "immediate" | "savePoint";
         ops: Array<{
             kind: "append";
-            entry: {type: "custom"; key: string; value: ProfileJsonValue};
+            projection?: true | {scope: "activeLeaf"; leafId: string | null};
+            entry:
+                | {type: "custom"; key: string; value: ProfileJsonValue}
+                | {type: "session_update"; updates: {title?: string; summary?: string}};
         }>;
     }>;
     runtimeState?: ProfileJsonValue;
