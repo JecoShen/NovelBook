@@ -12,13 +12,22 @@
 ```yaml
 retrieval:
   enabled: true
-  trigger: null
+  trigger: ["陆深", "lu-shen", "量化交易员"]
 ```
 
 字段语义：
 
-- `retrieval.enabled`：是否允许该节点进入 AI 自动检索候选。
-- `retrieval.trigger`：自然语言触发条件。为空表示不需要额外触发判断。
+- `retrieval.enabled`：是否允许该节点进入 AI 自动检索与注入候选。`false` 时 trigger 与 title 都不生效。
+- `retrieval.trigger`：字符串列表。writer 写章节时按「brief + 已有正文」做子串匹配（lore-resolver），命中才把该卡注入写作上下文（每章最多 8 张，按命中 trigger 数排序）；`lore_resolver_query` 工具共用同一索引。为空列表或 `null` 时，该条目只靠 title 命中。
+- title 是隐式 trigger：条目标题自动参与匹配，不要把 title 重复写进列表。title 带括号修饰时（如「站长（老赵）」），全串不会命中正文里的常用称呼，括号外的称呼（站长、老赵）仍要写进 trigger。
+- 只有 `character` / `location` / `faction` / `event` / `item` / `world` / `system` / `spec` 类别的条目会被索引；`instruction`、`note` 等类别的 `trigger` 不生效，留空即可。
+
+trigger 编写规范（写错比不写更糟：通用词误命中会挤占每章 8 个注入槽位、稀释注意力）：
+
+- **写专名**：角色名、别名、绰号、英文名；地名及别名；组织名及简称；关键道具、作品特定术语。
+- **不写通用词**：天气（台风）、情绪（暧昧）、动作（直播）、题材高频词（骑手/骗局）、元词（剧情/叙事/文风/爽点）。自问：这个词在别的人物、别的场景出现时，这张卡还该被注入吗？不该就不写。
+- **2 字词先过专名检验**：机制下限 2 字，但 2 字通用词是误命中重灾区。
+- **每条 3-6 个为宜**：覆盖常用称呼即可，不堆同义词。
 
 长期稳定的 profile-scoped 上下文选择不写在内容节点 frontmatter 中。它由 `agents/{profile}/context.md` 和 `agents/{profile}/generated.md` 管理。
 
