@@ -353,6 +353,9 @@ The desk's geometry is the same: cards and inputs use small radii, the toast use
 - **Footer:** default footer with cancel + confirm; `showFooter=false` to suppress.
 - **Overlay:** opaque (default) or transparent (workbench-internal). `closeOnOverlay` and `closeOnEsc` are both on by default; `busy` blocks both during a confirm-in-flight.
 - **Shadow:** the dialog's `0 12px 32px color-mix(in srgb, var(--shadow-color) 12%, transparent)` is the canonical "this is in front of the page."
+- **A11y semantics:** the surface always carries `role` + `aria-modal="true"`; the default header's title node is the `aria-labelledby` target (custom `header` slots name themselves), and `alertdialog` bodies are the `aria-describedby` target.
+- **The Destructive-Confirm Rule.** Deletion/overwrite confirmations never use the accent confirm. They use `role="alertdialog"`, a solid `--status-danger` confirm button labeled with the action itself (删除, not 确定), and a title that names the action (删除书籍, not 确认). JS path: `useDialog().confirm(message, title, {danger: true, confirmLabel})`; template path: `Dialog` with `role="alertdialog"` + `confirm-tone="danger"`.
+- **The Dirty-Draft Rule.** Leaving a dirty save panel — switching settings section/scope or closing the dialog — asks 保存 / 放弃 / 继续编辑 instead of silently dropping the draft. Loading or saving in flight blocks the leave outright.
 
 ### Notification (toast)
 

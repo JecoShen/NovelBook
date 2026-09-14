@@ -12,6 +12,7 @@ import NovelIdeObservabilitySettingsPanel from "nbook/app/components/novel-ide/s
 import NovelIdeWebSettingsPanel from "nbook/app/components/novel-ide/settings/NovelIdeWebSettingsPanel.vue";
 import {useNovelIdeStore} from "nbook/app/stores/novel-ide";
 import {useNotification} from "nbook/app/composables/useNotification";
+import {useDialog} from "nbook/app/composables/useDialog";
 import {useAuthSessionState} from "nbook/app/composables/useAuthSessionState";
 import {useThemeManager} from "nbook/app/composables/useThemeManager";
 import {ideThemeIds, themeMeta, type ThemeVars} from "nbook/app/utils/theme/theme-tokens";
@@ -52,6 +53,7 @@ const emit = defineEmits<{
 
 const novelIdeStore = useNovelIdeStore();
 const notification = useNotification();
+const {choose} = useDialog();
 const authSessionState = useAuthSessionState();
 const themeManager = useThemeManager();
 const {locale, setLocale, t} = useI18n();
@@ -394,13 +396,45 @@ function canLeaveCurrentPanel(): boolean {
 }
 
 /**
+ * 切换/关闭前的脏草稿守卫：dirty 时询问保存、放弃或继续编辑。
+ * 面板按分区 v-if 渲染，"放弃" 不做额外清理——卸载即丢弃草稿。
+ */
+async function confirmLeaveCurrentPanel(): Promise<boolean> {
+    if (!canLeaveCurrentPanel()) {
+        return false;
+    }
+    const panel = activeSavePanel.value;
+    if (!panel || !activeSaveDirty.value) {
+        return true;
+    }
+    const action = await choose(t("settings.unsavedChanges.message"), [
+        {label: t("settings.unsavedChanges.save"), value: "save", tone: "primary"},
+        {label: t("settings.unsavedChanges.discard"), value: "discard", tone: "danger"},
+        {label: t("settings.unsavedChanges.cancel"), value: "cancel"},
+    ], t("settings.unsavedChanges.title"));
+    if (action === "cancel") {
+        return false;
+    }
+    if (action === "discard") {
+        return true;
+    }
+    // 保存失败时面板保持 dirty，放弃本次切换，让用户先处理错误。
+    try {
+        await panel.saveSettings();
+    } catch {
+        return false;
+    }
+    return !panel.dirty;
+}
+
+/**
  * 选择设置页配置目标，不改变当前 IDE 打开的小说。
  */
-function selectScope(scope: SettingsScope): void {
+async function selectScope(scope: SettingsScope): Promise<void> {
     if (scope === activeScope.value) {
         return;
     }
-    if (!canLeaveCurrentPanel()) {
+    if (!await confirmLeaveCurrentPanel()) {
         return;
     }
     if (scope === "project" && !projectScopeAvailable.value) {
@@ -415,13 +449,13 @@ function selectScope(scope: SettingsScope): void {
 }
 
 /**
- * 选择配置分区；dirty 草稿会随面板切换自然丢弃。
+ * 选择配置分区；dirty 草稿先经 confirmLeaveCurrentPanel 守卫。
  */
-function selectSection(section: SettingsSection): void {
+async function selectSection(section: SettingsSection): Promise<void> {
     if (section === activeSection.value) {
         return;
     }
-    if (!canLeaveCurrentPanel()) {
+    if (!await confirmLeaveCurrentPanel()) {
         return;
     }
     activeSection.value = section;
@@ -492,8 +526,8 @@ function resetMonacoPreferences(): void {
 /**
  * 关闭设定弹窗。
  */
-function closeDialog(): void {
-    if (!canLeaveCurrentPanel()) {
+async function closeDialog(): Promise<void> {
+    if (!await confirmLeaveCurrentPanel()) {
         return;
     }
     emit("update:modelValue", false);

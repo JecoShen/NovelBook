@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IDE_THEME_HOST_CLASS } from "nbook/app/utils/theme/theme-tokens";
-import {computed, getCurrentInstance, onBeforeUnmount, onMounted, ref, watch} from "vue";
+import {computed, getCurrentInstance, onBeforeUnmount, onMounted, ref, useId, useSlots, watch} from "vue";
 /**
  * 通用对话框组件。
  *
@@ -85,6 +85,10 @@ const props = withDefaults(defineProps<{
     bodyClass?: string;
     /** 自定义 header 区域 class，用于工作台接管标题栏等场景 */
     headerClass?: string;
+    /** ARIA 角色；破坏性确认（删除/覆盖）用 alertdialog，要求用户明确决策 */
+    role?: "dialog" | "alertdialog";
+    /** 默认 footer 确认按钮色调；破坏性确认用 danger 实心 */
+    confirmTone?: "accent" | "danger";
 }>(), {
     title: "",
     size: "default",
@@ -99,6 +103,8 @@ const props = withDefaults(defineProps<{
     busy: false,
     bodyClass: "",
     headerClass: "",
+    role: "dialog",
+    confirmTone: "accent",
 });
 
 const emit = defineEmits<{
@@ -109,7 +115,14 @@ const emit = defineEmits<{
 }>();
 const instance = getCurrentInstance();
 const {t} = useI18n();
+const slots = useSlots();
 const overlayPointerButton = ref<number | null>(null);
+
+const dialogTitleId = `nb-dialog-title-${useId()}`;
+const dialogBodyId = `nb-dialog-body-${useId()}`;
+/** 自定义 header 由消费方自管可访问名；默认 header 且标题非空时才引用标题节点。 */
+const ariaLabelledby = computed(() => (!slots.header && props.showHeader && props.title ? dialogTitleId : undefined));
+const ariaDescribedby = computed(() => (props.role === "alertdialog" ? dialogBodyId : undefined));
 
 /**
  * 判断父组件是否监听了指定事件。
@@ -245,13 +258,17 @@ onMounted(() => {
                     class="nb-dialog-surface flex flex-col overflow-hidden rounded-lg border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-main)] transform"
                     :data-dialog-size="props.size"
                     data-dialog-surface
+                    :role="props.role"
+                    aria-modal="true"
+                    :aria-labelledby="ariaLabelledby"
+                    :aria-describedby="ariaDescribedby"
                     :style="{ width: resolvedWidth, height: resolvedHeight, maxHeight: resolvedMaxHeight }"
                 >
                     <!-- header 区域 -->
                     <div v-if="props.showHeader" class="flex items-center justify-between px-5 py-2 border-b border-[var(--border-color)]" :class="props.headerClass">
                         <slot name="header">
                             <div class="flex min-w-0 flex-1 items-center gap-3">
-                                <span class="min-w-0 flex-1 text-base font-semibold text-[var(--text-main)] leading-snug tracking-wide">{{ props.title }}</span>
+                                <span :id="dialogTitleId" class="min-w-0 flex-1 text-base font-semibold text-[var(--text-main)] leading-snug tracking-wide">{{ props.title }}</span>
                                 <slot name="header-extra"></slot>
                                 <button v-if="props.closable" class="flex items-center justify-center w-7 h-7 rounded-md text-[var(--text-muted)] bg-transparent border-none cursor-pointer transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" :disabled="props.busy" :aria-label="t('common.close')" :title="t('common.close')" @click="requestClose('close-button')">
                                     <span class="i-lucide-x w-4.5 h-4.5"></span>
@@ -261,7 +278,7 @@ onMounted(() => {
                     </div>
 
                     <!-- body 区域 -->
-                    <div class="flex-1 flex flex-col gap-4 overflow-y-auto px-5 py-4 text-[14px] leading-relaxed text-[var(--text-secondary)]" :class="props.bodyClass">
+                    <div :id="dialogBodyId" class="flex-1 flex flex-col gap-4 overflow-y-auto px-5 py-4 text-[14px] leading-relaxed text-[var(--text-secondary)]" :class="props.bodyClass">
                         <slot />
                     </div>
 
@@ -269,7 +286,7 @@ onMounted(() => {
                     <div v-if="props.showFooter" class="flex items-center justify-end gap-2.5 px-5 py-2 border-t border-[var(--border-color)] bg-transparent">
                         <slot name="footer" :confirm="handleConfirm" :cancel="() => requestClose('cancel')">
                             <button v-if="props.showCancel" class="inline-flex items-center justify-center h-8 px-4 rounded-md text-[13px] font-medium cursor-pointer border border-[var(--border-color)] bg-[var(--bg-input)] text-[var(--text-main)] transition-colors duration-200 hover:bg-[var(--bg-hover)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" :disabled="props.busy" @click="requestClose('cancel')">{{ t("common.cancel") }}</button>
-                            <button class="inline-flex items-center justify-center h-8 px-4 rounded-md text-[13px] font-medium cursor-pointer border border-transparent bg-[var(--accent-main)] text-[var(--text-inverse)] transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" :disabled="props.busy" @click="handleConfirm">{{ t("common.confirm") }}</button>
+                            <button class="inline-flex items-center justify-center h-8 px-4 rounded-md text-[13px] font-medium cursor-pointer border border-transparent text-[var(--text-inverse)] transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" :class="props.confirmTone === 'danger' ? 'bg-[var(--status-danger)]' : 'bg-[var(--accent-main)]'" :disabled="props.busy" @click="handleConfirm">{{ t("common.confirm") }}</button>
                         </slot>
                     </div>
                 </div>

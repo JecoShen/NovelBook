@@ -590,7 +590,7 @@ onMounted(() => {
             </div>
         </Dialog>
 
-        <Dialog v-model="deleteConfirmOpen" title="删除确认" width="420px" show-cancel :busy="actionBusy" @confirm="confirmDelete">
+        <Dialog v-model="deleteConfirmOpen" :title="deleteTarget?.kind === 'memory' ? '删除 Memory' : '删除事件'" width="420px" role="alertdialog" confirm-tone="danger" show-cancel :busy="actionBusy" @confirm="confirmDelete">
             <div class="text-sm leading-6 text-[var(--text-secondary)]">
                 确认删除「{{ deleteTarget?.label }}」吗？删除后会标记索引待更新。
             </div>

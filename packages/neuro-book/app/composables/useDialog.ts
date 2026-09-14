@@ -1,4 +1,4 @@
-import { createApp, type App, type ComponentPublicInstance, defineComponent, h, type InjectionKey, nextTick, ref, type VNodeRef } from "vue";
+import { createApp, type App, type ComponentPublicInstance, computed, defineComponent, h, type InjectionKey, nextTick, ref, type VNodeRef } from "vue";
 import Dialog from "nbook/app/components/common/Dialog.vue";
 import { IDE_THEME_HOST_CLASS } from "../utils/theme/theme-tokens";
 
@@ -16,6 +16,18 @@ interface DialogOptions {
     message: string;
     title?: string;
     defaultValue?: string;
+    /** 破坏性确认：实心 danger 按钮 + alertdialog 语义。 */
+    danger?: boolean;
+    /** 确认按钮文案；缺省回退 common.confirm。 */
+    confirmLabel?: string;
+}
+
+/**
+ * confirm 对话框的可选参数。
+ */
+export interface ConfirmDialogOptions {
+    danger?: boolean;
+    confirmLabel?: string;
 }
 
 interface ChooseDialogOptions {
@@ -99,8 +111,11 @@ function createDialogInstance(
         // 动态组件定义
         const DialogWrapper = defineComponent({
             setup() {
+                const {t: dialogT} = useI18n();
                 const visible = ref(true);
                 const inputValue = ref(options.defaultValue ?? "");
+                const cancelLabel = computed(() => dialogT("common.cancel"));
+                const confirmFallbackLabel = computed(() => dialogT("common.confirm"));
 
                 /**
                  * 确认逻辑。
@@ -181,6 +196,7 @@ function createDialogInstance(
                         );
                     }
 
+                    const dangerConfirmLabel = options.confirmLabel ?? "";
                     return h(Dialog, {
                         modelValue: visible.value,
                         "onUpdate:modelValue": (val: boolean) => {
@@ -189,15 +205,30 @@ function createDialogInstance(
                         title: options.title ?? "",
                         closable: options.type !== "alert",
                         closeOnOverlay: options.type !== "alert",
-                        showCancel: options.type !== "alert",
+                        showCancel: options.type !== "alert" && !options.danger,
                         closeOnEsc: true,
                         width: "400px",
                         teleportTarget: false,
+                        role: options.danger ? "alertdialog" : "dialog",
                         onConfirm,
                         onCancel,
                         onRequestClose: onCancel,
                     }, {
                         default: () => bodyContent,
+                        ...(options.danger ? {
+                            footer: () => [
+                                h("button", {
+                                    type: "button",
+                                    class: "inline-flex items-center justify-center h-8 px-4 rounded-md text-[13px] font-medium cursor-pointer border border-[var(--border-color)] bg-[var(--bg-input)] text-[var(--text-main)] transition-colors duration-200 hover:bg-[var(--bg-hover)] active:scale-95",
+                                    onClick: onCancel,
+                                }, cancelLabel.value),
+                                h("button", {
+                                    type: "button",
+                                    class: "inline-flex items-center justify-center h-8 px-4 rounded-md text-[13px] font-medium cursor-pointer border border-transparent bg-[var(--status-danger)] text-[var(--text-inverse)] transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95",
+                                    onClick: onConfirm,
+                                }, dangerConfirmLabel || confirmFallbackLabel.value),
+                            ],
+                        } : {}),
                     });
                 };
             },
@@ -392,9 +423,16 @@ export function useDialog() {
     /**
      * 确认对话框，替代 window.confirm。
      * 用户点击确定返回 true，取消返回 false。
+     * danger 用于删除/覆盖等破坏性操作：实心 danger 按钮 + alertdialog 语义。
      */
-    const confirm = (message: string, title?: string): Promise<boolean> => {
-        return createDialogInstance({ type: "confirm", message, title: title ?? t("dialog.confirmTitle") }, sourceApp) as Promise<boolean>;
+    const confirm = (message: string, title?: string, options?: ConfirmDialogOptions): Promise<boolean> => {
+        return createDialogInstance({
+            type: "confirm",
+            message,
+            title: title ?? t("dialog.confirmTitle"),
+            danger: options?.danger,
+            confirmLabel: options?.confirmLabel,
+        }, sourceApp) as Promise<boolean>;
     };
 
     /**

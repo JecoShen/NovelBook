@@ -128,7 +128,7 @@ async function renameCharacter(node: WorkspaceFileNode): Promise<void> {
  */
 async function deleteCharacter(node: WorkspaceFileNode): Promise<void> {
     const targetPath = node.path.endsWith("/index.md") ? node.path.slice(0, -"/index.md".length) : node.path;
-    if (!await confirm(t("ide.workspace.character.deleteConfirm", {title: displayTitle(node)}))) {
+    if (!await confirm(t("ide.workspace.character.deleteConfirm", {title: displayTitle(node)}), t("ide.workspace.character.deleteTitle"), {danger: true, confirmLabel: t("common.delete")})) {
         return;
     }
 

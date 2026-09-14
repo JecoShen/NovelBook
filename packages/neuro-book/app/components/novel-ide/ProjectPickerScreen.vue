@@ -315,7 +315,7 @@ const handleCreateNovel = async (): Promise<void> => {
  */
 const handleDeleteNovel = async (projectRoot: string, title: string): Promise<void> => {
     if (deleteRecoveryFor(projectRoot) || deleteBusyRoots.value.has(projectRoot)) return;
-    if (!await confirm(t("ide.bookshelf.deleteConfirm", {title}))) {
+    if (!await confirm(t("ide.bookshelf.deleteConfirm", {title}), t("ide.bookshelf.deleteBook"), {danger: true, confirmLabel: t("common.delete")})) {
         return;
     }
     deleteBusyRoots.value = new Set([...deleteBusyRoots.value, projectRoot]);

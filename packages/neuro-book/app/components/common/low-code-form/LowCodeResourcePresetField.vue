@@ -349,7 +349,7 @@ function normalizeSelectedKey(key: string): string {
                             <button
                                 v-if="resource.capabilities.remove"
                                 type="button"
-                                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] opacity-0 transition-opacity hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] disabled:pointer-events-none disabled:opacity-25 group-hover:opacity-100"
+                                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] opacity-0 transition-opacity hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger)] disabled:pointer-events-none disabled:opacity-25 group-hover:opacity-100"
                                 :disabled="!canRemoveOption(option.key)"
                                 title="删除资源"
                                 @click.stop="openDeleteDialog(option.key)"
@@ -411,7 +411,7 @@ function normalizeSelectedKey(key: string): string {
                 </template>
             </Dialog>
 
-            <Dialog v-model="deleteConfirmOpen" title="删除资源" width="420px" show-cancel @confirm="removeResource">
+            <Dialog v-model="deleteConfirmOpen" title="删除资源" width="420px" role="alertdialog" show-cancel @confirm="removeResource">
                 <div class="space-y-2">
                     <p class="text-sm text-[var(--text-main)]">确定删除这个资源吗？</p>
                     <p class="rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-2 text-xs text-[var(--text-secondary)]">
@@ -422,7 +422,7 @@ function normalizeSelectedKey(key: string): string {
                     <button type="button" class="inline-flex h-8 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-4 text-[13px] font-medium text-[var(--text-main)] hover:bg-[var(--bg-hover)]" @click="cancel">
                         取消
                     </button>
-                    <button type="button" class="inline-flex h-8 items-center justify-center rounded-md border border-[var(--danger)] px-4 text-[13px] font-medium text-[var(--danger)] hover:bg-[var(--danger-soft)]" @click="removeResource">
+                    <button type="button" class="inline-flex h-8 items-center justify-center rounded-md border border-transparent bg-[var(--status-danger)] px-4 text-[13px] font-medium text-[var(--text-inverse)] transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95" @click="removeResource">
                         确认删除
                     </button>
                 </template>

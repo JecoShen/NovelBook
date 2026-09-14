@@ -1542,6 +1542,7 @@ const loadSession = async (
                 const discard = await confirm(
                     "当前草稿无法安全保存。返回编辑会保留正文；放弃草稿后才继续切换对话。",
                     "草稿未保存",
+                    {danger: true, confirmLabel: "放弃草稿"},
                 );
                 if (!discard || !acceptsLoad()) {
                     const hasStableSession = previousSessionId !== null

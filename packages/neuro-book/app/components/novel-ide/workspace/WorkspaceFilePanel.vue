@@ -243,14 +243,14 @@ async function deleteNode(node: WorkspaceFileNode): Promise<void> {
     }
 
     const label = node.title || node.path;
-    if (!await confirm(t("ide.workspace.filePanel.deleteConfirm", {label}))) {
+    if (!await confirm(t("ide.workspace.filePanel.deleteConfirm", {label}), t("ide.workspace.filePanel.deleteTitle"), {danger: true, confirmLabel: t("common.delete")})) {
         return;
     }
 
     try {
         await store.deleteWorkspacePath(node.path, false);
     } catch (error) {
-        if (!node.isDirectory || !await confirm(t("ide.workspace.filePanel.deleteDirectoryRecursiveConfirm"))) {
+        if (!node.isDirectory || !await confirm(t("ide.workspace.filePanel.deleteDirectoryRecursiveConfirm"), t("ide.workspace.filePanel.deleteDirectoryTitle"), {danger: true, confirmLabel: t("common.delete")})) {
             throw error;
         }
         await store.deleteWorkspacePath(node.path, true);
