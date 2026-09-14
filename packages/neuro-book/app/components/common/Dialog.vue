@@ -253,7 +253,7 @@ onMounted(() => {
                             <div class="flex min-w-0 flex-1 items-center gap-3">
                                 <span class="min-w-0 flex-1 text-base font-semibold text-[var(--text-main)] leading-snug tracking-wide">{{ props.title }}</span>
                                 <slot name="header-extra"></slot>
-                                <button v-if="props.closable" class="flex items-center justify-center w-7 h-7 rounded-md text-[var(--text-muted)] bg-transparent border-none cursor-pointer transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" :disabled="props.busy" @click="requestClose('close-button')">
+                                <button v-if="props.closable" class="flex items-center justify-center w-7 h-7 rounded-md text-[var(--text-muted)] bg-transparent border-none cursor-pointer transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" :disabled="props.busy" :aria-label="t('common.close')" :title="t('common.close')" @click="requestClose('close-button')">
                                     <span class="i-lucide-x w-4.5 h-4.5"></span>
                                 </button>
                             </div>

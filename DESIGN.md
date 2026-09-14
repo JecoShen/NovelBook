@@ -10,31 +10,31 @@ colors:
   paper-sidebar: "#ebe0c8"
   paper-subtle: "color-mix(in srgb, #ebe0c8 78%, #fdf6e3)"
   ink-main: "#433422"
-  ink-secondary: "#786450"
-  ink-muted: "#b8a896"
+  ink-secondary: "#5e4d3d"
+  ink-muted: "#6b5a48"
   ink-inverse: "#ffffff"
-  warm-accent: "#d97743"
-  warm-accent-soft: "rgba(217, 119, 67, 0.15)"
-  warm-accent-text: "#b85a2a"
-  warm-accent-border: "color-mix(in srgb, #d97743 46%, #d6c7a9)"
-  status-warning: "#b86b00"
-  status-warning-soft: "rgba(184, 107, 0, 0.15)"
-  status-warning-border: "rgba(184, 107, 0, 0.34)"
-  status-success: "#6f7f35"
-  status-success-soft: "rgba(111, 127, 53, 0.16)"
-  status-success-border: "rgba(111, 127, 53, 0.38)"
-  status-danger: "#a34d3f"
-  status-danger-soft: "rgba(163, 77, 63, 0.13)"
-  status-danger-border: "rgba(163, 77, 63, 0.34)"
-  status-info: "#4f6f73"
-  status-info-soft: "rgba(79, 111, 115, 0.14)"
-  status-info-border: "rgba(79, 111, 115, 0.35)"
+  warm-accent: "#bd5a26"
+  warm-accent-soft: "rgba(189, 90, 38, 0.15)"
+  warm-accent-text: "#a95327"
+  warm-accent-border: "color-mix(in srgb, #bd5a26 68%, #d6c7a9)"
+  status-warning: "#915400"
+  status-warning-soft: "rgba(145, 84, 0, 0.15)"
+  status-warning-border: "rgba(145, 84, 0, 0.34)"
+  status-success: "#5b682b"
+  status-success-soft: "rgba(91, 104, 43, 0.16)"
+  status-success-border: "rgba(91, 104, 43, 0.38)"
+  status-danger: "#a04c3e"
+  status-danger-soft: "rgba(160, 76, 62, 0.13)"
+  status-danger-border: "rgba(160, 76, 62, 0.34)"
+  status-info: "#4b6a6e"
+  status-info-soft: "rgba(75, 106, 110, 0.14)"
+  status-info-border: "rgba(75, 106, 110, 0.35)"
   editor-surface: "#fbf5e7"
   source-surface: "#fdf6e3"
   source-text: "#586e75"
-  source-muted: "#93a1a1"
+  source-muted: "#829292"
   shadow-base: "#0f172a"
-  selection-warm: "rgba(217, 119, 67, 0.28)"
+  selection-warm: "rgba(189, 90, 38, 0.28)"
   toolbar-glass: "rgba(253, 246, 227, 0.92)"
   chat-ai-surface: "#f8efdc"
 typography:
@@ -163,19 +163,19 @@ The product is multi-theme by design, single-system by contract: every theme res
 
 ### Primary
 
-- **Warm Accent** (`#d97743`, also `--accent-main`): the one warm hue on the desk. Used for the active sidebar item, the primary button, the selected chip border, the text-selection background. It is the only color allowed to feel "lit." Appears on at most 5–10% of any given screen; its rarity is the point.
-- **Warm Accent — Soft** (`rgba(217, 119, 67, 0.15)`, also `--accent-bg`): the warm accent at 15% opacity. Used for selected-row backgrounds, soft prompt cards, gentle emphasis that should not compete with the text on top of it.
-- **Warm Accent — Text** (`#b85a2a`, also `--accent-text`): the warm accent darkened. Used for links and emphasis inside body text where the full accent would overpower the sentence.
-- **Warm Accent — Border** (`color-mix(in srgb, #d97743 46%, #d6c7a9)`, also `--border-accent`): the warm accent blended toward the edge color. Used for selected borders, focus rings on the accent path, and the active node outline in tree views.
+- **Warm Accent** (`#bd5a26`, also `--accent-main`): the one warm hue on the desk. Used for the active sidebar item, the primary button, the selected chip border, the text-selection background. It is the only color allowed to feel "lit." Appears on at most 5–10% of any given screen; its rarity is the point. Deepened from the original `#d97743` so white button text meets the contrast floor.
+- **Warm Accent — Soft** (`rgba(189, 90, 38, 0.15)`, also `--accent-bg`): the warm accent at 15% opacity. Used for selected-row backgrounds, soft prompt cards, gentle emphasis that should not compete with the text on top of it.
+- **Warm Accent — Text** (`#a95327`, also `--accent-text`): the warm accent darkened. Used for links and emphasis inside body text where the full accent would overpower the sentence.
+- **Warm Accent — Border** (`color-mix(in srgb, #bd5a26 68%, #d6c7a9)`, also `--border-accent`): the warm accent blended toward the edge color. Used for selected borders, focus rings on the accent path, and the active node outline in tree views. The 68% mix keeps the ring at or above 3:1 against the panel.
 
 ### Status
 
 Status colors are **roles**, not colors. The same hue family maps to different roles across the eight themes (Sepia's warning is amber, Dracula's warning is pale yellow); the role does not change. Pick by intent, not by name.
 
-- **Warning** (`#b86b00` on Sepia, also `--status-warning`): draft, pending review, unsaved, diagnostic, placeholder. Use `--status-warning` for the text, `--status-warning-soft` for the chip background, `--status-warning-border` for the chip border.
-- **Success** (`#6f7f35` on Sepia, also `--status-success`): complete, saved, synced, resolved, validated.
-- **Danger** (`#a34d3f` on Sepia, also `--status-danger`): error, deletion, conflict, unrecoverable failure.
-- **Info** (`#4f6f73` on Sepia, also `--status-info`): running, referenced, pending, neutral explanation.
+- **Warning** (`#915400` on Sepia, also `--status-warning`): draft, pending review, unsaved, diagnostic, placeholder. Use `--status-warning` for the text, `--status-warning-soft` for the chip background, `--status-warning-border` for the chip border.
+- **Success** (`#5b682b` on Sepia, also `--status-success`): complete, saved, synced, resolved, validated.
+- **Danger** (`#a04c3e` on Sepia, also `--status-danger`): error, deletion, conflict, unrecoverable failure.
+- **Info** (`#4b6a6e` on Sepia, also `--status-info`): running, referenced, pending, neutral explanation.
 - **Accent**: this is not a separate hue — it is the role of the warm accent when it represents "this is the active item." A selected row is `accent`, not `info`.
 
 ### Neutral — Paper & Ink
@@ -189,8 +189,8 @@ Status colors are **roles**, not colors. The same hue family maps to different r
 - **Paper Edge** (`#d6c7a9`, also `--border-color`): the standard border. Used for borders, dividers, input strokes.
 - **Paper Edge — Strong** (`#cfbc96`, also `--border-strong`): the strong border. Used for hover, focus, drag handles.
 - **Ink Main** (`#433422`, also `--text-main`): the body ink. Used for body, headings, important content.
-- **Ink Secondary** (`#786450`, also `--text-secondary`): the secondary ink. Used for summaries, subtitles, ordinary secondary information.
-- **Ink Muted** (`#b8a896`, also `--text-muted`): the muted ink. Used for placeholders, weak hints, default icons, ordinals.
+- **Ink Secondary** (`#5e4d3d`, also `--text-secondary`): the secondary ink. Used for summaries, subtitles, ordinary secondary information.
+- **Ink Muted** (`#6b5a48`, also `--text-muted`): the muted ink. Used for placeholders, weak hints, default icons, ordinals. Muted sits at the contrast floor (4.5:1); secondary stays one step darker — the hierarchy is preserved by depth, not by fading muted below legibility.
 - **Ink Inverse** (`#ffffff`, also `--text-inverse`): the inverse ink. Used only on accent and status solid backgrounds (the warm-accent button, the danger confirm).
 
 ### Editor & Source
@@ -198,12 +198,12 @@ Status colors are **roles**, not colors. The same hue family maps to different r
 - **Editor Surface** (`#fbf5e7`, also `--editor-bg`): the long-form editor's paper. Used for the Markdown Studio / TipTap canvas and the preview pane.
 - **Source Surface** (`#fdf6e3`, also `--source-bg`): the source-code paper. Used for code blocks, Monaco containers.
 - **Source Text** (`#586e75`, also `--source-text`): the source-code ink. Used for code body, syntax foreground.
-- **Source Muted** (`#93a1a1`, also `--source-muted`): the source-code muted. Used for line numbers, weak tokens, editor auxiliary information.
+- **Source Muted** (`#829292`, also `--source-muted`): the source-code muted. Used for line numbers, weak tokens, editor auxiliary information.
 
 ### Effects
 
 - **Shadow Base** (`#0f172a`, also `--shadow-color`): the shadow ink. **Never** use a fixed shadow color anywhere — always `color-mix(in srgb, var(--shadow-color) 14%, transparent)` or similar. The shadow is the room's darkness; the room is always the same darkness, only the opacity moves.
-- **Selection Warm** (`rgba(217, 119, 67, 0.28)`, also `--selection-bg`): the text-selection tint. Used by `.novel-ide-theme ::selection`.
+- **Selection Warm** (`rgba(189, 90, 38, 0.28)`, also `--selection-bg`): the text-selection tint. Used by `.novel-ide-theme ::selection`.
 
 ### Component-Layer
 
@@ -234,6 +234,8 @@ These are domain identification, not status. They do not enter the 36-variable s
 ### Named Rules
 
 - **The Same-Desk Rule.** Every theme resolves the same 36 variables. The 8 lamps never introduce a new variable; they only change the values of existing ones. If a feature needs a color that no variable covers, register the variable in `theme-tokens.ts`, do not hardcode it.
+- **The Contrast-Floor Rule.** Every built-in theme passes the registered contrast contract in `app/utils/theme/theme-contrast.test.ts`: text (including muted and placeholders) ≥ 4.5:1 on every chrome surface, inverse button text ≥ 4.5:1 on `--accent-main` and `--status-danger`, status text ≥ 4.5:1 on the panel and on its own soft chip background, non-text indicators (active marks, focus ring, `--border-accent`) ≥ 3:1, source-muted ≥ 3:1. Changing a built-in value or adding a built-in theme is a contract change — the gate must stay green. Custom user themes are author assets and import leniently; the floor binds the eight lamps, not the author's own experiments.
+- **The Focus-Ring Rule.** Keyboard focus is always visible: a 2 px `--border-accent` outline with a 2 px offset on `:focus-visible`, registered globally in `theme-vars.css` (the CSS reset removes the browser default, so the desk owns the ring). Components do not remove it; a local affordance (accent focus border on inputs, selected-row treatment) may supplement it, and only a deliberate, equally visible alternative may replace it. The ring color follows the element's theme host — inside `.novel-ide-theme` it is the active lamp, outside it falls back to Sepia.
 - **The Role-Not-Color Rule.** `warning` / `success` / `danger` / `info` / `accent` are roles, not names. Amber is a warning when it says "unsaved draft"; amber is an accent when it says "this is the active item." Pick by intent.
 - **The No-Hardcode Rule.** No business component writes `bg-gray-100`, `text-amber-700`, `border-rose-500/30`, `dark:`, `bg-black/5`, or a fixed hex / rgba. The exception list is tests, the reference chip palette above, and external asset previews.
 - **The Reference-Chip Exception.** The reference chip palette is the only domain-identification color set. It must not enter the 36-variable set, and it must not be used to color a status, a button, or a generic UI element.
@@ -388,6 +390,7 @@ The signature component is not a single visual element; it is the **Workbench Ch
 - **Do** draw the Desktop title bar (36 px) only when `window.neuroBookDesktop` is truthy. The B/S path does not draw a fake title bar.
 - **Do** use `useResizablePanel` for any panel that the user resizes. The host owns the size; the panel emits `update:width` / `update:height`.
 - **Do** route front-end API errors through `resolveApiErrorMessage(error, fallback)`. Use `useNotification()` for cross-entry, post-action, and post-dialog feedback. Use local `error` state for the form's own recoverable error.
+- **Do** rely on the global `:focus-visible` ring for keyboard focus. Icon-only buttons get their accessible name from the wrapping `Tooltip` (it injects `aria-label` when the trigger has no text and no name) or from an explicit `aria-label` — never ship a nameless icon button.
 
 ### Don't
 
@@ -402,4 +405,5 @@ The signature component is not a single visual element; it is the **Workbench Ch
 - **Don't** invent a new shadow color. The shadow base is `--shadow-color`; the variation is opacity.
 - **Don't** add a new `z-index` value. Use the registered scale. Notification is 9800. If you need a new layer, register it in this file first.
 - **Don't** claim a shadow is "important." Importance is a status color or a typography change, not a shadow.
+- **Don't** write `outline-none` on an interactive element without an equally visible, registered replacement affordance. The reset already removed the browser ring; the global `:focus-visible` rule is the desk's ring — suppressing it strands keyboard authors.
 - **Don't** ship visual evidence you did not verify. The product's `RELEASE.md` and `PROJECT-STATUS.md` already record what was tested; future work must not invent evidence that does not exist.

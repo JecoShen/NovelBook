@@ -15,7 +15,7 @@ export function applyMonacoDiffTheme(monacoApi: MonacoEditorApi, theme: IdeTheme
     const resolvedTheme = resolveTheme(theme, novelIdeStore.customThemes);
     const themeName = `neuro-book-diff-${theme.replace(/[^a-z0-9-]/gi, "-")}`;
     monacoApi.editor.defineTheme(themeName, buildMonacoTheme(theme, resolvedTheme.appearance, {
-        accent: cssVars.getPropertyValue("--accent-main").trim() || "#3b82f6",
+        accent: cssVars.getPropertyValue("--accent-main").trim() || "#1e6ff5",
         background: cssVars.getPropertyValue("--source-bg").trim() || "#1f1f1f",
         border: cssVars.getPropertyValue("--border-color").trim() || "#2b3340",
         foreground: cssVars.getPropertyValue("--source-text").trim() || "#f3f4f6",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useEventListener} from "@vueuse/core";
-import {cloneVNode, computed, isVNode, nextTick, onBeforeUnmount, onMounted, ref, useId, useSlots, type VNode} from "vue";
+import {cloneVNode, Comment, computed, isVNode, nextTick, onBeforeUnmount, onMounted, ref, Text, useId, useSlots, type VNode} from "vue";
 import {IDE_THEME_HOST_CLASS} from "nbook/app/utils/theme/theme-tokens";
 import {
     computeTooltipPosition,
@@ -39,6 +39,48 @@ const teleportTarget = computed<HTMLElement | string>(() => {
 const hasContent = computed(() => props.text.trim().length > 0);
 
 /**
+ * 判断触发元素子树是否自带可见文本。组件类型无法静态断定渲染内容,
+ * 保守视为「有文本」以免 aria-label 覆盖可见命名(WCAG 2.5.3 Label in Name)。
+ */
+function subtreeHasText(node: VNode): boolean {
+    if (node.type === Comment) {
+        return false;
+    }
+    if (node.type === Text) {
+        return typeof node.children === "string" && node.children.trim().length > 0;
+    }
+    if (typeof node.type !== "string") {
+        return true;
+    }
+    const children = node.children;
+    if (typeof children === "string") {
+        return children.trim().length > 0;
+    }
+    if (Array.isArray(children)) {
+        return children.some((child) => isVNode(child) && subtreeHasText(child));
+    }
+    return false;
+}
+
+/**
+ * icon-only 触发元素没有可见文本时,tooltip 文案就是它的动作名,
+ * 直接注入为 aria-label;已有 aria-label/aria-labelledby 或自带文本的触发元素不动。
+ */
+function resolveInjectedLabel(node: VNode): string | undefined {
+    if (!hasContent.value || node.type === Comment || subtreeHasText(node)) {
+        return undefined;
+    }
+    const nodeProps = (node.props ?? {}) as Record<string, unknown>;
+    for (const key of ["aria-label", "aria-labelledby"]) {
+        const value = nodeProps[key];
+        if (typeof value === "string" && value.trim().length > 0) {
+            return undefined;
+        }
+    }
+    return props.text;
+}
+
+/**
  * 基于当前插槽内容克隆根节点，把 aria-describedby 与测量 ref 挂到真实触发元素上。
  * 必须用普通函数而非 computed：computed 不会因父组件重渲染产生的「同引用新插槽内容」而失效，
  * 会导致按钮的 disabled/class 等属性停留在旧状态（已实测复现）。
@@ -54,6 +96,7 @@ function renderTrigger(): VNode[] {
             triggerRef.value = element as HTMLElement | null;
         },
         "aria-describedby": visible.value ? tooltipId : undefined,
+        "aria-label": resolveInjectedLabel(first),
     }, true);
     return [cloned, ...rest];
 }

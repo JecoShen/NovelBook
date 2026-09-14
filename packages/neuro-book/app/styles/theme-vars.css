@@ -13,39 +13,52 @@
     --bg-input: #ebe0c8;
     --bg-hover: #e3d5b8;
     --text-main: #433422;
-    --text-secondary: #786450;
-    --text-muted: #b8a896;
+    --text-secondary: #5e4d3d;
+    --text-muted: #6b5a48;
     --text-inverse: #ffffff;
     --border-color: #d6c7a9;
     --border-strong: #cfbc96;
-    --border-accent: color-mix(in srgb, #d97743 46%, #d6c7a9);
-    --accent-main: #d97743;
-    --accent-bg: rgba(217, 119, 67, 0.15);
-    --accent-text: #b85a2a;
-    --status-info: #4f6f73;
-    --status-info-bg: rgba(79, 111, 115, 0.14);
-    --status-info-border: rgba(79, 111, 115, 0.35);
-    --status-success: #6f7f35;
-    --status-success-bg: rgba(111, 127, 53, 0.16);
-    --status-success-border: rgba(111, 127, 53, 0.38);
-    --status-warning: #b86b00;
-    --status-warning-bg: rgba(184, 107, 0, 0.15);
-    --status-warning-border: rgba(184, 107, 0, 0.34);
-    --status-danger: #a34d3f;
-    --status-danger-bg: rgba(163, 77, 63, 0.13);
-    --status-danger-border: rgba(163, 77, 63, 0.34);
+    --border-accent: color-mix(in srgb, #bd5a26 68%, #d6c7a9);
+    --accent-main: #bd5a26;
+    --accent-bg: rgba(189, 90, 38, 0.15);
+    --accent-text: #a95327;
+    --status-info: #4b6a6e;
+    --status-info-bg: rgba(75, 106, 110, 0.14);
+    --status-info-border: rgba(75, 106, 110, 0.35);
+    --status-success: #5b682b;
+    --status-success-bg: rgba(91, 104, 43, 0.16);
+    --status-success-border: rgba(91, 104, 43, 0.38);
+    --status-warning: #915400;
+    --status-warning-bg: rgba(145, 84, 0, 0.15);
+    --status-warning-border: rgba(145, 84, 0, 0.34);
+    --status-danger: #a04c3e;
+    --status-danger-bg: rgba(160, 76, 62, 0.13);
+    --status-danger-border: rgba(160, 76, 62, 0.34);
     --editor-bg: #fbf5e7;
     --source-bg: #fdf6e3;
     --source-text: #586e75;
-    --source-muted: #93a1a1;
+    --source-muted: #829292;
     --shadow-color: #0f172a;
-    --selection-bg: rgba(217, 119, 67, 0.28);
+    --selection-bg: rgba(189, 90, 38, 0.28);
     --toolbar-bg: rgba(253, 246, 227, 0.92);
     --chat-ai-bg: #f8efdc;
 }
 
 .novel-ide-theme ::selection {
     background: var(--selection-bg);
+}
+
+/*
+ * 全局焦点环(WCAG 2.4.7 / 1.4.11,2026-09-14 critique P0 落地)。
+ * the-new-css-reset 清空了浏览器默认 outline,键盘导航因此完全不可见。
+ * var(--border-accent) 按元素所在主题宿主解析;宿主外(通知视口等)命中 :root 的
+ * sepia fallback,与通知卡片自身的 fallback 策略一致。双选择器:后半段提权压过
+ * 宿主内 outline-none 工具类,前半段覆盖宿主外元素。
+ */
+:focus-visible,
+.novel-ide-theme :focus-visible {
+    outline: 2px solid var(--border-accent);
+    outline-offset: 2px;
 }
 
 .world-engine-workbench-theme {

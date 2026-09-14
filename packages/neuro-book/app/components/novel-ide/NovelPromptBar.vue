@@ -240,6 +240,7 @@ onBeforeUnmount(() => {
             <button
                 class="absolute left-1/2 top-7 flex h-6 w-12 -translate-x-1/2 -translate-y-full items-center justify-center rounded-t-full border border-b-0 border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-secondary)] shadow-sm transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
                 :title="t('ide.inlineAi.collapse')"
+                :aria-label="t('ide.inlineAi.collapse')"
                 @click="toggleExpanded"
             >
                 <span class="i-lucide-chevron-down h-3.5 w-3.5"></span>
@@ -307,6 +308,7 @@ onBeforeUnmount(() => {
                                 type="button"
                                 class="-mr-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger)] focus:bg-[var(--status-danger-bg)] focus:text-[var(--status-danger)] focus:outline-none"
                                 :title="t('ide.inlineAi.clearReference')"
+                                :aria-label="t('ide.inlineAi.clearReference')"
                                 @focus="emit('hover-reference', reference)"
                                 @blur="emit('hover-reference', null)"
                                 @click.stop="emit('clear-reference', index); emit('hover-reference', null)"
@@ -364,6 +366,7 @@ onBeforeUnmount(() => {
                             type="button"
                             :disabled="props.sessionLoading || props.running"
                             :title="t('ide.inlineAi.createSession')"
+                            :aria-label="t('ide.inlineAi.createSession')"
                             data-inline-agent-action="create-session"
                             @click="emit('create-session')"
                         >
@@ -394,6 +397,7 @@ onBeforeUnmount(() => {
                             class="rounded p-1.5 transition-colors hover:bg-[var(--bg-hover)]"
                             :class="inputExpanded ? 'bg-[var(--bg-hover)] text-[var(--accent-text)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'"
                             :title="expandButtonTitle"
+                            :aria-label="expandButtonTitle"
                             type="button"
                             @click="inputExpanded = !inputExpanded"
                         >
@@ -407,6 +411,7 @@ onBeforeUnmount(() => {
                             :class="props.running ? 'border-[var(--status-danger-border)] bg-[var(--status-danger-bg)] text-[var(--status-danger)]' : 'border-[var(--accent-main)] bg-[var(--accent-bg)] text-[var(--accent-text)] hover:opacity-85'"
                             :disabled="!canSubmit"
                             :title="props.running ? t('ide.inlineAi.stop') : t('ide.inlineAi.send')"
+                            :aria-label="props.running ? t('ide.inlineAi.stop') : t('ide.inlineAi.send')"
                             @click="submit"
                         >
                             <span v-if="props.running" class="i-lucide-square h-3.5 w-3.5"></span>
@@ -421,6 +426,7 @@ onBeforeUnmount(() => {
             <button
                 class="flex h-6 w-12 items-center justify-center rounded-t-full border border-b-0 border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-secondary)] shadow-sm transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
                 :title="t('ide.inlineAi.expandBar')"
+                :aria-label="t('ide.inlineAi.expandBar')"
                 data-inline-agent-action="expand-bar"
                 @click="toggleExpanded"
             >

@@ -131,6 +131,18 @@ NotificationViewport 当前挂在 `.novel-ide-theme` 宿主外层，是跨入口
 - 不要写 `rgba(15,23,42,...)`、`#000`、`black` 等固定阴影色。
 - 文本选区统一消费 `--selection-bg`，入口在 `.novel-ide-theme ::selection`。
 
+## 对比度底线（内置主题注册门禁）
+
+8 套内置主题的每个取值都必须通过 `theme-contrast.test.ts` 的合同色对验算，阈值取自 WCAG 2.2：
+
+- 正文 / 次级 / 弱化文本（含占位与静息图标）：全部 chrome 表面 ≥ 4.5:1。
+- `--text-inverse` 在 `--accent-main` 与 `--status-danger` 实心底上 ≥ 4.5:1（主按钮与危险确认按钮）。
+- `--accent-text` 与四个 `--status-*` 状态色：panel 与自身软底 chip 上 ≥ 4.5:1。
+- 非文本指示（`--accent-main` 激活态、`--border-accent` 焦点环）：相邻表面 ≥ 3:1（WCAG 1.4.11）。
+- `--source-muted`（行号等辅助信息）≥ 3:1。
+
+调整内置取值或新增内置主题时，必须保持该测试全绿；软底 / 描边 rgba 与状态主色同 RGB 派生，主色变动时同步重派生。自定义主题属于作者资产，导入从宽，不受此门禁约束。
+
 ## 组件层变量登记
 
 组件层变量只允许用于跨多处消费、且无法由通用语义变量准确表达的稳定组件角色。新增前先确认：
@@ -139,6 +151,7 @@ NotificationViewport 当前挂在 `.novel-ide-theme` 宿主外层，是跨入口
 - 是否至少存在多个消费点，或属于长期稳定的基础组件。
 - 是否已在本文档的“变量总表”登记用途。
 - 是否为 8 套内置主题都补齐完整字面值，并同步 `theme-vars.css` fallback。
+- 是否通过上节「对比度底线」门禁（`theme-contrast.test.ts` 全绿）。
 
 临时业务差异不要新增组件层变量，优先在组件内用已有变量组合表达。
 

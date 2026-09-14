@@ -2,6 +2,7 @@ const zhCN = {
     common: {
         cancel: "取消",
         confirm: "确定",
+        close: "关闭",
         done: "完成",
         selectOption: "选择项",
         optional: "可选",

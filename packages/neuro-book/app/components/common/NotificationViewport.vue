@@ -126,6 +126,8 @@ function groupStyle(group: NotificationGroup): Record<string, string> {
                 class="pointer-events-none absolute flex w-full max-w-[420px] flex-col gap-2 px-4"
                 :class="positionClass(group.position)"
                 :style="groupStyle(group)"
+                role="status"
+                aria-live="polite"
             >
                 <TransitionGroup name="nb-notification">
                     <div
@@ -133,6 +135,8 @@ function groupStyle(group: NotificationGroup): Record<string, string> {
                         :key="item.id"
                         class="pointer-events-auto overflow-hidden rounded-2xl border shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-sm"
                         :style="[cardSurfaceVars, cardToneStyle(item)]"
+                        :role="item.tone === 'error' ? 'alert' : undefined"
+                        aria-atomic="true"
                     >
                         <div class="flex items-center gap-3 px-4 py-3">
                             <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="badgeToneStyle(item)"></span>

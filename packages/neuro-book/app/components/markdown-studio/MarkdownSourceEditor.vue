@@ -122,7 +122,7 @@ const applyTheme = (): void => {
     const background = cssVars.getPropertyValue("--source-bg").trim() || "#1f1f1f";
     const foreground = cssVars.getPropertyValue("--source-text").trim() || "#f3f4f6";
     const muted = cssVars.getPropertyValue("--source-muted").trim() || "#94a3b8";
-    const accent = cssVars.getPropertyValue("--accent-main").trim() || "#3b82f6";
+    const accent = cssVars.getPropertyValue("--accent-main").trim() || "#1e6ff5";
     const lineHighlight = cssVars.getPropertyValue("--bg-hover").trim() || "rgba(255,255,255,0.04)";
     const selection = cssVars.getPropertyValue("--accent-bg").trim() || "rgba(59,130,246,0.18)";
     const border = cssVars.getPropertyValue("--border-color").trim() || "#2b3340";

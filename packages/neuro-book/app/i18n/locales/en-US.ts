@@ -4,6 +4,7 @@ const enUS = {
     common: {
         cancel: "Cancel",
         confirm: "Confirm",
+        close: "Close",
         done: "Done",
         selectOption: "Select",
         optional: "Optional",
