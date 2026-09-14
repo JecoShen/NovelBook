@@ -56,14 +56,14 @@ function writeChapter(content: string): string {
   return path
 }
 
-function makeCtx(payload: Payload | null, project: ReadyProjectSessionRef | null): ProfilePrepareContext<Initial, Payload, Settings> {
+function makeCtx(payload: Payload | null, project: ReadyProjectSessionRef | null, message?: string): ProfilePrepareContext<Initial, Payload, Settings> {
   const home = {
     readText: async () => '---\nlabel: test\nkey: test\n---\n空',
     exists: async () => true,
     writeText: async () => {},
   }
   return {
-    invocation: payload ? { payload } : undefined,
+    invocation: payload ? { payload, message } : undefined,
     session: {
       currentProject: project,
       workspaceRoot: project?.workspace.ref.projectRoot ?? PROJECT_ROOT,
@@ -107,7 +107,7 @@ describe('writer.profile.tsx — lore auto-injection', () => {
     expect(text).toContain('飞鸟站')
   })
 
-  it('no-op when payload.path file does not exist (new chapter)', async () => {
+  it('no-op when chapter file does not exist and no message provided', async () => {
     const project = makeProjectRef()
     const path = 'manuscript/001-vol/002-ch/index.md'
     const ctx = makeCtx({ path, context: {} }, project)
@@ -116,13 +116,77 @@ describe('writer.profile.tsx — lore auto-injection', () => {
     expect(text).not.toContain('<chapter_lore_context')
   })
 
-  it('no-op when chapterText < 100 chars', async () => {
+  it('no-op when combined scan text < 100 chars', async () => {
     const project = makeProjectRef()
     const path = writeChapter('陆深。')
     const ctx = makeCtx({ path, context: {} }, project)
     const result = await buildWriterPrompt(ctx)
     const text = JSON.stringify(result)
     expect(text).not.toContain('<chapter_lore_context')
+  })
+
+  it('injects lore from invoke.message brief when chapter file does not exist (new chapter)', async () => {
+    const project = makeProjectRef()
+    const path = 'manuscript/001-vol/009-ch/index.md'
+    const message = '写新章：陆深在飞鸟站遇到旧识，气氛微妙。'.repeat(6)
+    const ctx = makeCtx({ path, context: {} }, project, message)
+    const result = await buildWriterPrompt(ctx)
+    const text = JSON.stringify(result)
+    expect(text).toContain('<chapter_lore_context')
+    expect(text).toContain('## 陆深')
+    expect(text).toContain('## 飞鸟站')
+  })
+
+  it('merges message brief and chapter text for trigger scanning', async () => {
+    const project = makeProjectRef()
+    const path = writeChapter('陆深站在站台上。')
+    const message = '本章写陆深抵达飞鸟站后的第一场冲突，注意节奏与视角收束。'.repeat(5)
+    const ctx = makeCtx({ path, context: {} }, project, message)
+    const result = await buildWriterPrompt(ctx)
+    const text = JSON.stringify(result)
+    expect(text).toContain('## 陆深')
+    expect(text).toContain('## 飞鸟站')
+  })
+
+  it('records injection and carries it over to the next invoke without triggers', async () => {
+    const project = makeProjectRef()
+    const path1 = writeChapter('陆深走进飞鸟站。'.repeat(20))
+    const ctx1 = makeCtx({ path: path1, context: {} }, project)
+    await buildWriterPrompt(ctx1)
+    // 第二章无 trigger 也无 message, 仅靠上一次注入的 carryOver 记录命中
+    const chDir2 = join(PROJECT_ROOT, 'manuscript', '001-vol', '002-ch')
+    mkdirSync(chDir2, { recursive: true })
+    const path2 = 'manuscript/001-vol/002-ch/index.md'
+    writeFileSync(join(PROJECT_ROOT, path2), '完全无关的内容,没有任何已知实体名出现。'.repeat(10), 'utf8')
+    const ctx2 = makeCtx({ path: path2, context: {} }, project)
+    const result2 = await buildWriterPrompt(ctx2)
+    const text2 = JSON.stringify(result2)
+    expect(text2).toContain('<chapter_lore_context')
+    expect(text2).toContain('## 陆深')
+  })
+
+  it('injects entry matched by title when retrieval.trigger is absent', async () => {
+    const project = makeProjectRef()
+    const cardDir = join(PROJECT_ROOT, 'lorebook', 'character', 'chu-huaiyuan')
+    mkdirSync(cardDir, { recursive: true })
+    writeFileSync(join(cardDir, 'index.md'), [
+      '---',
+      'title: "楚怀远"',
+      'kind: "character"',
+      'retrieval:',
+      '  enabled: true',
+      '---',
+      '# 楚怀远',
+      '',
+      '## 基本信息',
+      '楚怀远 是测试卡片。',
+    ].join('\n'), 'utf8')
+    const chapterContent = '楚怀远走进飞鸟站,看着站台。'.repeat(10)
+    const path = writeChapter(chapterContent)
+    const ctx = makeCtx({ path, context: {} }, project)
+    const result = await buildWriterPrompt(ctx)
+    const text = JSON.stringify(result)
+    expect(text).toContain('## 楚怀远')
   })
 
   it('no-op when payload missing', async () => {

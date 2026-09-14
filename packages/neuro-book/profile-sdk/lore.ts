@@ -3,10 +3,16 @@
 // 暴露 nbook/server/* 整条路径，因此通过 SDK 子模块再导出。
 import { resolveForChapter as resolveForChapterHost } from 'nbook/server/agent/lore/lore-resolver'
 import { renderInjectedMarkdown as renderInjectedMarkdownHost } from 'nbook/server/agent/lore/lore-context-injector'
+import { readRecentLoreInjections as readRecentLoreInjectionsHost } from 'nbook/server/agent/lore/lore-carryover-store'
+import { recordLoreInjection as recordLoreInjectionHost } from 'nbook/server/agent/lore/lore-carryover-store'
 import type { ReadyProjectSessionRef as ReadyProjectSessionRefHost } from 'nbook/server/workspace-files/project-session-types'
 
 export const resolveForChapter: typeof resolveForChapterHost = resolveForChapterHost
 
 export const renderInjectedMarkdown: typeof renderInjectedMarkdownHost = renderInjectedMarkdownHost
+
+export const readRecentLoreInjections: typeof readRecentLoreInjectionsHost = readRecentLoreInjectionsHost
+
+export const recordLoreInjection: typeof recordLoreInjectionHost = recordLoreInjectionHost
 
 export type ReadyProjectSessionRef = ReadyProjectSessionRefHost

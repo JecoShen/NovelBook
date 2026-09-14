@@ -892,7 +892,7 @@ describe("assets builtin v3 profiles", () => {
             const appendingContext = (prepared.appendingMessages ?? []).map(messageText).join("\n");
 
             expect(historyContext).toContain("<writer_input_context>");
-            expect(prepared.systemPrompt).toContain(".nbook/agent/skills/stop-slop/SKILL.md");
+            expect(prepared.systemPrompt).toContain("bun ../.nbook/agent/skills/llmlint/bin/llmlint.ts check");
             expect(prepared.systemPrompt).toContain("autonomous");
             expect(prepared.systemPrompt).not.toContain("你不持有 Plot tools");
             expect(historyContext).toContain("<target_file>");
@@ -1238,7 +1238,7 @@ function defaultWriterSettings() {
         narrativePerson: "third" as const,
         paragraphRhythm: "段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段。",
         wordCountControl: "2000-2600 字",
-        polishingWorkflow: "润色时使用 .nbook/agent/skills/stop-slop/SKILL.md 作为自查流程，并优先在原文基础上做最小必要修改。",
+        polishingWorkflow: "写完正文后，必须在项目根目录用 bash 运行 `bun ../.nbook/agent/skills/llmlint/bin/llmlint.ts check <文件路径>`（<文件路径> 用 input.path 原样）检查 AI 写作痕迹。check 检出问题时退出码为 1，属正常输出而非命令失败。对 high 级别问题必须修正，medium 级别问题审视后决定是否修正。修正后再次运行同一命令确认通过，再执行 report_result。",
         avoidWordsPreset: DEFAULT_AVOID_WORDS_PRESET,
         adultStylePrompt: "",
         fileChangeAwareness: "minimal" as const,

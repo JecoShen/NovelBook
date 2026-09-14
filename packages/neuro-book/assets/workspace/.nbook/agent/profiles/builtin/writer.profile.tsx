@@ -13,7 +13,7 @@ import {profileText} from "nbook/profile-sdk";
 import {DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey} from "nbook/profile-sdk/writing";
 import {DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey} from "nbook/profile-sdk/writing";
 import {DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords} from "nbook/profile-sdk/writing";
-import {resolveForChapter, renderInjectedMarkdown} from "nbook/profile-sdk/lore";
+import {resolveForChapter, renderInjectedMarkdown, readRecentLoreInjections, recordLoreInjection} from "nbook/profile-sdk/lore";
 import type {ReadyProjectSessionRef as LoreReadyProjectSessionRef} from "nbook/profile-sdk/lore";
 import {defineLowCodeForm, profileHomeResource} from "nbook/profile-sdk";
 import {defineProfileHome} from "nbook/profile-sdk";
@@ -21,7 +21,7 @@ import type {ReadyProjectSessionRef} from "nbook/profile-sdk";
 
 const DEFAULT_PARAGRAPH_RHYTHM = "段落节奏偏短段分行，接近网络小说排版：一句话、一个动作节拍或一个情绪转折可以单独成段；不要为了凑短段打碎完整语义，场景描写、复杂动作和连续心理变化可以保留为较短自然段。";
 const DEFAULT_WORD_COUNT_CONTROL = "2000-2600 字";
-const DEFAULT_POLISHING_WORKFLOW = "润色时使用 .nbook/agent/skills/stop-slop/SKILL.md 作为自查流程，并优先在原文基础上做最小必要修改。不要输出 <refine> JSON，不把润色分析混进正文。";
+const DEFAULT_POLISHING_WORKFLOW = "写完正文后，必须在项目根目录用 bash 运行 `bun ../.nbook/agent/skills/llmlint/bin/llmlint.ts check <文件路径>`（<文件路径> 用 input.path 原样）检查 AI 写作痕迹（filler phrases、机械句式、抽象说理等）。check 检出问题时退出码为 1，属正常输出而非命令失败。对 high 级别问题必须修正，medium 级别问题审视后决定是否修正。修正后再次运行同一命令确认通过，再执行 report_result。若脚本路径不存在，先运行 `find .. -path '*llmlint*/bin/llmlint.ts'` 定位脚本后用 bun 执行。";
 
 export const profileManifest = {
     key: "writer",
@@ -504,7 +504,11 @@ async function readFileSafely(
 
 /**
  * 渲染 chapter-level lore 上下文 markdown, 供 writer prompt 注入。
- * - payload 缺失 / project 缺失 / file 不存在 / < 100 chars → return ""
+ * 扫描文本 = invoke.message(brief) + 章节已有正文：新章起笔时文件不存在或不足 100 字符,
+ * 只扫正文会让注入恒不触发; brief 是上级已过滤的可写事实, 合并扫描不引入越权信息。
+ * carryOver 取最近 3 条注入记录: 记录按 invoke 追加而非按章, 同章重写会产生多条,
+ * 3 条约等于前一章的注入集合, 又不让 carryOver 挤占全部 maxPaths 槽位。
+ * - payload 缺失 / project 缺失 / 合并扫描文本 < 100 chars → return ""
  * - resolveForChapter 失败 / 0 命中 → return ""
  * - renderInjectedMarkdown 失败 → return ""
  * - 任何失败 → console.warn + return "" (per spec §4 降级)
@@ -522,12 +526,16 @@ async function renderChapterLoreContext(
     }
     try {
         const chapterText = await readFileSafely(payload.path, project as LoreReadyProjectSessionRef);
-        if (chapterText.length < 100) {
+        const messageText = typeof ctx.invocation?.message === "string" ? ctx.invocation.message : "";
+        const scanText = `${messageText}\n${chapterText}`.trim();
+        if (scanText.length < 100) {
             return "";
         }
+        const carryOverPaths = await readRecentLoreInjections(project as LoreReadyProjectSessionRef, {limit: 3});
         const resolved = await resolveForChapter({
             project: project as LoreReadyProjectSessionRef,
-            chapterText,
+            chapterText: scanText,
+            carryOverPaths,
             maxPaths: 8,
         });
         if (resolved.paths.length === 0) {
@@ -538,6 +546,13 @@ async function renderChapterLoreContext(
             paths: resolved.paths,
             maxChars: 8000,
         });
+        if (injected.includedPaths.length > 0) {
+            await recordLoreInjection(project as LoreReadyProjectSessionRef, {
+                chapterId: payload.chapterId ?? payload.path,
+                paths: injected.includedPaths,
+                ts: new Date().toISOString(),
+            });
+        }
         return injected.markdown;
     }
     catch (error: unknown) {

@@ -20,6 +20,13 @@ function writeCard(root: string, category: string, slug: string, triggers: strin
     `---\ntitle: ${slug}\ntype: ${category}\nretrieval:\n  enabled: true\n  trigger: [${triggers.join(', ')}]\n---\n\n## 基本信息\n\n| 项目 | 设定 |\n|------|------|\n| 名称 | ${slug} |\n`)
 }
 
+function writeCardWithoutTrigger(root: string, category: string, slug: string, title: string): void {
+  const dir = join(root, 'lorebook', category, slug)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'index.md'),
+    `---\ntitle: ${title}\ntype: ${category}\nretrieval:\n  enabled: true\n---\n\n## 基本信息\n\n| 项目 | 设定 |\n|------|------|\n| 名称 | ${title} |\n`)
+}
+
 describe('resolveForChapter', () => {
   let tmpRoot: string
   let project: ReadyProjectSessionRef
@@ -56,6 +63,17 @@ describe('resolveForChapter', () => {
     expect(result.paths).toContain('character/su-nian')
     expect(result.paths).toContain('location/mei-lake')
     expect(result.totalTriggersMatched).toBe(3)
+  })
+
+  it('matches entry title as implicit trigger when retrieval.trigger is absent', async () => {
+    writeCardWithoutTrigger(tmpRoot, 'character', 'chu-huaiyuan', '楚怀远')
+    invalidateLoreResolverIndex(project)
+    await buildLoreResolverIndex(project)
+    const result = await resolveForChapter({
+      project,
+      chapterText: '楚怀远走进会议室',
+    })
+    expect(result.paths).toContain('character/chu-huaiyuan')
   })
 
   it('aggregates multiple triggers matching same path', async () => {

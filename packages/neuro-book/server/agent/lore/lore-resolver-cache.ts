@@ -84,13 +84,19 @@ function readEntryMeta(
       ? fm.retrieval as Record<string, unknown>
       : {}
     const enabled = retrieval.enabled !== false
-    const triggers = Array.isArray(retrieval.trigger)
+    const explicitTriggers = Array.isArray(retrieval.trigger)
       ? (retrieval.trigger as unknown[]).filter((v): v is string => typeof v === 'string')
       : []
+    const title = typeof fm.title === 'string' ? fm.title : slug
+    // title 作为隐式 trigger：未配置 retrieval.trigger 的条目也能按标题命中。
+    // 长度过滤由 buildLoreResolverIndex 的 MIN_TRIGGER_LENGTH 统一处理。
+    const triggers = title.length > 0 && !explicitTriggers.includes(title)
+      ? [...explicitTriggers, title]
+      : explicitTriggers
     return {
       path: `${category}/${slug}`,
       kind: category as LoreEntryKind,
-      title: typeof fm.title === 'string' ? fm.title : slug,
+      title,
       triggers,
       enabled,
     }
