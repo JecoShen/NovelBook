@@ -190,7 +190,7 @@ function createScene(): void {
         return;
     }
     emit("createScene", props.thread.id);
-    sceneCheckMessage.value = "已新增一个 Scene 草稿。";
+    sceneCheckMessage.value = "已新增一个场景草稿。";
 }
 
 /**
@@ -207,7 +207,7 @@ function autoSortScenes(): void {
     });
 
     emit("autoSortScenes", nextScenes.map((scene) => scene.id));
-    sceneCheckMessage.value = "已按章节顺序整理 Scene。";
+    sceneCheckMessage.value = "已按章节顺序整理场景。";
 }
 
 /**
@@ -221,7 +221,7 @@ function checkSceneDependencies(): void {
         emptyPurposeScenes ? `${emptyPurposeScenes} 个 Scene 缺少目的` : "",
     ].filter(Boolean);
 
-    sceneCheckMessage.value = issues.length ? `检查完成：${issues.join("，")}。` : "检查完成：当前 Thread 依赖信息完整。";
+    sceneCheckMessage.value = issues.length ? `检查完成：${issues.join("，")}。` : "检查完成：当前线索依赖信息完整。";
 }
 
 /**
@@ -338,7 +338,7 @@ watch(() => props.thread?.id, () => {
                 <div class="flex flex-col gap-2 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] p-2.5 shadow-sm">
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0 flex-1 text-[13px] font-medium leading-snug text-[var(--text-main)]">
-                            {{ focusScene ? focusScene.title : "未选中 Scene" }}
+                            {{ focusScene ? focusScene.title : "未选中场景" }}
                         </div>
                         <span v-if="focusScene" class="shrink-0 rounded-[4px] border px-1.5 py-0.5 text-[10px] font-medium" :class="sceneStatusClass[focusScene.status]">
                             {{ PLOT_SCENE_STATUS_LABELS[focusScene.status] }}

@@ -86,7 +86,7 @@ function attrPath(name: string): string {
         <fieldset class="m-0 border-0 p-0 disabled:opacity-70" :disabled="props.disabled">
             <div class="mb-2 flex items-center justify-between gap-2">
                 <div class="flex min-w-0 items-center gap-2">
-                    <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">Mutation Builder</div>
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]" title="MUTATION BUILDER">变更构建</div>
                     <span class="shrink-0 rounded border border-[var(--border-color)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--text-muted)]">{{ builderValueHint }}</span>
                 </div>
                 <WorldEngineMutationListControls

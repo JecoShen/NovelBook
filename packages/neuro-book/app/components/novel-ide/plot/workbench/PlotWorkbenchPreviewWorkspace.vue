@@ -205,8 +205,8 @@ function createScene(threadId: string): void {
         threadId,
         chapterId: null,
         title: `新建 Scene ${nextOrder + 1}`,
-        summary: "这里记录新 Scene 的主要事件、场面变化和读者需要获得的信息。",
-        purpose: "明确这个 Scene 推进哪一段冲突或揭示哪一条线索。",
+        summary: "这里记录新场景的主要事件、场面变化和读者需要获得的信息。",
+        purpose: "明确这个场景推进哪一段冲突或揭示哪一条线索。",
         status: "draft",
         outcomeType: null,
         pacingRole: null,
@@ -231,12 +231,12 @@ function createThread(): void {
         id: `thread-preview-${Date.now()}`,
         phaseId: null,
         title: `新建剧情线 ${nextIndex}`,
-        summary: "用于临时验证剧本工作台里的 Thread 创建、筛选与右键操作。",
+        summary: "用于临时验证剧本工作台里的线索创建、筛选与右键操作。",
         status: "draft",
         isMainThread: false,
         miceType: null,
-        tags: ["mock"],
-        writingTip: "先写清楚这条线承担的冲突，再拆成 Scene。",
+        tags: ["示例"],
+        writingTip: "先写清楚这条线承担的冲突，再拆成场景。",
         tone: "sky",
         refs: [],
     };
@@ -413,7 +413,7 @@ function cloneScenes(source: PlotPreviewScene[]): PlotThreadPanelScene[] {
             </div>
             <h2 class="mt-4 text-xl font-semibold text-[var(--text-main)]">剧本工作台 Dialog 预览</h2>
             <p class="mx-auto mt-3 max-w-[560px] text-sm leading-7 text-[var(--text-secondary)]">
-                左侧剧情大纲侧边栏保持现状。点击按钮打开新的剧本工作台 mock，用于验证截图方向的信息密度、布局和主题表现。
+                左侧剧情大纲侧边栏保持现状。点击按钮打开新的剧本工作台示例，用于验证截图方向的信息密度、布局和主题表现。
             </p>
             <button
                 type="button"

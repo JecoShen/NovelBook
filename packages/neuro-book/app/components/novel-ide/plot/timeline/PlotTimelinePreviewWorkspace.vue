@@ -68,7 +68,7 @@ const focus = computed<PlotPreviewFocus | null>(() => {
             title: selectedScene.value.title,
             summary: selectedScene.value.summary,
             meta: [
-                `线程：${thread?.title ?? "未知 Thread"}`,
+                `线索：${thread?.title ?? "未知线索"}`,
                 `章节：${chapter?.numberLabel ?? "未挂章"}`,
                 `状态：${selectedScene.value.status}`,
                 `Refs：${selectedScene.value.refs.length}`,
@@ -84,7 +84,7 @@ const focus = computed<PlotPreviewFocus | null>(() => {
             title: selectedThread.value.title,
             summary: selectedThread.value.summary,
             meta: [
-                selectedThread.value.isMainThread ? "主线 Thread" : "支线 Thread",
+                selectedThread.value.isMainThread ? "主线" : "支线",
                 `状态：${selectedThread.value.status}`,
                 `标签：${selectedThread.value.tags.join(" / ") || "无"}`,
             ],
@@ -193,7 +193,7 @@ function resetWorkspace(): void {
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-[var(--border-color)] bg-[var(--bg-panel)] px-4 py-3">
                 <div>
                     <div class="text-[11px] uppercase tracking-[0.24em] text-[var(--text-muted)]">Timeline Preview Controls</div>
-                    <div class="mt-1 text-sm text-[var(--text-secondary)]">单 StoryPhase 视角，横向按正文顺序排列，用章节背景分段承载多 Thread 的 Scene 并行关系。</div>
+                    <div class="mt-1 text-sm text-[var(--text-secondary)]">单阶段视角，横向按正文顺序排列，用章节背景分段承载多线索的场景并行关系。</div>
                 </div>
 
                 <button

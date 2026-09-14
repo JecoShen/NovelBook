@@ -32,15 +32,15 @@ const rootEntries = computed(() => {
                 </div>
                 <div v-if="props.subjectName && props.subjectName !== props.subjectId" class="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">{{ props.subjectId }}</div>
             </div>
-            <span class="shrink-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-1 text-[11px] text-[var(--text-secondary)]">{{ rootEntries.length }} attrs</span>
+            <span class="shrink-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-1 text-[11px] text-[var(--text-secondary)]">{{ rootEntries.length }} 项属性</span>
         </div>
         
         <!-- Table Header -->
         <div class="flex items-center gap-2 border-b border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            <div class="w-[180px] pl-7">属性 (Attr)</div>
-            <div class="flex-1">当前值 (Value)</div>
-            <div class="w-[180px]">描述 (Desc)</div>
-            <div class="w-[64px] text-right pr-1">类型</div>
+            <div class="w-[180px] pl-7" title="ATTR">属性</div>
+            <div class="flex-1" title="VALUE">当前值</div>
+            <div class="w-[180px]" title="DESC">描述</div>
+            <div class="w-[64px] text-right pr-1" title="KIND">类型</div>
         </div>
         
         <!-- Body -->

@@ -115,7 +115,7 @@ watch(() => props.projectRoot, () => {
     <section class="border-b border-[var(--border-color)] p-2">
         <div class="rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] p-3">
             <div class="mb-2 flex items-center justify-between gap-2">
-                <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">Create Subject</div>
+                <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]" title="SUBJECT · 角色与万物">创建主体</div>
                 <span class="i-lucide-user-plus h-4 w-4 text-[var(--text-muted)]"></span>
             </div>
             <fieldset class="space-y-2 disabled:opacity-60" :disabled="formDisabled">

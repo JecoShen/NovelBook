@@ -421,7 +421,7 @@ async function removeBeat(sceneId: string): Promise<void> {
     }
     const beat = current.beats.find((item) => item.sceneId === sceneId);
     const action = await dialog.choose(
-        `确认删除场景「${beat?.scene.title || "未命名 Scene"}」上的「${beat ? PROMISE_BEAT_KIND_META[beat.kind].label : "节拍"}」节拍?若删除的是兑现节拍,承诺状态会自动回退。`,
+        `确认删除场景「${beat?.scene.title || "未命名场景"}」上的「${beat ? PROMISE_BEAT_KIND_META[beat.kind].label : "节拍"}」节拍?若删除的是兑现节拍,承诺状态会自动回退。`,
         [
             {label: "取消", value: "cancel"},
             {label: "删除", value: "confirm", tone: "danger"},

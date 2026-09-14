@@ -121,7 +121,7 @@ const threadMap = computed(() => {
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-0.5">Refs {{ scene.refs.length }}</span>
-                                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-0.5">Thread 位次 {{ scene.threadSortOrder + 1 }}</span>
+                                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-0.5">线索位次 {{ scene.threadSortOrder + 1 }}</span>
                             </div>
                         </div>
                     </section>
@@ -129,8 +129,8 @@ const threadMap = computed(() => {
 
                 <div v-else class="flex min-h-[260px] items-center justify-center rounded-[22px] border border-dashed border-[var(--border-color)] bg-[var(--bg-input)]/30 px-6 text-center">
                     <div>
-                        <div class="text-sm font-semibold text-[var(--text-main)]">当前章节还没有挂接 Scene</div>
-                        <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">这个视图会以 `Chapter -> Scene` 的方式展示一章内部承载。目前适合用来观察章级 Scene 是否过空或过满。</div>
+                        <div class="text-sm font-semibold text-[var(--text-main)]">当前章节还没有挂接场景</div>
+                        <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">这个视图会以「章节 → 场景」的方式展示一章内部承载，适合用来观察章级场景是否过空或过满。</div>
                     </div>
                 </div>
             </div>

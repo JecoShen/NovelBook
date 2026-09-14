@@ -248,7 +248,7 @@ const currentFocus = computed<PlotPreviewFocus | null>(() => {
         title: thread.title,
         summary: thread.summary,
         meta: [
-            thread.isMainThread ? "主线 Thread" : "支线 Thread",
+            thread.isMainThread ? "主线" : "支线",
             `状态：${thread.status}`,
             `Scene：${scenes.filter((scene) => scene.threadId === thread.id).length}`,
             `Refs：${thread.refs.length}`,
@@ -341,21 +341,21 @@ const currentFocus = computed<PlotPreviewFocus | null>(() => {
                 <div class="text-[11px] uppercase tracking-[0.28em] text-[var(--text-muted)]">Plot Workspace Preview</div>
                 <div class="mt-1 text-2xl font-semibold text-[var(--text-main)]">剧情模块独立测试页</div>
                 <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">
-                    四个视图共享同一套选中态。这里先用内存 mock 数据调整信息架构、视觉密度和跳转规则，不接真实 API。
+                    四个视图共享同一套选中态。这里先用内存示例数据调整信息架构、视觉密度和跳转规则，不接真实 API。
                 </div>
             </div>
 
             <div class="grid gap-2 sm:grid-cols-3">
                 <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-3 text-center">
-                    <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Phase</div>
+                    <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">阶段</div>
                     <div class="mt-1 text-lg font-semibold text-[var(--text-main)]">{{ phases.length }}</div>
                 </div>
                 <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-3 text-center">
-                    <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Thread</div>
+                    <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">线索</div>
                     <div class="mt-1 text-lg font-semibold text-[var(--text-main)]">{{ threads.length }}</div>
                 </div>
                 <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-3 text-center">
-                    <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Scene</div>
+                    <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">场景</div>
                     <div class="mt-1 text-lg font-semibold text-[var(--text-main)]">{{ scenes.length }}</div>
                 </div>
             </div>

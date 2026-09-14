@@ -116,11 +116,11 @@ const deleteMessage = computed(() => {
 
     if (deleteTarget.value.type === "thread") {
         const thread = threadMap.value.get(deleteTarget.value.id);
-        return `确认删除「${thread?.title ?? "当前 Thread"}」吗？该 Thread 下的 Scene 会一起删除。`;
+        return `确认删除「${thread?.title ?? "当前线索"}」吗？该线索下的场景会一起删除。`;
     }
 
     const scene = sceneMap.value.get(deleteTarget.value.id);
-    return `确认删除「${scene?.title ?? "当前 Scene"}」吗？`;
+    return `确认删除「${scene?.title ?? "当前场景"}」吗？`;
 });
 
 /**
@@ -241,25 +241,25 @@ function closeContextMenu(): void {
 function openThreadMenu(event: MouseEvent): void {
     openContextMenu(event, [
         {
-            label: "新建 Thread",
+            label: "新建线索",
             iconClass: "i-lucide-folder-plus",
             action: () => openThreadEditor("create"),
         },
         {
-            label: "编辑当前 Thread",
+            label: "编辑当前线索",
             iconClass: "i-lucide-pencil-line",
             disabled: !selectedThread.value,
             action: () => openThreadEditor("edit"),
         },
         {
-            label: "新建 Scene",
+            label: "新建场景",
             iconClass: "i-lucide-clapperboard",
             disabled: !selectedThread.value,
             action: () => openSceneEditor("create"),
         },
         {separator: true},
         {
-            label: "删除当前 Thread",
+            label: "删除当前线索",
             iconClass: "i-lucide-trash-2",
             danger: true,
             disabled: !selectedThread.value,
@@ -279,12 +279,12 @@ function openSceneMenu(payload: {sceneId: string; event: MouseEvent}): void {
 
     openContextMenu(payload.event, [
         {
-            label: "选中 Scene",
+            label: "选中场景",
             iconClass: "i-lucide-crosshair",
             action: () => selectScene(scene.id),
         },
         {
-            label: "新建 Scene",
+            label: "新建场景",
             iconClass: "i-lucide-plus",
             action: () => {
                 selectThread(scene.threadId);
@@ -292,7 +292,7 @@ function openSceneMenu(payload: {sceneId: string; event: MouseEvent}): void {
             },
         },
         {
-            label: "编辑 Scene",
+            label: "编辑场景",
             iconClass: "i-lucide-pencil-line",
             action: () => {
                 selectScene(scene.id);
@@ -301,7 +301,7 @@ function openSceneMenu(payload: {sceneId: string; event: MouseEvent}): void {
         },
         {separator: true},
         {
-            label: "删除 Scene",
+            label: "删除场景",
             iconClass: "i-lucide-trash-2",
             danger: true,
             action: () => queueDelete("scene", scene.id),
@@ -315,19 +315,19 @@ function openSceneMenu(payload: {sceneId: string; event: MouseEvent}): void {
 function openRootMenu(event: MouseEvent): void {
     openContextMenu(event, [
         {
-            label: "新建 Thread",
+            label: "新建线索",
             iconClass: "i-lucide-folder-plus",
             action: () => openThreadEditor("create"),
         },
         {
-            label: "新建 Scene",
+            label: "新建场景",
             iconClass: "i-lucide-clapperboard",
             disabled: !selectedThread.value,
             action: () => openSceneEditor("create"),
         },
         {separator: true},
         {
-            label: "编辑当前 Thread",
+            label: "编辑当前线索",
             iconClass: "i-lucide-pencil-line",
             disabled: !selectedThread.value,
             action: () => openThreadEditor("edit"),

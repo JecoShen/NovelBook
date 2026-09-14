@@ -78,7 +78,7 @@ const hasWorldAnchor = computed(() => {
             type="button"
             class="mt-0.5 inline-flex h-5 w-5 shrink-0 cursor-grab items-center justify-center rounded-md text-[var(--text-muted)] opacity-55 transition-colors hover:bg-[var(--bg-hover)] hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-35"
             :disabled="dragDisabled"
-            title="拖拽排序 Scene"
+            title="拖拽排序场景"
             @click.stop
         >
             <span class="i-lucide-grip-vertical h-3 w-3"></span>
@@ -97,7 +97,7 @@ const hasWorldAnchor = computed(() => {
                     <button
                         type="button"
                         class="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
-                        title="编辑 Scene"
+                        title="编辑场景"
                         @click.stop="emit('openEditor', scene.id)"
                     >
                         <span class="i-lucide-pencil-line h-3 w-3"></span>
@@ -105,7 +105,7 @@ const hasWorldAnchor = computed(() => {
                     <button
                         type="button"
                         class="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
-                        title="Scene 菜单"
+                        title="场景菜单"
                         @click.stop="emit('openMenu', { sceneId: scene.id, event: $event })"
                     >
                         <span class="i-lucide-ellipsis h-3 w-3"></span>

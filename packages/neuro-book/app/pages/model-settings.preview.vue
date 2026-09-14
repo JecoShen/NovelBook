@@ -41,7 +41,7 @@ onMounted(() => {
                     <div class="text-[11px] uppercase tracking-[0.3em] text-[var(--text-muted)]">Model Settings Preview</div>
                     <h1 class="mt-2 text-2xl font-semibold text-[var(--text-main)]">模型设置独立预览页</h1>
                     <p class="mt-3 text-sm leading-7 text-[var(--text-secondary)]">
-                        这里直接挂载真实的模型设置模块，专门用来调试 Provider 表单、模型分组列表、远程发现和健康检查交互。底层直接走真实 `/api/config` 接口，不使用 mock 数据。
+                        这里直接挂载真实的模型设置模块，专门用来调试 Provider 表单、模型分组列表、远程发现和健康检查交互。底层直接走真实 `/api/config` 接口，不使用示例数据。
                     </p>
                     <div class="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
                         <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-1">Route /model-settings.preview</span>

@@ -40,7 +40,7 @@ const canDelete = computed(() => {
                         class="rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em]"
                         :class="props.data.thread.isMainThread ? 'bg-[var(--accent-bg)] text-[var(--accent-text)]' : toneStyle.chip"
                     >
-                        {{ props.data.thread.isMainThread ? "主线 Thread" : "支线 Thread" }}
+                        {{ props.data.thread.isMainThread ? "主线" : "支线" }}
                     </span>
                     <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-2.5 py-1 text-[11px] text-[var(--text-muted)]">
                         {{ props.data.thread.status }}
@@ -55,7 +55,7 @@ const canDelete = computed(() => {
 
             <div class="grid shrink-0 grid-cols-2 gap-2">
                 <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-2 text-right">
-                    <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Scene</div>
+                    <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">场景</div>
                     <div class="mt-1 text-sm font-semibold text-[var(--text-main)]">{{ props.data.metrics.sceneCount }}</div>
                 </div>
                 <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-2 text-right">
@@ -93,7 +93,7 @@ const canDelete = computed(() => {
         <!-- Thread 内部说明 -->
         <div class="pointer-events-none mt-4 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
             <span class="h-px flex-1 bg-[var(--border-color)]"></span>
-            <span>Scene Group</span>
+            <span>场景分组</span>
             <span class="h-px flex-1 bg-[var(--border-color)]"></span>
         </div>
     </div>

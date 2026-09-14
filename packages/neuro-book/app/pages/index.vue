@@ -17,6 +17,7 @@ import WorkspaceFilePanel from "nbook/app/components/novel-ide/workspace/Workspa
 import ProjectPickerScreen from "nbook/app/components/novel-ide/ProjectPickerScreen.vue";
 import UserProfileWorkbenchDialog from "nbook/app/components/profile-template-editor/UserProfileWorkbenchDialog.vue";
 import WorkspaceCharacterDetailPanel from "nbook/app/components/novel-ide/workspace/WorkspaceCharacterDetailPanel.vue";
+import WelcomeChapterCreateDialog, {type WelcomeChapterCreatePayload} from "nbook/app/components/novel-ide/workspace/WelcomeChapterCreateDialog.vue";
 import WorkspaceFileConflictDialog from "nbook/app/components/novel-ide/workspace/WorkspaceFileConflictDialog.vue";
 import WorkspaceLocationProfileDialog from "nbook/app/components/novel-ide/workspace/WorkspaceLocationProfileDialog.vue";
 import WorkspaceRuleProfileDialog from "nbook/app/components/novel-ide/workspace/WorkspaceRuleProfileDialog.vue";
@@ -38,6 +39,7 @@ import type {WorkspaceFileChangeEventDto, WorkspaceFileStreamEventDto} from "nbo
 import type {AgentSessionSummaryDto, AgentSkillCatalogItemDto} from "nbook/shared/dto/agent-session.dto";
 import {agentSessionScopeKey} from "nbook/app/utils/agent-session-scope-key";
 import {resolveApiErrorMessage} from "nbook/app/utils/api-error";
+import {resolveManagedChapterPath} from "nbook/app/utils/welcome-chapter-path";
 import {
     projectRouteProgressView,
     reduceProjectRouteProgress,
@@ -2229,16 +2231,28 @@ async function openWelcomeAgentPanel(): Promise<void> {
     await agentSurfaceRef.value?.ensureSessionReady();
 }
 
+/** 新建章节对话框显隐与代管路径(最新卷 + 下一章序号)。 */
+const welcomeChapterDialogOpen = ref(false);
+const managedChapterPath = computed(() => resolveManagedChapterPath(workspaceTree.value));
+
 /**
- * 创建欢迎页默认章节文件。
+ * 打开新建章节对话框:作者只起章节名,路径按约定代管。
  */
 async function createWelcomeChapter(): Promise<void> {
-    const input = await prompt(t("ide.shell.createChapterPrompt"), "manuscript/001-volume/new-chapter/index.md", t("ide.shell.createChapterTitle"));
-    const filePath = normalizeWelcomeChapterPath(input);
+    welcomeChapterDialogOpen.value = true;
+}
+
+/**
+ * 处理新建章节提交:自定义路径走既有归一化,否则用代管路径;章节名写入 frontmatter title。
+ */
+async function handleWelcomeChapterCreate(payload: WelcomeChapterCreatePayload): Promise<void> {
+    const filePath = payload.customPath
+        ? normalizeWelcomeChapterPath(payload.customPath)
+        : managedChapterPath.value;
     if (!filePath) {
         return;
     }
-    await createWelcomeFile(filePath, buildWelcomeMarkdownContent(filePath), t("ide.shell.createChapterFailed"));
+    await createWelcomeFile(filePath, buildWelcomeChapterContent(payload.title), t("ide.shell.createChapterFailed"));
 }
 
 /**
@@ -2380,6 +2394,13 @@ function normalizeWelcomeWorkspacePath(input: string | null): string {
  */
 function buildWelcomeMarkdownContent(filePath: string): string {
     return `---\ntitle: ${JSON.stringify(resolveWelcomeTitle(filePath))}\nstatus: draft\n---\n\n`;
+}
+
+/**
+ * 生成章节初始内容:标题来自作者起的章节名,而不是路径段。
+ */
+function buildWelcomeChapterContent(chapterTitle: string): string {
+    return `---\ntitle: ${JSON.stringify(chapterTitle)}\nstatus: draft\n---\n\n`;
 }
 
 /**
@@ -2764,6 +2785,12 @@ onBeforeUnmount(() => {
             :conflict="novelIdeStore.workspaceWriteConflict"
             :theme="activeThemeId"
             @resolve="void resolveWorkspaceWriteConflict($event)"
+        />
+        <WelcomeChapterCreateDialog
+            v-if="projectSurfaceActive"
+            v-model="welcomeChapterDialogOpen"
+            :managed-path="managedChapterPath"
+            @create="void handleWelcomeChapterCreate($event)"
         />
         <WorkspaceCharacterDetailPanel
             v-if="projectSurfaceActive"

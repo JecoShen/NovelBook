@@ -199,7 +199,7 @@ watch(() => [props.selectedThreadId, props.scenes], () => {
                         <button
                             type="button"
                             class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
-                            title="新增 Scene"
+                            title="新增场景"
                             @click="emit('createScene')"
                         >
                             <span class="i-lucide-plus h-3.5 w-3.5"></span>
@@ -208,7 +208,7 @@ watch(() => [props.selectedThreadId, props.scenes], () => {
                             type="button"
                             class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="!selectedThread"
-                            title="编辑 Thread"
+                            title="编辑线索"
                             @click="emit('editThread')"
                         >
                             <span class="i-lucide-pencil-line h-3.5 w-3.5"></span>
@@ -216,7 +216,7 @@ watch(() => [props.selectedThreadId, props.scenes], () => {
                         <button
                             type="button"
                             class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
-                            title="Thread 菜单"
+                            title="线索菜单"
                             @click="emit('openThreadMenu', $event)"
                         >
                             <span class="i-lucide-ellipsis h-3.5 w-3.5"></span>
@@ -230,7 +230,7 @@ watch(() => [props.selectedThreadId, props.scenes], () => {
                         class="flex w-full items-center justify-between rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2.5 py-1.5 text-left transition-colors hover:bg-[var(--bg-hover)]"
                     >
                         <span class="min-w-0">
-                            <span class="block truncate text-[12px] font-semibold text-[var(--text-main)]">{{ selectedThread?.title ?? "选择 Thread" }}</span>
+                            <span class="block truncate text-[12px] font-semibold text-[var(--text-main)]">{{ selectedThread?.title ?? "选择线索" }}</span>
                             <span class="mt-0.5 block text-[10px] leading-none text-[var(--text-muted)]">
                                 {{ selectedThread ? PLOT_THREAD_STATUS_LABELS[selectedThread.status] : "未选择" }}
                             </span>
@@ -271,13 +271,13 @@ watch(() => [props.selectedThreadId, props.scenes], () => {
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0">
                             <div class="line-clamp-2 text-[11px] leading-4 text-[var(--text-secondary)]">
-                                {{ selectedThread.summary || "当前 Thread 还没有摘要。" }}
+                                {{ selectedThread.summary || "当前线索还没有摘要。" }}
                             </div>
                         </div>
                         <button
                             type="button"
                             class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
-                            title="编辑 Thread"
+                            title="编辑线索"
                             @click="emit('editThread')"
                         >
                             <span class="i-lucide-square-pen h-3 w-3"></span>
@@ -331,8 +331,8 @@ watch(() => [props.selectedThreadId, props.scenes], () => {
 
             <div v-else class="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-input)]/20 px-5 text-center">
                 <span class="i-lucide-waypoints h-6 w-6 text-[var(--text-muted)]"></span>
-                <div class="text-[12px] font-medium text-[var(--text-main)]">当前 Thread 还没有 Scene</div>
-                <div class="text-[11px] leading-5 text-[var(--text-muted)]">可以先新增一个 Scene，或者切换到其他 Thread。</div>
+                <div class="text-[12px] font-medium text-[var(--text-main)]">当前线索还没有场景</div>
+                <div class="text-[11px] leading-5 text-[var(--text-muted)]">可以先新增一个场景，或者切换到其他线索。</div>
             </div>
         </div>
     </div>

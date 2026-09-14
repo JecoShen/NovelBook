@@ -67,7 +67,7 @@ const props = defineProps<{
                     <span class="i-lucide-mouse-pointer-square-dashed h-6 w-6"></span>
                 </div>
                 <div class="mt-4 text-sm font-semibold text-[var(--text-main)]">尚未选中对象</div>
-                <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">从左侧或中间主视图选择一个 Thread、Scene、Chapter 或 Plot 后，这里会显示当前详情。</div>
+                <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">从左侧或中间主视图选择一个线索、场景、章节或剧情后，这里会显示当前详情。</div>
             </div>
         </div>
     </aside>

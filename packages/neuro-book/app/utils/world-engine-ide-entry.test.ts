@@ -227,8 +227,8 @@ describe("World Engine IDE entry", () => {
         expect(previewPage).toContain("返回 ${result.issues.length} 个 issue");
         expect(previewPage).toContain("import {useDialog} from \"nbook/app/composables/useDialog\";");
         expect(previewPage).toContain("const {confirm: confirmDialog} = useDialog();");
-        expect(previewPage).toContain("!await confirmDialog(`确定要删除 slice");
-        expect(previewPage).not.toContain("window.confirm(`确定要删除 slice");
+        expect(previewPage).toContain("!await confirmDialog(`确定要删除切片");
+        expect(previewPage).not.toContain("window.confirm(`确定要删除切片");
         expect(previewPage).toContain("WorldEnginePreviewProjectPanel");
         expect(previewPage).toContain("WorldEnginePreviewActions");
         expect(previewPage).toContain("WorldEnginePreviewStatePanel");
@@ -319,7 +319,7 @@ describe("World Engine IDE entry", () => {
         expect(previewActions).toContain("const canQueryState = computed(() => props.projectReady && !props.loadingWorld && !props.actionBusy && (props.queryForm.subjectIds.trim() || props.queryForm.type.trim()));");
         expect(previewPage).toContain("async function queryState(options: {clearActionIssues?: boolean} = {}): Promise<void> {\n    if (loadingWorld.value && options.clearActionIssues !== false) return;");
         expect(previewActions).toContain(":disabled=\"!canQueryState\"");
-        expect(previewActions).toContain("Create Subject");
+        expect(previewActions).toContain("创建主体");
         expect(previewActions).toContain("Write Slice");
         expect(previewActions).toContain("<fieldset class=\"space-y-2 disabled:opacity-60\" :disabled=\"loadingWorld || actionBusy\">");
         expect(previewActions.match(/<fieldset class="space-y-2 disabled:opacity-60" :disabled="loadingWorld \|\| actionBusy">/g)?.length).toBe(3);
@@ -339,7 +339,7 @@ describe("World Engine IDE entry", () => {
         expect(previewActions).toContain("move-selected-mutation");
         expect(previewActions).not.toContain("Resettle");
         expect(previewActions).not.toContain(removedToken("rese", "ttle", "-timeline"));
-        expect(previewMutationBuilder).toContain("Mutation Builder");
+        expect(previewMutationBuilder).toContain("变更构建");
         expect(previewMutationBuilder).toContain("WorldEngineMutationListControls");
         expect(previewMutationBuilder).toContain("WorldEngineMutationActionButtons");
         expect(previewMutationBuilder).toContain("valueHint");
@@ -368,7 +368,7 @@ describe("World Engine IDE entry", () => {
         expect(previewStatePanel).toContain("本次操作 issues");
         expect(previewStatePanel).toContain("i-lucide-trash-2");
         expect(previewStatePanel).toContain("aria-label=\"载入编辑 slice\"");
-        expect(previewStatePanel).toContain("aria-label=\"删除 slice\"");
+        expect(previewStatePanel).toContain("aria-label=\"删除切片\"");
         expect(previewStatePanel).toContain("编辑");
         expect(previewStatePanel).toContain("删除");
         expect(previewStatePanel).toContain("refresh");
@@ -382,7 +382,7 @@ describe("World Engine IDE entry", () => {
         expect(workbench).toContain("function openWorkspacePathFromWorkbench(path: string): Promise<void>");
         expect(workbench).toContain("打开工作区文件会关闭 Workbench 并放弃这些会话草稿");
         expect(workbench).toContain("const {confirm: confirmDialog} = useDialog();");
-        expect(workbench).toContain("confirmDialog(`确定要删除 slice");
+        expect(workbench).toContain("confirmDialog(`确定要删除切片");
         expect(workbench).toContain("emit(\"update:modelValue\", false);");
         expect(workbench).toContain("await nextTick();");
         expect(workbench).toContain("emit(\"openWorkspacePath\", targetPath);");
@@ -708,7 +708,7 @@ describe("World Engine IDE entry", () => {
         expect(workbench).toContain("data-testid=\"world-slice-composer-close\"");
         expect(workbench).toContain("aria-label=\"关闭 Slice Composer\"");
         expect(workbench).toContain("data-testid=\"world-workbench-close\"");
-        expect(workbench).toContain("aria-label=\"关闭 World Engine Workbench\"");
+        expect(workbench).toContain("aria-label=\"关闭世界引擎工作台\"");
         expect(workbench).toContain("当前 Slice Composer 有未保存草稿，确定关闭吗？");
         expect(workbench).toContain("Slice Composer 正在保存，请稍候再关闭。");
         expect(workbench).toContain("Slice Composer 正在保存，请稍候再关闭 Workbench。");
@@ -915,7 +915,7 @@ describe("World Engine IDE entry", () => {
         expect(workbenchPreviewInspector).toContain("buildWorldWorkbenchSubjectFileProposals");
         expect(workbenchPreviewInspector).toContain("data-testid=\"subject-file-proposals\"");
         expect(workbenchPreviewInspector).toContain("data-testid=\"subject-file-proposal-count\"");
-        expect(workbenchPreviewInspector).toContain("Subject file proposals");
+        expect(workbenchPreviewInspector).toContain("主体文件建议");
         expect(workbenchPreviewInspector).toContain("仅生成建议，不会自动写入 simulation/subjects");
         expect(workbenchPreviewInspector).toContain("formatWorldWorkbenchSubjectFileProposal");
         expect(workbenchPreviewInspector).toContain("navigator.clipboard.writeText");
@@ -1102,7 +1102,7 @@ describe("World Engine IDE entry", () => {
         expect(mutationEditor).toContain("loadMutationToBuilder");
         expect(mutationEditor).toContain("String(next.length - 1)");
         expect(mutationEditor).toContain("mutationLoadOptions.value.length");
-        expect(mutationBuilder).toContain("Mutation Builder");
+        expect(mutationBuilder).toContain("变更构建");
         expect(mutationBuilder).toContain("builderValueHint");
         expect(mutationBuilder).toContain("WorldEngineMutationListControls");
         expect(mutationBuilder).toContain("WorldEngineMutationActionButtons");
@@ -1202,7 +1202,7 @@ describe("World Engine IDE entry", () => {
         expect(mutationEditor).toContain("mutation value 必须是 JSON object");
         expect(mutationEditor).toContain("必须是 JSON object");
         expect(mutationEditor).toContain("objectFieldRefOptions");
-        expect(subjectCreator).toContain("Create Subject");
+        expect(subjectCreator).toContain("创建主体");
         expect(subjectCreator).toContain("/api/projects/world-engine/subjects");
         expect(subjectCreator).toContain("$fetch<CreateSubjectResultDto>");
         expect(subjectCreator).toContain("issues: result.issues");
@@ -1225,7 +1225,7 @@ describe("World Engine IDE entry", () => {
         expect(sliceInspector).toContain("selectedSlice.issues");
         expect(sliceInspector).toContain("i-lucide-user-round");
         expect(sliceInspector).toContain("i-lucide-trash-2");
-        expect(sliceInspector).toContain("aria-label=\"删除 slice\"");
+        expect(sliceInspector).toContain("aria-label=\"删除切片\"");
         expect(sliceInspector).toContain("删除");
         expect(sliceInspector).toContain("query-at-slice");
         expect(sliceInspector).toContain("query-slice-subjects");

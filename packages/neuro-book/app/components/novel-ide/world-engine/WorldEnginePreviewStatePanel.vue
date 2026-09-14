@@ -114,7 +114,7 @@ function formatSlicePatches(patches: PreviewSliceMutation[] | undefined): string
             <!-- Subject 列表 -->
             <div class="border-b border-[var(--border-color)] lg:border-b-0 lg:border-r">
                 <div class="flex items-center justify-between border-b border-[var(--border-color)] px-3 py-2">
-                    <div class="text-xs font-semibold uppercase text-[var(--text-secondary)]">Subjects</div>
+                    <div class="text-xs font-semibold uppercase text-[var(--text-secondary)]" title="SUBJECTS">主体</div>
                     <button type="button" class="rounded p-1 hover:bg-[var(--bg-hover)] disabled:opacity-50" :disabled="loadingWorld || actionBusy || !projectReady" title="刷新" @click="emit('refresh')">
                         <span :class="loadingWorld ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-refresh-cw'" class="h-4 w-4"></span>
                     </button>
@@ -127,7 +127,7 @@ function formatSlicePatches(patches: PreviewSliceMutation[] | undefined): string
                             <span>{{ subject.type }}</span>
                         </div>
                     </button>
-                    <div v-if="subjects.length === 0" class="px-3 py-8 text-center text-sm text-[var(--text-muted)]">暂无 subject</div>
+                    <div v-if="subjects.length === 0" class="px-3 py-8 text-center text-sm text-[var(--text-muted)]">暂无主体</div>
                 </div>
             </div>
 
@@ -135,8 +135,8 @@ function formatSlicePatches(patches: PreviewSliceMutation[] | undefined): string
             <div class="min-w-0">
                 <div class="border-b border-[var(--border-color)] px-4 py-3">
                     <div class="flex items-center justify-between">
-                        <div class="text-xs font-semibold uppercase text-[var(--text-secondary)]">Timeline</div>
-                        <div class="text-xs text-[var(--text-muted)]">{{ latestSliceTime || "无切面" }}</div>
+                        <div class="text-xs font-semibold uppercase text-[var(--text-secondary)]" title="TIMELINE">时间线</div>
+                        <div class="text-xs text-[var(--text-muted)]">{{ latestSliceTime || "暂无切片" }}</div>
                     </div>
                 </div>
                 <div class="max-h-[360px] overflow-auto">
@@ -156,7 +156,7 @@ function formatSlicePatches(patches: PreviewSliceMutation[] | undefined): string
                                     <span class="i-lucide-pencil h-3.5 w-3.5"></span>
                                     编辑
                                 </button>
-                                <button type="button" class="inline-flex h-7 items-center gap-1 rounded-md border border-transparent px-2 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger)] disabled:opacity-50" :disabled="loadingWorld || actionBusy || !projectReady" title="删除 slice" aria-label="删除 slice" @click="emit('delete-slice', slice.id)">
+                                <button type="button" class="inline-flex h-7 items-center gap-1 rounded-md border border-transparent px-2 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger)] disabled:opacity-50" :disabled="loadingWorld || actionBusy || !projectReady" title="删除切片" aria-label="删除切片" @click="emit('delete-slice', slice.id)">
                                     <span class="i-lucide-trash-2 h-3.5 w-3.5"></span>
                                     删除
                                 </button>

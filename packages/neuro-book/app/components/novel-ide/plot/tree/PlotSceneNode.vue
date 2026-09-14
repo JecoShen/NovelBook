@@ -114,7 +114,7 @@ const isOrphan = computed(() => {
                 class="rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-2 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
                 @click.stop="props.data.actions.detachScene(props.data.scene.id)"
             >
-                {{ isOrphan ? "断开连线" : "脱离 Thread" }}
+                {{ isOrphan ? "断开连线" : "脱离线索" }}
             </button>
             <button
                 type="button"

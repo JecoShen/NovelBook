@@ -34,14 +34,14 @@ function formatMutationValue(mutation: WorldSlicePatchDto): string {
 <template>
     <!-- Selected Slice 检查器 -->
     <div>
-        <div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">Selected Slice</div>
+        <div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]" title="SLICE · 一次状态变更">当前切片</div>
         <div v-if="selectedSlice" class="rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] p-3">
             <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
                     <div class="truncate text-[13px] font-medium text-[var(--text-main)]">{{ selectedSlice.title || selectedSlice.id }}</div>
                     <div class="mt-1 text-[12px] text-[var(--text-muted)]">{{ selectedSlice.time }} · {{ selectedSlice.kind }}</div>
                 </div>
-                <button type="button" class="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger)] disabled:opacity-50" :disabled="actionBusy" title="删除 slice" aria-label="删除 slice" @click="emit('delete-slice')">
+                <button type="button" class="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger)] disabled:opacity-50" :disabled="actionBusy" title="删除切片" aria-label="删除切片" @click="emit('delete-slice')">
                     <span :class="actionBusy ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-trash-2'" class="h-3.5 w-3.5"></span>
                     删除
                 </button>

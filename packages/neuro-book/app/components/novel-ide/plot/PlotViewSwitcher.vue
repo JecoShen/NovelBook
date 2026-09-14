@@ -17,8 +17,8 @@ const emit = defineEmits<{
 }>();
 
 const viewItems: ViewItem[] = [
-    {value: "locator", label: "线索", hint: "找 Thread", iconClass: "i-lucide-compass"},
-    {value: "thread", label: "线程", hint: "排 Scene", iconClass: "i-lucide-waypoints"},
+    {value: "locator", label: "定位", hint: "找线索", iconClass: "i-lucide-compass"},
+    {value: "thread", label: "线索", hint: "排场景", iconClass: "i-lucide-waypoints"},
     {value: "chapter", label: "章节", hint: "排节奏", iconClass: "i-lucide-book-copy"},
     {value: "tree", label: "树图", hint: "看全局", iconClass: "i-lucide-git-branch-plus"},
 ];

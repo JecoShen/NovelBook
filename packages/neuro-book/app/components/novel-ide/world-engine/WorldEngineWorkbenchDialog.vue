@@ -884,7 +884,7 @@ async function deleteSelectedSlice(): Promise<void> {
         setWorkbenchError("请先选择一个 slice。");
         return;
     }
-    if (!await confirmDialog(`确定要删除 slice「${slice.title || slice.id}」吗？此操作不可恢复。`, "删除 World Engine Slice")) {
+    if (!await confirmDialog(`确定要删除切片「${slice.title || slice.id}」吗？此操作不可恢复。`, "删除切片")) {
         return;
     }
     actionBusy.value = true;
@@ -896,7 +896,7 @@ async function deleteSelectedSlice(): Promise<void> {
             query: projectQuery(),
         });
         notification.success(
-            result.issues.length ? `已删除 slice ${slice.id}，删后返回 ${result.issues.length} 个 issue。` : `已删除 slice ${slice.id}`,
+            result.issues.length ? `已删除切片 ${slice.id}，删后返回 ${result.issues.length} 个 issue。` : `已删除切片 ${slice.id}`,
             { title: "删除 Slice 成功" }
         );
         clearSessionStateForDeletedSlice(slice.id);
@@ -910,7 +910,7 @@ async function deleteSelectedSlice(): Promise<void> {
         recordTransientIssues(result.issues, slice.id, slice);
     } catch (deleteError) {
         notification.error(
-            resolveApiErrorMessage(deleteError, "删除 slice 失败"),
+            resolveApiErrorMessage(deleteError, "删除切片失败"),
             { title: "删除 Slice 失败" }
         );
     } finally {
@@ -1847,9 +1847,9 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
             <div class="world-engine-workbench-theme flex min-w-0 flex-1 items-center gap-3">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--accent-main)_58%,var(--border-color))] bg-[color-mix(in_srgb,var(--accent-main)_18%,var(--bg-panel))] text-[12px] font-bold text-[var(--accent-main)]">WE</span>
                 <div class="min-w-0">
-                    <div class="text-[16px] font-semibold text-[var(--text-main)]">World Engine Workbench</div>
+                    <div class="text-[16px] font-semibold text-[var(--text-main)]" title="WORLD ENGINE WORKBENCH">世界引擎工作台</div>
                     <div class="flex min-w-0 items-center gap-2 truncate text-[12px] text-[var(--text-muted)]">
-                        <span class="truncate">{{ props.projectTitle || props.projectRoot || "未选择 Project" }}</span>
+                        <span class="truncate">{{ props.projectTitle || "未选择 Project" }}</span>
                         <span v-if="workbenchSchema.calendar.format" class="hidden rounded-md border border-[var(--border-color)] px-1.5 py-0.5 text-[10px] md:inline">{{ workbenchSchema.calendar.format }}</span>
                         <span class="hidden truncate lg:inline">{{ worldViewLabel }}</span>
                     </div>
@@ -1904,7 +1904,7 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                         <span class="i-lucide-external-link h-3.5 w-3.5"></span>
                         Preview
                     </button>
-                    <button type="button" data-testid="world-workbench-close" aria-label="关闭 World Engine Workbench" title="关闭 World Engine Workbench" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="void requestWorkbenchClose()">
+                    <button type="button" data-testid="world-workbench-close" aria-label="关闭世界引擎工作台" title="关闭世界引擎工作台" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="void requestWorkbenchClose()">
                         <span class="i-lucide-x h-4 w-4"></span>
                     </button>
                 </div>
@@ -1997,7 +1997,7 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                             </button>
                         </section>
                         <details class="rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)]" :open="subjectCreatorOpen" @toggle="updateSubjectCreatorOpen">
-                            <summary class="cursor-pointer px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--we-text-secondary)]">创建 Subject</summary>
+                            <summary class="cursor-pointer px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--we-text-secondary)]" title="SUBJECT · 角色与万物">创建主体</summary>
                             <WorldEngineSubjectCreator
                                 :project-root="props.projectRoot"
                                 :schema="schema"

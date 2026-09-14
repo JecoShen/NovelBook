@@ -82,8 +82,8 @@ const headerGridStyle = computed(() => {
                     <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-muted)]">
                         <span class="i-lucide-waypoints h-6 w-6"></span>
                     </div>
-                    <div class="mt-4 text-sm font-semibold text-[var(--text-main)]">当前 StoryPhase 还没有可展示的 Thread</div>
-                    <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">时间轴按单 StoryPhase 工作。请切换到其他 Phase，或先为这个阶段补充 Thread 与 Scene。</div>
+                    <div class="mt-4 text-sm font-semibold text-[var(--text-main)]">当前阶段还没有可展示的线索</div>
+                    <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">时间轴按单阶段工作。请切换到其他阶段，或先为这个阶段补充线索与场景。</div>
                 </div>
             </div>
         </div>

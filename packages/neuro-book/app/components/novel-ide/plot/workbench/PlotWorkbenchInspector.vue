@@ -151,12 +151,12 @@ const chapterOptions = computed<SelectOption[]>(() => [
 ]);
 const currentTitle = computed(() => {
     if (props.mode === "thread") {
-        return props.thread?.title ?? "Thread";
+        return props.thread?.title ?? "线索";
     }
     if (props.mode === "scene") {
-        return props.scene?.title ?? "Scene";
+        return props.scene?.title ?? "场景";
     }
-    return "Scene";
+    return "场景";
 });
 const refsByKind = computed(() => {
     const groups: Record<WorkbenchInlineRefKind, WorkbenchInlineRef[]> = {
@@ -171,8 +171,8 @@ const refsByKind = computed(() => {
 });
 const visibleRefGroups = computed(() => [
     {kind: "content" as const, label: "内容节点", items: refsByKind.value.content},
-    {kind: "thread" as const, label: "Thread", items: refsByKind.value.thread},
-    {kind: "scene" as const, label: "Scene", items: refsByKind.value.scene},
+    {kind: "thread" as const, label: "线索", items: refsByKind.value.thread},
+    {kind: "scene" as const, label: "场景", items: refsByKind.value.scene},
 ].filter((group) => group.items.length > 0));
 const showRefs = computed(() => props.mode === "scene" && Boolean(props.scene));
 
@@ -292,7 +292,7 @@ function updateWorldAnchor(patch: Partial<PlotThreadPanelScene["worldAnchor"]>):
             <section v-if="props.mode === 'thread' && props.thread" class="space-y-3">
                 <div class="grid grid-cols-[minmax(0,1fr)_112px] gap-2">
                     <FormField label="标题">
-                        <FormInput :model-value="props.thread.title" placeholder="Thread 标题" @update:model-value="updateThread({title: $event})" />
+                        <FormInput :model-value="props.thread.title" placeholder="线索标题" @update:model-value="updateThread({title: $event})" />
                     </FormField>
                     <FormField label="状态">
                         <FormSelect :model-value="props.thread.status" :options="threadStatusOptions" @update:model-value="updateThread({status: $event as StoryThreadStatusDto})" />
@@ -307,7 +307,7 @@ function updateWorldAnchor(patch: Partial<PlotThreadPanelScene["worldAnchor"]>):
                         :rows="12"
                         :min-height="228"
                         :max-height="380"
-                        placeholder="Thread 摘要，可使用 [标题](lorebook/...) 或 [Scene](scene://...)"
+                        placeholder="线索摘要，可使用 [标题](lorebook/...) 或 [场景](scene://...)"
                         @update:model-value="updateThread({summary: $event})"
                     />
                 </FormField>
@@ -326,7 +326,7 @@ function updateWorldAnchor(patch: Partial<PlotThreadPanelScene["worldAnchor"]>):
             <section v-else-if="props.mode === 'scene' && props.scene" class="space-y-3">
                 <div class="grid grid-cols-[minmax(0,1fr)_112px] gap-2">
                     <FormField label="标题">
-                        <FormInput :model-value="props.scene.title" placeholder="Scene 标题" @update:model-value="updateScene({title: $event})" />
+                        <FormInput :model-value="props.scene.title" placeholder="场景标题" @update:model-value="updateScene({title: $event})" />
                     </FormField>
                     <FormField label="状态">
                         <FormSelect :model-value="props.scene.status" :options="sceneStatusOptions" @update:model-value="updateScene({status: $event as StorySceneStatusDto})" />
@@ -371,7 +371,7 @@ function updateWorldAnchor(patch: Partial<PlotThreadPanelScene["worldAnchor"]>):
                         :rows="12"
                         :min-height="228"
                         :max-height="380"
-                        placeholder="Scene 摘要，可使用内容节点或 scene inline ref"
+                        placeholder="场景摘要，可使用内容节点或 scene 内联引用"
                         @update:model-value="updateScene({summary: $event})"
                     />
                     <div class="mt-1 text-right text-[10px] text-[var(--text-muted)]">{{ props.scene.summary.length }}/5000</div>
@@ -382,7 +382,7 @@ function updateWorldAnchor(patch: Partial<PlotThreadPanelScene["worldAnchor"]>):
                         :rows="8"
                         :min-height="152"
                         :max-height="380"
-                        placeholder="Scene 目的"
+                        placeholder="场景目的"
                         @update:model-value="updateScene({purpose: $event || null})"
                     />
                 </FormField>

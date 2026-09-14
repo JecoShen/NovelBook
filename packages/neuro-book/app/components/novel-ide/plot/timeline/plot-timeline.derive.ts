@@ -114,7 +114,7 @@ function resolveChapterSlotCounts(
 
 /**
  * 计算草稿尾区需要保留多少个槽位。
- * 规则是各泳道未挂章 Scene 数量的最大值。
+ * 规则是各泳道未挂章场景 数量的最大值。
  */
 function resolveDraftSlotCount(
     threads: PlotPreviewThread[],
@@ -165,7 +165,7 @@ function buildTimelineSegments(
             id: "draft-tail",
             kind: "draft",
             title: "草稿尾区",
-            subtitle: "未挂章 Scene",
+            subtitle: "未挂章场景",
             start: currentStart,
             span: draftSlotCount,
             chapterId: null,

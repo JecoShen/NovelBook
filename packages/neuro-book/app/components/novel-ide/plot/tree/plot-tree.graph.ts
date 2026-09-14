@@ -239,14 +239,14 @@ export function connectPlotTreeScene(
     if (!targetScene) {
         return {
             ok: false,
-            message: "目标 Scene 不存在。",
+            message: "目标场景不存在。",
         };
     }
 
     if (sourceId === targetId) {
         return {
             ok: false,
-            message: "Scene 不能连接到自己。",
+            message: "场景不能连接到自己。",
         };
     }
 
@@ -259,7 +259,7 @@ export function connectPlotTreeScene(
     if (!sourceScene) {
         return {
             ok: false,
-            message: "来源 Scene 不存在。",
+            message: "来源场景不存在。",
         };
     }
 
@@ -509,7 +509,7 @@ function connectRootToScene(graph: PlotTreeGraph, targetScene: PlotTreeScene): P
     if (targetScene.threadId && getSameThreadPredecessor(graph, targetScene)) {
         return {
             ok: false,
-            message: "Thread 内只允许入口 Scene 直接接 root。",
+            message: "线索内只允许入口场景直接接 root。",
         };
     }
 
@@ -519,7 +519,7 @@ function connectRootToScene(graph: PlotTreeGraph, targetScene: PlotTreeScene): P
     if (!nextTargetScene) {
         return {
             ok: false,
-            message: "目标 Scene 不存在。",
+            message: "目标场景不存在。",
         };
     }
 
@@ -556,7 +556,7 @@ function connectSceneWithinThread(
     if (!nextSourceScene || !nextTargetScene) {
         return {
             ok: false,
-            message: "来源或目标 Scene 不存在。",
+            message: "来源或目标场景不存在。",
         };
     }
 
@@ -592,7 +592,7 @@ function connectSceneAcrossThread(
     if (targetScene.threadId && getSameThreadPredecessor(graph, targetScene)) {
         return {
             ok: false,
-            message: "跨 Thread 连线只能接到目标 Thread 的入口 Scene。",
+            message: "跨线索连线只能接到目标线索的入口场景。",
         };
     }
 
@@ -609,7 +609,7 @@ function connectSceneAcrossThread(
     if (!nextTargetScene) {
         return {
             ok: false,
-            message: "目标 Scene 不存在。",
+            message: "目标场景不存在。",
         };
     }
 

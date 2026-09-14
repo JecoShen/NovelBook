@@ -17,11 +17,11 @@ const props = defineProps<NodeProps<PlotTreeRootNodeData>>();
 
         <div class="mt-4 grid grid-cols-2 gap-2">
             <div class="rounded-2xl bg-[var(--bg-panel)]/65 px-3 py-2">
-                <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-secondary)]">Thread</div>
+                <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-secondary)]">线索</div>
                 <div class="mt-1 text-sm font-semibold">{{ props.data.threadCount }}</div>
             </div>
             <div class="rounded-2xl bg-[var(--bg-panel)]/65 px-3 py-2">
-                <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-secondary)]">Scene</div>
+                <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-secondary)]">场景</div>
                 <div class="mt-1 text-sm font-semibold">{{ props.data.sceneCount }}</div>
             </div>
         </div>

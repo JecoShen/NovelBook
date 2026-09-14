@@ -77,8 +77,8 @@ const targetSections = computed<AgentTriggerMenuSection[]>(() => {
     }
     
     return [
-        { id: "thread", title: "Thread", items: threadItems },
-        { id: "scene", title: "Scene", items: sceneItems },
+        { id: "thread", title: "线索", items: threadItems },
+        { id: "scene", title: "场景", items: sceneItems },
         { id: "lorebook", title: "Lorebook", items: lorebookItems }
     ].filter(s => s.items.length > 0);
 });

@@ -96,7 +96,7 @@ function displayInlineText(text: string | null): string {
                 <span class="flex h-7 w-7 items-center justify-center rounded-[7px] border border-[var(--border-color)] bg-[var(--bg-main)]/80 text-[12px] font-semibold text-[var(--text-secondary)] shadow-sm">
                     {{ props.index + 1 }}
                 </span>
-                <button ref="handleRef" type="button" class="flex cursor-grab items-center justify-center rounded py-1 opacity-40 transition-opacity hover:bg-[var(--bg-hover)] hover:opacity-100 group-hover:opacity-70 active:cursor-grabbing" title="拖拽排序 Scene" @click.stop>
+                <button ref="handleRef" type="button" class="flex cursor-grab items-center justify-center rounded py-1 opacity-40 transition-opacity hover:bg-[var(--bg-hover)] hover:opacity-100 group-hover:opacity-70 active:cursor-grabbing" title="拖拽排序场景" @click.stop>
                     <span class="i-lucide-grip-vertical h-4 w-4 text-[var(--text-muted)]"></span>
                 </button>
             </div>
@@ -126,13 +126,13 @@ function displayInlineText(text: string | null): string {
                     
                     <!-- 右侧操作区 -->
                     <div class="flex shrink-0 items-center gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
-                        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-[var(--text-muted)]" title="上移 Scene" :disabled="!props.canMoveUp" @click.stop="emit('moveScene', {sceneId: props.scene.id, direction: 'up'})">
+                        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-[var(--text-muted)]" title="上移场景" :disabled="!props.canMoveUp" @click.stop="emit('moveScene', {sceneId: props.scene.id, direction: 'up'})">
                             <span class="i-lucide-arrow-up h-3.5 w-3.5"></span>
                         </button>
-                        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-[var(--text-muted)]" title="下移 Scene" :disabled="!props.canMoveDown" @click.stop="emit('moveScene', {sceneId: props.scene.id, direction: 'down'})">
+                        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-[var(--text-muted)]" title="下移场景" :disabled="!props.canMoveDown" @click.stop="emit('moveScene', {sceneId: props.scene.id, direction: 'down'})">
                             <span class="i-lucide-arrow-down h-3.5 w-3.5"></span>
                         </button>
-                        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑 Scene" @click.stop="emit('editScene', props.scene.id)">
+                        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑场景" @click.stop="emit('editScene', props.scene.id)">
                             <span class="i-lucide-pencil-line h-3.5 w-3.5"></span>
                         </button>
                     </div>

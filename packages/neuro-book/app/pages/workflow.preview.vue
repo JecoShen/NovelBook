@@ -403,7 +403,7 @@ watch(formalProjectSession.state, (next, previous) => {
                     <div class="text-[11px] uppercase tracking-[0.3em] text-[var(--text-muted)]">Workflow Preview · Task 110 / 111</div>
                     <h1 class="mt-2 text-2xl font-semibold text-[var(--text-main)]">Agent Workflow 编排 · 正式入口与内核演示</h1>
                     <p class="mt-3 text-sm leading-7 text-[var(--text-secondary)]">
-                        nb-workflow 内核跑在 <b>NeuroBook 真实 session 层</b>上：所有参与者都是真实 JSONL session（checkout=moveLeaf、append 显式锚定、excursion 旁支留树上、acquire 按 tag 跨 run 复用）。四个经典场景用确定性 mock responder 驱动；「真实 Agent 并发问答」跑真 profile + 真模型。
+                        nb-workflow 内核跑在 <b>NeuroBook 真实 session 层</b>上：所有参与者都是真实 JSONL session（checkout=moveLeaf、append 显式锚定、excursion 旁支留树上、acquire 按 tag 跨 run 复用）。四个经典场景用确定性示例响应器驱动；「真实 Agent 并发问答」跑真 profile + 真模型。
                     </p>
                     <div class="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
                         <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-1">Route /workflow.preview</span>

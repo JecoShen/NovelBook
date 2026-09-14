@@ -103,7 +103,7 @@ const nodeActions: PlotTreeNodeActions = {
     },
     deleteThread(threadId) {
         if (hasThreadScenes(draftGraph.value, threadId)) {
-            notifyUser("当前 Thread 仍然包含 Scene，首版原型只允许删除空 Thread。");
+            notifyUser("当前线索仍然包含场景，首版原型只允许删除空线索。");
             return;
         }
 
@@ -181,7 +181,7 @@ const nodeActions: PlotTreeNodeActions = {
     },
     deleteScene(sceneId) {
         if (hasSceneChildren(draftGraph.value, sceneId)) {
-            notifyUser("当前 Scene 仍然挂有子节点。请先断开或重连子节点，再删除该 Scene。");
+            notifyUser("当前场景仍然挂有子节点。请先断开或重连子节点，再删除该场景。");
             return;
         }
 

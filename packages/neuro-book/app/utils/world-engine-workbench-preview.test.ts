@@ -66,7 +66,7 @@ function findSnapshotSubject(snapshots: WorldWorkbenchPreviewSnapshot[], sliceId
 }
 
 describe("World Engine Workbench preview redesign", () => {
-    it("保留 mock 数据源和三栏 preview 入口", async () => {
+    it("保留示例数据源和三栏 preview 入口", async () => {
         const page = await readSource(pagePath);
         const workbenchDialog = await readSource(workbenchDialogPath);
         const mock = await readSource(mockPath);
@@ -102,13 +102,13 @@ describe("World Engine Workbench preview redesign", () => {
         expect(page).not.toContain("--we-accent: #078768");
         expect(page).not.toContain("--bg-main: var(--we-bg-canvas)");
         expect(page).not.toContain("--accent-main: var(--we-accent)");
-        expect(page).toContain("mock 数据源");
+        expect(page).toContain("示例数据源");
         expect(page).toContain("mockWorkbenchSubjectSystemSummaries");
         expect(page).toContain(":subject-system-summaries=\"mockWorkbenchSubjectSystemSummaries\"");
         expect(page).toContain("function openMockWorkspacePath(path: string): void");
-        expect(page).toContain("mock 预览不会打开真实文件");
+        expect(page).toContain("示例预览不会打开真实文件");
         expect(page).toContain("function commitMockSubjectEventProposal(proposal: WorldWorkbenchSubjectFileProposal): void");
-        expect(page).toContain("mock 预览不会写入 events.jsonl");
+        expect(page).toContain("示例预览不会写入 events.jsonl");
         expect(page).toContain("@commit-subject-event-proposal=\"commitMockSubjectEventProposal\"");
         expect(page).toContain("@open-workspace-path=\"openMockWorkspacePath\"");
         expect(page.match(/@open-workspace-path="openMockWorkspacePath"/g)?.length).toBeGreaterThanOrEqual(2);
@@ -209,7 +209,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(page).toContain("world-inspector-restore-rail");
         expect(page).toContain("toggleInspectorPanel");
         expect(page).toContain("@click=\"toggleInspectorPanel\"");
-        expect(page).toContain("浏览器临时 mock");
+        expect(page).toContain("浏览器临时示例");
         expect(page).toContain("已恢复浏览器草稿");
         expect(page).toContain("localStorage.removeItem(localDraftStorageKey)");
         expect(page).toContain("mutationEditorCollapsed = ref(true)");
@@ -486,7 +486,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(sliceList).toContain("sliceKindFilter: \"all\"");
         expect(sliceList).toContain("data-testid=\"slice-list-filter-toolbar\"");
         expect(sliceList).toContain("rounded-md border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-2 py-1.5");
-        expect(sliceList).toContain("font-mono text-[10px] uppercase tracking-[0.12em]");
+        expect(sliceList).toContain("text-[10px] tracking-[0.12em]");
         expect(sliceList).toContain("statusShortcutStats.value.openSlices");
         expect(sliceList).toContain("statusShortcutStats.value.doneSlices");
         expect(sliceList).toContain("statusShortcutStats.value.cleanSlices");

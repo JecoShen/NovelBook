@@ -46,7 +46,7 @@ const emit = defineEmits<{
                 <button
                     type="button"
                     class="rounded-2 p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
-                    title="新增 Scene"
+                    title="新增场景"
                     @click="emit('createScene')"
                 >
                     <span class="i-lucide-plus h-4 w-4"></span>
@@ -54,7 +54,7 @@ const emit = defineEmits<{
                 <button
                     type="button"
                     class="rounded-2 p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
-                    title="编辑 Thread"
+                    title="编辑线索"
                     @click="emit('editThread')"
                 >
                     <span class="i-lucide-pencil-line h-4 w-4"></span>
@@ -62,7 +62,7 @@ const emit = defineEmits<{
                 <button
                     type="button"
                     class="rounded-2 p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
-                    title="Thread 菜单"
+                    title="线索菜单"
                     @click="emit('openThreadMenu', $event)"
                 >
                     <span class="i-lucide-ellipsis h-4 w-4"></span>

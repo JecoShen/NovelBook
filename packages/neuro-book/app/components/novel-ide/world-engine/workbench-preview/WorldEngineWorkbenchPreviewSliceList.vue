@@ -619,20 +619,20 @@ watch(() => props.resetKey, () => {
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-2 py-1.5 text-[11px]" data-testid="slice-list-filter-toolbar">
                 <div class="flex min-w-0 flex-wrap items-center gap-1">
-                    <span class="px-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--we-text-muted)]">kind</span>
+                    <span class="px-1 text-[10px] tracking-[0.12em] text-[var(--we-text-muted)]" title="KIND">类型</span>
                     <SegmentedControl :model-value="props.sliceKindFilter" :options="kindFilterOptions" tone="accent" @update:model-value="updateSliceKindFilter" />
                 </div>
                 <div class="h-5 w-px bg-[var(--we-border)]"></div>
                 <div class="flex min-w-0 flex-wrap items-center gap-1">
-                    <span class="px-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--we-text-muted)]">status</span>
+                    <span class="px-1 text-[10px] tracking-[0.12em] text-[var(--we-text-muted)]" title="STATUS">状态</span>
                     <SegmentedControl :model-value="props.sliceHealthFilter" :options="statusFilterOptions" @update:model-value="updateSliceHealthFilter" />
                 </div>
                 <div class="h-5 w-px bg-[var(--we-border)]"></div>
                 <div class="flex min-w-0 flex-wrap items-center gap-1">
-                    <span class="px-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--we-text-muted)]">layout</span>
+                    <span class="px-1 text-[10px] tracking-[0.12em] text-[var(--we-text-muted)]" title="LAYOUT">布局</span>
                     <SegmentedControl :model-value="layoutCols" :options="layoutOptions" tone="accent" @update:model-value="layoutCols = $event as 'single' | 'double'" />
                 </div>
-                <button v-if="props.sliceKindFilter !== 'all' || props.sliceHealthFilter !== 'all'" type="button" class="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] px-2 text-[11px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)] disabled:opacity-45" :disabled="props.busy" title="清空 kind / status 过滤" @click="clearKindAndHealthFilters">
+                <button v-if="props.sliceKindFilter !== 'all' || props.sliceHealthFilter !== 'all'" type="button" class="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] px-2 text-[11px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)] disabled:opacity-45" :disabled="props.busy" title="清空类型 / 状态过滤" @click="clearKindAndHealthFilters">
                     <span class="i-lucide-rotate-ccw h-3.5 w-3.5"></span>
                     清空
                 </button>
@@ -704,7 +704,7 @@ watch(() => props.resetKey, () => {
                     <template v-if="hasActiveFilters">
                         当前筛选组合过窄<template v-if="selectedSubjectLabel">：{{ selectedSubjectLabel }}</template>
                     </template>
-                    <template v-else>mock 时间线暂时没有切片</template>
+                    <template v-else>示例时间线暂时没有切片</template>
                 </div>
                 <div v-if="hasActiveFilters" class="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <button v-if="props.sliceSearch.trim()" type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-3 text-[12px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)] disabled:opacity-45" :disabled="props.busy" @click="clearSearch">

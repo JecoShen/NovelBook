@@ -113,13 +113,13 @@ function openThreadMenu(thread: PlotThreadPanelThread, event: MouseEvent): void 
     contextMenuX.value = event.clientX;
     contextMenuY.value = event.clientY;
     contextMenuItems.value = [
-        {label: "编辑 Thread", iconClass: "i-lucide-pencil-line", action: () => emit("editThread", thread.id)},
+        {label: "编辑线索", iconClass: "i-lucide-pencil-line", action: () => emit("editThread", thread.id)},
         {label: pinnedThreadSet.value.has(thread.id) ? "取消 Pin" : "Pin 到顶部", iconClass: "i-lucide-pin", action: () => emit("toggleThreadPin", thread.id)},
         {label: thread.isMainThread ? "取消主线" : "设为主线", iconClass: "i-lucide-crown", action: () => emit("toggleThreadMain", thread.id)},
         {separator: true},
         {label: "复制标题", iconClass: "i-lucide-copy", action: () => copyThreadTitle(thread.title)},
         {label: "新建支线", iconClass: "i-lucide-git-branch-plus", action: () => emit("createThread")},
-        {label: "删除 Thread", iconClass: "i-lucide-trash-2", danger: true, action: () => emit("deleteThread", thread.id)},
+        {label: "删除线索", iconClass: "i-lucide-trash-2", danger: true, action: () => emit("deleteThread", thread.id)},
     ];
     contextMenuVisible.value = true;
 }
@@ -180,7 +180,7 @@ onClickOutside(filterPanelRef, () => {
                             <span class="rounded-full border px-2 py-0.5 text-[10px]" :class="threadStatusClass[selectedThread.status]">
                                 {{ PLOT_THREAD_STATUS_LABELS[selectedThread.status] }}
                             </span>
-                            <button type="button" class="inline-flex h-6 w-6 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑 Thread" @click.stop="emit('editThread', selectedThread.id)">
+                            <button type="button" class="inline-flex h-6 w-6 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑线索" @click.stop="emit('editThread', selectedThread.id)">
                                 <span class="i-lucide-pencil-line h-3.5 w-3.5"></span>
                             </button>
                         </span>
@@ -221,7 +221,7 @@ onClickOutside(filterPanelRef, () => {
                             <span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold" :class="thread.isMainThread ? 'workbench-main-chip' : PLOT_THREAD_TONE_STYLES[thread.tone].chipClass">
                                 {{ thread.isMainThread ? "主线" : "支线" }}
                             </span>
-                            <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑 Thread" @click.stop="emit('editThread', thread.id)">
+                            <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑线索" @click.stop="emit('editThread', thread.id)">
                                 <span class="i-lucide-pencil-line h-3 w-3"></span>
                             </button>
                         </span>
@@ -252,7 +252,7 @@ onClickOutside(filterPanelRef, () => {
                             <span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold" :class="thread.isMainThread ? 'workbench-main-chip' : PLOT_THREAD_TONE_STYLES[thread.tone].chipClass">
                                 {{ thread.isMainThread ? "主线" : "支线" }}
                             </span>
-                            <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑 Thread" @click.stop="emit('editThread', thread.id)">
+                            <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑线索" @click.stop="emit('editThread', thread.id)">
                                 <span class="i-lucide-pencil-line h-3 w-3"></span>
                             </button>
                         </span>
@@ -318,7 +318,7 @@ onClickOutside(filterPanelRef, () => {
                 </div>
 
                 <div class="mt-3 grid grid-cols-2 gap-2 text-[11px] text-[var(--text-secondary)]">
-                    <button type="button" class="rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1.5 hover:bg-[var(--bg-hover)]" @click="emit('createThread')">新建 Thread</button>
+                    <button type="button" class="rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1.5 hover:bg-[var(--bg-hover)]" @click="emit('createThread')">新建线索</button>
                     <button type="button" class="rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1.5 hover:bg-[var(--bg-hover)]" @click="emit('update:search', '')">清空搜索</button>
                 </div>
 

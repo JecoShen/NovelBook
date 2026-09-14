@@ -1047,7 +1047,7 @@ defineExpose({
 
             <aside class="space-y-3">
                 <div class="rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] p-3">
-                    <div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">Schema Shortcuts</div>
+                    <div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]" title="SCHEMA SHORTCUTS">Schema 速查</div>
                     <div v-for="type in schemaTypes" :key="`editor:${type.type}`" class="mb-3 last:mb-0">
                         <div class="mb-1 text-[12px] font-medium text-[var(--text-main)]">{{ type.type }}</div>
                         <div class="flex flex-wrap gap-1">

@@ -43,11 +43,11 @@ const sceneCount = computed(() => props.timeline.scenes.length);
 
                 <div class="grid gap-3 sm:grid-cols-4">
                     <div class="rounded-[22px] border border-[var(--border-color)] bg-[var(--bg-input)] px-4 py-3">
-                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Thread</div>
+                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">线索</div>
                         <div class="mt-1 text-lg font-semibold text-[var(--text-main)]">{{ props.timeline.threads.length }}</div>
                     </div>
                     <div class="rounded-[22px] border border-[var(--border-color)] bg-[var(--bg-input)] px-4 py-3">
-                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Scene</div>
+                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">场景</div>
                         <div class="mt-1 text-lg font-semibold text-[var(--text-main)]">{{ sceneCount }}</div>
                     </div>
                     <div class="rounded-[22px] border border-[var(--border-color)] bg-[var(--bg-input)] px-4 py-3">
@@ -64,7 +64,7 @@ const sceneCount = computed(() => props.timeline.scenes.length);
             <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
                 <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">单 StoryPhase</span>
                 <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">正文顺序时间轴</span>
-                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">Thread 泳道</span>
+                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">线索泳道</span>
                 <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">同槽位允许并行</span>
                 <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">草稿尾区</span>
             </div>

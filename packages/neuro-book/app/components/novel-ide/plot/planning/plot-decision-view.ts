@@ -33,8 +33,8 @@ export function buildPlanningNameMaps(input: {
     return {
         actNames: new Map(input.acts.map((act) => [act.id, act.title || act.name])),
         chapterNames: new Map(input.chapters.map((chapter) => [chapter.id, `${chapter.numberLabel} ${chapter.title}`.trim()])),
-        threadNames: new Map(input.threads.map((thread) => [thread.id, thread.title || "未命名 Thread"])),
-        sceneNames: new Map(input.scenes.map((scene) => [scene.id, scene.title || "未命名 Scene"])),
+        threadNames: new Map(input.threads.map((thread) => [thread.id, thread.title || "未命名线索"])),
+        sceneNames: new Map(input.scenes.map((scene) => [scene.id, scene.title || "未命名场景"])),
         promiseNames: new Map(input.promises.map((promise) => [promise.id, promise.title || promise.name])),
         decisionNames: new Map(input.decisions.map((decision) => [decision.id, decision.title || decision.name])),
     };

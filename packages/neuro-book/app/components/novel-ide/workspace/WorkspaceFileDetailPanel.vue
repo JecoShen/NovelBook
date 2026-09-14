@@ -8,6 +8,7 @@ import FormSelect, {type SelectOption} from "nbook/app/components/common/form/Fo
 import {useNovelIdeStore, type WorkspaceFileIssue, type WorkspaceFileNode} from "nbook/app/stores/novel-ide";
 import {isWorkspaceContentScopePath} from "nbook/app/components/novel-ide/workspace/workspace-file-tree";
 import {normalizeLucideIconName, readLucideIconClass} from "nbook/app/utils/lucide-icons";
+import {formatBytes} from "nbook/app/utils/format-bytes";
 
 const FRONTMATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 
@@ -367,7 +368,7 @@ function basename(filePath: string): string {
             <!-- frontmatter 详情 -->
             <div v-if="isManuscriptIndexFile" class="min-w-0 space-y-2 rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] p-2">
                 <div class="flex items-center justify-between gap-2">
-                    <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Manuscript</div>
+                    <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.manuscriptStats") }}</div>
                     <div class="flex shrink-0 items-center gap-2">
                         <span v-if="manuscriptStats.updatedAt" class="text-[10px] text-[var(--text-muted)]">{{ manuscriptStats.updatedAt }}</span>
                         <span v-if="isFrontmatterDirty" class="text-[10px] text-[var(--status-warning)]">{{ t("ide.workspace.common.unsaved") }}</span>
@@ -376,23 +377,23 @@ function basename(filePath: string): string {
                 </div>
                 <div class="grid grid-cols-5 gap-1.5">
                     <div class="rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-1.5">
-                        <div class="text-[8px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.current") }}</div>
-                        <div class="mt-0.5 text-[var(--text-main)]">{{ manuscriptStats.currentWords }}</div>
+                        <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.current") }}</div>
+                        <div class="mt-0.5 text-[var(--text-main)]">{{ manuscriptStats.currentWords.toLocaleString(locale) }}</div>
                     </div>
                     <div class="rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-1.5">
-                        <div class="text-[8px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.total") }}</div>
-                        <div class="mt-0.5 text-[var(--text-main)]">{{ manuscriptStats.totalWords }}</div>
+                        <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.total") }}</div>
+                        <div class="mt-0.5 text-[var(--text-main)]">{{ manuscriptStats.totalWords.toLocaleString(locale) }}</div>
                     </div>
                     <div class="rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-1.5">
-                        <div class="text-[8px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.size") }}</div>
-                        <div class="mt-0.5 text-[var(--text-main)]">{{ manuscriptStats.totalSize }}</div>
+                        <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.size") }}</div>
+                        <div class="mt-0.5 text-[var(--text-main)]">{{ formatBytes(manuscriptStats.totalSize) }}</div>
                     </div>
                     <div class="rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-1.5">
-                        <div class="text-[8px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.chapters") }}</div>
+                        <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.chapters") }}</div>
                         <div class="mt-0.5 text-[var(--text-main)]">{{ manuscriptStats.chapters }}</div>
                     </div>
                     <div class="rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-1.5">
-                        <div class="text-[8px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.files") }}</div>
+                        <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.files") }}</div>
                         <div class="mt-0.5 text-[var(--text-main)]">{{ manuscriptStats.files }}</div>
                     </div>
                 </div>

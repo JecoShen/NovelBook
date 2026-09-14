@@ -131,10 +131,10 @@ const chapterOptions = computed<SelectOption[]>(() => [
  */
 const dialogTitle = computed(() => {
     if (props.target === "thread") {
-        return props.mode === "create" ? "新建 Thread" : "编辑 Thread";
+        return props.mode === "create" ? "新建线索" : "编辑线索";
     }
 
-    return props.mode === "create" ? "新建 Scene" : "编辑 Scene";
+    return props.mode === "create" ? "新建场景" : "编辑场景";
 });
 
 const isDirty = computed(() => {
@@ -315,7 +315,7 @@ function submit(): void {
     if (props.target === "thread") {
         emit("save", {
             target: "thread",
-            title: threadDraft.title.trim() || "未命名 Thread",
+            title: threadDraft.title.trim() || "未命名线索",
             summary: threadDraft.summary.trim(),
             status: threadDraft.status,
             isMainThread: threadDraft.isMainThread,
@@ -337,7 +337,7 @@ function submit(): void {
 
     emit("save", {
         target: "scene",
-        title: sceneDraft.title.trim() || "未命名 Scene",
+        title: sceneDraft.title.trim() || "未命名场景",
         summary: sceneDraft.summary.trim(),
         purpose: sceneDraft.purpose.trim() || null,
         status: sceneDraft.status,
@@ -472,7 +472,7 @@ watch(threadTags, (value) => {
         <div v-if="props.target === 'thread'" class="space-y-3 px-1 mt-1">
             <div class="grid grid-cols-[minmax(0,1fr)_112px] gap-2">
                 <FormField label="标题">
-                    <FormInput v-model="threadDraft.title" placeholder="Thread 标题" />
+                    <FormInput v-model="threadDraft.title" placeholder="线索标题" />
                 </FormField>
                 <FormField label="状态">
                     <FormSelect v-model="threadDraft.status" :options="threadStatusOptions" />
@@ -492,7 +492,7 @@ watch(threadTags, (value) => {
                     v-model="threadDraft.summary"
                     :rows="5"
                     default-mode="rich"
-                    placeholder="Thread 摘要"
+                    placeholder="线索摘要"
                     :menu-refresh-key="menuRefreshKey"
                     :resolve-menu="resolveMenu"
                 />
@@ -514,7 +514,7 @@ watch(threadTags, (value) => {
         <div v-else class="space-y-3 px-1 mt-1">
             <div class="grid grid-cols-[minmax(0,1fr)_112px] gap-2">
                 <FormField label="标题">
-                    <FormInput v-model="sceneDraft.title" placeholder="Scene 标题" />
+                    <FormInput v-model="sceneDraft.title" placeholder="场景标题" />
                 </FormField>
                 <FormField label="状态">
                     <FormSelect v-model="sceneDraft.status" :options="sceneStatusOptions" />
@@ -540,7 +540,7 @@ watch(threadTags, (value) => {
                     v-model="sceneDraft.summary"
                     :rows="5"
                     default-mode="rich"
-                    placeholder="Scene 摘要"
+                    placeholder="场景摘要"
                     :menu-refresh-key="menuRefreshKey"
                     :resolve-menu="resolveMenu"
                 />
@@ -551,7 +551,7 @@ watch(threadTags, (value) => {
                     v-model="sceneDraft.purpose"
                     :rows="4"
                     default-mode="rich"
-                    placeholder="Scene 目的"
+                    placeholder="场景目的"
                     :menu-refresh-key="menuRefreshKey"
                     :resolve-menu="resolveMenu"
                 />
@@ -630,7 +630,7 @@ watch(threadTags, (value) => {
         </div>
         <FormAnnotationDialog
             v-model="aiDialogOpen"
-            :title="props.target === 'thread' ? 'Thread AI 批注' : 'Scene AI 批注'"
+            :title="props.target === 'thread' ? '线索 AI 批注' : '场景 AI 批注'"
             :form-kind="props.target === 'thread' ? 'story_thread' : 'story_scene'"
             :draft="props.target === 'thread'
                 ? {

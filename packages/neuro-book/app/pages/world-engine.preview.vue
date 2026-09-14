@@ -314,7 +314,7 @@ async function activatePreviewProject(projectRoot: string): Promise<boolean> {
         suppressProjectSelectionWatcher = true;
         selectedProjectRoot.value = "";
         suppressProjectSelectionWatcher = false;
-        setPreviewError(resolveApiErrorMessage(activationError, `打开 Project 失败：${projectRoot}`));
+        setPreviewError(resolveApiErrorMessage(activationError, "打开 Project 失败"));
         return false;
     } finally {
         if (revision === projectSelectionRevision) loadingWorld.value = false;
@@ -636,7 +636,7 @@ async function deleteSlice(sliceId: string): Promise<void> {
         await loadWorld();
         return;
     }
-    if (!await confirmDialog(`确定要删除 slice「${slice.title || slice.id}」吗？此操作不可恢复。`, "删除 World Engine Slice")) {
+    if (!await confirmDialog(`确定要删除切片「${slice.title || slice.id}」吗？此操作不可恢复。`, "删除切片")) {
         return;
     }
     actionBusy.value = true;
@@ -650,7 +650,7 @@ async function deleteSlice(sliceId: string): Promise<void> {
         const deleteIssues = result.issues;
         lastWriteResult.value = null;
         actionIssues.value = deleteIssues;
-        setPreviewNotice(result.issues.length ? `已删除 slice ${slice.id}，删后返回 ${result.issues.length} 个 issue` : `已删除 slice ${slice.id}`);
+        setPreviewNotice(result.issues.length ? `已删除切片 ${slice.id}，删后返回 ${result.issues.length} 个 issue` : `已删除切片 ${slice.id}`);
         if (editingSliceId.value === slice.id) {
             clearSliceEditMode();
         }
@@ -659,7 +659,7 @@ async function deleteSlice(sliceId: string): Promise<void> {
             await queryState({clearActionIssues: false});
         }
     } catch (deleteError) {
-        setPreviewError(resolveApiErrorMessage(deleteError, "删除 slice 失败"));
+        setPreviewError(resolveApiErrorMessage(deleteError, "删除切片失败"));
     } finally {
         actionBusy.value = false;
     }

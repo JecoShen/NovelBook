@@ -1472,7 +1472,7 @@ async function recoverMissingAgentSession(
         if (!await clearComposerContextForNoSession(acceptsLoad)) {
             if (acceptsLoad()) {
                 const error = new Error("保存 Composer 草稿失败");
-                surfaceActivation.markError(attempt, sessionScopeKey.value, error.message);
+                surfaceActivation.markError(attempt, sessionScopeKey.value, resolveApiErrorMessage(error, error.message));
                 return {status: "failed", error};
             }
             return {status: "superseded"};
@@ -1551,7 +1551,7 @@ const loadSession = async (
                         replayDeferred = true;
                         surfaceActivation.markReady(attempt, sessionScopeKey.value);
                     } else {
-                        surfaceActivation.markError(attempt, sessionScopeKey.value, error.message);
+                        surfaceActivation.markError(attempt, sessionScopeKey.value, resolveApiErrorMessage(error, "保存 Composer 草稿失败"));
                     }
                     return {status: "failed", error};
                 }

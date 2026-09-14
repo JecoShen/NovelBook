@@ -177,13 +177,13 @@ function buildRefTargetOptions(query: string): SelectOption[] {
         || description.toLowerCase().includes(normalized);
     const options: SelectOption[] = [];
     for (const thread of props.threads) {
-        const label = thread.title || "未命名 Thread";
+        const label = thread.title || "未命名线索";
         if (matches(label, thread.summary)) {
             options.push({ value: `thread://${thread.id}`, label, iconClass: "i-lucide-git-branch", description: thread.summary });
         }
     }
     for (const scene of props.scenes) {
-        const label = scene.title || "未命名 Scene";
+        const label = scene.title || "未命名场景";
         if (matches(label, scene.summary)) {
             options.push({ value: `scene://${scene.id}`, label, iconClass: "i-lucide-clapperboard", description: scene.summary });
         }

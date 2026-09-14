@@ -146,7 +146,7 @@ const visibleScenes = computed(() => {
                                 <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">{{ scene.purpose || "尚未填写 purpose" }}</div>
                             </div>
                             <div class="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-3">
-                                <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Scene Stats</div>
+                                <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">场景统计</div>
                                 <div class="mt-2 space-y-2 text-sm text-[var(--text-secondary)]">
                                     <div>Refs：{{ scene.refs.length }}</div>
                                     <div>Chapter 位次：{{ scene.chapterSortOrder === null ? "未分配" : scene.chapterSortOrder + 1 }}</div>
@@ -159,8 +159,8 @@ const visibleScenes = computed(() => {
 
             <div v-else class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center">
                 <div>
-                    <div class="text-sm font-semibold text-[var(--text-main)]">先选择一条 Thread</div>
-                    <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">该视图会按 `threadSortOrder` 展示 Scene 序列，方便快速规划一条线的前后推进。</div>
+                    <div class="text-sm font-semibold text-[var(--text-main)]">先选择一条线索</div>
+                    <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">该视图会按 threadSortOrder 展示场景序列，方便快速规划一条线的前后推进。</div>
                 </div>
             </div>
         </section>

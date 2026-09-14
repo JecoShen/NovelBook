@@ -179,7 +179,7 @@ function buildPayload(): PlotThreadQuickSceneUpdate | null {
 
     return {
         sceneId: scene.id,
-        title: draft.title.trim() || "未命名 Scene",
+        title: draft.title.trim() || "未命名场景",
         summary: draft.summary.trim(),
         purpose: draft.purpose.trim() || null,
         writingTip: draft.writingTip.trim() || null,
@@ -342,7 +342,7 @@ watch(() => props.detail, () => {
                 <div class="grid grid-cols-2 gap-2 text-[10px] text-[var(--text-muted)]">
                     <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1">{{ chapterLabel }}</span>
                     <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1 text-right">#{{ props.detail.scene.threadSortOrder + 1 }}</span>
-                    <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1">Scene</span>
+                    <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1">场景</span>
                     <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1 text-right">R {{ refCount }}</span>
                     <!-- 节奏字段只读 chip:有值才显示 -->
                     <span v-if="outcomeTypeLabel" class="truncate rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1" :title="outcomeTypeLabel">{{ outcomeTypeLabel }}</span>
@@ -415,7 +415,7 @@ watch(() => props.detail, () => {
                         v-model="draft.summary"
                         :rows="4"
                         default-mode="rich"
-                        placeholder="概括当前 Scene..."
+                        placeholder="概括当前场景…"
                         :menu-refresh-key="menuRefreshKey"
                         :resolve-menu="resolveMenu"
                         @blur="commitDraft"
@@ -452,7 +452,7 @@ watch(() => props.detail, () => {
             <FormAnnotationDialog
                 v-if="props.detail?.scene"
                 v-model="aiDialogOpen"
-                title="Scene AI 批注"
+                title="场景 AI 批注"
                 form-kind="story_scene"
                 :draft="annotationDraft"
                 :context="{sceneId: props.detail.scene.id, threadId: props.detail.thread.id}"

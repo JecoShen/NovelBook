@@ -127,7 +127,7 @@ const deadlineOptions = computed<SelectOption[]>(() => [
 // 线程下拉(anchor kind=thread)。
 const threadOptions = computed<SelectOption[]>(() => props.threads.map((thread) => ({
     value: thread.id,
-    label: thread.title || "未命名 Thread",
+    label: thread.title || "未命名线索",
 })));
 
 // 场景下拉(anchor kind=scene):按 threads 声明序 → threadSortOrder,label=「线名 · 场名」,description=挂章信息。
@@ -138,7 +138,7 @@ const sceneOptions = computed<SelectOption[]>(() => {
         .sort((left, right) => left.threadSortOrder - right.threadSortOrder)
         .map((scene) => ({
             value: scene.id,
-            label: `${thread.title || "未命名 Thread"} · ${scene.title || "未命名 Scene"}`,
+            label: `${thread.title || "未命名线索"} · ${scene.title || "未命名场景"}`,
             description: scene.chapterId ? (chapterTitles.get(scene.chapterId) ?? "挂章已删除") : "未挂章",
         })));
 });

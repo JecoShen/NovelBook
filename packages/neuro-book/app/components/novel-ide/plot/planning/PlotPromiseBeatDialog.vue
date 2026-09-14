@@ -66,7 +66,7 @@ const sceneOptions = computed<SelectOption[]>(() => {
         .sort((left, right) => left.threadSortOrder - right.threadSortOrder)
         .map((scene) => ({
             value: scene.id,
-            label: `${thread.title || "未命名 Thread"} · ${scene.title || "未命名 Scene"}`,
+            label: `${thread.title || "未命名线索"} · ${scene.title || "未命名场景"}`,
             description: scene.chapterId ? (chapterTitles.get(scene.chapterId) ?? "挂章已删除") : "未挂章",
             iconClass: "i-lucide-clapperboard",
         })));

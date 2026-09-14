@@ -123,7 +123,7 @@ const chapterLinkedCountMap = computed(() => {
         <section class="flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-[var(--border-color)] bg-[var(--bg-panel)] shadow-[0_18px_50px_color-mix(in_srgb,var(--shadow-color)_8%,transparent)]">
             <div class="flex items-center justify-between gap-3 border-b border-[var(--border-color)] px-4 py-3">
                 <div>
-                    <div class="text-[11px] uppercase tracking-[0.24em] text-[var(--text-muted)]">Threads</div>
+                    <div class="text-[11px] uppercase tracking-[0.24em] text-[var(--text-muted)]">线索</div>
                     <div class="mt-1 text-sm font-semibold text-[var(--text-main)]">快速定位剧情线</div>
                 </div>
 
@@ -175,7 +175,7 @@ const chapterLinkedCountMap = computed(() => {
 
                         <div class="mt-4 grid grid-cols-3 gap-2 text-[11px]">
                             <div class="rounded-xl border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-2">
-                                <div class="text-[var(--text-muted)]">Scene</div>
+                                <div class="text-[var(--text-muted)]">场景</div>
                                 <div class="mt-1 font-semibold text-[var(--text-main)]">{{ sceneCountMap[thread.id] ?? 0 }}</div>
                             </div>
                             <div class="rounded-xl border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-2">
@@ -192,7 +192,7 @@ const chapterLinkedCountMap = computed(() => {
 
                 <div v-if="visibleThreads.length === 0" class="flex min-h-[240px] items-center justify-center rounded-[20px] border border-dashed border-[var(--border-color)] bg-[var(--bg-input)]/30 px-6 text-center">
                     <div>
-                        <div class="text-sm font-semibold text-[var(--text-main)]">当前筛选下没有 Thread</div>
+                        <div class="text-sm font-semibold text-[var(--text-main)]">当前筛选下没有线索</div>
                         <div class="mt-2 text-sm leading-7 text-[var(--text-secondary)]">可以切换 `Phase` 或清空搜索，重新定位要规划的剧情线。</div>
                     </div>
                 </div>

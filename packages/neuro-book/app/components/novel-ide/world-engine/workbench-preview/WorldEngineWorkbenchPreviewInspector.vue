@@ -59,7 +59,7 @@ const props = withDefaults(defineProps<{
     fullSnapshotLoading: false,
     fullSnapshotMode: "local",
     fullSnapshotSubjects: null,
-    metadataStatusSuffix: "mock 本地预览",
+    metadataStatusSuffix: "示例数据 · 本地预览",
     snapshotIssues: () => [],
     subjectSystemSummaries: () => [],
     subjectFileProposalFocusVersion: 0,
@@ -432,7 +432,7 @@ const {isResizing, panelStyle} = useResizablePanel(resizeHandleRef, {
             <section v-if="subjectFileProposals.length" ref="subjectFileProposalsRef" data-testid="subject-file-proposals" class="order-6 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] p-3">
                 <div class="mb-2 flex items-center justify-between gap-2">
                     <div>
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--we-text-muted)]">Subject file proposals</div>
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--we-text-muted)]" title="SUBJECT FILE PROPOSALS">主体文件建议</div>
                         <div class="mt-0.5 text-[11px] text-[var(--we-text-muted)]">仅生成建议，不会自动写入 simulation/subjects</div>
                     </div>
                     <div class="flex shrink-0 items-center gap-1.5">

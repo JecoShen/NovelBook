@@ -142,12 +142,12 @@ onMounted(() => {
                     <div class="text-[11px] uppercase tracking-[0.3em] text-[var(--text-muted)]">Diff Workbench Preview</div>
                     <h1 class="mt-2 text-2xl font-semibold">通用 Diff Workbench</h1>
                     <p class="mt-3 max-w-[920px] text-sm leading-7 text-[var(--text-secondary)]">
-                        独立调试通用 diff / merge 组件。这里使用 mock 数据，不访问真实 workspace。
+                        独立调试通用 diff / merge 组件。这里使用示例数据，不访问真实 workspace。
                     </p>
                     <div class="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
                         <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-1">Route /diff-workbench.preview</span>
                         <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-1">Monaco DiffEditor</span>
-                        <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-1">Mock Data</span>
+                        <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-1">示例数据</span>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">

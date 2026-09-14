@@ -92,7 +92,7 @@ const mutationEditorHeight = ref(defaultMutationEditorHeight);
 const resetVersion = ref(0);
 const metadataDraftSummaries = ref<WorldWorkbenchPreviewMetadataDraftSummary[]>([]);
 const valueDraftSummaries = ref<WorldWorkbenchPreviewValueDraftSummary[]>([]);
-const notice = ref("mock 数据源");
+const notice = ref("示例数据源");
 const localDraftReady = ref(false);
 const localDraftLoaded = ref(false);
 const localDraftSuppressed = ref(false);
@@ -183,7 +183,7 @@ const localDraftLabel = computed(() => {
     if (localDraftLoaded.value) {
         return localDraftSavedAt.value ? `浏览器草稿 ${localDraftSavedAt.value}` : "已恢复浏览器草稿";
     }
-    return "浏览器临时 mock";
+    return "浏览器临时示例";
 });
 const subjectStats = computed<WorldWorkbenchPreviewSubjectStat[]>(() => {
     const statMap = new Map(mockWorkbenchSubjects.map((subject) => [subject.id, {
@@ -437,12 +437,12 @@ function openMockWorkspacePath(path: string): void {
     if (!targetPath) {
         return;
     }
-    notice.value = `mock 预览不会打开真实文件：${targetPath}`;
+    notice.value = `示例预览不会打开真实文件：${targetPath}`;
 }
 
 /** mock 页面不执行真实 commit，只显示将要追加的目标与内容。 */
 function commitMockSubjectEventProposal(proposal: WorldWorkbenchSubjectFileProposal): void {
-    notice.value = `mock 预览不会写入 events.jsonl：${proposal.eventsPath} ← ${proposal.eventJsonLine}`;
+    notice.value = `示例预览不会写入 events.jsonl：${proposal.eventsPath} ← ${proposal.eventJsonLine}`;
 }
 
 /** 从主画布切到单 subject timeline，同时保持 Inspector / Editor 对齐。 */
@@ -583,7 +583,7 @@ function restoreLocalDraft(): void {
         const draft = JSON.parse(rawDraft) as Partial<WorldWorkbenchPreviewLocalDraft>;
         if (!isLocalDraft(draft)) {
             localStorage.removeItem(localDraftStorageKey);
-            notice.value = "浏览器草稿格式已失效，已回到 mock 数据源";
+            notice.value = "浏览器草稿格式已失效，已回到示例数据源";
             localDraftReady.value = true;
             return;
         }
@@ -609,7 +609,7 @@ function restoreLocalDraft(): void {
         notice.value = "已恢复浏览器草稿";
     } catch {
         localStorage.removeItem(localDraftStorageKey);
-        notice.value = "浏览器草稿读取失败，已回到 mock 数据源";
+        notice.value = "浏览器草稿读取失败，已回到示例数据源";
     } finally {
         localDraftReady.value = true;
         alignFocusedSubject(selectedSlice.value);

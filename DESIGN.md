@@ -271,6 +271,17 @@ The product runs two typographic systems on the same desk: the **IDE chrome** (s
 - **The Two-Desk Rule.** The IDE chrome and the long-form prose are two typographic systems that share a desk. Chrome is system sans; prose chooses its own voice (serif or sans) and is allowed to differ. Chrome never inherits the prose's serif.
 - **The Mono-Source Rule.** Source code, paths, IDs, and any text that needs to be diff-able always use the mono stack. Body content never uses the mono stack.
 
+## Language & Copy
+
+The desk speaks the author's language. Engineering nouns are allowed in code, protocols, and tooltips — never as the primary copy of a user-facing surface.
+
+### Named Rules
+
+- **The Author's-Language Rule.** User-visible copy uses the author's vocabulary: 线索 / 场景 / 章节 / 剧情, not Thread / Scene / Chapter / Plot. The same concept keeps the same noun everywhere (Thread is always 线索, never 线程). Entity names in code, types, and protocols (`scene://`, `subject://`) stay English — they are syntax, not copy.
+- **The Tooltip-Gloss Rule.** World Engine surfaces are fully Chinese; the data-model term rides as an English tooltip on the Chinese label (e.g. 主体 with `title="SUBJECT · 角色与万物"`, 切片 with `title="SLICE · 一次状态变更"`). The data model itself does not change — this is a language layer, not a schema rename.
+- **The Error-Copy Rule.** API errors route through `resolveApiErrorMessage(error, fallback)` with a contextual Chinese fallback. Bare status phrases ("Server Error", "Failed to fetch", …) never reach the screen — the utility lets them fall through to the caller's context. Server absolute paths never appear in user-facing messages — the utility strips them; diagnostics live in `console.error`, not in toast bodies.
+- **The Managed-Path Rule.** Creation flows ask for the semantic name (章节名) and the product manages the storage path by convention (`manuscript/<NNN-volume>/<NNN>-chapter/index.md`), with an opt-in advanced override. Authors should never have to understand `index.md` in their first hour.
+
 ## Layout
 
 **The chrome is fixed; the workspace flows.**

@@ -397,11 +397,11 @@ const deleteMessage = computed(() => {
 
     if (deleteTarget.value.type === "thread") {
         const thread = threads.value.find((item) => item.id === deleteTarget.value?.id);
-        return `确认删除「${thread?.title ?? "当前 Thread"}」吗？该 Thread 下的 Scene 会一起删除。`;
+        return `确认删除「${thread?.title ?? "当前线索"}」吗？该线索下的场景会一起删除。`;
     }
 
     const scene = scenes.value.find((item) => item.id === deleteTarget.value?.id);
-    return `确认删除「${scene?.title ?? "当前 Scene"}」吗？`;
+    return `确认删除「${scene?.title ?? "当前场景"}」吗？`;
 });
 
 /**
@@ -889,7 +889,7 @@ async function ensureThreadDetail(threadId: string, force = false): Promise<void
         const detail = await $fetch<StoryThreadDetailDto>(`/api/projects/plot/threads/${threadId}`, projectPlotOptions());
         applyThreadDetail(detail);
     } catch (error) {
-        detailError.value = resolveErrorMessage(error, "加载 Thread 详情失败");
+        detailError.value = resolveErrorMessage(error, "加载线索详情失败");
     }
 }
 
@@ -908,7 +908,7 @@ async function ensureSceneDetail(sceneId: string, force = false): Promise<void> 
         const detail = await $fetch<StorySceneDetailDto>(`/api/projects/plot/scenes/${sceneId}`, projectPlotOptions());
         applySceneDetail(detail);
     } catch (error) {
-        detailError.value = resolveErrorMessage(error, "加载 Scene 详情失败");
+        detailError.value = resolveErrorMessage(error, "加载场景详情失败");
     } finally {
         loadingDetail.value = false;
     }
@@ -940,7 +940,7 @@ async function preloadThreadScenes(threadId: string): Promise<void> {
             applySceneDetail(detail);
         }
     } catch (error) {
-        detailError.value = resolveErrorMessage(error, "预加载 Scene 详情失败");
+        detailError.value = resolveErrorMessage(error, "预加载场景详情失败");
     }
 }
 
@@ -1096,18 +1096,18 @@ async function openSceneEditorFromDetail(): Promise<void> {
 function openThreadMenu(event: MouseEvent): void {
     openContextMenu(event, [
         {
-            label: "新建 Thread",
+            label: "新建线索",
             iconClass: "i-lucide-folder-plus",
             action: () => openThreadEditor("create"),
         },
         {
-            label: "编辑当前 Thread",
+            label: "编辑当前线索",
             iconClass: "i-lucide-pencil-line",
             disabled: !selectedThread.value,
             action: () => openThreadEditor("edit"),
         },
         {
-            label: "新建 Scene",
+            label: "新建场景",
             iconClass: "i-lucide-clapperboard",
             disabled: !selectedThread.value,
             action: () => {
@@ -1116,7 +1116,7 @@ function openThreadMenu(event: MouseEvent): void {
         },
         {separator: true},
         {
-            label: "删除当前 Thread",
+            label: "删除当前线索",
             iconClass: "i-lucide-trash-2",
             danger: true,
             disabled: !selectedThread.value,
@@ -1136,12 +1136,12 @@ function openSceneMenu(payload: {sceneId: string; event: MouseEvent}): void {
 
     openContextMenu(payload.event, [
         {
-            label: "选中 Scene",
+            label: "选中场景",
             iconClass: "i-lucide-crosshair",
             action: () => selectScene(scene.id),
         },
         {
-            label: "新建 Scene",
+            label: "新建场景",
             iconClass: "i-lucide-plus",
             action: () => {
                 selectThread(scene.threadId);
@@ -1149,7 +1149,7 @@ function openSceneMenu(payload: {sceneId: string; event: MouseEvent}): void {
             },
         },
         {
-            label: "编辑 Scene",
+            label: "编辑场景",
             iconClass: "i-lucide-pencil-line",
             action: () => {
                 selectScene(scene.id);
@@ -1158,7 +1158,7 @@ function openSceneMenu(payload: {sceneId: string; event: MouseEvent}): void {
         },
         {separator: true},
         {
-            label: "删除 Scene",
+            label: "删除场景",
             iconClass: "i-lucide-trash-2",
             danger: true,
             action: () => queueDelete("scene", scene.id),
@@ -1172,12 +1172,12 @@ function openSceneMenu(payload: {sceneId: string; event: MouseEvent}): void {
 function openRootMenu(event: MouseEvent): void {
     openContextMenu(event, [
         {
-            label: "新建 Thread",
+            label: "新建线索",
             iconClass: "i-lucide-folder-plus",
             action: () => openThreadEditor("create"),
         },
         {
-            label: "新建 Scene",
+            label: "新建场景",
             iconClass: "i-lucide-clapperboard",
             disabled: !selectedThread.value,
             action: () => {
@@ -1258,7 +1258,7 @@ async function updateWorkbenchThread(threadId: string, patch: Partial<PlotThread
         });
         await loadPlotWorkbench(true);
     } catch (error) {
-        setWorkbenchError(error, "保存 Thread 失败");
+        setWorkbenchError(error, "保存线索失败");
     }
 }
 
@@ -1293,7 +1293,7 @@ async function updateWorkbenchScene(sceneId: string, patch: Partial<PlotThreadPa
         applySceneDetail(updated);
         await loadPlotWorkbench(true);
     } catch (error) {
-        setWorkbenchError(error, "保存 Scene 失败");
+        setWorkbenchError(error, "保存场景失败");
     }
 }
 
@@ -1324,7 +1324,7 @@ async function quickUpdateScene(payload: PlotThreadQuickSceneUpdate): Promise<vo
 
         applySceneDetail(detail);
     } catch (error) {
-        detailError.value = resolveErrorMessage(error, "保存 Scene 详情失败");
+        detailError.value = resolveErrorMessage(error, "保存场景详情失败");
     } finally {
         savingQuickScene.value = false;
     }
@@ -1393,7 +1393,7 @@ async function saveThread(payload: PlotThreadEditorSave): Promise<void> {
         });
         await loadPlotWorkbench(true);
     } catch (error) {
-        editorError.value = resolveErrorMessage(error, "保存 Thread 失败");
+        editorError.value = resolveErrorMessage(error, "保存线索失败");
         throw error;
     } finally {
         savingEditor.value = false;
@@ -1467,7 +1467,7 @@ async function saveScene(payload: PlotThreadEditorSave): Promise<void> {
             await ensureSceneDetail(sceneId, true);
         }
     } catch (error) {
-        editorError.value = resolveErrorMessage(error, "保存 Scene 失败");
+        editorError.value = resolveErrorMessage(error, "保存场景失败");
         throw error;
     } finally {
         savingEditor.value = false;
@@ -1541,7 +1541,7 @@ async function createWorkbenchScene(threadId: string): Promise<void> {
             body: {
                 threadId,
                 chapterId: null,
-                title: "新建 Scene",
+                title: "新建场景",
                 status: "draft",
                 summary: "",
                 purpose: null,
@@ -1560,7 +1560,7 @@ async function createWorkbenchScene(threadId: string): Promise<void> {
         selectedSceneId.value = created.id;
         await loadPlotWorkbench(true);
     } catch (error) {
-        setWorkbenchError(error, "创建 Scene 失败");
+        setWorkbenchError(error, "创建场景失败");
     }
 }
 
@@ -1642,9 +1642,9 @@ async function reorderScenes(sceneIds: string[]): Promise<void> {
         await loadPlotWorkbench(true);
     } catch (error) {
         if (plotWorkbenchOpen.value) {
-            setWorkbenchError(error, "保存 Scene 顺序失败");
+            setWorkbenchError(error, "保存场景顺序失败");
         } else {
-            treeError.value = resolveErrorMessage(error, "保存 Scene 顺序失败");
+            treeError.value = resolveErrorMessage(error, "保存场景顺序失败");
         }
     } finally {
         reorderingScenes.value = false;
@@ -1728,7 +1728,7 @@ watch(plotRefreshVersion, async (version, previousVersion) => {
         <div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--border-color)] bg-[var(--bg-panel)] px-3 py-2">
             <div class="min-w-0">
                 <div class="truncate text-[12px] font-semibold text-[var(--text-main)]">剧情编排</div>
-                <div class="truncate text-[11px] text-[var(--text-muted)]">Thread / Scene / World Anchor</div>
+                <div class="truncate text-[11px] text-[var(--text-muted)]">线索 / 场景 / 世界锚点</div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <!-- 规划层计数入口:点击打开工作台对应 tab;0 计数弱化显示但不隐藏(入口可发现性) -->

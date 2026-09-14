@@ -172,7 +172,7 @@ const loadRecoverySessions = async (offset: number, append: boolean): Promise<vo
         recoveryTotal.value = page.total;
         recoveryLoaded.value = true;
     } catch (error) {
-        recoveryError.value = resolveApiErrorMessage(error, "读取需要确认的会话失败");
+        recoveryError.value = resolveApiErrorMessage(error, t("ide.picker.recoveryLoadFailed"));
     } finally {
         recoveryLoading.value = false;
     }

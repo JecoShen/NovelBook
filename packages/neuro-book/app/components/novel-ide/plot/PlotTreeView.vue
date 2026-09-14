@@ -68,15 +68,15 @@ function handleGraphUpdate(graph: PlotTreeGraph): void {
 
                 <div class="grid gap-3 sm:grid-cols-3">
                     <div class="rounded-[22px] border border-[var(--border-color)] bg-[var(--bg-input)] px-4 py-3">
-                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Thread</div>
+                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">线索</div>
                         <div class="mt-1 text-lg font-semibold text-[var(--text-main)]">{{ localGraph.threads.length }}</div>
                     </div>
                     <div class="rounded-[22px] border border-[var(--border-color)] bg-[var(--bg-input)] px-4 py-3">
-                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Main Thread</div>
+                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">主线索</div>
                         <div class="mt-1 text-lg font-semibold text-[var(--text-main)]">{{ mainThreadCount }}</div>
                     </div>
                     <div class="rounded-[22px] border border-[var(--border-color)] bg-[var(--bg-input)] px-4 py-3">
-                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Main Scene</div>
+                        <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">主场景</div>
                         <div class="mt-1 text-lg font-semibold text-[var(--text-main)]">{{ mainSceneCount }}</div>
                     </div>
                 </div>
@@ -86,9 +86,9 @@ function handleGraphUpdate(graph: PlotTreeGraph): void {
                 <span class="rounded-full border border-[var(--border-accent)] bg-[var(--accent-bg)] px-3 py-1 text-[var(--accent-text)]">主线节点 / 主线连线</span>
                 <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1 text-[var(--text-muted)]">支线节点 / 支线连线</span>
                 <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">默认从左向右延伸</span>
-                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">Thread 为 Group</span>
-                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">Thread 内 Scene 单链</span>
-                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">游离 Scene 可无连线</span>
+                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">线索即分组</span>
+                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">线索内场景单链</span>
+                <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1">游离场景可无连线</span>
             </div>
         </section>
 

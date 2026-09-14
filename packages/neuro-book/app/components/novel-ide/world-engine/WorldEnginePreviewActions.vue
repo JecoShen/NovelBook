@@ -99,7 +99,7 @@ const canQueryState = computed(() => props.projectReady && !props.loadingWorld &
         <div class="space-y-5 p-4">
             <!-- 创建 subject -->
             <div class="space-y-2">
-                <div class="text-xs font-semibold uppercase text-[var(--text-secondary)]">Create Subject</div>
+                <div class="text-xs font-semibold uppercase text-[var(--text-secondary)]" title="SUBJECT · 角色与万物">创建主体</div>
                 <fieldset class="space-y-2 disabled:opacity-60" :disabled="loadingWorld || actionBusy">
                     <div class="grid grid-cols-2 gap-2">
                         <input v-model="subjectForm.id" class="h-9 rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-3 text-sm outline-none focus:border-[var(--accent-main)]" placeholder="id">

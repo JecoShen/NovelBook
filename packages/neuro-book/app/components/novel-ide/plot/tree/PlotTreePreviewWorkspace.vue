@@ -95,7 +95,7 @@ function resetWorkspace(): void {
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-[var(--border-color)] bg-[var(--bg-panel)] px-4 py-3">
                 <div>
                     <div class="text-[11px] uppercase tracking-[0.24em] text-[var(--text-muted)]">Tree Preview Controls</div>
-                    <div class="mt-1 text-sm text-[var(--text-secondary)]">当前测试数据覆盖主线推进、跨线程入口 fork、游离 Scene，以及 toolbar 手动布局。</div>
+                    <div class="mt-1 text-sm text-[var(--text-secondary)]">当前测试数据覆盖主线推进、跨线索入口 fork、游离场景，以及 toolbar 手动布局。</div>
                 </div>
 
                 <button
@@ -129,7 +129,7 @@ function resetWorkspace(): void {
                 <template v-if="selectedScene">
                     <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
                         <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1 text-[var(--text-muted)]">
-                            所属线程：{{ selectedThread?.title ?? "游离 Scene" }}
+                            所属线索：{{ selectedThread?.title ?? "游离场景" }}
                         </span>
                         <span class="rounded-full border px-3 py-1" :class="selectedScene.isMainBranch ? 'border-[var(--border-accent)] bg-[var(--accent-bg)] text-[var(--accent-text)]' : 'border-[var(--border-color)] bg-[var(--bg-input)] text-[var(--text-muted)]'">
                             {{ selectedScene.isMainBranch ? "主线分支" : "支线分支" }}
@@ -155,7 +155,7 @@ function resetWorkspace(): void {
                 <template v-else-if="selectedThread">
                     <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
                         <span class="rounded-full border px-3 py-1" :class="selectedThread.isMainThread ? 'border-[var(--border-accent)] bg-[var(--accent-bg)] text-[var(--accent-text)]' : 'border-[var(--border-color)] bg-[var(--bg-input)] text-[var(--text-muted)]'">
-                            {{ selectedThread.isMainThread ? "主线 Thread" : "支线 Thread" }}
+                            {{ selectedThread.isMainThread ? "主线" : "支线" }}
                         </span>
                         <span class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-1 text-[var(--text-muted)]">
                             {{ selectedThread.status }}
