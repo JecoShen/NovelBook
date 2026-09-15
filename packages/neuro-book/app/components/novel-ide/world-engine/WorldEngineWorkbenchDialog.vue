@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {computed, nextTick, ref, shallowRef, watch} from "vue";
 import Dialog from "nbook/app/components/common/Dialog.vue";
+import Dropdown from "nbook/app/components/common/Dropdown.vue";
+import type {DropdownItem} from "nbook/app/components/common/dropdown.types";
 import {useDialog} from "nbook/app/composables/useDialog";
 import {useNotification} from "nbook/app/composables/useNotification";
 import WorldEngineMutationEditor from "nbook/app/components/novel-ide/world-engine/WorldEngineMutationEditor.vue";
@@ -339,6 +341,42 @@ const inspectorButtonTitle = computed(() => {
         ? `隐藏检查器；${pendingParts.join("、")}仍会保留`
         : `打开检查器处理 ${pendingParts.join("、")}`;
 });
+/** 工具栏 overflow 菜单：编辑/删除是选择依赖动作，预览是次级入口，均不配占常驻位。 */
+const headerOverflowItems = computed<DropdownItem[]>(() => [
+    {
+        value: "edit-slice",
+        label: "编辑所选切片",
+        iconClass: "i-lucide-pencil",
+        disabled: workbenchActionBusy.value || !schema.value || !selectedSlice.value,
+    },
+    {
+        value: "delete-slice",
+        label: "删除所选切片",
+        iconClass: actionBusy.value ? "i-lucide-loader-2 animate-spin" : "i-lucide-trash-2",
+        danger: true,
+        disabled: workbenchActionBusy.value || !selectedSlice.value,
+    },
+    {
+        value: "preview",
+        label: "预览",
+        iconClass: "i-lucide-external-link",
+        disabled: workbenchActionBusy.value,
+    },
+]);
+
+function handleHeaderOverflowSelect(value: string): void {
+    if (value === "edit-slice") {
+        void openSelectedSliceComposer();
+        return;
+    }
+    if (value === "delete-slice") {
+        void deleteSelectedSlice();
+        return;
+    }
+    if (value === "preview") {
+        openPreview();
+    }
+}
 const worldViewFilterParts = computed<string[]>(() => buildWorldWorkbenchWorldViewFilterParts({
     focusedSubjectHasSystemSummary: Boolean(focusedSubjectId.value && hasSubjectSystemSummary(focusedSubjectId.value)),
     focusedSubjectId: focusedSubjectId.value,
@@ -1872,21 +1910,12 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                         {{ t("worldEngine.workbenchPreview.drafts") }}
                         <span class="rounded bg-[var(--we-bg-panel)] px-1.5 font-mono text-[10px]">{{ totalDraftSliceCount }}</span>
                     </button>
-                    <button type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-3 text-[12px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="void refreshWorldForCurrentTimeline()">
+                    <button type="button" aria-label="刷新" title="刷新" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="void refreshWorldForCurrentTimeline()">
                         <span :class="loading ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-refresh-cw'" class="h-3.5 w-3.5"></span>
-                        刷新
                     </button>
                     <button type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-3 text-[12px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy || !schema" @click="openSliceComposer">
                         <span class="i-lucide-file-plus-2 h-3.5 w-3.5"></span>
                         新建 Slice
-                    </button>
-                    <button type="button" class="hidden h-8 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-3 text-[12px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50 lg:inline-flex" :disabled="workbenchActionBusy || !schema || !selectedSlice" @click="void openSelectedSliceComposer()">
-                        <span class="i-lucide-pencil h-3.5 w-3.5"></span>
-                        编辑 Slice
-                    </button>
-                    <button type="button" class="hidden h-8 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-3 text-[12px] text-[var(--text-secondary)] transition-colors hover:border-[var(--we-danger-border)] hover:bg-[var(--we-danger-soft)] hover:text-[var(--we-danger)] disabled:opacity-50 xl:inline-flex" :disabled="workbenchActionBusy || !selectedSlice" @click="void deleteSelectedSlice()">
-                        <span :class="actionBusy ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-trash-2'" class="h-3.5 w-3.5"></span>
-                        删除 Slice
                     </button>
                     <button
                         type="button"
@@ -1900,10 +1929,17 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                         {{ t("worldEngine.workbenchPreview.inspector") }}
                         <span v-if="selectedSliceSubjectFileProposalCount" data-testid="world-workbench-inspector-proposal-count" class="rounded bg-[var(--we-bg-panel)] px-1.5 font-mono text-[10px]">{{ selectedSliceSubjectFileProposalCount }}</span>
                     </button>
-                    <button type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-3 text-[12px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="openPreview">
-                        <span class="i-lucide-external-link h-3.5 w-3.5"></span>
-                        Preview
-                    </button>
+                    <!-- 次级与选择依赖动作收进 overflow 菜单：工具栏只保留一个 primary 文本按钮 -->
+                    <Dropdown
+                        :items="headerOverflowItems"
+                        root-class="relative shrink-0"
+                        menu-class="right-0 top-full z-50 mt-1 w-44"
+                        @select="handleHeaderOverflowSelect"
+                    >
+                        <button type="button" data-testid="world-workbench-overflow-menu" aria-label="更多操作" title="更多操作" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50">
+                            <span class="i-lucide-ellipsis h-4 w-4"></span>
+                        </button>
+                    </Dropdown>
                     <button type="button" data-testid="world-workbench-close" aria-label="关闭世界引擎工作台" title="关闭世界引擎工作台" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="void requestWorkbenchClose()">
                         <span class="i-lucide-x h-4 w-4"></span>
                     </button>

@@ -386,6 +386,14 @@ The desk's geometry is the same: cards and inputs use small radii, the toast use
 - **Color:** the role's `*-soft` background, the role's `*-border` border, the role's main text. Always a triplet (bg / border / text), never a single token.
 - **Variants:** `warning` / `success` / `danger` / `info` / `accent`. The accent variant is a selected-state chip; the others are state callouts.
 
+### Overflow Menu (Dropdown)
+
+- **Geometry:** the trigger is an IconButton-style `⋯`; the menu is a `rounded-md` panel over `--bg-panel` with the dialog-lift shadow, right-aligned under the trigger for toolbar use.
+- **Items:** label + optional leading icon. `disabled` items stay visible but inert (selection-dependent actions); `danger` items take `--status-danger` text with a `--status-danger-bg` hover and are reserved for destructive entries that carry their own confirm flow.
+- **The Single-Primary Toolbar Rule.** A dense workbench toolbar shows at most ONE primary text button (the creation action, e.g. 新建 Slice). Selection-dependent and secondary actions (edit/delete selected, preview) live in the `⋯` overflow menu, not as permanent text buttons; utility toggles (refresh, panel visibility, close) are icon-only with `aria-label` + tooltip.
+- **The Collapsed-Filter Rule.** A multi-control filter toolbar (segmented kind/status/layout) defaults to collapsed behind a 「筛选」 toggle carrying an active-count badge (`aria-expanded` + `aria-controls`). Activating a filter from any entry point auto-expands the toolbar; active filters always remain visible as removable chips so the collapsed state never hides applied state.
+- **The Single-Line Nav Rule.** Settings-style section navs render one line per item (icon + label); the description rides as a `title` tooltip. More than three sections in one scope group under caps group labels (e.g. 模型与 Agent / 工具与观测); grouping is presentation-only and never changes which scope a section belongs to.
+
 ### Signature — the **Workbench Chrome** (the room)
 
 The signature component is not a single visual element; it is the **Workbench Chrome contract** itself — the four-zone arrangement of 48 px Activity Bar + 36 px Desktop title bar + Notification viewport (z-9800) + Dialog overlay. The contract is what defines the product's surface area; the components inside it are interchangeable. Any new chrome surface (a side panel, a command palette, a settings overlay) participates in the contract by being told where it sits in the z-stack, which theme host it reads from, and which canvas it does not cover.

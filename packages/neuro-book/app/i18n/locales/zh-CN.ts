@@ -228,6 +228,10 @@ const zhCN = {
                 description: "窗口、缩放和系统托盘行为。",
             },
         },
+        sectionGroup: {
+            models: "模型与 Agent",
+            tools: "工具与观测",
+        },
         desktop: {
             title: "桌面应用",
             description: "这些设置只保存在本机桌面配置中，不会写入 Workspace 或服务器。",

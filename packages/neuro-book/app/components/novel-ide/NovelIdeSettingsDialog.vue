@@ -292,6 +292,22 @@ const visibleSectionItems = computed(() => {
     return frontendSectionItems.value.filter((item) => allowed.includes(item.value) && (item.value !== "desktop" || desktopAvailable.value));
 });
 
+type SettingsSectionItem = (typeof frontendSectionItems.value)[number];
+/** 超过 3 个分区时按语义分组锚点（当前只有全局 scope 触发）；分组只影响呈现，不改变分区归属。 */
+const visibleSectionGroups = computed<Array<{key: string; label: string | null; items: SettingsSectionItem[]}>>(() => {
+    const items = visibleSectionItems.value;
+    if (items.length <= 3) {
+        return [{key: "all", label: null, items}];
+    }
+    const modelSections: SettingsSection[] = ["models", "embedding", "agent-profile-models"];
+    const modelItems = items.filter((item) => modelSections.includes(item.value));
+    const toolItems = items.filter((item) => !modelSections.includes(item.value));
+    return [
+        {key: "models", label: t("settings.sectionGroup.models"), items: modelItems},
+        {key: "tools", label: t("settings.sectionGroup.tools"), items: toolItems},
+    ];
+});
+
 const versionLabel = computed(() => {
     if (appVersionPending.value && !appVersion.value) {
         return t("settings.version.loading");
@@ -879,23 +895,24 @@ function updateDesktopCloseBehavior(value: string): void {
                 </div>
 
                 <div class="flex min-w-0 gap-1.5 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
-                    <button
-                        v-for="item in visibleSectionItems"
-                        :key="item.value"
-                        class="group relative flex min-w-max shrink-0 items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-all duration-200 md:w-full md:gap-3 md:px-2.5 md:py-2.5"
-                        :class="activeSection === item.value ? 'bg-[var(--bg-input)] text-[var(--text-main)] shadow-[0_2px_8px_color-mix(in_srgb,var(--shadow-color)_4%,transparent)] border border-[var(--border-color)]' : 'border border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:bg-opacity-40 hover:text-[var(--text-main)]'"
-                        @click="selectSection(item.value)"
-                    >
-                        <!-- 图标 -->
-                        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors duration-300" :class="activeSection === item.value ? 'bg-[var(--accent-bg)] text-[var(--accent-text)] shadow-sm font-semibold' : 'bg-transparent text-[var(--text-muted)] group-hover:text-[var(--text-main)]'">
-                            <span :class="item.iconClass" class="h-4 w-4"></span>
-                        </div>
-                        
-                        <div class="min-w-0 flex-1">
+                    <div v-for="group in visibleSectionGroups" :key="group.key" class="contents md:block">
+                        <div v-if="group.label" class="hidden px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] md:block">{{ group.label }}</div>
+                        <button
+                            v-for="item in group.items"
+                            :key="item.value"
+                            type="button"
+                            class="group relative flex min-w-max shrink-0 items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-all duration-200 md:w-full md:gap-3 md:px-2.5 md:py-2"
+                            :class="activeSection === item.value ? 'bg-[var(--bg-input)] text-[var(--text-main)] shadow-[0_2px_8px_color-mix(in_srgb,var(--shadow-color)_4%,transparent)] border border-[var(--border-color)]' : 'border border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:bg-opacity-40 hover:text-[var(--text-main)]'"
+                            :title="item.description"
+                            @click="selectSection(item.value)"
+                        >
+                            <!-- 图标 -->
+                            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors duration-300" :class="activeSection === item.value ? 'bg-[var(--accent-bg)] text-[var(--accent-text)] shadow-sm font-semibold' : 'bg-transparent text-[var(--text-muted)] group-hover:text-[var(--text-main)]'">
+                                <span :class="item.iconClass" class="h-4 w-4"></span>
+                            </div>
                             <span class="block whitespace-nowrap text-xs font-medium md:text-[13px]">{{ item.label }}</span>
-                            <span class="mt-0.5 hidden truncate text-[10px] text-[var(--text-muted)] md:block">{{ item.description }}</span>
-                        </div>
-                    </button>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 底部版本信息 -->

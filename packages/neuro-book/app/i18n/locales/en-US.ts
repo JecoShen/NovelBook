@@ -230,6 +230,10 @@ const enUS = {
                 description: "Window, zoom, and system tray behavior.",
             },
         },
+        sectionGroup: {
+            models: "Models & Agent",
+            tools: "Tools & Observability",
+        },
         desktop: {
             title: "Desktop App",
             description: "These settings stay on this device and are not written to the Workspace or server.",

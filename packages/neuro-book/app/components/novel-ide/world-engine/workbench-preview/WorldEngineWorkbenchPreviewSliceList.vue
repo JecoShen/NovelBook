@@ -88,6 +88,16 @@ const scrollerRef = ref<HTMLElement | null>(null);
 const showMaintenanceSlices = ref(false);
 const {t} = useI18n();
 
+/** 过滤工具栏默认折叠：激活过滤（任意入口）时自动展开，已激活项始终以 chips 行呈现。 */
+const filtersExpanded = ref(false);
+const kindHealthFilterActive = computed(() => props.sliceKindFilter !== "all" || props.sliceHealthFilter !== "all");
+const activeKindHealthFilterCount = computed(() => (props.sliceKindFilter !== "all" ? 1 : 0) + (props.sliceHealthFilter !== "all" ? 1 : 0));
+watch(kindHealthFilterActive, (active) => {
+    if (active) {
+        filtersExpanded.value = true;
+    }
+});
+
 const layoutCols = ref<"single" | "double">("single");
 const layoutOptions = computed<SegmentedControlOption[]>(() => [
     { value: "single", label: "单列", iconClass: "i-lucide-list", disabled: props.busy },
@@ -563,6 +573,20 @@ watch(() => props.resetKey, () => {
                         清空过滤
                     </button>
                     <button
+                        type="button"
+                        data-testid="slice-list-filter-toggle"
+                        class="inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] transition-colors"
+                        :class="filtersExpanded ? 'border-[var(--we-accent-border)] bg-[var(--we-accent-soft)] text-[var(--we-accent-strong)]' : 'border-[var(--we-border)] bg-[var(--we-bg-subtle)] text-[var(--we-text-secondary)] hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)]'"
+                        :aria-expanded="filtersExpanded"
+                        aria-controls="slice-list-filter-toolbar"
+                        :title="filtersExpanded ? '收起类型 / 状态 / 布局过滤' : '展开类型 / 状态 / 布局过滤'"
+                        @click="filtersExpanded = !filtersExpanded"
+                    >
+                        <span class="i-lucide-sliders-horizontal h-3.5 w-3.5"></span>
+                        筛选
+                        <span v-if="activeKindHealthFilterCount" class="rounded bg-[var(--we-bg-panel)] px-1 font-mono text-[10px]">{{ activeKindHealthFilterCount }}</span>
+                    </button>
+                    <button
                         v-if="hiddenMaintenanceSliceCount || showMaintenanceSlices"
                         type="button"
                         data-testid="slice-list-maintenance-toggle"
@@ -617,7 +641,7 @@ watch(() => props.resetKey, () => {
                     </button>
                 </div>
             </div>
-            <div class="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-2 py-1.5 text-[11px]" data-testid="slice-list-filter-toolbar">
+            <div v-show="filtersExpanded" id="slice-list-filter-toolbar" class="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-2 py-1.5 text-[11px]" data-testid="slice-list-filter-toolbar">
                 <div class="flex min-w-0 flex-wrap items-center gap-1">
                     <span class="px-1 text-[10px] tracking-[0.12em] text-[var(--we-text-muted)]" title="KIND">类型</span>
                     <SegmentedControl :model-value="props.sliceKindFilter" :options="kindFilterOptions" tone="accent" @update:model-value="updateSliceKindFilter" />

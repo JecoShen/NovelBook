@@ -413,8 +413,10 @@ describe("World Engine IDE entry", () => {
         expect(workbench).toContain(":disabled=\"workbenchActionBusy\"");
         expect(workbench).toContain(":disabled=\"workbenchActionBusy\"");
         expect(workbench).toContain(":disabled=\"workbenchActionBusy || !schema\"");
-        expect(workbench).toContain(":disabled=\"workbenchActionBusy || !schema || !selectedSlice\"");
-        expect(workbench).toContain(":disabled=\"workbenchActionBusy || !selectedSlice\"");
+        // 编辑/删除所选切片已收进 overflow 菜单（distill 单一 primary 规则），选择依赖的禁用条件不变
+        expect(workbench).toContain("data-testid=\"world-workbench-overflow-menu\"");
+        expect(workbench).toContain("disabled: workbenchActionBusy.value || !schema.value || !selectedSlice.value");
+        expect(workbench).toContain("disabled: workbenchActionBusy.value || !selectedSlice.value");
         expect(workbench).toContain("WorldEngineWorkbenchPreviewInspector");
         expect(workbench).toContain("WorldEngineMutationEditor");
         expect(workbench).toContain("world-slice-composer");

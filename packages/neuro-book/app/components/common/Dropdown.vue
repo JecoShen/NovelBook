@@ -58,15 +58,21 @@ onClickOutside(rootRef, () => {
             <button
                 v-for="item in props.items"
                 :key="item.value"
-                class="mb-1 flex w-full items-center justify-between gap-3 rounded-md px-2.5 text-left transition-colors last:mb-0"
+                type="button"
+                class="mb-1 flex w-full items-center justify-between gap-3 rounded-md px-2.5 text-left transition-colors last:mb-0 disabled:pointer-events-none disabled:opacity-45"
                 :class="[
                     props.compact ? 'py-1.5 text-[12px]' : 'py-1.5 text-sm',
-                    item.active ? 'bg-[var(--bg-hover)] text-[var(--text-main)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]',
+                    item.danger
+                        ? 'text-[var(--status-danger)] hover:bg-[var(--status-danger-bg)]'
+                        : item.active
+                            ? 'bg-[var(--bg-hover)] text-[var(--text-main)]'
+                            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]',
                 ]"
+                :disabled="item.disabled"
                 @click.stop="select(item.value)"
             >
                 <span class="inline-flex min-w-0 items-center gap-2">
-                    <span v-if="item.iconClass" :class="item.iconClass" class="h-4 w-4 text-[var(--text-muted)]"></span>
+                    <span v-if="item.iconClass" class="h-4 w-4" :class="[item.iconClass, item.danger ? '' : 'text-[var(--text-muted)]']"></span>
                     <span class="truncate">{{ item.label }}</span>
                 </span>
                 <span v-if="item.rightIconClass" :class="item.rightIconClass" class="h-4 w-4 shrink-0 text-[var(--accent-text)]"></span>
