@@ -327,7 +327,7 @@ async function handleDesktopMenuCommand(command: DesktopMenuCommandId): Promise<
 }
 
 type ProjectTransitionView =
-    | {mode: "determinate"; title: string; label: string; stepLabel: string; current: number; total: number; width: string}
+    | {mode: "determinate"; title: string; label: string; stepLabel: string; current: number; total: number; progress: number}
     | {mode: "indeterminate"; title: string; label: string};
 
 /** 把 route revision 与 Controller phase 投影为用户可读进度，不按耗时伪造百分比。 */
@@ -347,7 +347,7 @@ const projectTransitionView = computed<ProjectTransitionView>(() => {
         stepLabel: t("ide.projectLoading.step", {current: progressView.current, total: progressView.total}),
         current: progressView.current,
         total: progressView.total,
-        width: `${(progressView.current / progressView.total) * 100}%`,
+        progress: progressView.total > 0 ? progressView.current / progressView.total : 0,
     };
 });
 
@@ -598,7 +598,8 @@ const commandPaletteItems = computed<CommandPaletteItem[]>(() => {
 /** 一键建章:零对话框,最新卷下一章,标题默认「第 N 章」,建完即开。 */
 async function quickAddChapter(): Promise<void> {
     const chapterNumber = resolveManagedChapterNumber(workspaceTree.value);
-    await createWelcomeFile(managedChapterPath.value, buildManagedChapterContent(t("ide.shell.quickChapterTitle", {number: chapterNumber})), t("ide.shell.createChapterFailed"));
+    const chapterTitle = t("ide.shell.quickChapterTitle", {number: chapterNumber});
+    await createWelcomeFile(managedChapterPath.value, buildManagedChapterContent(chapterTitle), t("ide.shell.createChapterFailed"), chapterTitle);
 }
 
 async function handleCommandPalettePick(item: CommandPaletteItem): Promise<void> {
@@ -2436,7 +2437,7 @@ async function handleWelcomeChapterCreate(payload: WelcomeChapterCreatePayload):
     if (!filePath) {
         return;
     }
-    await createWelcomeFile(filePath, buildWelcomeChapterContent(payload.title), t("ide.shell.createChapterFailed"));
+    await createWelcomeFile(filePath, buildWelcomeChapterContent(payload.title), t("ide.shell.createChapterFailed"), payload.title);
 }
 
 /**
@@ -2486,11 +2487,11 @@ async function createWelcomeLorebookEntry(): Promise<void> {
 /**
  * 通过 workspace file API 创建文件并选中。
  */
-async function createWelcomeFile(filePath: string, content: string, fallbackMessage: string): Promise<void> {
+async function createWelcomeFile(filePath: string, content: string, fallbackMessage: string, displayName?: string): Promise<void> {
     try {
         const node = await novelIdeStore.createWorkspaceFile(filePath, content);
         await novelIdeStore.selectWorkspacePath(node.path, "permanent");
-        notification.success(t("ide.shell.createSuccess", {path: node.path}), {title: t("ide.shell.createSuccessTitle")});
+        notification.success(t("ide.shell.createSuccess", {name: displayName ?? (node.title || node.path)}), {title: t("ide.shell.createSuccessTitle")});
     } catch (error) {
         notification.error(resolveApiErrorMessage(error, fallbackMessage), {title: fallbackMessage});
     }
@@ -2729,7 +2730,7 @@ onBeforeUnmount(() => {
                     :aria-valuenow="projectTransitionView.mode === 'determinate' ? projectTransitionView.current : undefined"
                     :aria-valuetext="projectTransitionView.mode === 'determinate' ? `${projectTransitionView.stepLabel} - ${projectTransitionView.label}` : projectTransitionView.label"
                 >
-                    <div v-if="projectTransitionView.mode === 'determinate'" class="project-loading-fill h-full rounded-full bg-[var(--status-info)]" :style="{width: projectTransitionView.width}"></div>
+                    <div v-if="projectTransitionView.mode === 'determinate'" class="project-loading-fill h-full w-full origin-left bg-[var(--status-info)]" :style="{transform: `scaleX(${projectTransitionView.progress})`}" />
                     <div v-else class="project-loading-indeterminate h-full w-1/3 rounded-full bg-[var(--status-info)]"></div>
                 </div>
             </section>
@@ -3026,7 +3027,7 @@ onBeforeUnmount(() => {
 }
 
 .project-loading-fill {
-    transition: width 240ms ease-out;
+    transition: transform 240ms ease-out;
 }
 
 .project-loading-indeterminate {

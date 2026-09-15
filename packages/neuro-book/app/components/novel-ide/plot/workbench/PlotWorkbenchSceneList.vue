@@ -345,7 +345,7 @@ watch(() => props.thread?.id, () => {
                         </span>
                     </div>
                     
-                    <div class="flex flex-wrap items-center gap-1.5 text-[10.5px]">
+                    <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
                         <span class="flex items-center gap-1 rounded bg-[var(--bg-main)] px-1.5 py-0.5 text-[var(--text-muted)] ring-1 ring-inset ring-[var(--border-color)]/50">
                             <span class="i-lucide-book-open h-3 w-3 opacity-70"></span>
                             {{ focusScene?.chapterId ? (chapterMap.get(focusScene.chapterId)?.numberLabel ?? "未识别章节") : "未挂章" }}

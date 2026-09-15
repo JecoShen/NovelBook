@@ -969,6 +969,7 @@ onMounted(restoreLocalDraft);
 <style scoped>
 .world-inspector-enter-active,
 .world-inspector-leave-active {
+    /* impeccable-disable-next-line layout-transition -- 检查器停靠是 DESIGN.md Motion Compositor-First 登记的离散 reflow 例外 */
     transition: margin-right 0.25s ease, transform 0.25s ease, opacity 0.25s ease;
 }
 

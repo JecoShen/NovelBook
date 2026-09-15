@@ -142,7 +142,7 @@ async function submitCreateDialog(payload: WorkspaceCreatePayload): Promise<void
             const node = await store.createWorkspaceDirectory(payload.path);
             expandedPaths.value = [...new Set([...expandedPaths.value, node.path])];
             await store.selectWorkspacePath(node.path);
-            notifySuccess(t("ide.workspace.filePanel.createSuccess", {path: node.path}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
+            notifySuccess(t("ide.workspace.filePanel.createSuccess", {name: node.title || node.path}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
             createDialogVisible.value = false;
             return;
         }
@@ -162,7 +162,7 @@ async function submitCreateDialog(payload: WorkspaceCreatePayload): Promise<void
             const node = await store.createWorkspaceFile(filePath, buildLorebookEntryContent(filePath, selectedType));
             expandedPaths.value = [...new Set([...expandedPaths.value, resolveParentDirectory(node.path)])].filter(Boolean);
             await store.selectWorkspacePath(node.path);
-            notifySuccess(t("ide.workspace.filePanel.createSuccess", {path: node.path}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
+            notifySuccess(t("ide.workspace.filePanel.createSuccess", {name: node.title || node.path}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
             createDialogVisible.value = false;
             return;
         }
@@ -170,7 +170,7 @@ async function submitCreateDialog(payload: WorkspaceCreatePayload): Promise<void
         const node = await store.createWorkspaceFile(payload.path, "");
         expandedPaths.value = [...new Set([...expandedPaths.value, resolveParentDirectory(node.path)])].filter(Boolean);
         await store.selectWorkspacePath(node.path);
-        notifySuccess(t("ide.workspace.filePanel.createSuccess", {path: node.path}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
+        notifySuccess(t("ide.workspace.filePanel.createSuccess", {name: node.title || node.path}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
         createDialogVisible.value = false;
     } catch (error) {
         notifyError(resolveApiErrorMessage(error, formatCreateError(error)), {title: createFailedTitle(payload.kind)});
@@ -330,9 +330,10 @@ async function quickAddChapter(): Promise<void> {
     try {
         const filePath = resolveManagedChapterPath(workspaceTree.value);
         const chapterNumber = resolveManagedChapterNumber(workspaceTree.value);
-        const node = await store.createWorkspaceFile(filePath, buildManagedChapterContent(t("ide.shell.quickChapterTitle", {number: chapterNumber})));
+        const chapterTitle = t("ide.shell.quickChapterTitle", {number: chapterNumber});
+        const node = await store.createWorkspaceFile(filePath, buildManagedChapterContent(chapterTitle));
         await store.selectWorkspacePath(node.path, "permanent");
-        notifySuccess(t("ide.workspace.filePanel.createSuccess", {path: node.path}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
+        notifySuccess(t("ide.workspace.filePanel.createSuccess", {name: chapterTitle}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
     } catch (error) {
         notifyError(resolveApiErrorMessage(error, t("ide.workspace.filePanel.quickAddChapterFailed")), {title: t("ide.workspace.filePanel.quickAddChapterFailed")});
     } finally {

@@ -59,7 +59,7 @@ function timelineSliceSearchText(slice: WorldSliceDto): string {
     <section class="p-5">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div>
-                <h2 class="m-0 text-[18px] font-semibold text-[var(--text-main)]" title="TIMELINE">时间线</h2>
+                <h2 class="m-0 text-base font-semibold text-[var(--text-main)]" title="TIMELINE">时间线</h2>
                 <p class="m-0 mt-1 text-[12px] text-[var(--text-muted)]">{{ visibleSlices.length }} / {{ slices.length }} slices · {{ visibleMutationCount }} / {{ totalMutationCount }} mutations · {{ totalIssueCount }} issues</p>
             </div>
             <div class="flex items-center gap-2">

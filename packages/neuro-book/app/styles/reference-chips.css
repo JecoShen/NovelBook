@@ -43,7 +43,7 @@
 .nb-skill-chip__badge {
     flex: none;
     padding: 0.02rem 0.26rem;
-    border-radius: 0.6rem;
+    border-radius: 0.5rem;
     background: color-mix(in srgb, currentColor 12%, transparent);
     color: color-mix(in srgb, currentColor 78%, var(--text-main));
     font-size: 0.58rem;

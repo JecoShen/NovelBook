@@ -406,6 +406,7 @@ watch(() => props.projectRoot, () => {
 
 .rag-inspector-enter-active,
 .rag-inspector-leave-active {
+    /* impeccable-disable-next-line layout-transition -- 检查器停靠是 DESIGN.md Motion Compositor-First 登记的离散 reflow 例外 */
     transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

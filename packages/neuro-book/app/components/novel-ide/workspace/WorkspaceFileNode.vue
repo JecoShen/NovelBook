@@ -345,6 +345,7 @@ onUnmounted(() => {
 <style scoped>
 .expand-enter-active,
 .expand-leave-active {
+    /* impeccable-disable-next-line layout-transition -- 离散手风琴/树展开是 DESIGN.md Motion Compositor-First 登记的 reflow 例外 */
     transition: height 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: height, opacity;
 }

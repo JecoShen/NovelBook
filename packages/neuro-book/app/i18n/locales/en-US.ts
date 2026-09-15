@@ -445,6 +445,7 @@ const enUS = {
             fontSystemSans: "System Sans",
             fontMonospace: "Monospace",
             fontSystemMonospace: "System Monospace",
+            fontCustom: "Custom font stack…",
         },
         version: {
             loading: "Loading version",
@@ -1185,7 +1186,7 @@ const enUS = {
             lorebookRule: "Rule",
             lorebookNote: "Note",
             createSuccessTitle: "Created",
-            createSuccess: "Created {path}",
+            createSuccess: "Created {name}",
         },
         workspace: {
             common: {
@@ -1279,7 +1280,7 @@ const enUS = {
                 createPathRequired: "Path is required",
                 createLorebookTypeLabel: "Type",
                 createSuccessTitle: "Created",
-                createSuccess: "Created {path}",
+                createSuccess: "Created {name}",
                 quickAddChapter: "New chapter in current volume",
                 quickAddChapterFailed: "Failed to create chapter",
                 copyRelativePath: "Copy Relative Path",

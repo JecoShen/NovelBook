@@ -240,7 +240,7 @@ const emit = defineEmits<{
     margin-top: 3px;
     overflow: hidden;
     color: var(--text-main);
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;

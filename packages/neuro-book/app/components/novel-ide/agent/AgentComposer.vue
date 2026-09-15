@@ -580,7 +580,7 @@ defineExpose({focus, insertAttachment});
                     <button type="button" class="absolute right-0.5 top-0.5 rounded bg-[var(--bg-panel)]/90 p-0.5 text-[var(--text-muted)] opacity-0 shadow-sm transition-opacity hover:text-[var(--status-danger)] group-hover:opacity-100 disabled:hidden" :disabled="composerReadonly" title="从正文移除图片" @click="removeComposerImage(index)">
                         <span class="i-lucide-x h-3 w-3"></span>
                     </button>
-                    <div class="absolute inset-x-0 bottom-0 truncate bg-[var(--bg-panel)]/85 px-1 text-[8px] text-[var(--text-secondary)]" :title="image.label">{{ image.label }}</div>
+                    <div class="absolute inset-x-0 bottom-0 truncate bg-[var(--bg-panel)]/85 px-1 text-[10px] text-[var(--text-secondary)]" :title="image.label">{{ image.label }}</div>
                 </div>
             </div>
 
@@ -706,7 +706,7 @@ defineExpose({focus, insertAttachment});
             <button :title="props.contextUsageExactLabel" class="inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-1.5 py-0.5 transition-colors hover:bg-[var(--bg-hover)]" @click="emit('open-context-inspector')">
                 <span class="i-lucide-gauge h-3 w-3 shrink-0"></span>
                 <span class="truncate font-medium text-[var(--text-secondary)]">{{ props.contextUsageCompactLabel }}</span>
-                <span v-if="props.contextPercentCompactLabel" class="rounded-full bg-[var(--accent-bg)] px-1 py-[1px] text-[8px] font-semibold text-[var(--accent-text)]">{{ props.contextPercentCompactLabel }}</span>
+                <span v-if="props.contextPercentCompactLabel" class="rounded-full bg-[var(--accent-bg)] px-1 py-[1px] text-[9px] font-semibold text-[var(--accent-text)]">{{ props.contextPercentCompactLabel }}</span>
             </button>
             <div :title="props.cumulativeUsageExactLabel" class="inline-flex items-center gap-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-1.5 py-0.5">
                 <span class="i-lucide-arrow-down h-3 w-3"></span>

@@ -883,7 +883,7 @@ defineExpose({
 
 :deep(.nb-plain-image-node__badge) {
     color: var(--text-muted);
-    font-size: 0.62rem;
+    font-size: 10px;
 }
 
 :deep(.nb-plain-pending-image-node.is-failed) {
@@ -898,7 +898,7 @@ defineExpose({
     background: transparent;
     color: currentColor;
     cursor: pointer;
-    font-size: 0.65rem;
+    font-size: 10px;
 }
 
 :deep(.nb-plain-pending-image-node__spin) {

@@ -324,6 +324,7 @@ watch(revision, () => {
 
 .workspace-body-enter-active,
 .workspace-body-leave-active {
+    /* impeccable-disable-next-line layout-transition -- 手风琴展开是 DESIGN.md Motion 登记的离散 reflow 例外 */
     transition: height 220ms cubic-bezier(0.2, 0, 0, 1), opacity 180ms ease;
     will-change: height, opacity;
 }

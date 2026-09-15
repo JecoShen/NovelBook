@@ -207,6 +207,32 @@ const editorFontOptions = computed<SelectOption[]>(() => [
     },
 ]);
 
+/** 正文字体自定义档的哨兵值:选中后展开手写栈输入框,命名单元档直接写入偏好。 */
+const EDITOR_FONT_CUSTOM = "__custom__";
+/** 显式跟踪自定义档选中:当前栈恰与命名档相同时,不能靠值匹配把选择弹回命名档。 */
+const editorFontCustomSelected = ref(false);
+const editorFontSelectOptions = computed<SelectOption[]>(() => [
+    ...editorFontOptions.value,
+    {value: EDITOR_FONT_CUSTOM, label: t("settings.editor.fontCustom")},
+]);
+const editorFontSelectValue = computed(() =>
+    editorFontCustomSelected.value || !editorFontOptions.value.some((option) => option.value === markdownEditorPreferences.value.fontFamily)
+        ? EDITOR_FONT_CUSTOM
+        : markdownEditorPreferences.value.fontFamily,
+);
+
+/**
+ * 处理正文字体下拉:命名档直接写入;自定义档保留当前栈并展开手写输入。
+ */
+function updateEditorFontFamily(value: string): void {
+    if (value === EDITOR_FONT_CUSTOM) {
+        editorFontCustomSelected.value = true;
+        return;
+    }
+    editorFontCustomSelected.value = false;
+    updateEditorPreferences({fontFamily: value});
+}
+
 const monacoFontOptions = computed<SelectOption[]>(() => [
     {
         value: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
@@ -483,6 +509,7 @@ function updateEditorNumber(key: keyof Pick<MarkdownEditorPreferences, "fontSize
  * 重置 Markdown 编辑器显示偏好。
  */
 function resetEditorPreferences(): void {
+    editorFontCustomSelected.value = false;
     markdownEditorPreferences.value = {...DEFAULT_MARKDOWN_EDITOR_PREFERENCES};
 }
 
@@ -848,6 +875,12 @@ function updateDesktopCloseBehavior(value: string): void {
                             <span class="min-w-0 flex-1 truncate text-xs font-medium text-[var(--text-main)]" :title="targetLabel">{{ targetLabel }}</span>
                         </div>
 
+                        <!-- 未保存是有名字的「状态」:warning chip 承载状态,accent 实心钮承载动作,两者不再共用一团橙 -->
+                        <span
+                            v-if="showHeaderSaveButton && activeSaveDirty && !activeSaveLoading"
+                            class="inline-flex h-7 shrink-0 items-center rounded-xl border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-2.5 text-[11px] font-semibold text-[var(--status-warning)]"
+                        >{{ t("ide.workspace.common.unsaved") }}</span>
+
                         <button
                             v-if="showHeaderSaveButton"
                             type="button"
@@ -1176,16 +1209,15 @@ function updateDesktopCloseBehavior(value: string): void {
                                         <div class="mt-0.5 text-xs text-[var(--text-secondary)]">{{ t("settings.editor.bodyFontDescription") }}</div>
                                     </div>
                                     <div class="w-72 shrink-0">
+                                        <FormSelect :model-value="editorFontSelectValue" :options="editorFontSelectOptions" @update:model-value="updateEditorFontFamily" />
+                                        <!-- 自定义档才展开手写栈:命名档覆盖常态,高级作者保留逃逸口 -->
                                         <input
-                                            list="markdown-editor-font-options"
-                                            class="h-8 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2.5 text-xs text-[var(--text-main)] outline-none focus:border-[var(--accent-main)] focus:ring-1 focus:ring-[var(--accent-main)] focus:ring-opacity-20"
+                                            v-if="editorFontSelectValue === EDITOR_FONT_CUSTOM"
+                                            class="mt-2 h-8 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2.5 text-xs text-[var(--text-main)] outline-none focus:border-[var(--accent-main)] focus:ring-1 focus:ring-[var(--accent-main)] focus:ring-opacity-20"
                                             :value="markdownEditorPreferences.fontFamily"
                                             :placeholder="t('settings.editor.fontFamilyPlaceholder')"
                                             @input="updateEditorPreferences({fontFamily: ($event.target as HTMLInputElement).value})"
                                         >
-                                        <datalist id="markdown-editor-font-options">
-                                            <option v-for="option in editorFontOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-                                        </datalist>
                                     </div>
                                 </div>
 
@@ -1403,7 +1435,7 @@ function updateDesktopCloseBehavior(value: string): void {
 <style scoped>
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-    transition: all 0.2s cubic-bezier(0.34, 1.15, 0.64, 1);
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .fade-slide-enter-from {
     opacity: 0;

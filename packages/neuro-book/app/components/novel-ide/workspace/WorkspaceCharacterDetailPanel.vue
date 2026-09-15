@@ -705,7 +705,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
     flex: 1;
     border-radius: 0.375rem;
     padding: 0.375rem 0.5rem;
-    font-size: 0.6875rem;
+    font-size: 11px;
     color: var(--text-muted);
     transition: background-color 0.15s ease, color 0.15s ease;
 }

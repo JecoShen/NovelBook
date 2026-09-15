@@ -1320,7 +1320,7 @@ function isSaveShortcut(event: KeyboardEvent): boolean {
 :deep(.nb-markdown-editor h2),
 :deep(.nb-markdown-editor h3) {
     margin: 1.2em 0 0.6em;
-    font-family: "Iowan Old Style", "Palatino Linotype", serif;
+    font-family: inherit;
     font-weight: 700;
     line-height: 1.22;
 }

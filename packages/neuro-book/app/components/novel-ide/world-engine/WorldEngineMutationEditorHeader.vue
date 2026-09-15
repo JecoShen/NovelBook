@@ -18,7 +18,7 @@ const emit = defineEmits<{
 <template>
     <div class="mb-4 flex items-center justify-between gap-3">
         <div>
-            <h2 class="m-0 text-[18px] font-semibold text-[var(--text-main)]">Edit Timeline</h2>
+            <h2 class="m-0 text-base font-semibold text-[var(--text-main)]">Edit Timeline</h2>
             <p class="m-0 mt-1 text-[12px] text-[var(--text-muted)]">写入新 slice，或整块替换当前选中的 slice。</p>
         </div>
         <div class="flex items-center gap-2">

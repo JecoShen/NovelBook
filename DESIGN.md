@@ -43,6 +43,11 @@ typography:
     fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: 1.5
+  body-compact:
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 400
+    lineHeight: 1.45
   body-prose:
     fontFamily: "Georgia, 'Times New Roman', Times, serif"
     fontSize: "1rem"
@@ -248,7 +253,9 @@ The product runs two typographic systems on the same desk: the **IDE chrome** (s
 
 **Body Font (IDE chrome):** system stack — `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif` at 0.9375 rem (15 px) with line-height 1.5.
 
-**Body Font (prose):** either Georgia serif (Newsprint content theme) at 1 rem / 1.8 line-height, or system sans (Notion / GitHub content themes) at 1 rem / 1.6 line-height. The prose picks its own voice per chapter.
+**Body Font (prose):** either Georgia serif (Newsprint content theme) at 1 rem / 1.8 line-height, or system sans (Notion / GitHub content themes) at 1 rem / 1.6 line-height. The prose picks its own voice per chapter. Prose headings inherit that same voice — they differ by weight (700) and scale (1.18 / 1.42 / 1.72), never by a second family.
+
+**Body Compact (dense tool surfaces):** the same system stack at 0.8125 rem (13 px) with line-height ≈ 1.45 — the working text of dense inspectors, workbench rows, and settings dialogs. Meta tiers at 11 px and 10 px carry timestamps, counts, badges, and section meta on those same surfaces.
 
 **Label Font:** system stack, 0.75 rem, weight 600, 0.08 em tracking, sometimes uppercase. Used for category labels, section headers inside chrome, and the caps on reference chips.
 
@@ -259,6 +266,7 @@ The product runs two typographic systems on the same desk: the **IDE chrome** (s
 ### Hierarchy
 
 - **Body** (regular, 0.9375 rem, line-height 1.5): the default — every paragraph in the IDE.
+- **Body Compact** (regular, 0.8125 rem, line-height 1.45): dense-panel working text on tool surfaces (inspectors, workbench rows, settings dialogs).
 - **Body Prose — Serif** (regular, 1 rem, line-height 1.8): the long-form reading voice. Newsprint content theme.
 - **Body Prose — Sans** (regular, 1 rem, line-height 1.6): the long-form reading voice when sans is preferred. Notion and GitHub content themes.
 - **Mono** (regular, 0.875 rem, line-height 1.5): source code in Monaco, paths, IDs.
@@ -270,6 +278,7 @@ The product runs two typographic systems on the same desk: the **IDE chrome** (s
 
 - **The Two-Desk Rule.** The IDE chrome and the long-form prose are two typographic systems that share a desk. Chrome is system sans; prose chooses its own voice (serif or sans) and is allowed to differ. Chrome never inherits the prose's serif.
 - **The Mono-Source Rule.** Source code, paths, IDs, and any text that needs to be diff-able always use the mono stack. Body content never uses the mono stack.
+- **The Dense-Surface Rule.** Tool surfaces may run one step denser than the reading body — 0.8125 rem (13 px) body compact, with 11 px / 10 px reserved for meta (timestamps, counts, badges, section labels). Prose, editor text, and primary reading never drop below the body size: density is a tool-surface privilege, not a reading tax.
 
 ## Language & Copy
 
@@ -296,6 +305,15 @@ The desk speaks the author's language. Engineering nouns are allowed in code, pr
 - **Settings search — cross-scope.** The settings dialog's left nav carries a search box that matches all 10 sections across all 4 config targets (label + description, same pinyin-capable search), each result badged with its target (全局 / 项目 / 浏览器 / 启动). Picking a result switches scope and section through the same dirty-draft guard as manual navigation. The section catalog (10 sections × 4 targets) is registered once in `command-palette-items.ts` — the dialog nav, the in-dialog search, and the palette's `设置:X` jumps all derive from it.
 - **First-hour surfaces — teach one concept at the empty moment, never tour.** The login page carries the brand (feather tile + serif `NeuroBook` wordmark + tagline) above the form — the door is a product surface, not a bare form. Empty states are the onboarding layer: each names what will be here, why it matters, and gives exactly one next action (e.g. zero-thread plot surfaces explain the two-tree model in one sentence — 承载树 orders what the reader reads, 因果树 orders why the story happens, same scenes two angles — then offer 创建第一条主线). Controls that need a selection are hidden, not disabled, when nothing is selected (a row of dead buttons is not an empty state). Recovery/maintenance surfaces are just-in-time: the bookshelf's 需要确认的会话 section prefetches its count on mount and does not render at all when the count is known zero — a permanent warning about a problem the user does not have is noise, and the count badge shows without expanding when there is something to confirm.
 - **Spacing rhythm** — 8 / 12 / 16 / 24 / 40 px (panel-pad-sm / md / lg / xl, section). There is no 6 px and no 10 px; the rhythm is on a 4-px grid with 8 / 12 / 16 / 24 / 40 as the named steps.
+
+## Motion
+
+Motion on the desk is a gesture, not a flourish: **0.22 s ease** is the default beat (dialogs 0.18–0.22 s, panel gestures 0.2–0.3 s). Entrances ease out from an already-visible default; nothing bounces.
+
+### Named Rules
+
+- **The Compositor-First Rule.** Animate `transform` and `opacity`. Layout-affecting properties (`width`, `height`, `margin-*`) animate only for a discrete, user-triggered reflow — a panel opening, a tree node expanding, an inspector docking — never scroll-linked, never ambient, and always bounded at ≤ 0.3 s with a standard ease. Those reflow gestures are the registered exception; everything else stays on the compositor.
+- **The One-Ease Rule.** The desk's curves are `ease` and `cubic-bezier(0.4, 0, 0.2, 1)`. No spring, no overshoot — any `cubic-bezier` whose control points exceed 1 is off the desk.
 
 ## Elevation & Depth
 

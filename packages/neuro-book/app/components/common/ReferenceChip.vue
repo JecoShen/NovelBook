@@ -50,7 +50,7 @@ const meta = computed(() => getReferenceChipMeta({
     margin: 0 0.1rem;
     padding: 0.08rem 0.42rem;
     border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
-    border-radius: 0.75rem;
+    border-radius: 0.8rem;
     background: color-mix(in srgb, currentColor 10%, var(--bg-panel));
     vertical-align: baseline;
     line-height: 1.25;
@@ -60,7 +60,7 @@ const meta = computed(() => getReferenceChipMeta({
 .nb-inline-comment__badge {
     flex: none;
     padding: 0.04rem 0.28rem;
-    border-radius: 0.55rem;
+    border-radius: 0.5rem;
     background: color-mix(in srgb, currentColor 12%, transparent);
     font-size: 0.58rem;
     line-height: 1.1;

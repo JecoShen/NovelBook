@@ -443,6 +443,7 @@ const zhCN = {
             fontSystemSans: "系统无衬线",
             fontMonospace: "等宽字体",
             fontSystemMonospace: "系统等宽",
+            fontCustom: "自定义字体栈…",
         },
         version: {
             loading: "读取版本中",
@@ -1183,7 +1184,7 @@ const zhCN = {
             lorebookRule: "规则",
             lorebookNote: "笔记",
             createSuccessTitle: "创建成功",
-            createSuccess: "已创建 {path}",
+            createSuccess: "已创建 {name}",
         },
         workspace: {
             common: {
@@ -1277,7 +1278,7 @@ const zhCN = {
                 createPathRequired: "路径不能为空",
                 createLorebookTypeLabel: "类型",
                 createSuccessTitle: "创建成功",
-                createSuccess: "已创建 {path}",
+                createSuccess: "已创建 {name}",
                 quickAddChapter: "当前卷 +1 章",
                 quickAddChapterFailed: "创建章节失败",
                 copyRelativePath: "复制相对路径",
