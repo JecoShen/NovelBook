@@ -6,6 +6,7 @@ import enUS from "nbook/app/i18n/locales/en-US";
 import zhCN from "nbook/app/i18n/locales/zh-CN";
 
 const activityBarPath = fileURLToPath(new URL("../components/novel-ide/NovelIdeActivityBar.vue", import.meta.url));
+const workbenchChromePath = fileURLToPath(new URL("./workbench-chrome.ts", import.meta.url));
 const toolPanelPath = fileURLToPath(new URL("../components/novel-ide/NovelIdeToolPanel.vue", import.meta.url));
 const welcomePath = fileURLToPath(new URL("../components/markdown-studio/MarkdownStudioWelcome.vue", import.meta.url));
 const agentSurfacePath = fileURLToPath(new URL("../components/novel-ide/agent/AgentChatSurface.vue", import.meta.url));
@@ -22,11 +23,14 @@ describe("Novel writing mode entries", () => {
         expect(isNovelIdeTab("plot")).toBe(true);
 
         const activityBar = await readFile(activityBarPath, "utf-8");
+        const workbenchChrome = await readFile(workbenchChromePath, "utf-8");
         const toolPanel = await readFile(toolPanelPath, "utf-8");
 
         expect(activityBar).not.toContain("\"outline\"");
         expect(activityBar).not.toContain("\"rag\"");
-        expect(activityBar).toContain("plot: \"i-lucide-git-branch\"");
+        // 图标映射在 workbench-chrome 单一源(ACTIVITY_ICON_CLASSES),ActivityBar 引用它。
+        expect(activityBar).toContain("ACTIVITY_ICON_CLASSES");
+        expect(workbenchChrome).toContain("plot: \"i-lucide-git-branch\"");
         expect(activityBar).toContain('case "plot": emit("open-tab", item.id); return;');
         expect(toolPanel).toContain("NovelPlotPanel");
         expect(toolPanel).toContain("activeTab === 'plot' && !props.userAssetsMode");

@@ -37,14 +37,10 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "selectThread", threadId: string): void;
-    (e: "selectScene", sceneId: string): void;
-    (e: "createScene"): void;
-    (e: "editThread"): void;
-    (e: "editScene", sceneId: string): void;
-    (e: "openThreadMenu", event: MouseEvent): void;
+    (e: "selectThread" | "selectScene" | "editScene", id: string): void;
+    (e: "createScene" | "editThread" | "createThread"): void;
+    (e: "openThreadMenu" | "openRootMenu", event: MouseEvent): void;
     (e: "openSceneMenu", payload: {sceneId: string; event: MouseEvent}): void;
-    (e: "openRootMenu", event: MouseEvent): void;
     (e: "reorderScenes", sceneIds: string[]): void;
 }>();
 
@@ -330,9 +326,32 @@ watch(() => [props.selectedThreadId, props.scenes], () => {
             </div>
 
             <div v-else class="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-input)]/20 px-5 text-center">
-                <span class="i-lucide-waypoints h-6 w-6 text-[var(--text-muted)]"></span>
-                <div class="text-[12px] font-medium text-[var(--text-main)]">当前线索还没有场景</div>
-                <div class="text-[11px] leading-5 text-[var(--text-muted)]">可以先新增一个场景，或者切换到其他线索。</div>
+                <!-- 零线索是新手第一触点:用一句话讲清双树,再给唯一下一步;文案避免把「没线索」说成「当前线索没场景」 -->
+                <template v-if="props.threads.length === 0">
+                    <span class="i-lucide-git-branch-plus h-6 w-6 text-[var(--text-muted)]" />
+                    <div class="text-[12px] font-medium text-[var(--text-main)]">还没有线索</div>
+                    <div class="max-w-[320px] text-[11px] leading-5 text-[var(--text-muted)]">
+                        剧情在这里分两棵树看：卷章排读者读到的顺序（承载树），线索与场景排故事为什么发生（因果树）——同一批场景，两个角度。
+                    </div>
+                    <button
+                        type="button"
+                        class="mt-1 inline-flex h-7 items-center gap-1.5 rounded-md bg-[var(--accent-main)] px-3 text-[11.5px] font-medium text-[var(--text-inverse)] transition-opacity hover:opacity-90"
+                        @click="emit('createThread')"
+                    >
+                        <span class="i-lucide-plus h-3.5 w-3.5" />
+                        创建第一条主线
+                    </button>
+                </template>
+                <template v-else-if="!selectedThread">
+                    <span class="i-lucide-mouse-pointer-click h-6 w-6 text-[var(--text-muted)]" />
+                    <div class="text-[12px] font-medium text-[var(--text-main)]">选择一条线索</div>
+                    <div class="text-[11px] leading-5 text-[var(--text-muted)]">从上方下拉选择线索，这里会列出它的场景。</div>
+                </template>
+                <template v-else>
+                    <span class="i-lucide-waypoints h-6 w-6 text-[var(--text-muted)]" />
+                    <div class="text-[12px] font-medium text-[var(--text-main)]">当前线索还没有场景</div>
+                    <div class="text-[11px] leading-5 text-[var(--text-muted)]">可以先新增一个场景，或者切换到其他线索。</div>
+                </template>
             </div>
         </div>
     </div>

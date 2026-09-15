@@ -1819,6 +1819,7 @@ watch(plotRefreshVersion, async (version, previousVersion) => {
                     :selected-scene-id="selectedSceneId"
                     @select-thread="selectThreadFromPanel"
                     @select-scene="selectSceneFromPanel"
+                    @create-thread="openThreadEditor('create')"
                     @create-scene="openSceneEditor('create')"
                     @edit-thread="openThreadEditor('edit')"
                     @edit-scene="openSceneEditor('edit', $event)"

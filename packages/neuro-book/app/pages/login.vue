@@ -73,7 +73,15 @@ onMounted(() => {
 <template>
     <!-- 登录页外壳 -->
     <div ref="themeHostRef" class="auth-page min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300">
-        <div class="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-10">
+        <div class="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4 py-10">
+            <!-- 品牌区:与书架同源的羽毛笔+衬线字标,登录是产品门面不是裸表单 -->
+            <div class="mb-8 flex flex-col items-center text-center">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border-accent)] bg-[var(--accent-bg)] text-[var(--accent-text)] shadow-sm">
+                    <span class="i-lucide-feather h-6 w-6" />
+                </div>
+                <div class="mt-4 font-serif text-3xl font-bold text-[var(--text-main)]">NeuroBook</div>
+                <p class="mt-2 text-sm text-[var(--text-secondary)]">{{ t("auth.brandTagline") }}</p>
+            </div>
             <div class="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-panel)] p-6 shadow-2xl">
                 <div class="mb-6">
                     <div class="text-2xl font-semibold">{{ t("auth.loginTitle") }}</div>

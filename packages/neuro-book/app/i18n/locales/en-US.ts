@@ -122,7 +122,8 @@ const enUS = {
     },
     auth: {
         loginTitle: "Log In",
-        loginDescription: "Use your account password to access the site and admin console.",
+        brandTagline: "A local-first workspace for long-form writing",
+        loginDescription: "Sign in to your writing workspace.",
         username: "Username",
         password: "Password",
         usernamePlaceholder: "Enter username",

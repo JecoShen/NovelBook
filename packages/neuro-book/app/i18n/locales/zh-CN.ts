@@ -120,7 +120,8 @@ const zhCN = {
     },
     auth: {
         loginTitle: "登录",
-        loginDescription: "使用账号密码访问全站与管理员后台。",
+        brandTagline: "本地优先的长篇写作工作台",
+        loginDescription: "使用账号密码进入你的写作工作台。",
         username: "用户名",
         password: "密码",
         usernamePlaceholder: "请输入用户名",

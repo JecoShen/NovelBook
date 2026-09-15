@@ -137,9 +137,12 @@ const loadProjects = async (): Promise<void> => {
 
 onMounted(() => {
     void loadProjects();
+    // 进书架即取待确认会话:确认零待确认后整块恢复区不渲染(新手第一屏不该看到存量问题噪音);
+    // 有待确认时徽标直接带数量;读取失败保留原行为(区域可见,展开后见错误与重试)。
+    void loadRecoverySessions(0, false);
 });
 
-/** 首次展开才读取待确认 Session；后续分页沿用服务端 offset/limit 协议。 */
+/** 挂载时已预取首屏；这里只在预取失败(recoveryLoaded=false)时承担展开重试。 */
 const toggleRecovery = async (): Promise<void> => {
     recoveryExpanded.value = !recoveryExpanded.value;
     if (recoveryExpanded.value && !recoveryLoaded.value) {
@@ -781,8 +784,8 @@ onBeforeUnmount(() => {
                 </div>
             </section>
 
-            <!-- Session v2 恢复入口：默认折叠，展开后才请求需要人工确认的分页数据。 -->
-            <section class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-panel)]">
+            <!-- Session v2 恢复入口：默认折叠。已知零待确认且未展开时整块隐藏，不做常设警告。 -->
+            <section v-if="!recoveryLoaded || recoveryTotal > 0 || recoveryExpanded" class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-panel)]">
                 <button type="button" class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left sm:px-5" :aria-expanded="recoveryExpanded" @click="void toggleRecovery()">
                     <span class="min-w-0">
                         <span class="flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]">

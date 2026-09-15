@@ -27,14 +27,14 @@ const props = defineProps<{
     scenes: PlotThreadPanelScene[];
     chapters: PlotThreadPanelChapter[];
     selectedSceneId: string | null;
+    // 区分「还没有任何线索」与「有线索但未选中」,两种空态给不同指引。
+    hasThreads: boolean;
 }>();
 
 const emit = defineEmits<{
-    (e: "selectScene", sceneId: string): void;
-    (e: "editScene", sceneId: string): void;
-    (e: "createScene", threadId: string): void;
-    (e: "autoSortScenes", sceneIds: string[]): void;
-    (e: "reorderScenes", sceneIds: string[]): void;
+    (e: "selectScene" | "editScene" | "createScene", id: string): void;
+    (e: "createThread"): void;
+    (e: "autoSortScenes" | "reorderScenes", sceneIds: string[]): void;
 }>();
 
 const dndSensors = [
@@ -363,7 +363,8 @@ watch(() => props.thread?.id, () => {
             </div>
         </section>
 
-        <div class="mt-2.5 flex flex-wrap items-center justify-end gap-1.5">
+        <!-- 未选线索时整排按钮都是死操作(创建/排序/检查全需要 thread),随摘要区一起隐去 -->
+        <div v-if="props.thread" class="mt-2.5 flex flex-wrap items-center justify-end gap-1.5">
             <span v-if="sceneCheckMessage" class="mr-auto inline-flex min-h-7 items-center rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2.5 text-[11px] leading-5 text-[var(--text-secondary)]">
                 {{ sceneCheckMessage }}
             </span>
@@ -381,7 +382,7 @@ watch(() => props.thread?.id, () => {
             </button>
         </div>
 
-        <section class="mt-3">
+        <section v-if="props.thread" class="mt-3">
             <DragDropProvider
                 v-if="renderedScenes.length"
                 :sensors="dndSensors"
@@ -405,7 +406,44 @@ watch(() => props.thread?.id, () => {
                 </div>
             </DragDropProvider>
 
+            <div v-else class="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border-color)] bg-[var(--bg-input)]/20 px-5 py-8 text-center">
+                <span class="i-lucide-clapperboard h-6 w-6 text-[var(--text-muted)]" />
+                <div class="text-[12px] font-medium text-[var(--text-main)]">这条线索还没有场景</div>
+                <div class="max-w-[340px] text-[11px] leading-5 text-[var(--text-muted)]">场景是线索上连续发生的一段故事。新建第一个场景，写上它服务哪些承诺。</div>
+                <button
+                    type="button"
+                    class="mt-1 inline-flex h-7 items-center gap-1.5 rounded-md bg-[var(--accent-main)] px-3 text-[11.5px] font-medium text-[var(--text-inverse)] transition-opacity hover:opacity-90"
+                    @click="createScene"
+                >
+                    <span class="i-lucide-plus h-3.5 w-3.5" />
+                    新建第一个场景
+                </button>
+            </div>
         </section>
+
+        <!-- 中央区空态:零线索讲清概念并给唯一 CTA;有线索未选中则指向左栏 -->
+        <div v-else class="flex min-h-[320px] flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+            <template v-if="props.hasThreads">
+                <span class="i-lucide-mouse-pointer-click h-7 w-7 text-[var(--text-muted)]" />
+                <div class="text-[13px] font-medium text-[var(--text-main)]">选择一条线索</div>
+                <div class="max-w-[360px] text-[11.5px] leading-5 text-[var(--text-muted)]">左侧是这本书的线索列表。选中一条，这里就是它的场景编排台。</div>
+            </template>
+            <template v-else>
+                <span class="i-lucide-git-branch-plus h-7 w-7 text-[var(--text-muted)]" />
+                <div class="text-[13px] font-medium text-[var(--text-main)]">还没有线索</div>
+                <div class="max-w-[380px] text-[11.5px] leading-5 text-[var(--text-muted)]">
+                    线索是故事的因果线：主线推动结局，支线织补世界。创建第一条主线后，在这里把场景一段段排上去。
+                </div>
+                <button
+                    type="button"
+                    class="mt-1.5 inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--accent-main)] px-4 text-[12px] font-medium text-[var(--text-inverse)] transition-opacity hover:opacity-90"
+                    @click="emit('createThread')"
+                >
+                    <span class="i-lucide-plus h-3.5 w-3.5" />
+                    创建第一条主线
+                </button>
+            </template>
+        </div>
     </main>
 </template>
 
