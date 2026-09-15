@@ -59,3 +59,15 @@ export function resolveManagedChapterPath(tree: readonly WelcomeChapterTreeNode[
     const chapter = resolveNextChapterSegment(tree, volume);
     return `manuscript/${volume}/${chapter}/index.md`;
 }
+
+/** 下一章的数字序号(供「第 N 章」这类默认标题;与 resolveManagedChapterPath 同卷同号)。 */
+export function resolveManagedChapterNumber(tree: readonly WelcomeChapterTreeNode[]): number {
+    const volume = resolveLatestVolumeSegment(tree);
+    const chapter = resolveNextChapterSegment(tree, volume);
+    return Number.parseInt(CHAPTER_SEGMENT_PATTERN.exec(chapter)?.[1] ?? "1", 10);
+}
+
+/** 章节初始内容:标题来自作者起的章节名,而不是路径段。 */
+export function buildManagedChapterContent(chapterTitle: string): string {
+    return `---\ntitle: ${JSON.stringify(chapterTitle)}\nstatus: draft\n---\n\n`;
+}

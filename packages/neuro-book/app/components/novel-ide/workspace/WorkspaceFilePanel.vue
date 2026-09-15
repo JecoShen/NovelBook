@@ -13,6 +13,7 @@ import {useDialog} from "nbook/app/composables/useDialog";
 import {useNotification} from "nbook/app/composables/useNotification";
 import {resolveApiErrorMessage} from "nbook/app/utils/api-error";
 import {buildDefaultWorkspaceCreatePath} from "nbook/app/utils/workspace-create-path";
+import {buildManagedChapterContent, resolveManagedChapterNumber, resolveManagedChapterPath} from "nbook/app/utils/welcome-chapter-path";
 import {buildWorkspacePathCopyText, type WorkspacePathCopyMode} from "nbook/app/utils/workspace-path-copy";
 import {useNovelIdeStore, type WorkspaceFileNode} from "nbook/app/stores/novel-ide";
 import {
@@ -319,17 +320,47 @@ function buildNodeCreateMenu(node: WorkspaceFileNode, baseDir: string, siblingDi
 }
 
 /**
+ * 一键建章:零对话框,最新卷下一章,标题默认「第 N 章」,建完即开;与命令面板同一语义。
+ */
+async function quickAddChapter(): Promise<void> {
+    if (creatingWorkspaceNode.value) {
+        return;
+    }
+    creatingWorkspaceNode.value = true;
+    try {
+        const filePath = resolveManagedChapterPath(workspaceTree.value);
+        const chapterNumber = resolveManagedChapterNumber(workspaceTree.value);
+        const node = await store.createWorkspaceFile(filePath, buildManagedChapterContent(t("ide.shell.quickChapterTitle", {number: chapterNumber})));
+        await store.selectWorkspacePath(node.path, "permanent");
+        notifySuccess(t("ide.workspace.filePanel.createSuccess", {path: node.path}), {title: t("ide.workspace.filePanel.createSuccessTitle")});
+    } catch (error) {
+        notifyError(resolveApiErrorMessage(error, t("ide.workspace.filePanel.quickAddChapterFailed")), {title: t("ide.workspace.filePanel.quickAddChapterFailed")});
+    } finally {
+        creatingWorkspaceNode.value = false;
+    }
+}
+
+/**
  * 构造根区域右键的新建子菜单。
  */
 function buildRootCreateMenu(): ContextMenuItem {
+    const children: ContextMenuItem[] = [];
+    // 一键建章只在小说工作区出现;用户资产工作区没有 manuscript 卷章约定
+    if (store.workspaceKind !== "user-assets") {
+        children.push(
+            {label: t("ide.workspace.filePanel.quickAddChapter"), iconClass: "i-lucide-file-plus-2", disabled: creatingWorkspaceNode.value, action: () => void quickAddChapter()},
+            {separator: true},
+        );
+    }
+    children.push(
+        {label: t("ide.workspace.filePanel.newFile"), iconClass: "i-lucide-file-plus", action: () => openCreateDialog("file", defaultFilePath(""))},
+        {label: t("ide.workspace.filePanel.newDirectory"), iconClass: "i-lucide-folder-plus", action: () => openCreateDialog("directory", defaultDirectoryPath(""))},
+        {label: t("ide.workspace.filePanel.newLorebook"), iconClass: "i-lucide-book-plus", action: () => openCreateDialog("lorebook", defaultLorebookPath(null))},
+    );
     return {
         label: t("ide.workspace.filePanel.create"),
         iconClass: "i-lucide-plus",
-        children: [
-            {label: t("ide.workspace.filePanel.newFile"), iconClass: "i-lucide-file-plus", action: () => openCreateDialog("file", defaultFilePath(""))},
-            {label: t("ide.workspace.filePanel.newDirectory"), iconClass: "i-lucide-folder-plus", action: () => openCreateDialog("directory", defaultDirectoryPath(""))},
-            {label: t("ide.workspace.filePanel.newLorebook"), iconClass: "i-lucide-book-plus", action: () => openCreateDialog("lorebook", defaultLorebookPath(null))},
-        ],
+        children,
     };
 }
 

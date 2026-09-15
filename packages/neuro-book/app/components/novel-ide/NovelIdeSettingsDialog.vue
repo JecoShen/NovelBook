@@ -23,9 +23,16 @@ import type {MarkdownStudioViewMode} from "nbook/app/composables/useMarkdownStud
 import type {CustomThemeDto, ThemeAppearance} from "nbook/shared/theme/theme-vars";
 import {DEFAULT_DESKTOP_SETTINGS, type DesktopCloseBehavior, type DesktopSettings, type DesktopStatus} from "@notnotype/neuro-book-contracts/desktop";
 import {DEFAULT_MARKDOWN_EDITOR_PREFERENCES, DEFAULT_MONACO_EDITOR_PREFERENCES, type MarkdownEditorPreferences, type MonacoEditorPreferences} from "nbook/shared/editor-workbench";
+import {
+    resolveAvailableSettingsTargets,
+    SETTINGS_SECTION_CATALOG,
+    settingsSectionsForScope,
+    type SettingsScope,
+    type SettingsSection,
+    type SettingsSectionTarget,
+} from "nbook/app/utils/command-palette-items";
+import {searchWorkspaceReferences} from "nbook/app/utils/workspace-reference-search";
 
-type SettingsSection = "security" | "frontend" | "editor" | "models" | "embedding" | "cost" | "web-tools" | "agent-profile-models" | "observability" | "desktop";
-type SettingsScope = "boot" | "global" | "project" | "browser";
 type AppVersionKind = "release" | "tag" | "commit" | "package";
 type ThemeEditorMode = "create" | "edit" | "copy";
 
@@ -43,9 +50,13 @@ type SettingsSavePanelExpose = {
     restoreSettings: () => Promise<void>;
 };
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     modelValue: boolean;
-}>();
+    /** 打开时直达的分区目标(命令面板「设置:X」);只在打开跳变时消费一次。 */
+    initialTarget?: {scope: SettingsScope; section: SettingsSection} | null;
+}>(), {
+    initialTarget: null,
+});
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: boolean): void;
@@ -84,68 +95,13 @@ const themeEditorInitialTheme = ref<CustomThemeDto | null>(null);
 const themeDeleteTarget = ref<CustomThemeDto | null>(null);
 const themeImportInputRef = ref<HTMLInputElement | null>(null);
 
-const frontendSectionItems = computed<Array<{value: SettingsSection; label: string; description: string; iconClass: string}>>(() => [
-    {
-        value: "security",
-        label: t("settings.section.security.label"),
-        description: t("settings.section.security.description"),
-        iconClass: "i-lucide-shield-check",
-    },
-    {
-        value: "frontend",
-        label: t("settings.section.frontend.label"),
-        description: t("settings.section.frontend.description"),
-        iconClass: "i-lucide-monitor-cog",
-    },
-    {
-        value: "editor",
-        label: t("settings.section.editor.label"),
-        description: t("settings.section.editor.description"),
-        iconClass: "i-lucide-type",
-    },
-    {
-        value: "models",
-        label: t("settings.section.models.label"),
-        description: t("settings.section.models.description"),
-        iconClass: "i-lucide-cpu",
-    },
-    {
-        value: "embedding",
-        label: "Embedding",
-        description: t("settings.section.embedding.description"),
-        iconClass: "i-lucide-binary",
-    },
-    {
-        value: "cost",
-        label: t("settings.section.cost.label"),
-        description: t("settings.section.cost.description"),
-        iconClass: "i-lucide-circle-dollar-sign",
-    },
-    {
-        value: "web-tools",
-        label: t("settings.section.webTools.label"),
-        description: t("settings.section.webTools.description"),
-        iconClass: "i-lucide-search-code",
-    },
-    {
-        value: "agent-profile-models",
-        label: t("settings.section.agentProfileModels.label"),
-        description: t("settings.section.agentProfileModels.description"),
-        iconClass: "i-lucide-bot-message-square",
-    },
-    {
-        value: "observability",
-        label: t("settings.section.observability.label"),
-        description: t("settings.section.observability.description"),
-        iconClass: "i-lucide-activity",
-    },
-    {
-        value: "desktop",
-        label: t("settings.section.desktop.label"),
-        description: t("settings.section.desktop.description"),
-        iconClass: "i-lucide-panels-top-left",
-    },
-]);
+/** 分区目录在 command-palette-items 登记为单一源(命令面板直达与搜索共用),这里只挂文案。 */
+const frontendSectionItems = computed(() => SETTINGS_SECTION_CATALOG.map((entry) => ({
+    value: entry.value,
+    label: entry.labelKey ? t(entry.labelKey) : entry.fallbackLabel ?? entry.value,
+    description: t(entry.descriptionKey),
+    iconClass: entry.iconClass,
+})));
 
 const scopeOptions = computed<Array<{value: SettingsScope; label: string; description: string; iconClass: string}>>(() => [
     {
@@ -174,10 +130,6 @@ const scopeOptions = computed<Array<{value: SettingsScope; label: string; descri
     },
 ]);
 
-const globalConfigSections: SettingsSection[] = ["models", "embedding", "cost", "web-tools", "agent-profile-models", "observability"];
-const projectConfigSections: SettingsSection[] = ["agent-profile-models"];
-const browserSections: SettingsSection[] = ["frontend", "editor", "desktop"];
-const bootConfigSections: SettingsSection[] = ["security"];
 const desktopBridge = computed(() => import.meta.client ? window.neuroBookDesktop : undefined);
 const desktopAvailable = computed(() => Boolean(desktopBridge.value));
 const projectScopeAvailable = computed(() => novelIdeStore.workspaceKind !== "user-assets"
@@ -282,13 +234,7 @@ const targetLabel = computed(() => activeScope.value === "project"
     ? novelIdeStore.currentNovel?.title || novelIdeStore.currentProjectRoot || "Project Workspace"
     : activeScope.value === "boot" ? "config.yaml" : "Workspace Root");
 const visibleSectionItems = computed(() => {
-    const allowed = activeScope.value === "boot"
-        ? bootConfigSections
-        : activeScope.value === "browser"
-        ? browserSections
-        : activeScope.value === "project"
-            ? projectConfigSections
-            : globalConfigSections;
+    const allowed = settingsSectionsForScope(activeScope.value);
     return frontendSectionItems.value.filter((item) => allowed.includes(item.value) && (item.value !== "desktop" || desktopAvailable.value));
 });
 
@@ -356,16 +302,7 @@ const activeRestoreDisabled = computed(() => activeSaveLoading.value || activeSa
  * 读取当前配置目标允许显示的设置分区。
  */
 function sectionsForScope(scope: SettingsScope): SettingsSection[] {
-    if (scope === "boot") {
-        return bootConfigSections;
-    }
-    if (scope === "browser") {
-        return browserSections;
-    }
-    if (scope === "project") {
-        return projectConfigSections;
-    }
-    return globalConfigSections;
+    return settingsSectionsForScope(scope);
 }
 
 /**
@@ -475,6 +412,47 @@ async function selectSection(section: SettingsSection): Promise<void> {
         return;
     }
     activeSection.value = section;
+}
+
+/* ===== 分区搜索:跨配置目标检索(4 配置目标 × 10 分区),选中即跳转 ===== */
+const sectionSearchQuery = ref("");
+
+/** 跨 scope 的搜索结果;复用 workspace 搜索(拼音/首字母/容错),只在有查询时计算。 */
+const sectionSearchResults = computed<SettingsSectionTarget[]>(() => {
+    const query = sectionSearchQuery.value.trim();
+    if (!query) {
+        return [];
+    }
+    const targets = resolveAvailableSettingsTargets({
+        projectScopeAvailable: projectScopeAvailable.value,
+        desktopAvailable: desktopAvailable.value,
+    });
+    return searchWorkspaceReferences(targets.map((target, order) => ({
+        item: target,
+        label: target.entry.labelKey ? t(target.entry.labelKey) : target.entry.fallbackLabel ?? target.section,
+        target: `${target.section} ${t(`settings.scope.${target.scope}.label`)}`,
+        description: t(target.entry.descriptionKey),
+        order,
+    })), query, 20).map((result) => result.item);
+});
+
+/** 跳转搜索结果:沿用与手动切换相同的 dirty 守卫,命中后清空查询回到导航态。 */
+async function jumpToSectionTarget(target: SettingsSectionTarget): Promise<void> {
+    if (!await confirmLeaveCurrentPanel()) {
+        return;
+    }
+    activeScope.value = target.scope;
+    activeSection.value = target.section;
+    alignActiveSectionToScope();
+    sectionSearchQuery.value = "";
+}
+
+function settingsSectionLabel(section: SettingsSection): string {
+    const entry = SETTINGS_SECTION_CATALOG.find((candidate) => candidate.value === section);
+    if (!entry) {
+        return section;
+    }
+    return entry.labelKey ? t(entry.labelKey) : entry.fallbackLabel ?? section;
 }
 
 /**
@@ -763,6 +741,19 @@ watch(() => props.modelValue, (open) => {
     if (!open) {
         return;
     }
+    sectionSearchQuery.value = "";
+    // 命令面板直达:目标已不可用(如退出项目后)时退回默认对齐,不硬跳
+    if (props.initialTarget) {
+        const {scope, section} = props.initialTarget;
+        const available = resolveAvailableSettingsTargets({
+            projectScopeAvailable: projectScopeAvailable.value,
+            desktopAvailable: desktopAvailable.value,
+        });
+        if (available.some((target) => target.scope === scope && target.section === section)) {
+            activeScope.value = scope;
+            activeSection.value = section;
+        }
+    }
     void loadAppVersion();
     if (desktopBridge.value) {
         void loadDesktopSettings();
@@ -894,7 +885,48 @@ function updateDesktopCloseBehavior(value: string): void {
                     <div class="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{{ activeScope === "browser" ? t("settings.scope.browserState") : t("settings.scope.configFile") }}</div>
                 </div>
 
-                <div class="flex min-w-0 gap-1.5 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
+                <!-- 分区搜索:跨配置目标检索,选中即跳;Esc/× 清空回到导航 -->
+                <div class="mb-2 shrink-0">
+                    <div class="flex items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] px-2.5">
+                        <span class="i-lucide-search h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" />
+                        <input
+                            v-model="sectionSearchQuery"
+                            type="text"
+                            :placeholder="t('settings.search.placeholder')"
+                            :aria-label="t('settings.search.placeholder')"
+                            class="h-8 min-w-0 flex-1 bg-transparent text-xs text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)]"
+                            @keydown.esc.stop="sectionSearchQuery = ''"
+                        >
+                        <button
+                            v-if="sectionSearchQuery"
+                            type="button"
+                            class="shrink-0 rounded-md p-0.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)]"
+                            :aria-label="t('settings.search.clear')"
+                            @click="sectionSearchQuery = ''"
+                        >
+                            <span class="i-lucide-x h-3 w-3" />
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="sectionSearchQuery.trim()" class="flex min-h-0 min-w-0 flex-col gap-1 overflow-y-auto pb-1">
+                    <div v-if="sectionSearchResults.length === 0" class="px-3 py-6 text-center text-xs text-[var(--text-muted)]">{{ t("settings.search.empty") }}</div>
+                    <button
+                        v-for="target in sectionSearchResults"
+                        :key="`${target.scope}:${target.section}`"
+                        type="button"
+                        class="group flex w-full shrink-0 items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 text-left transition-all duration-200 hover:bg-[var(--bg-hover)] hover:bg-opacity-40 md:gap-3 md:px-2.5 md:py-2"
+                        @click="void jumpToSectionTarget(target)"
+                    >
+                        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors duration-300 group-hover:text-[var(--text-main)]">
+                            <span :class="target.entry.iconClass" class="h-4 w-4" />
+                        </div>
+                        <span class="min-w-0 flex-1 truncate text-xs font-medium text-[var(--text-main)] md:text-[13px]">{{ settingsSectionLabel(target.section) }}</span>
+                        <span class="shrink-0 rounded-md border border-[var(--border-color)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)]">{{ t(`settings.scope.${target.scope}.label`) }}</span>
+                    </button>
+                </div>
+
+                <div v-else class="flex min-w-0 gap-1.5 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
                     <div v-for="group in visibleSectionGroups" :key="group.key" class="contents md:block">
                         <div v-if="group.label" class="hidden px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] md:block">{{ group.label }}</div>
                         <button

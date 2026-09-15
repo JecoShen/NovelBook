@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {resolveLatestVolumeSegment, resolveManagedChapterPath, resolveNextChapterSegment} from "nbook/app/utils/welcome-chapter-path";
+import {buildManagedChapterContent, resolveLatestVolumeSegment, resolveManagedChapterNumber, resolveManagedChapterPath, resolveNextChapterSegment} from "nbook/app/utils/welcome-chapter-path";
 
 const dir = (path: string) => ({path, isDirectory: true});
 const file = (path: string) => ({path, isDirectory: false});
@@ -60,5 +60,26 @@ describe("resolveManagedChapterPath", () => {
             dir("manuscript/002-volume/001-chapter"),
             dir("manuscript/002-volume/002-chapter"),
         ])).toBe("manuscript/002-volume/003-chapter/index.md");
+    });
+});
+
+describe("resolveManagedChapterNumber", () => {
+    it("空树从 1 起", () => {
+        expect(resolveManagedChapterNumber([])).toBe(1);
+    });
+
+    it("与代管路径同卷同号", () => {
+        const tree = [
+            dir("manuscript/001-volume"),
+            dir("manuscript/001-volume/013-chapter"),
+        ];
+        expect(resolveManagedChapterNumber(tree)).toBe(14);
+        expect(resolveManagedChapterPath(tree)).toBe("manuscript/001-volume/014-chapter/index.md");
+    });
+});
+
+describe("buildManagedChapterContent", () => {
+    it("章节名写入 frontmatter title 并转义", () => {
+        expect(buildManagedChapterContent("第 14 章")).toBe('---\ntitle: "第 14 章"\nstatus: draft\n---\n\n');
     });
 });

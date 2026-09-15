@@ -7,6 +7,7 @@ import MarkdownStudioWorkbench from "nbook/app/components/markdown-studio/Markdo
 import AgentChatSurface from "nbook/app/components/novel-ide/agent/AgentChatSurface.vue";
 import AgentTraceViewerDialog from "nbook/app/components/novel-ide/agent/trace-viewer/AgentTraceViewerDialog.vue";import WorkspaceHistoryInboxDialog from "nbook/app/components/novel-ide/history/WorkspaceHistoryInboxDialog.vue";import AgentModeSessionSidebar from "nbook/app/components/novel-ide/agent/AgentModeSessionSidebar.vue";
 import NovelIdeActivityBar from "nbook/app/components/novel-ide/NovelIdeActivityBar.vue";
+import NovelIdeCommandPalette from "nbook/app/components/novel-ide/NovelIdeCommandPalette.vue";
 import NovelIdeProfileDialog from "nbook/app/components/novel-ide/NovelIdeProfileDialog.vue";
 import NovelIdeSettingsDialog from "nbook/app/components/novel-ide/NovelIdeSettingsDialog.vue";
 import NovelIdeToolPanel from "nbook/app/components/novel-ide/NovelIdeToolPanel.vue";
@@ -40,7 +41,21 @@ import type {WorkspaceFileChangeEventDto, WorkspaceFileStreamEventDto} from "nbo
 import type {AgentSessionSummaryDto, AgentSkillCatalogItemDto} from "nbook/shared/dto/agent-session.dto";
 import {agentSessionScopeKey} from "nbook/app/utils/agent-session-scope-key";
 import {resolveApiErrorMessage} from "nbook/app/utils/api-error";
-import {resolveManagedChapterPath} from "nbook/app/utils/welcome-chapter-path";
+import {buildManagedChapterContent, resolveManagedChapterNumber, resolveManagedChapterPath} from "nbook/app/utils/welcome-chapter-path";
+import {
+    buildCommandPaletteFileItems,
+    resolveAvailableSettingsTargets,
+    type CommandPaletteItem,
+    type SettingsScope,
+    type SettingsSection,
+} from "nbook/app/utils/command-palette-items";
+import {
+    ACTIVITY_ICON_CLASSES,
+    ACTIVITY_SHORTCUT_ORDER,
+    createWorkbenchActivityItems,
+    resolveActivityShortcut,
+    type WorkbenchActivityItemId,
+} from "nbook/app/utils/workbench-chrome";
 import {
     projectRouteProgressView,
     reduceProjectRouteProgress,
@@ -481,6 +496,166 @@ const mobileViewport = useMediaQuery("(max-width: 767px)");
 watch(workspaceFileActivateSerial, () => {
     if (mobileViewport.value && activeLeftTab.value !== null) {
         activeLeftTab.value = null;
+    }
+});
+
+/* ===== 命令面板与快捷键层(Ctrl+K / Ctrl+P 开面板,Alt+1..9 切槽位) ===== */
+const commandPaletteOpen = ref(false);
+/** 设置对话框直达目标:命令面板「设置:X」写入,打开即跳转;关闭后清空,防止下次普通打开误跳。 */
+const settingsInitialTarget = ref<{scope: SettingsScope; section: SettingsSection} | null>(null);
+
+const activityShortcutContext = computed(() => ({
+    desktopAvailable: Boolean(desktopBridge.value),
+    surfaceActive: projectSurfaceActive.value,
+    userAssetsMode: isUserAssetsWorkspace.value,
+}));
+
+/** 与 Activity Bar 共享同一份能力清单,快捷键与命令面板只放行可用槽位。 */
+const enabledActivityIds = computed(() => {
+    const items = createWorkbenchActivityItems(activityShortcutContext.value);
+    const all = [...items.primary, ...items.secondary, ...items.footer, ...(items.agentPanel ? [items.agentPanel] : [])];
+    return new Set(all.filter((item) => !item.disabled).map((item) => item.id));
+});
+
+/** 触发活动槽位:镜像 Activity Bar 的 invoke 映射,Alt+1..9 与命令面板共用。 */
+function triggerActivityItem(id: WorkbenchActivityItemId): void {
+    if (!enabledActivityIds.value.has(id)) {
+        return;
+    }
+    switch (id) {
+        case "home": void openProjectPicker(); return;
+        case "files":
+        case "characters":
+        case "plot": handleSidebarToggle(id); return;
+        case "world": openWorldEngineWorkbench(); return;
+        case "trace": traceViewerOpen.value = true; return;
+        case "history": historyInboxOpen.value = true; return;
+        case "agent-panel": void toggleAgentPanel(); return;
+        case "settings": settingsDialogOpen.value = true; return;
+        case "account": return;
+    }
+}
+
+function activitySlotLabel(id: WorkbenchActivityItemId): string {
+    switch (id) {
+        case "home": return t("ide.header.bookshelfTitle");
+        case "files": return t("ide.toolPanel.files");
+        case "characters": return t("ide.toolPanel.characters");
+        case "plot": return t("ide.header.plotWorkbench");
+        case "world": return t("ide.header.worldEngine");
+        case "trace": return t("ide.header.traceViewerTitle");
+        case "history": return t("ide.header.historyInboxTitle");
+        case "agent-panel": return t("ide.header.openAgentPanel");
+        case "settings": return t("settings.title");
+        case "account": return t("ide.header.accountMenu");
+    }
+}
+
+/** 命令面板全量条目:创建动作 → 槽位跳转 → 设置分区直达 → 文件;检索统一走 workspace 搜索(拼音/首字母/容错)。 */
+const commandPaletteItems = computed<CommandPaletteItem[]>(() => {
+    const items: CommandPaletteItem[] = [];
+    if (projectSurfaceActive.value && !isUserAssetsWorkspace.value) {
+        items.push(
+            {id: "action:quick-add-chapter", kind: "action", label: t("ide.commandPalette.action.quickAddChapter"), target: "quick add chapter", description: managedChapterPath.value, iconClass: "i-lucide-file-plus-2"},
+            {id: "action:new-chapter", kind: "action", label: t("ide.commandPalette.action.newChapter"), target: "new chapter dialog", iconClass: "i-lucide-file-plus"},
+            {id: "action:new-lorebook", kind: "action", label: t("ide.commandPalette.action.newLorebook"), target: "new lorebook entry", iconClass: "i-lucide-book-plus"},
+        );
+    }
+    if (projectSurfaceActive.value) {
+        items.push({id: "action:new-markdown", kind: "action", label: t("ide.commandPalette.action.newMarkdown"), target: "new markdown file", iconClass: "i-lucide-file-plus"});
+    }
+    for (const id of ACTIVITY_SHORTCUT_ORDER) {
+        if (!enabledActivityIds.value.has(id)) {
+            continue;
+        }
+        items.push({
+            id: `action:activity:${id}`,
+            kind: "action",
+            label: activitySlotLabel(id),
+            target: `activity ${id}`,
+            iconClass: ACTIVITY_ICON_CLASSES[id],
+            shortcut: resolveActivityShortcut(id) ?? undefined,
+        });
+    }
+    for (const settingsTarget of resolveAvailableSettingsTargets({
+        projectScopeAvailable: projectSurfaceActive.value && !isUserAssetsWorkspace.value,
+        desktopAvailable: Boolean(desktopBridge.value),
+    })) {
+        const sectionLabel = settingsTarget.entry.labelKey ? t(settingsTarget.entry.labelKey) : settingsTarget.entry.fallbackLabel ?? settingsTarget.section;
+        items.push({
+            id: `settings:${settingsTarget.scope}:${settingsTarget.section}`,
+            kind: "settings",
+            label: t("ide.commandPalette.settingsEntry", {section: sectionLabel}),
+            target: `${settingsTarget.section} ${sectionLabel}`,
+            description: t(`settings.scope.${settingsTarget.scope}.label`),
+            iconClass: settingsTarget.entry.iconClass,
+        });
+    }
+    items.push(...buildCommandPaletteFileItems(workspaceTree.value));
+    return items;
+});
+
+/** 一键建章:零对话框,最新卷下一章,标题默认「第 N 章」,建完即开。 */
+async function quickAddChapter(): Promise<void> {
+    const chapterNumber = resolveManagedChapterNumber(workspaceTree.value);
+    await createWelcomeFile(managedChapterPath.value, buildManagedChapterContent(t("ide.shell.quickChapterTitle", {number: chapterNumber})), t("ide.shell.createChapterFailed"));
+}
+
+async function handleCommandPalettePick(item: CommandPaletteItem): Promise<void> {
+    if (item.kind === "file") {
+        await openWelcomeWorkspacePath(item.target);
+        return;
+    }
+    if (item.kind === "settings") {
+        const [, scope, section] = item.id.split(":");
+        settingsInitialTarget.value = {scope: scope as SettingsScope, section: section as SettingsSection};
+        settingsDialogOpen.value = true;
+        return;
+    }
+    switch (item.id) {
+        case "action:quick-add-chapter": await quickAddChapter(); return;
+        case "action:new-chapter": await createWelcomeChapter(); return;
+        case "action:new-markdown": await createWelcomeMarkdownFile(); return;
+        case "action:new-lorebook": await createWelcomeLorebookEntry(); return;
+        default:
+            if (item.id.startsWith("action:activity:")) {
+                triggerActivityItem(item.id.slice("action:activity:".length) as WorkbenchActivityItemId);
+            }
+    }
+}
+
+/**
+ * 全局快捷键:capture + stopPropagation 抢在 Monaco 键盘服务与浏览器默认行为之前。
+ * Ctrl+数字被浏览器标签切换抢占且页面不可拦截,槽位用 Alt。
+ */
+function handleGlobalKeydown(event: KeyboardEvent): void {
+    if (event.isComposing) {
+        return;
+    }
+    const key = event.key.toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && (key === "k" || key === "p")) {
+        event.preventDefault();
+        event.stopPropagation();
+        commandPaletteOpen.value = true;
+        return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && /^[1-9]$/u.test(event.key)) {
+        if (commandPaletteOpen.value) {
+            return;
+        }
+        const id = ACTIVITY_SHORTCUT_ORDER[Number(event.key) - 1];
+        if (!id) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        triggerActivityItem(id);
+    }
+}
+
+watch(settingsDialogOpen, (open) => {
+    if (!open) {
+        settingsInitialTarget.value = null;
     }
 });
 const displaySelectedFileNode = computed(() => workspaceDisplayReady.value ? selectedFileNode.value : null);
@@ -2409,7 +2584,7 @@ function buildWelcomeMarkdownContent(filePath: string): string {
  * 生成章节初始内容:标题来自作者起的章节名,而不是路径段。
  */
 function buildWelcomeChapterContent(chapterTitle: string): string {
-    return `---\ntitle: ${JSON.stringify(chapterTitle)}\nstatus: draft\n---\n\n`;
+    return buildManagedChapterContent(chapterTitle);
 }
 
 /**
@@ -2469,6 +2644,7 @@ onMounted(() => {
 
         try {
             mountThemeHost(themeHostRef.value);
+            window.addEventListener("keydown", handleGlobalKeydown, true);
             window.addEventListener("pagehide", flushWorkspaceSession);
             window.addEventListener("beforeunload", flushWorkspaceSession);
             void syncAuthSession();
@@ -2515,6 +2691,7 @@ onBeforeUnmount(() => {
     removeDesktopMenuListener = null;
     stopWorkspaceEvents();
     if (import.meta.client) {
+        window.removeEventListener("keydown", handleGlobalKeydown, true);
         window.removeEventListener("pagehide", flushWorkspaceSession);
         window.removeEventListener("beforeunload", flushWorkspaceSession);
     }
@@ -2574,6 +2751,7 @@ onBeforeUnmount(() => {
             @open-settings="settingsDialogOpen = true"
             @open-profile="accountProfileOpen = true"
             @open-admin="void openAdmin()"
+            @open-command-palette="commandPaletteOpen = true"
             @logout="void logout()"
         />
 
@@ -2791,7 +2969,8 @@ onBeforeUnmount(() => {
             </section>
         </div>
 
-        <NovelIdeSettingsDialog v-model="settingsDialogOpen" />
+        <NovelIdeSettingsDialog v-model="settingsDialogOpen" :initial-target="settingsInitialTarget" />
+        <NovelIdeCommandPalette v-model="commandPaletteOpen" :items="commandPaletteItems" @pick="void handleCommandPalettePick($event)" />
         <NovelIdeProfileDialog v-model="accountProfileOpen" />
         <AgentTraceViewerDialog v-if="projectSurfaceActive" v-model="traceViewerOpen" @open-session="void openTraceSession($event)" />
         <WorkspaceHistoryInboxDialog v-if="projectSurfaceActive" v-model="historyInboxOpen" :project-root="isUserAssetsWorkspace ? null : currentProjectRoot" :theme="activeThemeId" />

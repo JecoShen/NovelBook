@@ -26,6 +26,43 @@ export type WorkbenchActivityItem = Readonly<{
     disabled: boolean;
 }>;
 
+/**
+ * 槽位快捷键顺序:Alt+1..9 与此数组下标一一对应。
+ * Activity Bar tooltip 与全局键盘处理共用这一份,account 是菜单不是目的地,不占号。
+ * 浏览器里 Ctrl+1..8 被标签切换抢占且页面不可拦截,Alt 是唯一可行修饰键。
+ */
+export const ACTIVITY_SHORTCUT_ORDER: readonly WorkbenchActivityItemId[] = [
+    "home",
+    "files",
+    "characters",
+    "plot",
+    "world",
+    "trace",
+    "history",
+    "agent-panel",
+    "settings",
+];
+
+/** 读取槽位的快捷键提示文案;不在快捷键层里的(account)返回 null。 */
+export function resolveActivityShortcut(id: WorkbenchActivityItemId): string | null {
+    const index = ACTIVITY_SHORTCUT_ORDER.indexOf(id);
+    return index < 0 ? null : `Alt+${index + 1}`;
+}
+
+/** 槽位图标:Activity Bar 与命令面板共用,避免两处图标漂移。 */
+export const ACTIVITY_ICON_CLASSES: Record<WorkbenchActivityItemId, string> = {
+    home: "i-lucide-library",
+    files: "i-lucide-files",
+    characters: "i-lucide-users-round",
+    plot: "i-lucide-git-branch",
+    world: "i-lucide-globe-2",
+    trace: "i-lucide-activity",
+    history: "i-lucide-inbox",
+    "agent-panel": "i-lucide-bot",
+    account: "i-lucide-user-round",
+    settings: "i-lucide-settings",
+};
+
 export type WorkbenchActivityContext = Readonly<{
     desktopAvailable: boolean;
     surfaceActive: boolean;

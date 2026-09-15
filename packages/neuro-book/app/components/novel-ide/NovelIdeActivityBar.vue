@@ -5,8 +5,10 @@ import type {NovelIdeTab} from "nbook/app/components/novel-ide/mock-data";
 import NovelIdeAccountMenu from "nbook/app/components/novel-ide/NovelIdeAccountMenu.vue";
 import Tooltip from "nbook/app/components/common/Tooltip.vue";
 import {
+    ACTIVITY_ICON_CLASSES,
     createWorkbenchActivityItems,
     resolveActivityBarSecondaryItems,
+    resolveActivityShortcut,
     type WorkbenchActivityItem,
     type WorkbenchActivityItemId,
 } from "nbook/app/utils/workbench-chrome";
@@ -21,16 +23,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (event: "open-home"): void;
+    (event: "open-home" | "open-world-engine" | "open-trace-viewer" | "open-history-inbox" | "toggle-agent-panel" | "open-settings" | "open-profile" | "open-admin" | "open-command-palette" | "logout"): void;
     (event: "open-tab", value: NovelIdeTab): void;
-    (event: "open-world-engine"): void;
-    (event: "open-trace-viewer"): void;
-    (event: "open-history-inbox"): void;
-    (event: "toggle-agent-panel"): void;
-    (event: "open-settings"): void;
-    (event: "open-profile"): void;
-    (event: "open-admin"): void;
-    (event: "logout"): void;
 }>();
 
 const {t} = useI18n();
@@ -63,18 +57,7 @@ const secondaryItems = computed(() => {
     };
 });
 
-const iconClasses: Record<WorkbenchActivityItemId, string> = {
-    home: "i-lucide-library",
-    files: "i-lucide-files",
-    characters: "i-lucide-users-round",
-    plot: "i-lucide-git-branch",
-    world: "i-lucide-globe-2",
-    trace: "i-lucide-activity",
-    history: "i-lucide-inbox",
-    "agent-panel": "i-lucide-bot",
-    account: "i-lucide-user-round",
-    settings: "i-lucide-settings",
-};
+const iconClasses = ACTIVITY_ICON_CLASSES;
 
 const labels = computed<Record<WorkbenchActivityItemId, string>>(() => ({
     home: t("ide.header.bookshelfTitle"),
@@ -102,7 +85,9 @@ function active(item: WorkbenchActivityItem): boolean {
 }
 
 function actionTitle(item: WorkbenchActivityItem): string {
-    return item.disabled ? `${labels.value[item.id]} · ${t("ide.activityBar.needOpenProject")}` : labels.value[item.id];
+    const base = item.disabled ? `${labels.value[item.id]} · ${t("ide.activityBar.needOpenProject")}` : labels.value[item.id];
+    const shortcut = resolveActivityShortcut(item.id);
+    return shortcut ? `${base} · ${shortcut}` : base;
 }
 
 function invoke(item: WorkbenchActivityItem): void {
@@ -251,6 +236,17 @@ onBeforeUnmount(() => {
     <aside ref="activityBarRef" class="workbench-activity-bar flex w-12 shrink-0 flex-col items-center border-r border-[var(--border-color)] bg-[var(--bg-sidebar)] py-2" aria-label="Workbench navigation">
         <div class="flex min-h-0 w-full flex-1 flex-col items-center">
             <div ref="primaryGroupRef" class="flex w-full shrink-0 flex-col items-center">
+                <Tooltip :text="t('ide.commandPalette.triggerTooltip')" placement="right">
+                    <button
+                        type="button"
+                        class="workbench-activity-bar__item relative mb-1 flex h-10 w-10 items-center justify-center rounded-md border border-transparent text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
+                        data-activity-id="command-palette"
+                        @click="emit('open-command-palette')"
+                    >
+                        <span class="i-lucide-search h-[18px] w-[18px]" />
+                    </button>
+                </Tooltip>
+
                 <Tooltip
                     v-for="item in activityItems.primary"
                     :key="item.id"
