@@ -29,6 +29,7 @@ import {useWorkspaceFileEvents} from "nbook/app/composables/useWorkspaceFileEven
 import {isProjectSessionSupersededError, useProjectSession} from "nbook/app/composables/useProjectSession";
 import {useResizablePanel} from "nbook/app/composables/useResizablePanel";
 import {useDialog} from "nbook/app/composables/useDialog";
+import {useMediaQuery} from "nbook/app/composables/useMediaQuery";
 import {getWorkspaceLorebookTypeMeta} from "nbook/app/components/novel-ide/workspace/workspace-entry-meta";
 import {useNotification} from "nbook/app/composables/useNotification";
 import {useInlineEditorAgentController} from "nbook/app/composables/useInlineEditorAgentController";
@@ -116,6 +117,7 @@ const router = useRouter();
 const {
     activeLeftTab,
     activeWorkspaceTabPath,
+    workspaceFileActivateSerial,
     currentProjectRoot,
     currentNovel,
     hasUnsavedWorkspaceChanges,
@@ -474,6 +476,13 @@ const currentEditorKind = computed(() => activeWorkspaceTab.value?.editorKind ??
 const workspaceDisplayReady = computed(() => workspaceBootstrapped.value && workspaceReady.value);
 const displayWorkspaceTabs = computed(() => workspaceDisplayReady.value ? workspaceTabs.value : []);
 const displayActiveWorkspaceTabPath = computed(() => workspaceDisplayReady.value ? activeWorkspaceTabPath.value : "");
+/** 移动端(<768px)工具面板是 overlay 抽屉:任何文件激活意图(含同路径重复点击)后自动收起,回程不依赖头部单个图标按钮。 */
+const mobileViewport = useMediaQuery("(max-width: 767px)");
+watch(workspaceFileActivateSerial, () => {
+    if (mobileViewport.value && activeLeftTab.value !== null) {
+        activeLeftTab.value = null;
+    }
+});
 const displaySelectedFileNode = computed(() => workspaceDisplayReady.value ? selectedFileNode.value : null);
 const displayCurrentEditorKind = computed<WorkspaceEditorKind>(() => workspaceDisplayReady.value ? currentEditorKind.value : "readonly");
 const displayCurrentWorkspaceViewMode = computed<WorkspaceEditorViewMode>(() => workspaceDisplayReady.value ? currentWorkspaceViewMode.value : "source");
@@ -2591,8 +2600,16 @@ onBeforeUnmount(() => {
                 @refresh="void refreshAgentModeSessions()"
             />
 
+            <!-- 移动端:工具面板接管为左侧 overlay 抽屉,点遮罩回程;宽度给遮罩留 80px 触达带,否则抽屉盖死遮罩 -->
+            <button
+                v-if="ideToolPanelOpen"
+                type="button"
+                class="absolute inset-0 z-30 cursor-default bg-black/50 md:hidden"
+                :aria-label="t('ide.toolPanel.collapsePanel')"
+                @click="activeLeftTab = null"
+            />
             <div
-                class="mode-transition-ide-tools flex h-full shrink-0 overflow-hidden transition-[width,opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                class="mode-transition-ide-tools flex h-full shrink-0 overflow-hidden transition-[width,opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:max-w-[calc(100vw-80px)] max-md:shadow-xl"
                 :class="[
                     ideToolPanelOpen ? 'translate-x-0 opacity-100' : 'pointer-events-none -translate-x-2 opacity-0',
                     layoutTransitionDirection ? 'transition-none' : '',

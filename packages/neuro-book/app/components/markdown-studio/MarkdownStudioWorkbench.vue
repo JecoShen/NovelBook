@@ -85,7 +85,8 @@ watch(() => props.activePath, () => {
 
 <template>
     <!-- Markdown Studio 工作台 -->
-    <section class="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--editor-bg)]" :class="props.compact ? 'min-w-[260px]' : 'min-w-[640px]'">
+    <!-- min-w 守卫只服务桌面多栏:移动端必须归零,否则内容在窄画布内整体右溢出被裁 -->
+    <section class="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--editor-bg)] max-md:min-w-0" :class="props.compact ? 'min-w-[260px]' : 'min-w-[640px]'">
         <MarkdownStudioToolbar
             :tabs="props.tabs"
             :active-path="props.activePath"

@@ -203,6 +203,8 @@ export const useNovelIdeStore = defineStore("novelIde", () => {
     const workspaceTree = ref<WorkspaceFileNode[]>([]);
     const workspaceTabs = ref<WorkspaceEditorTab[]>([]);
     const activeWorkspaceTabPath = ref("");
+    /** 文件激活意图序号:每次 activateWorkspaceFile 递增。同路径重复激活不触发 path watch,移动端抽屉靠它"打开即收起"。 */
+    const workspaceFileActivateSerial = ref(0);
     const workspaceBuffers = ref<Record<string, WorkspaceFileBuffer>>({});
     const workspaceSessions = ref<Record<string, WorkspaceSessionState>>({});
     const workspaceKind = ref<WorkspaceKind>("novel");
@@ -840,6 +842,7 @@ export const useNovelIdeStore = defineStore("novelIde", () => {
      * 激活工作区文件或目录，是文件树、标签页和刷新恢复共用的唯一入口。
      */
     const activateWorkspaceFile = async (filePath: string, openMode: WorkspaceOpenMode = "permanent", options: WorkspaceLoadOptions = {}): Promise<WorkspaceFileNode | null> => {
+        workspaceFileActivateSerial.value += 1;
         persistActiveWorkspaceBuffer();
         const detail = findWorkspaceNode(filePath) ?? await statWorkspacePath(filePath);
         if (detail.isDirectory && detail.contentNode) {
@@ -888,6 +891,10 @@ export const useNovelIdeStore = defineStore("novelIde", () => {
      * 从文件树节点打开路径。调用方已经持有节点元信息时走这个入口，避免额外 stat 请求。
      */
     const openWorkspaceNode = async (node: WorkspaceFileNode, openMode: WorkspaceOpenMode = "permanent", options: WorkspaceLoadOptions = {}): Promise<WorkspaceFileNode | null> => {
+        // 目录(无 contentNode)只是面板内浏览,不算文件激活意图;展开另有 chevron 开关
+        if (!node.isDirectory || node.contentNode) {
+            workspaceFileActivateSerial.value += 1;
+        }
         persistActiveWorkspaceBuffer();
         if (node.isDirectory && node.contentNode) {
             const normalizedDir = node.path.replace(/\/$/, "");
@@ -1989,6 +1996,7 @@ export const useNovelIdeStore = defineStore("novelIde", () => {
         workspaceIssues,
         workspaceTreeRevision,
         workspaceBuffers,
+        workspaceFileActivateSerial,
         workspaceSessions,
         workspaceTabs,
         workspaceTree,
