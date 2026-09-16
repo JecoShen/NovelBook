@@ -7,7 +7,7 @@ icon: map-pinned
 aliases: []
 tags:
   - 目录说明
-summary: "Location lorebook category."
+summary: "Lorebook 地点分类。"
 refs: []
 retrieval:
   enabled: false

@@ -115,6 +115,15 @@ export function resolveDefaultWorkspaceViewMode(filePath: string): WorkspaceEdit
 }
 
 /**
+ * 新标签的视图模式：「默认视图」偏好只接管 Markdown(富文本可用的唯一类型);
+ * 非 Markdown 没有富文本视图,始终按文件类型决定,避免偏好把代码文件也切去不存在的富文本。
+ */
+export function resolveNewWorkspaceTabViewMode(filePath: string, markdownPreference: WorkspaceEditorViewMode): WorkspaceEditorViewMode {
+    const typeDefault = resolveDefaultWorkspaceViewMode(filePath);
+    return typeDefault === "rich" ? markdownPreference : typeDefault;
+}
+
+/**
  * 只有 manuscript/ 与 lorebook/ 内容节点的 Markdown 文件开放 frontmatter dialog。
  */
 export function canEditContentFrontmatter(filePath: string, editable: boolean, contentNode: boolean): boolean {

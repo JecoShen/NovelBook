@@ -1331,7 +1331,7 @@ async function loadSessionAttachments(reset = true): Promise<void> {
         sessionAttachmentNextOffset.value = page.nextOffset ?? null;
     } catch (error) {
         if (requestId === sessionAttachmentRequestId) {
-            notifyAgentError(error, "加载 Session 附件失败");
+            notifyAgentError(error, "加载对话附件失败");
         }
     } finally {
         if (requestId === sessionAttachmentRequestId) {
@@ -1695,7 +1695,7 @@ const loadSession = async (
             surfaceActivation.markReady(attempt, sessionScopeKey.value);
             const error = result.status === "dependency_missing" || result.status === "failed"
                 ? result.error
-                : new Error("Session 不存在或已不可用");
+                : new Error("对话不存在或已不可用");
             console.error(`加载 session ${String(sessionId)} 失败，保留当前 Session`, error);
             notifyAgentError(
                 error,
@@ -1710,7 +1710,7 @@ const loadSession = async (
         }
         const error = result.status === "dependency_missing" || result.status === "failed"
             ? result.error
-            : new Error("Session 不存在或已不可用");
+            : new Error("对话不存在或已不可用");
         if (!await clearComposerContextForNoSession(acceptsLoad)) {
             if (acceptsLoad()) {
                 const draftError = new Error("保存 Composer 草稿失败");
@@ -2216,7 +2216,7 @@ async function prepareComposerAttachmentItems(
         return await resolveComposerAttachmentItems(sessionId, markdown);
     } catch (error) {
         console.error("校验 Agent 消息图片附件失败", error);
-        notifyAgentError(error, "校验 Session 图片失败");
+        notifyAgentError(error, "校验对话图片失败");
         return null;
     }
 }
@@ -2361,7 +2361,7 @@ const send = async (): Promise<void> => {
         }
         console.error("发送 Agent 消息失败", error);
         if (accepted) {
-            notification.warning("消息已被 Session 接受，但请求连接提前中断；后续状态将由事件流继续收敛。", {title: "连接中断"});
+            notification.warning("消息已被对话接受，但请求连接提前中断；后续状态将由事件流继续收敛。", {title: "连接中断"});
         } else {
             notification.warning("未收到服务器 acceptance；消息结果未知，未自动重试。", {title: "发送结果未知"});
         }
@@ -2586,7 +2586,7 @@ const sendRunningMessage = async (mode: "steer" | "followup"): Promise<void> => 
             session.markOptimisticUserMessageUnknown(clientMessageId);
             notification.warning("未收到服务器 acceptance；消息结果未知，未自动重试。", {title: "发送结果未知"});
         } else {
-            notification.warning("消息已被 Session 接受，但请求连接提前中断；后续状态将由事件流继续收敛。", {title: "连接中断"});
+            notification.warning("消息已被对话接受，但请求连接提前中断；后续状态将由事件流继续收敛。", {title: "连接中断"});
         }
         console.error(mode === "steer" ? "引导消息失败" : "排队消息失败", error);
     } finally {
@@ -3486,9 +3486,9 @@ const restoreSessionFromDialog = async (target: AgentSessionSummaryDto): Promise
         if (target.sessionId === activeSessionId.value) {
             await loadSession(target.sessionId);
         }
-        notification.success("Session 已恢复");
+        notification.success("对话已恢复");
     } catch (error) {
-        notifyAgentError(error, "恢复 Session 失败");
+        notifyAgentError(error, "恢复对话失败");
     } finally {
         sessionActionId.value = null;
     }
@@ -4082,7 +4082,7 @@ async function loadInlineEditorSession(
             errorCode: resolveApiErrorCode,
             commit: (recovery) => {
                 if (recovery.summary.sessionId !== sessionId) {
-                    throw new Error(`Inline AI Session 身份不匹配：期望 ${String(sessionId)}，收到 ${String(recovery.summary.sessionId)}`);
+                    throw new Error(`行内 AI 对话身份不匹配：期望 ${String(sessionId)}，收到 ${String(recovery.summary.sessionId)}`);
                 }
                 if (options.expectedIdentity !== undefined
                     && recovery.summary.sessionIdentity !== options.expectedIdentity) {

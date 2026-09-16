@@ -334,7 +334,7 @@ const sendButtonTitle = computed(() => {
             : "图片上传完成后才能发送";
     }
     if (imageUsage.value.unresolvedStable > 0) {
-        return "正在校验 Session 图片附件";
+        return "正在校验对话图片附件";
     }
     if (images.metadataError.value) {
         return images.metadataError.value;

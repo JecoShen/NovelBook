@@ -444,7 +444,7 @@ onBeforeUnmount(() => {
                 等待应答：{{ pendingAskTitles.join("；") }}。正在读取完整应答项…
             </div>
             <div class="rounded border border-[var(--status-info-border)] bg-[var(--status-info-bg)] px-3 py-2 text-xs text-[var(--status-info)]">
-                请在底部 Workflow 待处理区应答。
+                请在底部「流程待处理」区作答。
             </div>
         </div>
 

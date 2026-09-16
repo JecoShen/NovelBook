@@ -14,7 +14,7 @@ import type { NovelIdeTab } from "nbook/app/components/novel-ide/mock-data";
 import {
     DEFAULT_MARKDOWN_EDITOR_PREFERENCES,
     DEFAULT_MONACO_EDITOR_PREFERENCES,
-    resolveDefaultWorkspaceViewMode,
+    resolveNewWorkspaceTabViewMode,
     resolveWorkspaceEditorKind,
     resolveWorkspaceFileExtension,
     type MarkdownEditorPreferences,
@@ -566,7 +566,7 @@ export const useNovelIdeStore = defineStore("novelIde", () => {
             path,
             title: node.title?.trim() || path,
             editorKind: inferWorkspaceEditorKind(node),
-            viewMode: normalizeWorkspaceViewMode(existingTab?.viewMode ?? resolveDefaultWorkspaceViewMode(path)),
+            viewMode: normalizeWorkspaceViewMode(existingTab?.viewMode ?? resolveNewWorkspaceTabViewMode(path, viewMode.value)),
             pinned: existingTab?.pinned ?? false,
             preview: existingTab?.pinned ? false : preview,
             dirty: activeDirty,

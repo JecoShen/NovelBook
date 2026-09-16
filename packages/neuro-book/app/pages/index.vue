@@ -300,7 +300,7 @@ async function handleDesktopMenuCommand(command: DesktopMenuCommandId): Promise<
                 openWelcomeFiles();
                 return;
             }
-            notification.info("请先打开一个 Project，再打开文件。", {title: "文件"});
+            notification.info("请先打开一个项目，再打开文件。", {title: "文件"});
         },
         settings: () => {
             settingsDialogOpen.value = true;
@@ -1472,18 +1472,18 @@ const confirmWorldEngineWorkbenchDraftDiscardForProjectSwitch = async (): Promis
         return true;
     }
     if (worldEngineWorkbenchSaving.value) {
-        await choose("World Engine 正在保存 Slice，请等待保存完成后再切换 Project。", [
+        await choose("世界引擎正在保存切片，请等待保存完成后再切换项目。", [
             {label: t("common.confirm"), value: "ok", tone: "primary"},
-        ], "World Engine 正在保存");
+        ], "世界引擎正在保存");
         return false;
     }
     if (!worldEngineWorkbenchHasUnsavedDrafts.value) {
         return true;
     }
-    const action = await choose("World Engine Workbench 有未保存草稿。切换 Project 会放弃这些会话草稿。", [
+    const action = await choose("世界引擎工作台有未保存的草稿。切换项目会放弃这些会话草稿。", [
         {label: "放弃草稿并切换", value: "discard", tone: "danger"},
         {label: t("common.cancel"), value: "cancel"},
-    ], "World Engine 草稿未保存");
+    ], "世界引擎草稿未保存");
     if (action === "cancel") {
         return false;
     }
@@ -2076,7 +2076,7 @@ const handleTerminalProjectSessionFailure = (): void => {
         await releaseProjectSurface();
         await router.replace("/");
     })().catch((error: unknown) => {
-        notification.error(resolveApiErrorMessage(error, "返回 Project 列表失败"), {title: "Project 清理失败"});
+        notification.error(resolveApiErrorMessage(error, "返回项目列表失败"), {title: "项目清理失败"});
     }).finally(() => {
         terminalProjectFailurePromise = null;
     });
@@ -2236,7 +2236,7 @@ const syncWorkspaceRoute = async (revision: number): Promise<void> => {
         if (!ownsProjectRouteIntent(revision)) return;
         await router.replace("/");
         if (!controllerReportedFailure) {
-            notification.error(resolveApiErrorMessage(error, "打开 Project 失败"), {title: "Project 打开失败"});
+            notification.error(resolveApiErrorMessage(error, "打开项目失败"), {title: "项目打开失败"});
         }
     } finally {
         if (ownsProjectRouteIntent(revision)) {
@@ -2274,7 +2274,7 @@ const startWorkspaceRouteSync = (): void => {
                     if (ownsProjectRouteIntent(revision)) {
                         await router.replace("/");
                         if (!controllerReportedFailure) {
-                            notification.error(resolveApiErrorMessage(error, "打开 Project 失败"), {title: "Project 打开失败"});
+                            notification.error(resolveApiErrorMessage(error, "打开项目失败"), {title: "项目打开失败"});
                         }
                     }
                 }
@@ -2659,7 +2659,7 @@ onMounted(() => {
                 await releaseProjectSurface();
                 await router.replace("/");
                 if (!controllerReportedFailure) {
-                    notification.error(resolveApiErrorMessage(error, "打开 Project 失败"), {title: "Project 打开失败"});
+                    notification.error(resolveApiErrorMessage(error, "打开项目失败"), {title: "项目打开失败"});
                 }
             }
         } finally {

@@ -382,7 +382,7 @@ export function mapAgentHttpError(error: unknown, requestSessionId: number | und
         const primaryMissing = error.sessionId === requestSessionId;
         return createError({
             statusCode: primaryMissing ? 404 : 409,
-            message: primaryMissing ? "Session 不存在或已不可用" : "关联对话不存在或已不可用",
+            message: primaryMissing ? "对话不存在或已不可用" : "关联对话不存在或已不可用",
             data: {code: primaryMissing ? "SESSION_NOT_FOUND" : "SESSION_DEPENDENCY_NOT_FOUND"},
         });
     }

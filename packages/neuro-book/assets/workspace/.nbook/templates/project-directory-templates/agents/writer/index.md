@@ -7,7 +7,7 @@ icon: pen-line
 aliases: []
 tags:
   - 目录说明
-summary: "Writer profile context directory."
+summary: "Writer Profile 的上下文目录。"
 refs: []
 retrieval:
   enabled: false

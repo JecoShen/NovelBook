@@ -371,7 +371,7 @@ function basename(filePath: string): string {
                     <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">{{ t("ide.workspace.fileDetail.manuscriptStats") }}</div>
                     <div class="flex shrink-0 items-center gap-2">
                         <span v-if="manuscriptStats.updatedAt" class="text-[10px] text-[var(--text-muted)]">{{ manuscriptStats.updatedAt }}</span>
-                        <span v-if="isFrontmatterDirty" class="text-[10px] text-[var(--status-warning)]" :title="t('ide.workspace.common.unsaved')">{{ t("ide.workspace.fileDetail.statsStale") }}</span>
+                        <span v-if="isFrontmatterDirty" class="text-[10px] text-[var(--status-warning)]" :title="t('ide.workspace.fileDetail.statsStaleTitle')">{{ t("ide.workspace.fileDetail.statsStale") }}</span>
                         <button type="button" class="rounded-md border border-[var(--border-color)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" @click="refreshManuscriptStats">{{ t("ide.workspace.fileDetail.updateStats") }}</button>
                     </div>
                 </div>

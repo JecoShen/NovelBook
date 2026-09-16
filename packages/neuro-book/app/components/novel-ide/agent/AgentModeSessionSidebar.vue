@@ -183,7 +183,7 @@ watch(storageKey, loadPinnedSessions, {immediate: true});
 
         <div class="flex shrink-0 items-center justify-between border-b border-[var(--border-color)] px-3 py-3">
             <div class="min-w-0">
-                <div class="text-sm font-semibold text-[var(--text-main)]">{{ t("agent.session.sidebarTitle") }}</div>
+                <div class="text-sm font-semibold text-[var(--text-main)]" title="Agent Sessions">{{ t("agent.session.sidebarTitle") }}</div>
                 <div class="text-[11px] text-[var(--text-muted)]">{{ t("agent.session.currentProjectWorkspace") }}</div>
             </div>
             <div class="flex shrink-0 items-center gap-1">

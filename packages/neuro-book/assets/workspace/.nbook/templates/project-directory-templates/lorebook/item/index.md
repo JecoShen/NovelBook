@@ -7,7 +7,7 @@ icon: package
 aliases: []
 tags:
   - 目录说明
-summary: "Item lorebook category."
+summary: "Lorebook 物品分类。"
 refs: []
 retrieval:
   enabled: false

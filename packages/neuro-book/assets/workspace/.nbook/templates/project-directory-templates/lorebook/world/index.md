@@ -7,7 +7,7 @@ icon: earth
 aliases: []
 tags:
   - 目录说明
-summary: "World lorebook category."
+summary: "Lorebook 世界分类。"
 refs: []
 retrieval:
   enabled: false

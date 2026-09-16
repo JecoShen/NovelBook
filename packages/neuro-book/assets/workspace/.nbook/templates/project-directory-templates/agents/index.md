@@ -7,7 +7,7 @@ icon: bot
 aliases: []
 tags:
   - 目录说明
-summary: "Profile-scoped agent context directory."
+summary: "按 Profile 划分的 Agent 上下文目录。"
 refs: []
 retrieval:
   enabled: false

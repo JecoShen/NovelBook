@@ -317,7 +317,7 @@ export function useComposerImageTransaction(options: ComposerImageTransactionOpt
 
     /** 明确提示 paste/drop/按钮为什么不可用。 */
     function notifyBlocked(): void {
-        notification.warning(options.blockedReason() || "当前 Session 不能上传或插入图片。", {title: "图片操作不可用"});
+        notification.warning(options.blockedReason() || "当前对话不能上传或插入图片。", {title: "图片操作不可用"});
     }
 
     /** 最多启动两个仍存在于文档中的 pending 请求。 */

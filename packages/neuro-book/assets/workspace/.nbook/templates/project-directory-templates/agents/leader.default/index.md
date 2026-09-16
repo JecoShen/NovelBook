@@ -7,7 +7,7 @@ icon: compass
 aliases: []
 tags:
   - 目录说明
-summary: "Default leader profile context directory."
+summary: "默认 Leader Profile 的上下文目录。"
 refs: []
 retrieval:
   enabled: false

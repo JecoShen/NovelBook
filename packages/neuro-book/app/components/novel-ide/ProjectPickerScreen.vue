@@ -185,7 +185,7 @@ const loadRecoverySessions = async (offset: number, append: boolean): Promise<vo
 const recoverSession = async (session: AgentSessionSummaryDto, workspaceRoot: boolean): Promise<void> => {
     const target = recoveryTargets.value[session.sessionId] ?? "";
     if (!workspaceRoot && !target) {
-        notification.warning("请先选择 Session 所属的 Project", {title: "需要选择 Project"});
+        notification.warning("请先选择对话所属的项目", {title: "需要选择项目"});
         return;
     }
     recoveryActionId.value = session.sessionId;

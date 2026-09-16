@@ -151,7 +151,7 @@ function displayTabPath(path: string): string {
                 <div class="min-w-0">
                     <div class="welcome-eyebrow">
                         <span :class="novelWorkspace ? 'i-lucide-pen-line' : 'i-lucide-folder-cog'" class="h-4 w-4"></span>
-                        <span>MARKDOWN STUDIO</span>
+                        <span>{{ t("markdownStudio.welcome.eyebrow") }}</span>
                     </div>
                     <h1 class="mt-2 text-2xl font-semibold text-[var(--text-main)]">{{ welcomeTitle }}</h1>
                     <p class="mt-1.5 max-w-[680px] text-sm leading-6 text-[var(--text-secondary)]">{{ welcomeDescription }}</p>

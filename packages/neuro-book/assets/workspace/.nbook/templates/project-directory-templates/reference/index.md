@@ -7,7 +7,7 @@ icon: link
 aliases: []
 tags:
   - 目录说明
-summary: "External reference material directory."
+summary: "外部参考资料目录。"
 refs: []
 retrieval:
   enabled: false

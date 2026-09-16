@@ -1346,6 +1346,7 @@ const enUS = {
                 updateStats: "Update Stats",
                 manuscriptStats: "Manuscript Stats",
                 statsStale: "Stats stale",
+                statsStaleTitle: "Unsaved changes to the title or other fields; stats may not match the latest content.",
                 current: "Words",
                 total: "Total words",
                 size: "Size",
@@ -2541,6 +2542,7 @@ const enUS = {
             increaseIndent: "Increase Indent",
         },
         welcome: {
+            eyebrow: "Markdown Studio",
             viewAssets: "View Asset Files",
             viewAssetsDescription: "Open the user assets file tree.",
             profileWorkbench: "Profile Workbench",

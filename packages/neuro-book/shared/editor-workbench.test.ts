@@ -4,6 +4,7 @@ import {
     composeMarkdownFrontmatter,
     resolveDefaultWorkspaceViewMode,
     resolveMonacoLanguage,
+    resolveNewWorkspaceTabViewMode,
     resolveWorkspaceEditorKind,
     resolveWorkspaceFileExtension,
     splitMarkdownFrontmatter,
@@ -56,5 +57,12 @@ describe("editor-workbench", () => {
         expect(canEditContentFrontmatter("lorebook/world/index.md", true, true)).toBe(true);
         expect(canEditContentFrontmatter("notes/index.md", true, true)).toBe(false);
         expect(canEditContentFrontmatter("manuscript/ch1/readme.txt", true, true)).toBe(false);
+    });
+
+    it("新标签视图:Markdown 跟随「默认视图」偏好,非 Markdown 始终源码", () => {
+        expect(resolveNewWorkspaceTabViewMode("manuscript/ch1/index.md", "source")).toBe("source");
+        expect(resolveNewWorkspaceTabViewMode("manuscript/ch1/index.md", "rich")).toBe("rich");
+        expect(resolveNewWorkspaceTabViewMode("notes/todo.txt", "rich")).toBe("source");
+        expect(resolveNewWorkspaceTabViewMode("notes/todo.txt", "source")).toBe("source");
     });
 });

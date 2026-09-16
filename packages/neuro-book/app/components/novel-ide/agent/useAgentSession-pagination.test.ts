@@ -156,12 +156,12 @@ describe("useAgentSession durable history", () => {
         session.applyRecovery(recovery("rev-1", [user("entry-1", "当前")], "cursor-1"));
 
         await expect(session.loadPrevious(async () => {
-            throw {data: {code: "SESSION_NOT_FOUND", message: "Session 不存在或已不可用"}};
+            throw {data: {code: "SESSION_NOT_FOUND", message: "对话不存在或已不可用"}};
         })).resolves.toBe(false);
 
         expect(session.needsRecovery.value).toBe(false);
         expect(session.previousCursor.value).toBe("cursor-1");
-        expect(session.historyError.value).toBe("Session 不存在或已不可用");
+        expect(session.historyError.value).toBe("对话不存在或已不可用");
     });
 
     it("System Prompt 仅在显式加载时请求，并按 session single-flight", async () => {
@@ -182,11 +182,11 @@ describe("useAgentSession durable history", () => {
         session.applyRecovery(recovery("rev-1", [], null));
 
         await expect(session.loadSystemPrompt(async () => {
-            throw {response: {_data: {code: "SESSION_NOT_FOUND", message: "Session 不存在或已不可用"}}};
+            throw {response: {_data: {code: "SESSION_NOT_FOUND", message: "对话不存在或已不可用"}}};
         })).resolves.toBe(false);
 
         expect(session.systemPrompt.value).toBeNull();
-        expect(session.systemPromptError.value).toBe("Session 不存在或已不可用");
+        expect(session.systemPromptError.value).toBe("对话不存在或已不可用");
         expect(session.needsRecovery.value).toBe(false);
     });
 

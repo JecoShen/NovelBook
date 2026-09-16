@@ -501,7 +501,7 @@ function handleKeyDown(e: KeyboardEvent): void {
                         <span class="i-lucide-git-branch h-4.5 w-4.5"></span>
                     </span>
                     <div class="min-w-0">
-                        <div class="text-base font-semibold leading-snug text-[var(--text-main)]">{{ t("agent.sessionTree.title") }}</div>
+                        <div class="text-base font-semibold leading-snug text-[var(--text-main)]" title="Session Tree">{{ t("agent.sessionTree.title") }}</div>
                         <div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
                             <span>{{ t("agent.sessionTree.nodeCount", {count: props.tree.length}) }}</span>
                             <span class="h-1 w-1 rounded-full bg-[var(--border-strong)]"></span>

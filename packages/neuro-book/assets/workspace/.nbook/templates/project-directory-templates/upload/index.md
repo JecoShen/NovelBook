@@ -7,7 +7,7 @@ icon: upload
 aliases: []
 tags:
   - 目录说明
-summary: "Uploaded project material directory."
+summary: "上传的项目资料目录。"
 refs: []
 retrieval:
   enabled: false

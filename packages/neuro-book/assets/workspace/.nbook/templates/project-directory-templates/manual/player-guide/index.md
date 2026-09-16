@@ -7,7 +7,7 @@ icon: users-round
 aliases: []
 tags:
   - 目录说明
-summary: "Player-facing handbook directory."
+summary: "面向玩家的手册目录。"
 refs: []
 retrieval:
   enabled: false

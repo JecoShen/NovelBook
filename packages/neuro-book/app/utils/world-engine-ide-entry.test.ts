@@ -81,9 +81,9 @@ describe("World Engine IDE entry", () => {
         expect(indexPage).toContain("const worldEngineWorkbenchSaving = ref(false);");
         expect(indexPage).toContain("if (!worldEngineWorkbenchOpen.value) {");
         expect(indexPage).toContain("if (worldEngineWorkbenchSaving.value) {");
-        expect(indexPage).toContain("World Engine 正在保存 Slice，请等待保存完成后再切换 Project。");
+        expect(indexPage).toContain("世界引擎正在保存切片，请等待保存完成后再切换项目。");
         expect(indexPage).toContain("if (!worldEngineWorkbenchHasUnsavedDrafts.value) {");
-        expect(indexPage).toContain("World Engine Workbench 有未保存草稿。切换 Project 会放弃这些会话草稿。");
+        expect(indexPage).toContain("世界引擎工作台有未保存的草稿。切换项目会放弃这些会话草稿。");
         expect(indexPage).toContain("放弃草稿并切换");
         expect(indexPage).toContain("const confirmWorldEngineWorkbenchDraftDiscardForProjectSwitch = async (): Promise<boolean>");
         expect(indexPage).toContain("return action === \"discard\";");

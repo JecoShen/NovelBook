@@ -7,7 +7,7 @@ icon: book-open-text
 aliases: []
 tags:
   - 目录说明
-summary: "Project manual directory."
+summary: "项目手册目录。"
 refs: []
 retrieval:
   enabled: false

@@ -7,7 +7,7 @@ icon: calendar-clock
 aliases: []
 tags:
   - 目录说明
-summary: "Event lorebook category."
+summary: "Lorebook 事件分类。"
 refs: []
 retrieval:
   enabled: false

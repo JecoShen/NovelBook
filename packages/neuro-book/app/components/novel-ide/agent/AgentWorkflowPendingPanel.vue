@@ -245,10 +245,10 @@ onBeforeUnmount(() => {
         <div class="flex items-center justify-between gap-2">
             <div class="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--text-main)]">
                 <span class="i-lucide-inbox h-4 w-4 shrink-0 text-[var(--status-warning)]"></span>
-                <span>Workflow 待处理</span>
+                <span title="Workflow">流程待处理</span>
                 <span v-if="waitingCount" class="rounded-full bg-[var(--status-warning-bg)] px-1.5 py-0.5 text-[10px] text-[var(--status-warning)]">{{ waitingCount }}</span>
             </div>
-            <span class="text-[10px] text-[var(--text-muted)]">每个流程分别应答</span>
+            <span class="text-[10px] text-[var(--text-muted)]">每个流程的提问独立作答</span>
         </div>
 
         <div v-for="job in waitingJobs" :key="job.jobId" class="mt-3 border-t border-[var(--border-color)] pt-3 first:mt-2 first:border-t-0 first:pt-0">

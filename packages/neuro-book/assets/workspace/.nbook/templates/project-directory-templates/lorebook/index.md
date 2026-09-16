@@ -7,7 +7,7 @@ icon: library
 aliases: []
 tags:
   - 目录说明
-summary: "Project lorebook directory conventions."
+summary: "项目 Lorebook 目录约定。"
 refs: []
 retrieval:
   enabled: false

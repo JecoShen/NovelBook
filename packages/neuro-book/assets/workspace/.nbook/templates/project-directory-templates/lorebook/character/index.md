@@ -7,7 +7,7 @@ icon: user-round
 aliases: []
 tags:
   - 目录说明
-summary: "Character lorebook category."
+summary: "Lorebook 角色分类。"
 refs: []
 retrieval:
   enabled: false

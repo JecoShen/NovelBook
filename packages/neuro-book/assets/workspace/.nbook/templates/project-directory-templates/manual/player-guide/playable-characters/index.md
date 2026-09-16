@@ -7,7 +7,7 @@ icon: user-round-plus
 aliases: []
 tags:
   - 目录说明
-summary: "Playable character directory."
+summary: "可操控角色目录。"
 refs: []
 retrieval:
   enabled: false

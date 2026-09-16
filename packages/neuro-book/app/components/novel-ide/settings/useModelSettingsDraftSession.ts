@@ -528,11 +528,11 @@ export function useModelSettingsDraftSession(options: DraftSessionOptions) {
                 ? {...editorSnapshot.value.global.agent, visibleModels: buildAgentVisibleModels(draft.value)}
                 : editorSnapshot.value?.global.agent;
         const localReferences = [
-            {modelKey: draft.value.defaultModelKey, label: isProjectScope.value ? "Project 默认模型" : "Global 默认模型"},
-            ...agentReferences(currentAgent, ["agent"], isProjectScope.value ? "Project" : "Global"),
+            {modelKey: draft.value.defaultModelKey, label: isProjectScope.value ? "项目默认模型" : "全局默认模型"},
+            ...agentReferences(currentAgent, ["agent"], isProjectScope.value ? "项目" : "全局"),
         ].filter((reference) => reference.modelKey?.startsWith(prefix));
         if (localReferences.length > 0) {
-            notification.error(`Provider 仍被当前草稿引用：${localReferences.map((item) => item.label).join("、")}`);
+            notification.error(`服务商仍被当前草稿引用：${localReferences.map((item) => item.label).join("、")}`);
             return;
         }
         try {
@@ -541,11 +541,11 @@ export function useModelSettingsDraftSession(options: DraftSessionOptions) {
                 body: {providerId},
             });
             if (inspection.references.length > 0) {
-                notification.error(`Provider 仍被以下配置引用：${inspection.references.map((item) => item.label).join("、")}`);
+                notification.error(`服务商仍被以下配置引用：${inspection.references.map((item) => item.label).join("、")}`);
                 return;
             }
         } catch (error) {
-            notification.error(resolveApiErrorMessage(error, "Provider 引用检查失败"));
+            notification.error(resolveApiErrorMessage(error, "服务商引用检查失败"));
             return;
         }
         options.cancelProviderChecks(provider, true);

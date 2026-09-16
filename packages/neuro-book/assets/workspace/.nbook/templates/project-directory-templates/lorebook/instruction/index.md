@@ -7,7 +7,7 @@ icon: shield-alert
 aliases: []
 tags:
   - 目录说明
-summary: "Instruction lorebook category."
+summary: "Lorebook 创作指令分类。"
 refs: []
 retrieval:
   enabled: false

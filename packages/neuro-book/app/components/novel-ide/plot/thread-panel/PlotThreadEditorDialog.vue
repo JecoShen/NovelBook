@@ -480,7 +480,7 @@ watch(threadTags, (value) => {
             </div>
 
             <FormField label="线型(MICE)">
-                <FormSelect v-model="threadDraft.miceType" :options="THREAD_MICE_TYPE_OPTIONS" placeholder="未填写" />
+                <FormSelect v-model="threadDraft.miceType" :options="THREAD_MICE_TYPE_OPTIONS" placeholder="选择线型" />
             </FormField>
 
             <FormField label="标签">
@@ -528,10 +528,10 @@ watch(threadTags, (value) => {
             <!-- 节奏字段:本场结果与张弛角色(Task 93 规划层,null=未填写) -->
             <div class="grid grid-cols-2 gap-2">
                 <FormField label="结果类型">
-                    <FormSelect v-model="sceneDraft.outcomeType" :options="SCENE_OUTCOME_TYPE_OPTIONS" placeholder="未填写" />
+                    <FormSelect v-model="sceneDraft.outcomeType" :options="SCENE_OUTCOME_TYPE_OPTIONS" placeholder="选择结果类型" />
                 </FormField>
                 <FormField label="节奏角色">
-                    <FormSelect v-model="sceneDraft.pacingRole" :options="SCENE_PACING_ROLE_OPTIONS" placeholder="未填写" />
+                    <FormSelect v-model="sceneDraft.pacingRole" :options="SCENE_PACING_ROLE_OPTIONS" placeholder="选择节奏角色" />
                 </FormField>
             </div>
 
