@@ -152,7 +152,7 @@ const emit = defineEmits<{
     align-items: center;
     justify-content: center;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-input);
     color: var(--text-secondary);
     font-size: 12px;

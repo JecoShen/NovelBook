@@ -85,6 +85,7 @@ rounded:
   xl: "0.8rem"
   card: "1rem"
   toast: "1rem"
+  full: "999px"
 spacing:
   chrome-bar: "48px"
   desktop-title: "36px"
@@ -344,6 +345,7 @@ The desk's geometry is the same: cards and inputs use small radii, the toast use
 - **Reference chips** (the category pill in prose): `rounded-xl` (0.8 rem). The pill radius — tall enough to read as a chip, not as a button.
 - **Notification toast** (the one big surface): `rounded-card` (1 rem, equivalent to `rounded-2xl`). Soft, large, says "this is a temporary object on the desk."
 - **Status chips** (the small state callouts): `rounded-xl` (0.8 rem). Same as reference chips — the pill is the universal small-element shape.
+- **Capsules and circles** (scrollbar thumbs, drop-indicator bars, round icon buttons, placeholder wedges): `rounded-full` (999 px). Reserved for elements whose geometry is a true capsule or circle; anything with a readable rectangular role still uses the role radius above.
 - **Dialogs**: no fixed radius registered; the dialog uses the chrome's default radius (6 px) and lets its content inherit the panel.
 
 ### Named Rules

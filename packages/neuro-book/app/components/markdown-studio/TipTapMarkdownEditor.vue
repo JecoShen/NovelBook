@@ -1370,7 +1370,7 @@ function isSaveShortcut(event: KeyboardEvent): boolean {
 }
 
 :deep(.nb-markdown-editor mark) {
-    border-radius: 0.2em;
+    border-radius: 0.25rem;
     padding: 0.02em 0.12em;
 }
 
@@ -1510,7 +1510,7 @@ function isSaveShortcut(event: KeyboardEvent): boolean {
 
 :deep(.nb-inline-comment-mark) {
     position: relative;
-    border-radius: 0.18em;
+    border-radius: 0.25rem;
     background: transparent;
     padding: 0;
     box-decoration-break: clone;
@@ -1781,7 +1781,7 @@ function isSaveShortcut(event: KeyboardEvent): boolean {
     text-decoration-color: color-mix(in srgb, var(--accent-main) 78%, transparent);
     text-decoration-thickness: 1.5px;
     text-underline-offset: 3px;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
 :deep(.nb-inline-ai-reference-highlight) {

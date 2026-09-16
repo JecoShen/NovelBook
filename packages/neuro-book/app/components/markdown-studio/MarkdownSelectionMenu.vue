@@ -549,7 +549,7 @@ onUnmounted(() => {
     align-items: center;
     gap: 2px;
     border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-    border-radius: 18px;
+    border-radius: 1rem;
     background: color-mix(in srgb, var(--bg-panel) 96%, var(--editor-bg));
     padding: 6px;
     color: var(--text-main);
@@ -562,7 +562,7 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    border-radius: 10px;
+    border-radius: 0.5rem;
     padding: 0 8px;
     color: var(--text-secondary);
     font-size: 13px;
@@ -656,7 +656,7 @@ onUnmounted(() => {
     z-index: 1;
     overflow: hidden;
     border: 1px solid var(--border-color);
-    border-radius: 14px;
+    border-radius: 0.8rem;
     background: var(--bg-panel);
     padding: 6px;
     box-shadow: 0 16px 38px color-mix(in srgb, var(--shadow-color) 18%, transparent);
@@ -690,7 +690,7 @@ onUnmounted(() => {
     width: 100%;
     align-items: center;
     gap: 8px;
-    border-radius: 9px;
+    border-radius: 0.5rem;
     padding: 7px 8px;
     color: var(--text-secondary);
     font-size: 12px;

@@ -99,7 +99,7 @@ const emit = defineEmits<{
     align-items: center;
     justify-content: center;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-input);
     color: var(--text-muted);
     transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
@@ -117,7 +117,7 @@ const emit = defineEmits<{
     align-items: center;
     gap: 10px;
     border: 1px solid var(--component-border, var(--border-color));
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--component-bg, var(--bg-input));
     padding: 9px;
     text-align: left;
@@ -138,7 +138,7 @@ const emit = defineEmits<{
     align-items: center;
     justify-content: center;
     border: 1px solid var(--component-border, var(--border-color));
-    border-radius: 7px;
+    border-radius: 6px;
     background: color-mix(in srgb, var(--component-bg, var(--bg-input)) 64%, var(--bg-panel));
     color: var(--component-accent, var(--accent-text));
 }

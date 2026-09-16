@@ -266,7 +266,7 @@ onUnmounted(() => {
 
             <button
                 type="button"
-                class="flex h-4 w-4 shrink-0 items-center justify-center opacity-50 transition-all hover:opacity-100"
+                class="-m-1 flex h-6 w-6 shrink-0 items-center justify-center opacity-50 transition-all hover:opacity-100"
                 :class="isBranch ? '' : 'invisible'"
                 tabindex="-1"
                 aria-hidden="true"

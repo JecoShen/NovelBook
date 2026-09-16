@@ -120,7 +120,7 @@
 .theme-newsprint code {
     background: var(--bg-main);
     border: 1px solid var(--border-color);
-    border-radius: 2px;
+    border-radius: 4px;
     padding: 0.1em 0.3em;
     font-family: Consolas, "Courier New", Courier, monospace;
     font-size: 0.85em;
@@ -188,14 +188,14 @@
 .theme-notion code {
     color: #EB5757;
     background: rgba(135,131,120,0.15);
-    border-radius: 3px;
+    border-radius: 4px;
     padding: 0.1em 0.3em;
     font-size: 85%;
 }
 .theme-notion pre {
     background: rgba(135,131,120,0.05);
     padding: 1rem;
-    border-radius: 3px;
+    border-radius: 4px;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
     overflow-x: auto;

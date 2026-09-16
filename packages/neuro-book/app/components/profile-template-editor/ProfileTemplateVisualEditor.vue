@@ -2420,7 +2420,7 @@ onBeforeUnmount(() => {
     justify-content: flex-start;
     gap: 10px;
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: 0.8rem;
     background: var(--bg-panel);
     padding: 14px 4px 12px;
     color: var(--text-muted);
@@ -2436,7 +2436,7 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 6px;
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: 0.8rem;
     background: var(--bg-panel);
     padding: 8px 3px;
     box-shadow: 0 16px 44px color-mix(in srgb, var(--shadow-color) 5%, transparent);
@@ -2476,7 +2476,7 @@ onBeforeUnmount(() => {
     align-items: center;
     justify-content: center;
     border: 1px solid var(--component-border);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--component-bg);
     color: var(--component-icon-color);
     transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;

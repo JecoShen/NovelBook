@@ -94,7 +94,7 @@ const emit = defineEmits<{
     justify-content: center;
     gap: 6px;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-input);
     padding: 0 10px;
     color: var(--text-secondary);

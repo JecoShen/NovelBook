@@ -470,22 +470,6 @@ function prepareDrag(): void {
     visibility: hidden;
 }
 
-:deep(.node-wrap[data-dnd-placeholder] .node-card::before) {
-    display: none;
-}
-
-.node-card::before {
-    position: absolute;
-    bottom: 10px;
-    left: 0;
-    top: 10px;
-    width: 3px;
-    border-radius: 0 999px 999px 0;
-    background: var(--accent-main);
-    content: "";
-    opacity: 0.58;
-}
-
 .node-card:hover {
     border-color: color-mix(in srgb, var(--profile-node-accent) 48%, var(--border-color));
     background: var(--profile-node-bg-strong, var(--bg-panel));

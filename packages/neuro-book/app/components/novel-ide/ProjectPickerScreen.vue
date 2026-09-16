@@ -943,7 +943,7 @@ button:focus-visible > .project-cover {
     margin-right: -4px;
     margin-left: -4px;
     border-top: 1px solid var(--border-strong);
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 0 4px 4px;
     background-color: color-mix(in srgb, var(--bg-sidebar) 78%, var(--bg-panel));
     box-shadow: 0 5px 8px color-mix(in srgb, var(--shadow-color) 10%, transparent);
 }

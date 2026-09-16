@@ -39,7 +39,7 @@ const emit = defineEmits<{
     align-items: flex-start;
     gap: 2px;
     border: 1px solid color-mix(in srgb, var(--accent-main) 30%, var(--border-color));
-    border-radius: 5px;
+    border-radius: 4px;
     background: var(--accent-bg);
     padding: 3px 7px;
     color: var(--accent-text);

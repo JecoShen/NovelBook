@@ -68,7 +68,7 @@ const desktopAvailable = computed(() => import.meta.client && Boolean(window.neu
 
 ::-webkit-scrollbar-thumb {
     background-color: var(--text-muted);
-    border-radius: 3px;
+    border-radius: 999px;
     opacity: 0.5;
 }
 

@@ -119,15 +119,14 @@ function groupStyle(group: NotificationGroup): Record<string, string> {
 
 <template>
     <ClientOnly>
-        <div class="pointer-events-none fixed inset-0 z-[9800]" :class="{'notification-viewport--desktop': props.desktop}">
+        <!-- live region 常驻:分组容器随 toast 挂载会导致读屏器漏播第一条,role/aria-live 上移到恒挂载的外层 -->
+        <div class="pointer-events-none fixed inset-0 z-[9800]" :class="{'notification-viewport--desktop': props.desktop}" role="status" aria-live="polite">
             <div
                 v-for="group in groupedNotifications"
                 :key="group.key"
                 class="pointer-events-none absolute flex w-full max-w-[420px] flex-col gap-2 px-4"
                 :class="positionClass(group.position)"
                 :style="groupStyle(group)"
-                role="status"
-                aria-live="polite"
             >
                 <TransitionGroup name="nb-notification">
                     <div

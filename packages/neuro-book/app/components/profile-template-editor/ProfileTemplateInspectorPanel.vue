@@ -439,7 +439,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     align-items: center;
     justify-content: center;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-input);
     color: var(--text-muted);
     transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
@@ -462,7 +462,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 .textarea {
     width: 100%;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-input);
     color: var(--text-main);
     font-size: 12px;
@@ -488,7 +488,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     align-items: flex-start;
     gap: 2px;
     border: 1px solid color-mix(in srgb, var(--accent-main) 30%, var(--border-color));
-    border-radius: 5px;
+    border-radius: 4px;
     background: var(--accent-bg);
     padding: 3px 7px;
     color: var(--accent-text);
@@ -527,7 +527,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-panel);
     padding: 8px;
     font-size: 11px;
@@ -539,7 +539,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     flex-direction: column;
     gap: 6px;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: color-mix(in srgb, var(--bg-panel) 72%, transparent);
     padding: 8px;
 }
@@ -551,7 +551,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     justify-content: center;
     gap: 6px;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-input);
     color: var(--text-secondary);
     font-size: 12px;

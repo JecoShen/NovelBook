@@ -58,7 +58,7 @@ const {isDragging} = useDraggable({
     align-items: flex-start;
     gap: 10px;
     border: 1px solid var(--component-border, var(--border-color));
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--component-bg, var(--bg-input));
     padding: 9px;
     text-align: left;
@@ -79,7 +79,7 @@ const {isDragging} = useDraggable({
     align-items: center;
     justify-content: center;
     border: 1px solid var(--component-border, var(--border-color));
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--component-icon-bg);
     color: var(--component-icon-color);
 }

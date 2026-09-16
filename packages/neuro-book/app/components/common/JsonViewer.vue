@@ -281,13 +281,13 @@ function handleEditorUpdate(value: unknown): void {
 .json-viewer__mode-button {
     width: 1.6rem;
     height: 1.6rem;
-    border-radius: 0.45rem;
+    border-radius: 0.5rem;
 }
 
 .json-viewer__icon-button {
     width: 1.6rem;
     height: 1.6rem;
-    border-radius: 0.45rem;
+    border-radius: 0.5rem;
 }
 
 .json-viewer__mode-button:hover,

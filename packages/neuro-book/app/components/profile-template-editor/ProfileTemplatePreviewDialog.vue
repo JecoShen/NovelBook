@@ -172,7 +172,7 @@ const emit = defineEmits<{
     justify-content: center;
     gap: 6px;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-input);
     padding: 0 10px;
     color: var(--text-secondary);
@@ -225,7 +225,7 @@ const emit = defineEmits<{
 
 .preview-summary-card {
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--bg-input);
     padding: 8px 10px;
 }
@@ -283,7 +283,7 @@ const emit = defineEmits<{
 
 .preview-variable-card {
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 6px;
     background: color-mix(in srgb, var(--bg-panel) 82%, var(--bg-input));
     padding: 8px;
 }
@@ -307,7 +307,7 @@ const emit = defineEmits<{
     align-items: flex-start;
     gap: 2px;
     border: 1px solid color-mix(in srgb, var(--accent-main) 30%, var(--border-color));
-    border-radius: 5px;
+    border-radius: 4px;
     background: var(--accent-bg);
     padding: 3px 7px;
     color: var(--accent-text);
