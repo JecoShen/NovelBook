@@ -325,7 +325,7 @@ Motion on the desk is a gesture, not a flourish: **0.22 s ease** is the default 
 **The canonical shadow values (in ambient spirit, not in literal pixels):**
 
 - **Card lift** (hover, list-item hover, ghost-button hover): `0 8px 24px color-mix(in srgb, var(--shadow-color) 10%, transparent)`. Soft, low-opacity, says "the page is tilting toward you."
-- **Dialog / panel lift** (overlay surfaces): `0 12px 32px color-mix(in srgb, var(--shadow-color) 12%, transparent)`. Says "this surface is in front of the page."
+- **Dialog / panel lift** (overlay surfaces): a two-layer ambient pair — `0 18px 44px color-mix(in srgb, var(--shadow-color) 24%, transparent), 0 4px 12px color-mix(in srgb, var(--shadow-color) 12%, transparent)`. The broad soft layer says "picked up off the desk"; the tight contact layer keeps the edge grounded. `Dialog` and `DialogWindow` share this exact pair.
 - **Notification / toast**: `0 14px 40px rgba(0, 0, 0, 0.22)`. The one shadow that ships a fixed rgba because the toast lives outside `.novel-ide-theme` and cannot read the host variable directly; this is a recorded exception, not a precedent.
 
 **Surfaces layer with paper, not with paint.** `--bg-main` is the page, `--bg-panel` is the manuscript, `--bg-sidebar` is the drawer, `--bg-subtle` is the inside of the drawer, `--bg-input` is the form field, `--bg-hover` is the warm-up paper. The five backgrounds are the only layer cake; elevation is just the surface's position in the cake plus an optional ambient shadow.
@@ -376,7 +376,7 @@ The desk's geometry is the same: cards and inputs use small radii, the toast use
 - **Body:** consumes the panel surface; long bodies scroll independently.
 - **Footer:** default footer with cancel + confirm; `showFooter=false` to suppress.
 - **Overlay:** opaque (default) or transparent (workbench-internal). `closeOnOverlay` and `closeOnEsc` are both on by default; `busy` blocks both during a confirm-in-flight.
-- **Shadow:** the dialog's `0 12px 32px color-mix(in srgb, var(--shadow-color) 12%, transparent)` is the canonical "this is in front of the page."
+- **Shadow:** the dialog's two-layer pair — `0 18px 44px color-mix(in srgb, var(--shadow-color) 24%, transparent)` over `0 4px 12px color-mix(in srgb, var(--shadow-color) 12%, transparent)` — is the canonical "this is in front of the page" (see Elevation & Depth).
 - **A11y semantics:** the surface always carries `role` + `aria-modal="true"`; the default header's title node is the `aria-labelledby` target (custom `header` slots name themselves), and `alertdialog` bodies are the `aria-describedby` target.
 - **The Destructive-Confirm Rule.** Deletion/overwrite confirmations never use the accent confirm. They use `role="alertdialog"`, a solid `--status-danger` confirm button labeled with the action itself (删除, not 确定), and a title that names the action (删除书籍, not 确认). JS path: `useDialog().confirm(message, title, {danger: true, confirmLabel})`; template path: `Dialog` with `role="alertdialog"` + `confirm-tone="danger"`.
 - **The Dirty-Draft Rule.** Leaving a dirty save panel — switching settings section/scope or closing the dialog — asks 保存 / 放弃 / 继续编辑 instead of silently dropping the draft. Loading or saving in flight blocks the leave outright.
@@ -388,6 +388,7 @@ The desk's geometry is the same: cards and inputs use small radii, the toast use
 - **Tone mapping:** `success` / `info` / `warning` / `danger` map to the status color family. The toast reads the active theme's snapshot, not the static CSS variables, because the toast lives outside the theme host.
 - **States:** enter (translateY −8 px scale 0.98, opacity 0 → 1), leave (reverse), move (transform 0.22 s ease). All transitions are 0.22 s.
 - **Content:** title (semibold, 14 px) + body (regular, 12 px) + close button (24 px, `--text-muted` → `--text-main` on hover). Body supports a small HTML subset via the client sanitizer (links, code, strong).
+- **The Recent-History Rule.** `error` and `warning` toasts also land in a session-scoped 近期通知 ledger (30-entry ring, never persisted) behind the bell chip at the viewport's bottom-right; `success` / `info` stay ephemeral. The ledger exists so an author who looked away can still answer "did that save fail just now?" — it is recognition-over-recall for failures, not a log.
 
 ### Reference Chip (12 categories)
 
@@ -431,6 +432,7 @@ The signature component is not a single visual element; it is the **Workbench Ch
 - **Do** register a new theme variable in `theme-tokens.ts`, fill all 8 themes, sync `theme-vars.css` fallback, document the role in `app/utils/theme/README.md`. Then and only then consume it.
 - **Do** mount World Engine surfaces inside `.world-engine-workbench-theme`. Use the `--we-*` aliases. Do not redefine `--we-*` in component scoped styles. Do not write `--bg-main: var(--we-bg-canvas)` reverse overrides.
 - **Do** emit only the semantic class for reference chips (`is-chapter`, `is-character`, `is-location`, ...). The color is owned by `app/styles/reference-chips.css`.
+- **Do** set glyphs on accent-tinted chips (`color-mix(in srgb, var(--accent-main) 18%, var(--bg-panel))`) in `--text-main`, never `--accent-main`: accent pressed on its own tint reaches 4.5:1 in only three of the eight themes. The WE badge is the canonical instance; the `@chip:accent` pair in `theme-contrast.test.ts` gates it.
 - **Do** use `--shadow-color` + `color-mix(in srgb, var(--shadow-color) X%, transparent)` for every shadow. The single exception is the notification toast (which lives outside the theme host); that one is `0 14px 40px rgba(0, 0, 0, 0.22)`.
 - **Do** keep 6 dialog size presets, in 100-dvh-bounded heights. Use the size prop, not ad-hoc width.
 - **Do** draw the Desktop title bar (36 px) only when `window.neuroBookDesktop` is truthy. The B/S path does not draw a fake title bar.
@@ -443,7 +445,7 @@ The signature component is not a single visual element; it is the **Workbench Ch
 - **Don't** write Tailwind palette classes (`bg-gray-100`, `text-amber-700`, `border-rose-500/30`, ...) in business components. They are hardcoded colors and they break the contract.
 - **Don't** write `dark:` variants. Light / dark is the theme's job, not the component's.
 - **Don't** write `bg-black/5` or `bg-white/10` to fake depth on top of the paper surface. The 5 backgrounds are the layer cake; opacity stacking is not how depth is expressed.
-- **Don't** write a fixed hex / rgba as a business color. The exception list is tests, the reference chip palette, the notification toast shadow, and external asset previews.
+- **Don't** write a fixed hex / rgba as a business color. The exception list is tests, the reference chip palette, the notification toast shadow, external asset previews, and the desktop title bar's Windows-caption close hover (`#c42b1c` with white text — an OS convention the desktop shell mirrors, not a theme color).
 - **Don't** run-time concatenate UnoCSS variable class names. Write complete literal class names, e.g. `bg-[var(--status-warning-bg)]`, not `bg-${token}-bg`.
 - **Don't** delete or bypass the `--we-*` World Engine alias layer. The aliases may be redirected, but the layer must remain.
 - **Don't** put the Markdown content theme palette into the 36-variable set. The three content themes (GitHub / Newsprint / Notion) are a separate layer, scoped to `app/styles/markdown-themes.css`.

@@ -350,8 +350,12 @@ export function useProjectSession(): ProjectSessionController {
     }, {
         interrupted: () => notification.warning("项目在场连接中断，正在重新连接", {title: "项目连接中断"}),
         openFailed: (projectRoot, error) => notification.error(
-            resolveApiErrorMessage(error, "项目不存在或已删除：" + projectRoot),
-            {title: "项目打开失败"},
+            // PROJECT_NOT_FOUND 的服务器原文是「Project 不存在:<绝对路径>」——工程词+部署路径,
+            // 作者需要的是怎么办;其余错误保留 resolveApiErrorMessage 的业务文案穿透。
+            isProjectMissingError(error)
+                ? "这部作品可能已被移动或删除。回到书架重新选择，或先确认它的文件夹还在原位。"
+                : resolveApiErrorMessage(error, "打开作品失败，请检查网络后重试"),
+            {title: "无法打开作品"},
         ),
         manifestRecovered: (_projectRoot, recoveryPath) => notification.info(
             "项目配置已自动修复，原文件已备份到 " + recoveryPath,

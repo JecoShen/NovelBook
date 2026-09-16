@@ -2,6 +2,7 @@
 import {storeToRefs} from "pinia";
 import {useIdeTheme} from "nbook/app/composables/useIdeTheme";
 import {useNovelIdeStore} from "nbook/app/stores/novel-ide";
+import {resolveApiErrorMessage} from "nbook/app/utils/api-error";
 import type {AuthSessionDto} from "nbook/shared/dto/auth.dto";
 
 definePageMeta({
@@ -49,7 +50,9 @@ const submit = async (): Promise<void> => {
         });
         await router.push(resolveRedirect());
     } catch (error) {
-        errorMessage.value = error instanceof Error ? error.message : t("auth.loginFailed");
+        // $fetch 的 FetchError 本身是 Error,直接上屏会带 `[POST] "/api/auth/login": 401` 包络;
+        // 走 resolveApiErrorMessage 取服务器业务文案(用户名或密码错误),通用短语落回三要素 fallback。
+        errorMessage.value = resolveApiErrorMessage(error, t("auth.loginFailed"));
     } finally {
         busy.value = false;
     }

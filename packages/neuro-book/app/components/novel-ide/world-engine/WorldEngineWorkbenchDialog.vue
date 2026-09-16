@@ -1891,7 +1891,8 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
         <template #header>
             <!-- World Engine 真实工作台顶部栏 -->
             <div class="world-engine-workbench-theme flex min-w-0 flex-1 items-center gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--accent-main)_58%,var(--border-color))] bg-[color-mix(in_srgb,var(--accent-main)_18%,var(--bg-panel))] text-[12px] font-bold text-[var(--accent-main)]">WE</span>
+                <!-- 徽标字形用 text-main 不用 accent-main:accent 压在 18% 自身 tint 上时 8 主题仅 3 个达 4.5:1(theme-contrast 门禁 @chip:accent 配对管此芯片)。 -->
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--accent-main)_58%,var(--border-color))] bg-[color-mix(in_srgb,var(--accent-main)_18%,var(--bg-panel))] text-[12px] font-bold text-[var(--text-main)]">WE</span>
                 <div class="min-w-0">
                     <div class="text-[16px] font-semibold text-[var(--text-main)]" title="WORLD ENGINE WORKBENCH">世界引擎工作台</div>
                     <div class="flex min-w-0 items-center gap-2 truncate text-[12px] text-[var(--text-muted)]">

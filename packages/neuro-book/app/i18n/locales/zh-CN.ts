@@ -18,6 +18,11 @@ const zhCN = {
         colorFieldEyedropper: "屏幕取色",
         colorFieldInvalid: "颜色格式不正确",
     },
+    notifications: {
+        recent: "近期通知",
+        showRecent: "查看近期通知",
+        clear: "清空",
+    },
     api: {
         requestFailed: "请求失败",
     },
@@ -128,7 +133,7 @@ const zhCN = {
         passwordPlaceholder: "请输入密码",
         loginButton: "登录",
         loggingIn: "登录中...",
-        loginFailed: "登录失败",
+        loginFailed: "登录失败。可能是网络中断或服务未就绪，请稍后重试。",
         setupAdminTitle: "还没有管理员账号？",
         setupAdminCommandBefore: "请在 NeuroBook 安装目录运行",
         setupAdminCommandAfter: "并按提示创建管理员。",

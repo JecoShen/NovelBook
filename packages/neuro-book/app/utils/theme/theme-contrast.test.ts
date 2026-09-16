@@ -99,7 +99,7 @@ const STATUS_ROLES = ["info", "success", "warning", "danger"] as const;
 
 interface ContrastPair {
     foreground: ThemeVarKey;
-    background: ThemeVarKey | `@chip:${(typeof STATUS_ROLES)[number]}`;
+    background: ThemeVarKey | `@chip:${(typeof STATUS_ROLES)[number]}` | "@chip:accent";
     minimum: number;
     label: string;
 }
@@ -124,6 +124,9 @@ function buildContract(): ContrastPair[] {
         pairs.push({foreground: `--status-${role}`, background: "--bg-panel", minimum: 4.5, label: `${role} 状态文本`});
         pairs.push({foreground: `--status-${role}`, background: `@chip:${role}`, minimum: 4.5, label: `${role} chip 文字/软底`});
     }
+    // accent tint 芯片(WE 徽标同款 color-mix(accent 18%, panel)):字形只许 text-main。
+    // accent-main 压自身 tint 时 8 主题仅 3 个达 4.5:1,故 accent-on-tint 不登记为文字配对。
+    pairs.push({foreground: "--text-main", background: "@chip:accent", minimum: 4.5, label: "accent tint 芯片字形(徽标)"});
     pairs.push({foreground: "--source-text", background: "--source-bg", minimum: 4.5, label: "源码正文"});
     pairs.push({foreground: "--source-muted", background: "--source-bg", minimum: 3, label: "源码辅助(行号)"});
     pairs.push({foreground: "--border-accent", background: "--bg-panel", minimum: 3, label: "焦点环/选中描边(WCAG 1.4.11)"});
@@ -140,7 +143,14 @@ describe("theme contrast registration gate", () => {
             const panel = resolveToken(vars, "--bg-panel", [255, 255, 255]);
             for (const pair of CONTRACT) {
                 let background: Rgb;
-                if (pair.background.startsWith("@chip:")) {
+                if (pair.background === "@chip:accent") {
+                    // WE 徽标芯片底:color-mix(in srgb, accent-main 18%, bg-panel)(WorldEngineWorkbenchDialog 头部)。
+                    const accent = parseHex(vars["--accent-main"]);
+                    if (!accent) {
+                        throw new Error(`${themeId} 无法解析 accent chip 颜色`);
+                    }
+                    background = srgbMix(accent, [...panel, 1] as Rgba, 0.18);
+                } else if (pair.background.startsWith("@chip:")) {
                     // chip 软底与状态主色同 RGB、只取 alpha;主色变深时软底跟随变深
                     const role = pair.background.slice(6) as (typeof STATUS_ROLES)[number];
                     const soft = parseRgba(vars[`--status-${role}-bg`]);

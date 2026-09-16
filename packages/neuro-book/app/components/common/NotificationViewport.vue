@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {storeToRefs} from "pinia";
-import {useNotification, type NotificationItem, type NotificationPosition} from "nbook/app/composables/useNotification";
+import {useNotification, type NotificationHistoryEntry, type NotificationItem, type NotificationPosition} from "nbook/app/composables/useNotification";
 import {useNovelIdeStore} from "nbook/app/stores/novel-ide";
 import {themeTokens, type ThemeVars} from "nbook/app/utils/theme/theme-tokens";
 import {resolveNotificationToneColor, sanitizeNotificationVars} from "nbook/app/utils/theme/notification-tone";
@@ -17,7 +17,9 @@ type NotificationGroup = {
     items: NotificationItem[];
 };
 
-const {notifications, remove} = useNotification();
+const {notifications, history, remove, clearHistory} = useNotification();
+const historyOpen = ref(false);
+const {t, locale} = useI18n();
 const novelIdeStore = useNovelIdeStore();
 const {activeThemeAppearance, themeVarsSnapshot} = storeToRefs(novelIdeStore);
 
@@ -28,13 +30,25 @@ const FALLBACK_VARS: ThemeVars = themeTokens.sepia;
 
 const safeThemeVars = computed<ThemeVars>(() => sanitizeNotificationVars(themeVarsSnapshot.value ?? FALLBACK_VARS, activeThemeAppearance.value));
 
-// 嵌套元素消费的 var(--bg-hover/--text-muted/--text-main) 在宿主外同样命中 :root 的
+// 嵌套元素消费的 var(--bg-*/--text-*/--border-color) 在宿主外同样命中 :root 的
 // sepia fallback；把净化后的快照值以同名自定义属性发布到卡片根，跟随当前主题。
 const cardSurfaceVars = computed<Record<string, string>>(() => ({
+    "--bg-panel": safeThemeVars.value["--bg-panel"],
     "--bg-hover": safeThemeVars.value["--bg-hover"],
+    "--border-color": safeThemeVars.value["--border-color"],
     "--text-muted": safeThemeVars.value["--text-muted"],
     "--text-main": safeThemeVars.value["--text-main"],
 }));
+
+function historyDotStyle(entry: NotificationHistoryEntry): Record<string, string> {
+    return {
+        backgroundColor: resolveNotificationToneColor(entry.tone, safeThemeVars.value).badge,
+    };
+}
+
+function formatHistoryTime(createdAt: number): string {
+    return new Date(createdAt).toLocaleTimeString(locale.value, {hour: "2-digit", minute: "2-digit"});
+}
 
 function toneColor(item: NotificationItem) {
     return resolveNotificationToneColor(item.tone, safeThemeVars.value);
@@ -169,6 +183,49 @@ function groupStyle(group: NotificationGroup): Record<string, string> {
                         </div>
                     </div>
                 </TransitionGroup>
+            </div>
+
+            <!-- 近期通知沉淀:error/warning 消逝后进入右下角账本,作者能追回「刚才是不是没存上」 -->
+            <div v-if="history.length > 0" class="pointer-events-auto absolute bottom-0 right-0 mb-4 mr-4 flex flex-col items-end gap-2" :style="cardSurfaceVars">
+                <div v-if="historyOpen" class="fixed inset-0" @click="historyOpen = false"></div>
+                <div
+                    v-if="historyOpen"
+                    role="log"
+                    :aria-label="t('notifications.recent')"
+                    class="relative w-[360px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-main)] shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-sm"
+                >
+                    <div class="flex items-center justify-between border-b border-[var(--border-color)] px-4 py-2.5">
+                        <span class="text-sm font-semibold">{{ t("notifications.recent") }}</span>
+                        <button
+                            type="button"
+                            class="rounded-md px-2 py-1 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
+                            @click="clearHistory()"
+                        >
+                            {{ t("notifications.clear") }}
+                        </button>
+                    </div>
+                    <ul class="max-h-[320px] overflow-y-auto">
+                        <li v-for="entry in history" :key="entry.id" class="flex items-start gap-3 border-b border-[var(--border-color)] px-4 py-2.5 last:border-b-0">
+                            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full" :style="historyDotStyle(entry)" />
+                            <div class="min-w-0 flex-1">
+                                <div v-if="entry.title" class="text-xs font-semibold leading-5">{{ entry.title }}</div>
+                                <div v-if="entry.message" class="text-xs leading-5">{{ entry.message }}</div>
+                            </div>
+                            <span class="shrink-0 text-[10px] leading-5 text-[var(--text-muted)]">{{ formatHistoryTime(entry.createdAt) }}</span>
+                        </li>
+                    </ul>
+                </div>
+                <button
+                    type="button"
+                    class="relative flex h-9 items-center gap-1.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 text-xs text-[var(--text-main)] shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-sm transition-colors hover:bg-[var(--bg-hover)]"
+                    :aria-label="t('notifications.showRecent')"
+                    :aria-expanded="historyOpen"
+                    :title="t('notifications.showRecent')"
+                    @click="historyOpen = !historyOpen"
+                >
+                    <span class="i-lucide-bell h-3.5 w-3.5" />
+                    {{ history.length }}
+                </button>
             </div>
         </div>
     </ClientOnly>

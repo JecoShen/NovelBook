@@ -20,6 +20,11 @@ const enUS = {
         colorFieldEyedropper: "Pick color from screen",
         colorFieldInvalid: "Invalid color format",
     },
+    notifications: {
+        recent: "Recent notifications",
+        showRecent: "View recent notifications",
+        clear: "Clear",
+    },
     api: {
         requestFailed: "Request failed",
     },
@@ -130,7 +135,7 @@ const enUS = {
         passwordPlaceholder: "Enter password",
         loginButton: "Log In",
         loggingIn: "Logging in...",
-        loginFailed: "Login failed",
+        loginFailed: "Sign-in failed. The connection or the NeuroBook service may be down — try again in a moment.",
         setupAdminTitle: "No administrator account yet?",
         setupAdminCommandBefore: "Run",
         setupAdminCommandAfter: "in the NeuroBook installation directory and follow the prompts to create one.",

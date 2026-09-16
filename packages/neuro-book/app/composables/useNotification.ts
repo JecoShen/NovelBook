@@ -26,6 +26,22 @@ export type NotificationItem = Required<
     createdAt: number;
 };
 
+/** 沉淀条目:error/warning 消逝后留在「近期通知」账本里的记录;账本只存纯文本,不回放 html。 */
+export type NotificationHistoryEntry = {
+    id: string;
+    tone: NotificationTone;
+    title?: string;
+    message?: string;
+    createdAt: number;
+};
+
+/**
+ * 只有失败/警告需要沉淀:晚看一眼的作者要能追回「刚才是不是没存上」;
+ * 成功/信息保持即逝,不进账本。账本只活在本会话(内存环形 30 条),不落盘。
+ */
+const NOTIFICATION_HISTORY_LIMIT = 30;
+const NOTIFICATION_HISTORY_TONES = new Set<NotificationTone>(["error", "warning"]);
+
 const DEFAULT_POSITION: NotificationPosition = "top-right";
 const DEFAULT_OFFSET_X = 16;
 const DEFAULT_OFFSET_Y = 16;
@@ -54,6 +70,7 @@ function clearNotificationTimer(id: string): void {
 
 export function useNotification() {
     const notifications = useState<NotificationItem[]>("notifications", () => []);
+    const history = useState<NotificationHistoryEntry[]>("notification-history", () => []);
 
     const remove = (id: string): void => {
         clearNotificationTimer(id);
@@ -82,6 +99,20 @@ export function useNotification() {
 
         notifications.value = [...notifications.value, item];
 
+        if (NOTIFICATION_HISTORY_TONES.has(tone)) {
+            // html 通知在账本里降级为去标签纯文本:账本回放不引入第二个 v-html 面。
+            const historyMessage = item.message ?? (item.html ? item.html.replace(/<[^>]+>/g, "").trim() : undefined);
+            if (item.title || historyMessage) {
+                history.value = [{
+                    id: item.id,
+                    tone,
+                    title: item.title,
+                    message: historyMessage,
+                    createdAt: item.createdAt,
+                }, ...history.value].slice(0, NOTIFICATION_HISTORY_LIMIT);
+            }
+        }
+
         if (import.meta.client && item.autoClose && item.duration > 0) {
             clearNotificationTimer(item.id);
             notificationTimerMap.set(item.id, window.setTimeout(() => {
@@ -95,6 +126,10 @@ export function useNotification() {
     const clear = (): void => {
         notifications.value.forEach((item) => clearNotificationTimer(item.id));
         notifications.value = [];
+    };
+
+    const clearHistory = (): void => {
+        history.value = [];
     };
 
     const success = (message: string, options: Omit<NotificationInput, "message" | "tone"> = {}): string => notify({
@@ -123,9 +158,11 @@ export function useNotification() {
 
     return {
         notifications,
+        history,
         notify,
         remove,
         clear,
+        clearHistory,
         success,
         warning,
         info,

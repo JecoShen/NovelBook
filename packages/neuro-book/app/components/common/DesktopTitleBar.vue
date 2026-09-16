@@ -721,6 +721,7 @@ onBeforeUnmount(() => resizeObserver?.disconnect());
     background: var(--bg-hover);
 }
 
+/* 固定红色是 Windows 窗口关闭钮 hover 的 OS 约定,桌面条镜像它而非消费主题色;已登记进 DESIGN.md 例外清单。 */
 .desktop-title-bar__window-controls .desktop-title-bar__close:hover {
     color: white;
     background: #c42b1c;
