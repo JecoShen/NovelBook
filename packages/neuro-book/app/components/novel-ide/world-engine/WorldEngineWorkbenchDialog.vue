@@ -413,6 +413,11 @@ const sliceComposerSubjectSelection = computed(() => buildWorldWorkbenchSliceCom
     selectedSubjectIds: selectedSubjectIds.value,
     worldSubjectIds: worldSubjects.value.map((subject) => subject.id),
 }));
+const hasActiveSliceListFilters = computed(() => Boolean(sliceSearch.value.trim()) || sliceKindFilter.value !== "all" || sliceHealthFilter.value !== "all" || selectedSubjectIds.value.length > 0);
+// 零数据时主区收敛为单一空态: 时间线列表仅在已有切片或激活过滤时渲染, 否则只剩中央空态一条消息
+const showSliceList = computed(() => slices.value.length > 0 || hasActiveSliceListFilters.value);
+// 中央空态承担零数据单一消息与「未选择切片」提示; 过滤中但零切片时让位给列表内联空态(带清滤动作)
+const showCenteredEmptyState = computed(() => !selectedSlice.value && (slices.value.length > 0 || !showSliceList.value));
 const sliceComposerRequestedSubjectId = computed(() => sliceComposerSubjectSelection.value.requestedSubjectId);
 const sliceComposerSubjectId = computed(() => sliceComposerSubjectSelection.value.subjectId);
 const sliceComposerUsedTimes = computed(() => [...new Set([...knownSliceTimes.value, ...sliceTimesFromSlices(slices.value)])]);
@@ -2051,6 +2056,7 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
 
                 <main class="flex min-w-0 flex-1 flex-col overflow-hidden">
                     <WorldEngineWorkbenchPreviewSliceList
+                        v-if="showSliceList"
                         :slices="slices"
                         :subjects="subjects"
                         :focused-subject-id="focusedSubjectId"
@@ -2122,7 +2128,7 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                         @toggle-collapsed="mutationEditorCollapsed = !mutationEditorCollapsed"
                         @select-slice="selectSlice"
                     />
-                    <div v-else class="flex min-h-0 flex-1 items-center justify-center border-t border-[var(--we-border)] bg-[var(--we-bg-panel)] px-6 text-center">
+                    <div v-else-if="showCenteredEmptyState" class="flex min-h-0 flex-1 items-center justify-center border-t border-[var(--we-border)] bg-[var(--we-bg-panel)] px-6 text-center">
                         <div class="max-w-xl">
                             <div class="text-[15px] font-semibold text-[var(--we-text-main)]">{{ emptySliceState.title }}</div>
                             <div class="mt-2 text-[13px] text-[var(--we-text-muted)]">{{ emptySliceState.description }}</div>

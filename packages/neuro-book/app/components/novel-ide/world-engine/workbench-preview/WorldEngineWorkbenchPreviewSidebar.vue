@@ -452,7 +452,8 @@ watch(() => props.resetKey, clearLocalFilters);
                         </div>
                     </div>
                 </div>
-                <div v-if="!filteredSubjects.length" class="rounded-md border border-dashed border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-3 py-8 text-center">
+                <!-- 零主体时不渲染左栏空态:整屏只保留主区单一空态;有过滤未命中才出现 -->
+                <div v-if="!filteredSubjects.length && props.subjects.length" class="rounded-md border border-dashed border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-3 py-8 text-center">
                     <div class="text-[12px] font-semibold text-[var(--we-text-secondary)]">没有匹配的主体</div>
                     <div class="mt-1 text-[11px] text-[var(--we-text-muted)]">当前搜索、类型或状态过滤没有命中</div>
                     <button v-if="hasLocalFilters" type="button" class="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] px-2.5 text-[11px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)]" @click="clearLocalFilters">

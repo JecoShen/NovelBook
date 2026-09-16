@@ -728,7 +728,7 @@ watch(() => props.resetKey, () => {
                     <template v-if="hasActiveFilters">
                         当前筛选组合过窄<template v-if="selectedSubjectLabel">：{{ selectedSubjectLabel }}</template>
                     </template>
-                    <template v-else>示例时间线暂时没有切片</template>
+                    <template v-else>时间线还没有切片</template>
                 </div>
                 <div v-if="hasActiveFilters" class="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <button v-if="props.sliceSearch.trim()" type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-3 text-[12px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)] disabled:opacity-45" :disabled="props.busy" @click="clearSearch">
@@ -741,7 +741,7 @@ watch(() => props.resetKey, () => {
                     </button>
                     <button v-if="props.selectedSubjectIds.length" type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--we-accent-border)] bg-[var(--we-accent-soft)] px-3 text-[12px] font-medium text-[var(--we-accent-strong)] transition-colors hover:bg-[var(--we-bg-active)] disabled:opacity-45" :disabled="props.busy" @click="emit('clearSubjectFilter')">
                         <span class="i-lucide-users-round h-3.5 w-3.5"></span>
-                        取消 subject 过滤
+                        取消主体过滤
                     </button>
                     <button type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] px-3 text-[12px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)] disabled:opacity-45" :disabled="props.busy" @click="clearAllFilters">
                         <span class="i-lucide-rotate-ccw h-3.5 w-3.5"></span>
