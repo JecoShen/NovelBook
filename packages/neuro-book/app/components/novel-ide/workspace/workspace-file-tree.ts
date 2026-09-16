@@ -38,6 +38,8 @@ export interface WorkspaceFileTreeContextValue {
     forcedExpandedPathSet: ComputedRef<Set<string>>;
     dropState: Ref<WorkspaceFileDropState>;
     draggedPath: Ref<string | null>;
+    /** 漫游 tabindex 落点：整棵树只有一个 treeitem tabindex=0。 */
+    tabbablePath: ComputedRef<string>;
     selectNode: (node: WorkspaceFileNode) => void;
     openNode: (node: WorkspaceFileNode) => void;
     toggleExpanded: (node: WorkspaceFileNode) => void;
@@ -47,6 +49,8 @@ export interface WorkspaceFileTreeContextValue {
     commitDrop: (event: DragEvent) => void;
     clearDragState: () => void;
     emitNodeContextMenu: (node: WorkspaceFileNode, event: MouseEvent) => void;
+    handleRowFocus: (node: WorkspaceTreeNode) => void;
+    handleRowKeydown: (node: WorkspaceTreeNode, event: KeyboardEvent) => void;
 }
 
 interface WorkspaceNodeDropContext {
@@ -178,6 +182,24 @@ export function isWorkspaceLorebookScopePath(filePath: string): boolean {
 export function sanitizeExpandedPaths(nodes: WorkspaceTreeNode[], expandedPaths: string[]): string[] {
     const validPathSet = new Set(collectExpandablePaths(nodes));
     return expandedPaths.filter((path) => validPathSet.has(path));
+}
+
+/**
+ * 按展开集合 DFS 收集当前可见节点路径（与渲染顺序一致），供树键盘导航使用。
+ * 目录只有在展开集合内才递归子节点；文件与空目录始终可见。
+ */
+export function collectVisibleTreePaths(nodes: WorkspaceTreeNode[], expandedPathSet: ReadonlySet<string>): string[] {
+    const paths: string[] = [];
+    const visit = (items: WorkspaceTreeNode[]): void => {
+        for (const item of items) {
+            paths.push(item.path);
+            if (item.isDirectory && item.children.length > 0 && expandedPathSet.has(item.path)) {
+                visit(item.children);
+            }
+        }
+    };
+    visit(nodes);
+    return paths;
 }
 
 /**

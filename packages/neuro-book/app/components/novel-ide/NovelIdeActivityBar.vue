@@ -85,9 +85,12 @@ function active(item: WorkbenchActivityItem): boolean {
 }
 
 function actionTitle(item: WorkbenchActivityItem): string {
-    const base = item.disabled ? `${labels.value[item.id]} · ${t("ide.activityBar.needOpenProject")}` : labels.value[item.id];
+    if (item.disabled) {
+        // 禁用槽位的快捷键静默无效, tooltip 只解释原因, 不再宣传按了没反应的组合键
+        return `${labels.value[item.id]} · ${t("ide.activityBar.needOpenProject")}`;
+    }
     const shortcut = resolveActivityShortcut(item.id);
-    return shortcut ? `${base} · ${shortcut}` : base;
+    return shortcut ? `${labels.value[item.id]} · ${shortcut}` : labels.value[item.id];
 }
 
 function invoke(item: WorkbenchActivityItem): void {

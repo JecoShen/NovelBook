@@ -6,11 +6,13 @@ import {
     buildWorkspaceFileTree,
     buildWorkspaceNodeDropContextMap,
     canDropOnWorkspaceNode,
+    collectVisibleTreePaths,
     resolveWorkspaceNodeDropPosition,
     resolveWorkspaceTailDrop,
     sanitizeExpandedPaths,
     type WorkspaceFileDropState,
     type WorkspaceFileMovePayload,
+    type WorkspaceTreeNode,
     workspaceFileTreeContextKey,
 } from "nbook/app/components/novel-ide/workspace/workspace-file-tree";
 
@@ -49,6 +51,126 @@ const visibleExpandedPathSet = computed(() => new Set([
 ]));
 const indexMaps = computed(() => buildWorkspaceFileTreeIndexMaps(roots.value));
 const dropContextMap = computed(() => buildWorkspaceNodeDropContextMap(roots.value, visibleExpandedPathSet.value));
+
+const treeRootRef = ref<HTMLElement | null>(null);
+const focusedPath = ref("");
+const visiblePaths = computed(() => collectVisibleTreePaths(roots.value, visibleExpandedPathSet.value));
+// 漫游 tabindex 落点：焦点路径失效时依次回退到选中节点、第一个可见节点
+const tabbablePath = computed(() => {
+    if (focusedPath.value && visiblePaths.value.includes(focusedPath.value)) {
+        return focusedPath.value;
+    }
+    if (props.selectedPath && visiblePaths.value.includes(props.selectedPath)) {
+        return props.selectedPath;
+    }
+    return visiblePaths.value[0] ?? "";
+});
+
+watch(() => props.selectedPath, (path) => {
+    if (path) {
+        focusedPath.value = path;
+    }
+});
+
+/**
+ * 把键盘焦点移到指定可见节点，并同步漫游 tabindex 落点。
+ */
+function focusTreePath(path: string): void {
+    focusedPath.value = path;
+    void nextTick(() => {
+        const row = treeRootRef.value?.querySelector(`[data-tree-path="${CSS.escape(path)}"]`);
+        if (row instanceof HTMLElement) {
+            row.focus();
+        }
+    });
+}
+
+/**
+ * 鼠标/触摸聚焦行时同步漫游 tabindex 落点。
+ */
+const handleRowFocus = (node: WorkspaceTreeNode): void => {
+    focusedPath.value = node.path;
+};
+
+/**
+ * 树键盘导航（ARIA treeview）：方向键移动/展开/收起，Enter 激活。
+ */
+const handleRowKeydown = (node: WorkspaceTreeNode, event: KeyboardEvent): void => {
+    const paths = visiblePaths.value;
+    const currentIndex = paths.indexOf(node.path);
+    const isBranch = node.isDirectory && node.children.length > 0;
+    const isOpenVisible = isBranch && visibleExpandedPathSet.value.has(node.path);
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const nextIndex = event.key === "ArrowDown" ? currentIndex + 1 : currentIndex - 1;
+        const nextPath = paths[nextIndex];
+        if (nextPath) {
+            focusTreePath(nextPath);
+        }
+        return;
+    }
+    if (event.key === "Home" || event.key === "End") {
+        event.preventDefault();
+        const targetPath = event.key === "Home" ? paths[0] : paths[paths.length - 1];
+        if (targetPath) {
+            focusTreePath(targetPath);
+        }
+        return;
+    }
+    if (event.key === "ArrowRight") {
+        if (!isBranch) {
+            return;
+        }
+        event.preventDefault();
+        if (!isOpenVisible) {
+            expandPath(node.path);
+        } else {
+            const firstChildPath = node.children[0]?.path;
+            if (firstChildPath) {
+                focusTreePath(firstChildPath);
+            }
+        }
+        return;
+    }
+    if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        if (isOpenVisible && expandedPathSet.value.has(node.path)) {
+            collapsePath(node.path);
+            return;
+        }
+        const parentPath = indexMaps.value.parentByPath.get(node.path);
+        if (parentPath) {
+            focusTreePath(parentPath);
+        }
+        return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (isBranch) {
+            toggleExpanded(node);
+        } else {
+            openNode(node);
+        }
+    }
+};
+
+/**
+ * 展开指定目录（键盘 ArrowRight）。
+ */
+function expandPath(path: string): void {
+    if (expandedPathSet.value.has(path)) {
+        return;
+    }
+    emit("update:expandedPaths", [...props.expandedPaths, path]);
+}
+
+/**
+ * 收起指定目录（键盘 ArrowLeft，只收用户展开态；搜索强制展开态回退到父级导航）。
+ */
+function collapsePath(path: string): void {
+    emit("update:expandedPaths", props.expandedPaths.filter((item) => item !== path));
+}
 
 /**
  * 清空拖拽态。
@@ -231,6 +353,7 @@ provide(workspaceFileTreeContextKey, {
     forcedExpandedPathSet,
     dropState,
     draggedPath,
+    tabbablePath,
     selectNode,
     openNode,
     toggleExpanded,
@@ -240,14 +363,19 @@ provide(workspaceFileTreeContextKey, {
     commitDrop,
     clearDragState,
     emitNodeContextMenu: (node, event) => emit("node-contextmenu", node, event),
+    handleRowFocus,
+    handleRowKeydown,
 });
 </script>
 
 <template>
     <!-- 工作区文件树 -->
     <div
+        ref="treeRootRef"
         class="relative h-full min-h-[120px] select-none pb-6"
         data-role="workspace-file-tree-root"
+        role="tree"
+        aria-label="项目文件树"
         @dragover="handleRootDragOver"
         @drop="handleRootDrop"
         @contextmenu.prevent.stop="handleRootContextMenu"

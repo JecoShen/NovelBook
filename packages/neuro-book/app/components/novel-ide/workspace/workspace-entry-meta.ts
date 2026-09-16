@@ -132,14 +132,15 @@ export function getWorkspaceLorebookStatusLabel(status: WorkspaceLorebookStatus)
  * 返回文件化 lorebook 状态颜色。
  */
 export function getWorkspaceLorebookStatusIndicatorClass(status: WorkspaceLorebookStatus): string {
+    // 语义色必须读主题 token:硬编码 Tailwind 色板在 Default Dark 等主题下与 success/warning 语义撞色
     if (status === "draft") {
-        return "bg-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.5)]";
+        return "bg-[var(--status-warning)] shadow-[0_0_4px_color-mix(in_srgb,var(--status-warning)_50%,transparent)]";
     }
     if (status === "pending") {
-        return "bg-sky-500 shadow-[0_0_4px_rgba(14,165,233,0.5)]";
+        return "bg-[var(--status-info)] shadow-[0_0_4px_color-mix(in_srgb,var(--status-info)_50%,transparent)]";
     }
     if (status === "active") {
-        return "bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)]";
+        return "bg-[var(--status-success)] shadow-[0_0_4px_color-mix(in_srgb,var(--status-success)_50%,transparent)]";
     }
-    return "bg-slate-400";
+    return "bg-[var(--text-muted)]";
 }

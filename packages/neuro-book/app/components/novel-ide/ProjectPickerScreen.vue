@@ -739,7 +739,7 @@ onBeforeUnmount(() => {
                 <div class="grid grid-cols-2 gap-x-5 gap-y-9 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                     <!-- 每本书以封面为主；打开按钮与删除按钮保持兄弟关系。 -->
                     <article v-for="novel in novels" :key="novel.projectRoot" class="group relative min-w-0">
-                        <button type="button" class="block w-full text-left focus-visible:outline-none" :aria-label="t('ide.picker.openProject', {title: novel.title})" @click="emit('open', novel.projectRoot)">
+                        <button type="button" class="block w-full rounded-md text-left" :aria-label="t('ide.picker.openProject', {title: novel.title})" @click="emit('open', novel.projectRoot)">
                             <!-- 书封：真实图片失败或未配置时回退到排版封面。 -->
                             <span class="project-cover relative block aspect-[2/3] overflow-hidden rounded-[4px] border border-[var(--border-color)] bg-[var(--bg-panel)] transition-transform duration-200 group-hover:-translate-y-1 group-focus-within:-translate-y-1">
                                 <img v-if="novel.cover && !failedCoverRoots.has(novel.projectRoot)" :key="`${novel.projectRoot}:${String(coverRefreshVersions[novel.projectRoot] ?? 0)}`" class="h-full w-full object-cover" :src="projectCoverUrl(novel.projectRoot)" :alt="t('ide.picker.coverAlt', {title: novel.title})" loading="lazy" decoding="async" @error="handleCoverError(novel.projectRoot)">
@@ -769,10 +769,10 @@ onBeforeUnmount(() => {
                         </button>
                         <!-- 封面与删除控件是打开按钮的兄弟节点，避免嵌套交互元素。 -->
                         <div class="project-card-actions absolute right-2 top-2 z-10 flex gap-1.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-                            <button type="button" class="flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-muted)] transition-colors hover:border-[var(--border-accent)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-text)] focus-visible:border-[var(--border-accent)] focus-visible:text-[var(--accent-text)] focus-visible:outline-none" :title="t('ide.picker.setCover')" :aria-label="t('ide.picker.setCover')" @click="openCoverDialog(novel)">
+                            <button type="button" class="flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-muted)] transition-colors hover:border-[var(--border-accent)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-text)] focus-visible:border-[var(--border-accent)] focus-visible:text-[var(--accent-text)]" :title="t('ide.picker.setCover')" :aria-label="t('ide.picker.setCover')" @click="openCoverDialog(novel)">
                                 <span class="i-lucide-image-plus h-4 w-4"></span>
                             </button>
-                            <button type="button" class="flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-muted)] transition-colors hover:border-[var(--status-danger-border)] hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger)] focus-visible:border-[var(--status-danger-border)] focus-visible:bg-[var(--status-danger-bg)] focus-visible:text-[var(--status-danger)] focus-visible:outline-none disabled:opacity-50" :title="t('ide.bookshelf.deleteBook')" :aria-label="t('ide.bookshelf.deleteBook')" :disabled="deleteBusyRoots.has(novel.projectRoot) || Boolean(deleteRecoveryFor(novel.projectRoot))" @click="void handleDeleteNovel(novel.projectRoot, novel.title)">
+                            <button type="button" class="flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-muted)] transition-colors hover:border-[var(--status-danger-border)] hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger)] focus-visible:border-[var(--status-danger-border)] focus-visible:bg-[var(--status-danger-bg)] focus-visible:text-[var(--status-danger)] disabled:opacity-50" :title="t('ide.bookshelf.deleteBook')" :aria-label="t('ide.bookshelf.deleteBook')" :disabled="deleteBusyRoots.has(novel.projectRoot) || Boolean(deleteRecoveryFor(novel.projectRoot))" @click="void handleDeleteNovel(novel.projectRoot, novel.title)">
                                 <span :class="deleteBusyRoots.has(novel.projectRoot) ? 'i-lucide-loader-circle animate-spin' : 'i-lucide-trash-2'" class="h-4 w-4"></span>
                             </button>
                         </div>
@@ -841,8 +841,8 @@ onBeforeUnmount(() => {
         <!-- Project 封面设置：只负责上传、替换与清除，不扩展成综合编辑器。 -->
         <Dialog :model-value="coverDialogOpen" size="md" :title="t('ide.picker.coverDialogTitle')" :busy="coverBusy" :show-footer="false" overlay-type="opaque" @request-close="closeCoverDialog" @update:model-value="updateCoverDialogOpen">
             <div v-if="coverDialogProject" class="space-y-4">
-                <button v-if="coverPreviewUrl || coverDialogProject.cover" type="button" class="mx-auto block w-full max-w-[240px] focus-visible:outline-none" :aria-label="t('ide.imagePreview.openOriginal')" @click="previewCoverOriginal">
-                    <span class="relative block aspect-[2/3] overflow-hidden rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] focus-visible:ring-2 focus-visible:ring-[var(--accent-main)]">
+                <button v-if="coverPreviewUrl || coverDialogProject.cover" type="button" class="mx-auto block w-full max-w-[240px] rounded-md" :aria-label="t('ide.imagePreview.openOriginal')" @click="previewCoverOriginal">
+                    <span class="relative block aspect-[2/3] overflow-hidden rounded-md border border-[var(--border-color)] bg-[var(--bg-input)]">
                         <img :src="coverPreviewUrl || projectCoverUrl(coverDialogProject.projectRoot)" :alt="t('ide.picker.coverAlt', {title: coverDialogProject.title})" class="h-full w-full object-cover" decoding="async">
                         <span class="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-main)]">
                             <span class="i-lucide-maximize-2 h-4 w-4"></span>

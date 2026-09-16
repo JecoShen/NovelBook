@@ -230,9 +230,17 @@ onUnmounted(() => {
             ]"
             :style="{paddingLeft: `${props.depth * props.indent + 4}px`}"
             data-role="workspace-file-row"
+            :data-tree-path="node.path"
+            role="treeitem"
+            :aria-level="props.depth + 1"
+            :aria-selected="isSelected"
+            :aria-expanded="isBranch ? isOpen : undefined"
+            :tabindex="treeContext.tabbablePath.value === node.path ? 0 : -1"
             draggable="true"
             @click="scheduleSelectNode"
             @dblclick.stop="openNode"
+            @keydown="treeContext.handleRowKeydown(node, $event)"
+            @focus="treeContext.handleRowFocus(node)"
             @dragstart.stop="treeContext.startDrag(node, $event)"
             @dragover.stop="treeContext.updateDropState(node, $event)"
             @drop.stop="treeContext.commitDrop"
@@ -260,6 +268,8 @@ onUnmounted(() => {
                 type="button"
                 class="flex h-4 w-4 shrink-0 items-center justify-center opacity-50 transition-all hover:opacity-100"
                 :class="isBranch ? '' : 'invisible'"
+                tabindex="-1"
+                aria-hidden="true"
                 @click.stop="toggleExpanded"
             >
                 <span :class="isOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'" class="h-3.5 w-3.5"></span>
@@ -321,7 +331,7 @@ onUnmounted(() => {
             @leave="handleLeave"
             @after-leave="handleAfterLeave"
         >
-            <div v-if="isOpen" class="relative -my-px overflow-hidden py-px">
+            <div v-if="isOpen" class="relative -my-px overflow-hidden py-px" role="group">
                 <WorkspaceFileNode
                     v-for="child in node.children"
                     :key="child.path"
