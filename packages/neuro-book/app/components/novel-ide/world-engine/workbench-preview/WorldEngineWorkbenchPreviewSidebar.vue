@@ -295,9 +295,10 @@ watch(() => props.resetKey, clearLocalFilters);
 
 <template>
     <!-- World Engine Workbench 左侧 Schema / Subjects 面板 -->
+    <!-- min-w 与 useResizablePanel 的 minSize(220) 同约:折叠态除外,任何布局挤压都不许把说明文字挤成逐字竖排。 -->
     <aside
         class="relative flex min-h-0 shrink-0 flex-col border-r border-[var(--we-border)] bg-[var(--we-bg-panel)] transition-[width] duration-200"
-        :class="[props.collapsed ? 'w-12' : '', isResizing ? 'select-none transition-none' : '']"
+        :class="[props.collapsed ? 'w-12' : 'min-w-[220px]', isResizing ? 'select-none transition-none' : '']"
         :style="props.collapsed ? undefined : panelStyle"
     >
         <!-- 左侧面板宽度拖拽手柄 -->
@@ -411,7 +412,8 @@ watch(() => props.resetKey, clearLocalFilters);
                                 <span v-if="subjectSystemSummary(subject.id)?.legacyKind" class="rounded border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-1.5 py-0.5 text-[10px] text-[var(--we-text-muted)]">{{ subjectSystemSummary(subject.id)?.legacyKind }}</span>
                                 <span v-if="subjectSystemSummary(subject.id)?.controlledBy" class="rounded border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-1.5 py-0.5 text-[10px] text-[var(--we-text-muted)]">{{ subjectSystemSummary(subject.id)?.controlledBy }}</span>
                             </div>
-                            <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-[10px]">
+                            <!-- 右列 minmax(0,auto) 而非 auto:窄宽时 auto 会按 max-content 撑出卡片,收口后 chips 才换行而不是溢出 -->
+                            <div class="mt-2 grid grid-cols-[minmax(0,1fr)_minmax(0,auto)] items-center gap-2 text-[10px]">
                                 <div class="min-w-0 truncate text-[var(--we-text-muted)]">
                                     <span class="font-mono">{{ subjectStat(subject.id)?.latestTime || "no slice" }}</span>
                                     <span v-if="subjectStat(subject.id)?.latestKind" class="ml-1 rounded border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-1 font-mono text-[var(--we-text-secondary)]">{{ subjectStat(subject.id)?.latestKind }}</span>

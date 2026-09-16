@@ -582,6 +582,11 @@ describe("World Engine IDE entry", () => {
         expect(realWorkbenchUtil).toContain("当前未选择切片");
         expect(workbench).toContain("emptySliceState.action === 'new-slice'");
         expect(workbench).toContain("清空主体过滤");
+        expect(workbench).toContain("emptySliceState.action === 'first-slice'");
+        expect(workbench).toContain("创建第一个切片");
+        expect(workbench).toContain("hasTimelineFilters: Boolean(sliceSearch.value.trim())");
+        expect(realWorkbenchUtil).toContain("写下世界的第一次心跳");
+        expect(realWorkbenchUtil).toContain("hasTimelineFilters: boolean");
         expect(workbench).toContain("await refreshWorldForCurrentTimeline({preferredSubjectIds: [payload.subject.id]});");
         expect(workbench).toContain("await refreshWorldForCurrentTimeline({preferredSubjectIds: created});");
         expect(workbench).toContain("deleteSelectedSlice");

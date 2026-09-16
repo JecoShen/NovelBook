@@ -5,6 +5,7 @@ import FormInput from "nbook/app/components/common/form/FormInput.vue";
 import FormSelect from "nbook/app/components/common/form/FormSelect.vue";
 import Dialog from "nbook/app/components/common/Dialog.vue";
 import AgentVisibleModelsEditor from "nbook/app/components/novel-ide/settings/AgentVisibleModelsEditor.vue";
+import NovelIdeModelSetupWizard from "nbook/app/components/novel-ide/settings/NovelIdeModelSetupWizard.vue";
 import NovelIdeModelSelect from "nbook/app/components/novel-ide/settings/NovelIdeModelSelect.vue";
 import NovelIdeModelEditDialog from "nbook/app/components/novel-ide/settings/NovelIdeModelEditDialog.vue";
 import ModelDiscoveryDialog from "nbook/app/components/novel-ide/settings/ModelDiscoveryDialog.vue";
@@ -121,6 +122,76 @@ const editingModel = ref<ModelDraft | null>(null);
 const editingTransientCandidate = ref(false);
 const modelEditDialogOpen = ref(false);
 const expandedGroups = ref<Record<string, boolean>>({});
+
+// 首启向导:零 Provider 时用「选服务商→贴 Key→选模型」替代工程墙;退出或完成后不再出现。
+const setupWizardStep = ref<0 | 1 | 2 | 3>(0);
+const setupWizardProviderKey = ref("");
+const setupWizardDismissed = ref(false);
+const setupWizardProvider = computed(() => draft.value.providers.find((provider) => provider.localKey === setupWizardProviderKey.value) ?? null);
+const showSetupWizard = computed(() => !isProjectScope.value && !loading.value && setupWizardStep.value > 0);
+// 模板里 `as 1 | 2 | 3` 会被当成已废弃的 filter 管道,收窄放 computed 里做。
+const setupWizardActiveStep = computed<1 | 2 | 3>(() => setupWizardStep.value === 0 ? 1 : setupWizardStep.value);
+
+/** 第一步选中模板:复用模板会话实例化 Provider 草稿,进入贴 Key。 */
+async function handleSetupWizardSelectTemplate(templateId: string): Promise<void> {
+    const previousKey = activeProviderKey.value;
+    selectedTemplate.value = templateId;
+    await addProvider();
+    // addProvider 成功时总会把 activeProviderKey 换成新 localKey;加载失败则原样返回。
+    if (activeProviderKey.value !== previousKey) {
+        setupWizardProviderKey.value = activeProviderKey.value;
+        setupWizardStep.value = 2;
+    }
+}
+
+/** 向导内编辑 Provider 草稿的连接字段(baseURL / apiKey)。 */
+function handleSetupWizardUpdateProviderOption(field: "baseURL" | "apiKey", value: string): void {
+    const provider = setupWizardProvider.value;
+    if (provider) {
+        provider.options[field] = value;
+    }
+}
+
+/** 上一步:第二步退回时带走向导刚创建的空壳草稿,避免留下孤儿 Provider。 */
+function handleSetupWizardBack(): void {
+    if (setupWizardStep.value === 2) {
+        const index = draft.value.providers.findIndex((provider) => provider.localKey === setupWizardProviderKey.value);
+        if (index >= 0) {
+            const [removed] = draft.value.providers.splice(index, 1);
+            if (removed) {
+                removeDiscovery(removed.id);
+            }
+        }
+        setupWizardProviderKey.value = "";
+        activeProviderKey.value = "";
+        ensureDefaultModelKey();
+        setupWizardStep.value = 1;
+        return;
+    }
+    if (setupWizardStep.value === 3) {
+        setupWizardStep.value = 2;
+    }
+}
+
+/** 完成或退出向导:本次设置会话内回到完整配置,不再自动展开向导。 */
+function closeSetupWizard(): void {
+    setupWizardDismissed.value = true;
+    setupWizardStep.value = 0;
+}
+
+watch(() => [loading.value, draft.value.providers.length] as const, ([isLoading, providerCount]) => {
+    if (isLoading || isProjectScope.value) {
+        return;
+    }
+    if (providerCount === 0 && !setupWizardDismissed.value && setupWizardStep.value === 0) {
+        setupWizardStep.value = 1;
+    }
+    // 草稿被整体重载(切换 scope / restore)时,向导引用的服务商可能已不在草稿里。
+    if (setupWizardStep.value >= 2 && !setupWizardProvider.value) {
+        setupWizardStep.value = providerCount === 0 ? 1 : 0;
+        setupWizardProviderKey.value = "";
+    }
+}, {immediate: true});
 const modelApiOptions: SelectOption[] = [
     {value: "openai-completions", label: "OpenAI Completions", description: "OpenAI-compatible Chat Completions"},
     {value: "openai-responses", label: "OpenAI Responses", description: "OpenAI Responses API"},
@@ -406,8 +477,27 @@ defineExpose({dirty, loading, saving, saveSettings, restoreSettings});
             </button>
         </div>
 
+        <!-- 首启向导:零 Provider 时三步接入;退出或完成后回到完整配置 -->
+        <NovelIdeModelSetupWizard
+            v-if="showSetupWizard"
+            :step="setupWizardActiveStep"
+            :templates="providerTemplateOptions"
+            :provider="setupWizardProvider"
+            :models="defaultModelOptions"
+            :default-model-key="draft.defaultModelKey"
+            :discovering="Boolean(setupWizardProvider && providerDiscoveringId === setupWizardProvider.id)"
+            @select-template="void handleSetupWizardSelectTemplate($event)"
+            @update-provider-option="handleSetupWizardUpdateProviderOption"
+            @update-default-model-key="draft.defaultModelKey = $event"
+            @discover="void discoverModels()"
+            @back="handleSetupWizardBack"
+            @next="setupWizardStep = 3"
+            @finish="closeSetupWizard"
+            @dismiss="closeSetupWizard"
+        />
+
         <!-- 顶部默认模型与新增 Provider -->
-        <div class="grid gap-4" :class="isProjectScope ? '' : 'lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]'">
+        <div v-if="!showSetupWizard" class="grid gap-4" :class="isProjectScope ? '' : 'lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]'">
             <div class="group flex flex-col justify-center rounded-2xl border border-[var(--border-color)] bg-[var(--bg-panel)] px-5 py-4 shadow-sm transition-all duration-300 hover:shadow-md">
                 <div class="mb-3 flex items-center gap-2">
                     <div class="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--accent-bg)] text-[var(--accent-text)]">
@@ -444,7 +534,7 @@ defineExpose({dirty, loading, saving, saveSettings, restoreSettings});
             </div>
         </div>
 
-        <AgentVisibleModelsEditor v-if="!isProjectScope" v-model="draft.agentVisibleModels" :models="defaultModelOptions" :default-model-key="draft.defaultModelKey" />
+        <AgentVisibleModelsEditor v-if="!isProjectScope && !showSetupWizard" v-model="draft.agentVisibleModels" :models="defaultModelOptions" :default-model-key="draft.defaultModelKey" />
 
         <!-- Loading State -->
         <div v-if="loading" class="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-panel)] shadow-sm">
@@ -453,11 +543,11 @@ defineExpose({dirty, loading, saving, saveSettings, restoreSettings});
         </div>
 
         <!-- 模型设置双栏布局 -->
-        <div v-else-if="!isProjectScope" class="grid min-h-[500px] xl:items-start gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
+        <div v-else-if="!isProjectScope && !showSetupWizard" class="grid min-h-[500px] xl:items-start gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
             <!-- 左侧 Provider 列表 -->
             <aside class="flex flex-col xl:sticky xl:top-4 xl:h-fit rounded-2xl border border-[var(--border-color)] bg-[var(--bg-panel)] p-2 shadow-sm">
                 <div class="px-3 pb-3 pt-2">
-                    <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">Providers</div>
+                    <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]" title="Providers">{{ t("settings.panels.models.providersTitle") }}</div>
                     <div class="mt-1 text-xs text-[var(--text-secondary)] opacity-80">{{ t("settings.panels.models.providersHint") }}</div>
                 </div>
 

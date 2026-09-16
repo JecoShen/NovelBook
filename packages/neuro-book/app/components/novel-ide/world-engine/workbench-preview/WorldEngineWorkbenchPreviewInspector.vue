@@ -77,6 +77,8 @@ const emit = defineEmits<{
 }>();
 
 const showFullState = ref(false);
+// 原始 JSON 快照默认折叠:作者视角的常态是上面的可编辑表单,裸状态墙按需展开(高级)。
+const snapshotViewerOpen = ref(false);
 const resizeHandleRef = ref<HTMLElement | null>(null);
 const subjectFileProposalsRef = ref<HTMLElement | null>(null);
 const {t} = useI18n();
@@ -233,6 +235,11 @@ function discardMetadataDraftForSlice(sliceId: string): void {
     }
 }
 
+/** 同步原生 details 展开状态，保留用户手动折叠 / 展开选择。 */
+function updateSnapshotViewerOpen(event: Event): void {
+    snapshotViewerOpen.value = (event.currentTarget as HTMLDetailsElement | null)?.open ?? false;
+}
+
 /** 切换完整世界状态；真实页面在首次展开时按需请求后端。 */
 function toggleFullState(): void {
     if (props.busy || props.fullSnapshotLoading) {
@@ -240,6 +247,10 @@ function toggleFullState(): void {
     }
     const nextValue = !showFullState.value;
     showFullState.value = nextValue;
+    if (nextValue) {
+        // 「完整世界」的意图就是看状态本身:展开范围时同步揭开 JSON 折叠层。
+        snapshotViewerOpen.value = true;
+    }
     requestFullSnapshotIfNeeded();
 }
 
@@ -576,9 +587,10 @@ const {isResizing, panelStyle} = useResizablePanel(resizeHandleRef, {
 
                 <div v-if="showFullState && props.fullSnapshotLoading" class="rounded-md border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-3 py-6 text-center text-[12px] text-[var(--we-text-muted)]">正在读取完整世界状态...</div>
                 <div v-else-if="showFullState && props.fullSnapshotError" class="rounded-md border border-[var(--we-danger)] bg-[var(--we-danger-soft)] px-3 py-3 text-[12px] text-[var(--we-danger)]">{{ props.fullSnapshotError }}</div>
-                <div v-else class="rounded-md border border-[var(--we-border)]">
-                    <JsonViewer :value="rawSnapshotValue" :max-height="400" />
-                </div>
+                <details v-else class="rounded-md border border-[var(--we-border)]" :open="snapshotViewerOpen" @toggle="updateSnapshotViewerOpen">
+                    <summary class="cursor-pointer px-2.5 py-2 text-[11px] font-semibold text-[var(--we-text-secondary)] transition-colors hover:text-[var(--we-text-main)]" title="RAW STATE SNAPSHOT">查看世界状态（高级）</summary>
+                    <JsonViewer v-if="snapshotViewerOpen" :value="rawSnapshotValue" :max-height="400" />
+                </details>
             </section>
         </div>
     </aside>

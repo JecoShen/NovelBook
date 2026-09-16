@@ -58,7 +58,7 @@ export type WorldWorkbenchSubjectFileProposalInput = {
     subjectSystemSummaries: WorldWorkbenchPreviewSubjectSystemSummary[];
 };
 
-export type WorldWorkbenchEmptySliceAction = "create-subject" | "create-world-subject" | "new-slice" | "sync-subject-system" | "";
+export type WorldWorkbenchEmptySliceAction = "create-subject" | "create-world-subject" | "first-slice" | "new-slice" | "sync-subject-system" | "";
 
 export type WorldWorkbenchEmptySliceState = {
     action: WorldWorkbenchEmptySliceAction;
@@ -234,6 +234,7 @@ export function buildWorldWorkbenchDraftSurfaceState(input: {
 export function buildWorldWorkbenchEmptySliceState(input: {
     canCreateWorldSubject: boolean;
     hasSlices: boolean;
+    hasTimelineFilters: boolean;
     hasWorldViewFilters: boolean;
     pendingSubjectSystemCount: number;
     selectedSubjectIds: string[];
@@ -248,6 +249,17 @@ export function buildWorldWorkbenchEmptySliceState(input: {
                 ? `${input.subjectLabel} 暂无世界引擎时间线。请先同步主体系统注册身份；同步不会复制或改写 simulation/subjects 六文件正文。`
                 : "当前主体暂无世界引擎时间线。请先同步主体系统注册身份；同步不会复制或改写 simulation/subjects 六文件正文。",
             title: "当前主体尚未接入世界引擎",
+        };
+    }
+    // 世界还没有任何切片时，首个主体就位后是引导时刻而不是专家台:一句解释 + 单一 CTA。
+    // 主体选中(刚创建完主体)不拦这个分支;搜索/种类/健康度等时间线过滤才算离开纯净视角。
+    if (!input.hasSlices && !input.hasTimelineFilters && input.worldSubjectCount > 0) {
+        return {
+            action: "first-slice",
+            description: input.subjectLabel
+                ? `${input.subjectLabel} 已经就位。第一条切片记录故事开场时它的状态，之后每一次变化都会叠在这条心跳之上。`
+                : "主体已经就位。第一条切片记录故事开场时的世界状态，之后每一次变化都会叠在这条心跳之上。",
+            title: "写下世界的第一次心跳",
         };
     }
     if (input.selectedSubjectIds.length) {

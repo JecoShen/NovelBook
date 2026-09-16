@@ -25,6 +25,7 @@ import {
     matchesWorkbenchPreviewSliceFilter,
 } from "nbook/app/utils/world-engine-workbench-preview-filter";
 import {isWorldWorkbenchSubjectSystemMaintenanceSlice} from "nbook/app/utils/world-engine-workbench-slice-classifier";
+import {buildWorldWorkbenchEmptySliceState} from "nbook/app/utils/world-engine-workbench-real";
 
 const pagePath = fileURLToPath(new URL("../pages/world-engine.workbench-preview.vue", import.meta.url));
 const workbenchDialogPath = fileURLToPath(new URL("../components/novel-ide/world-engine/WorldEngineWorkbenchDialog.vue", import.meta.url));
@@ -328,6 +329,8 @@ describe("World Engine Workbench preview redesign", () => {
         expect(sidebar).toContain("title=\"打开 state.md\"");
         expect(sidebar).toContain("{{ schemaSourcePath }}");
         expect(sidebar).toContain("{{ calendarSourcePath }}");
+        expect(sidebar).toContain("min-w-[220px]");
+        expect(sidebar).toContain("grid-cols-[minmax(0,1fr)_minmax(0,auto)]");
         expect(sidebar).toContain("Subjects");
         expect(sidebar).toContain("focusedSubjectId?: string;");
         expect(sidebar).toContain("(e: \"clearSubjectContext\"): void;");
@@ -777,7 +780,10 @@ describe("World Engine Workbench preview redesign", () => {
         expect(inspector).toContain("JsonViewer");
         expect(inspector).toContain("nbook/app/components/common/JsonViewer.vue");
         expect(inspector).toContain("rawSnapshotValue");
-        expect(inspector).toContain("<JsonViewer :value=\"rawSnapshotValue\" :max-height=\"400\" />");
+        expect(inspector).toContain("<JsonViewer v-if=\"snapshotViewerOpen\" :value=\"rawSnapshotValue\" :max-height=\"400\" />");
+        expect(inspector).toContain("查看世界状态（高级）");
+        expect(inspector).toContain(":open=\"snapshotViewerOpen\"");
+        expect(inspector).toContain("@toggle=\"updateSnapshotViewerOpen\"");
         expect(inspector).not.toContain("SnapshotTreeNode");
         expect(inspector).not.toContain("SnapshotTreeView");
         expect(inspector).not.toContain("snapshotTreeNodes");
@@ -1353,5 +1359,87 @@ describe("World Engine Workbench preview redesign", () => {
             title: "创建 命定之诗世界",
             summary: "初始化世界 subject",
         })).toBe(false);
+    });
+});
+
+describe("World Engine Workbench 第一次心跳空态", () => {
+    const baseInput = {
+        canCreateWorldSubject: false,
+        hasSlices: false,
+        hasTimelineFilters: false,
+        hasWorldViewFilters: false,
+        pendingSubjectSystemCount: 0,
+        selectedSubjectIds: [] as string[],
+        subjectLabel: "",
+        worldSubjectIds: new Set<string>(),
+        worldSubjectCount: 0,
+    };
+
+    it("首个主体就位且世界零切片时收敛为单一「创建第一个切片」引导", () => {
+        const state = buildWorldWorkbenchEmptySliceState({
+            ...baseInput,
+            selectedSubjectIds: ["hero"],
+            subjectLabel: "阿黎",
+            worldSubjectIds: new Set(["hero"]),
+            worldSubjectCount: 1,
+        });
+        expect(state.action).toBe("first-slice");
+        expect(state.title).toBe("写下世界的第一次心跳");
+        expect(state.description).toContain("阿黎 已经就位");
+    });
+
+    it("无选中主体时同样给第一次心跳引导，文案不带主体名", () => {
+        const state = buildWorldWorkbenchEmptySliceState({
+            ...baseInput,
+            worldSubjectCount: 2,
+            worldSubjectIds: new Set(["a", "b"]),
+        });
+        expect(state.action).toBe("first-slice");
+        expect(state.description).toContain("主体已经就位");
+    });
+
+    it("时间线过滤激活时让位给常规「暂无切片」分支", () => {
+        const state = buildWorldWorkbenchEmptySliceState({
+            ...baseInput,
+            hasTimelineFilters: true,
+            hasWorldViewFilters: true,
+            selectedSubjectIds: ["hero"],
+            subjectLabel: "阿黎",
+            worldSubjectIds: new Set(["hero"]),
+            worldSubjectCount: 1,
+        });
+        expect(state.action).toBe("new-slice");
+        expect(state.title).toBe("当前主体时间线暂无切片");
+    });
+
+    it("世界已有切片后回到常规「暂无切片」分支", () => {
+        const state = buildWorldWorkbenchEmptySliceState({
+            ...baseInput,
+            hasSlices: true,
+            hasWorldViewFilters: true,
+            selectedSubjectIds: ["hero"],
+            subjectLabel: "阿黎",
+            worldSubjectIds: new Set(["hero"]),
+            worldSubjectCount: 1,
+        });
+        expect(state.action).toBe("new-slice");
+    });
+
+    it("选中未注册主体时同步主体系统仍优先于第一次心跳", () => {
+        const state = buildWorldWorkbenchEmptySliceState({
+            ...baseInput,
+            pendingSubjectSystemCount: 1,
+            selectedSubjectIds: ["npc"],
+            subjectLabel: "小贩",
+            worldSubjectIds: new Set(["hero"]),
+            worldSubjectCount: 1,
+        });
+        expect(state.action).toBe("sync-subject-system");
+        expect(state.title).toBe("当前主体尚未接入世界引擎");
+    });
+
+    it("零主体时仍回落到创建主体引导", () => {
+        const state = buildWorldWorkbenchEmptySliceState({...baseInput});
+        expect(state.action).toBe("create-subject");
     });
 });

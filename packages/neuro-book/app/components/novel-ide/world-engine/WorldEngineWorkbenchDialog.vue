@@ -401,6 +401,8 @@ const selectedSubjectLabel = computed(() => selectedSubjectIds.value.map((subjec
 const emptySliceState = computed<WorldWorkbenchEmptySliceState>(() => buildWorldWorkbenchEmptySliceState({
     canCreateWorldSubject: canCreateWorldSubject.value,
     hasSlices: slices.value.length > 0,
+    // 第一次心跳引导只被搜索/种类/健康度过滤打断;主体选中(刚创建完主体)仍算纯净视角。
+    hasTimelineFilters: Boolean(sliceSearch.value.trim()) || sliceKindFilter.value !== "all" || sliceHealthFilter.value !== "all",
     hasWorldViewFilters: worldViewFilterParts.value.length > 0,
     pendingSubjectSystemCount: pendingSubjectSystemSummaries.value.length,
     selectedSubjectIds: selectedSubjectIds.value,
@@ -2172,6 +2174,11 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                             <button v-else-if="emptySliceState.action === 'sync-subject-system'" type="button" class="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-[var(--we-warning-border)] bg-[var(--we-bg-panel)] px-3 text-[13px] font-medium text-[var(--we-warning)] transition-colors hover:bg-[var(--we-bg-hover)] disabled:opacity-50" :disabled="workbenchActionBusy || !subjectSystemSyncTime" @click="void syncPendingSubjectSystemSubjects()">
                                 <span :class="actionBusy ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-link-2'" class="h-4 w-4"></span>
                                 同步主体系统
+                            </button>
+                            <!-- 第一次心跳:单一 accent CTA,不给第二动作,把注意力全部押在第一条切片上 -->
+                            <button v-else-if="emptySliceState.action === 'first-slice'" type="button" class="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-[var(--we-accent-border)] bg-[var(--we-accent-soft)] px-4 text-[13px] font-medium text-[var(--we-accent-strong)] transition-colors hover:bg-[var(--we-bg-hover)] disabled:opacity-50" :disabled="workbenchActionBusy || !schema" @click="openSliceComposer">
+                                <span class="i-lucide-file-plus-2 h-4 w-4" />
+                                创建第一个切片
                             </button>
                             <div v-else-if="emptySliceState.action === 'new-slice'" class="mt-4 flex flex-wrap items-center justify-center gap-2">
                                 <button type="button" class="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] px-3 text-[13px] text-[var(--we-text-main)] transition-colors hover:bg-[var(--we-bg-hover)] disabled:opacity-50" :disabled="workbenchActionBusy || !schema" @click="openSliceComposer">
