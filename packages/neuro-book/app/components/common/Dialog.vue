@@ -215,6 +215,8 @@ const handleKeydown = (event: KeyboardEvent): void => {
     }
 };
 
+// immediate 必须保留：useDialog 动态实例「生而可见」（modelValue 初始即 true），
+// 非 immediate 的 watch 不触发，Esc 监听永远不会注册（删书 alertdialog 实测 Esc 失灵即此因）。
 watch(() => props.modelValue, (visible) => {
     if (!import.meta.client) {
         return;
@@ -225,7 +227,7 @@ watch(() => props.modelValue, (visible) => {
     } else {
         document.removeEventListener("keydown", handleKeydown);
     }
-});
+}, {immediate: true});
 
 onBeforeUnmount(() => {
     if (import.meta.client) {

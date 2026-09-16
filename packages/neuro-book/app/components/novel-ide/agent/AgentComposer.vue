@@ -701,12 +701,12 @@ defineExpose({focus, insertAttachment});
         </div>
 
         <!-- token 与运行状态 -->
-        <div class="mt-1.5 flex flex-wrap items-center justify-center gap-1 text-[9px] text-[var(--text-muted)]">
+        <div class="mt-1.5 flex flex-wrap items-center justify-center gap-1 text-[10px] text-[var(--text-muted)]">
             <!-- gauge 芯片：点击打开上下文检查面板（Task 126） -->
             <button :title="props.contextUsageExactLabel" class="inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-1.5 py-0.5 transition-colors hover:bg-[var(--bg-hover)]" @click="emit('open-context-inspector')">
                 <span class="i-lucide-gauge h-3 w-3 shrink-0"></span>
                 <span class="truncate font-medium text-[var(--text-secondary)]">{{ props.contextUsageCompactLabel }}</span>
-                <span v-if="props.contextPercentCompactLabel" class="rounded-full bg-[var(--accent-bg)] px-1 py-[1px] text-[9px] font-semibold text-[var(--accent-text)]">{{ props.contextPercentCompactLabel }}</span>
+                <span v-if="props.contextPercentCompactLabel" class="rounded-full bg-[var(--accent-bg)] px-1 py-[1px] text-[10px] font-semibold text-[var(--accent-text)]">{{ props.contextPercentCompactLabel }}</span>
             </button>
             <div :title="props.cumulativeUsageExactLabel" class="inline-flex items-center gap-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-1.5 py-0.5">
                 <span class="i-lucide-arrow-down h-3 w-3"></span>

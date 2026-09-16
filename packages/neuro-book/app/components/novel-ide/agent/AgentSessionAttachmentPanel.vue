@@ -86,7 +86,7 @@ function bytesLabel(bytes: number): string {
                     </div>
                     <div class="space-y-1 p-2">
                         <div class="truncate text-[11px] font-medium text-[var(--text-main)]" :title="item.attachment.name || item.attachment.attachmentId">{{ item.attachment.name || item.attachment.attachmentId }}</div>
-                        <div class="flex items-center justify-between gap-1 text-[9px] text-[var(--text-muted)]">
+                        <div class="flex items-center justify-between gap-1 text-[10px] text-[var(--text-muted)]">
                             <span class="truncate">{{ item.attachment.mimeType }}</span>
                             <span class="shrink-0">{{ bytesLabel(item.attachment.bytes) }}</span>
                         </div>

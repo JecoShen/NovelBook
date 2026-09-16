@@ -511,7 +511,7 @@ function updateWorldAnchor(patch: Partial<PlotThreadPanelScene["worldAnchor"]>):
                                                 <span class="rounded-[4px] bg-[var(--accent-bg)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent-text)]">inline</span>
                                                 <span class="truncate text-[12px] font-semibold text-[var(--text-main)]">{{ getTargetLabel(refItem.target) }}</span>
                                             </div>
-                                            <div class="mt-0.5 truncate font-mono text-[9px] text-[var(--text-muted)] opacity-60">{{ refItem.target }}</div>
+                                            <div class="mt-0.5 truncate font-mono text-[10px] text-[var(--text-muted)] opacity-60">{{ refItem.target }}</div>
                                             <div class="mt-1 flex items-center gap-1.5">
                                                 <span class="i-lucide-corner-down-right h-3 w-3 shrink-0 text-[var(--text-muted)] opacity-50"></span>
                                                 <span class="truncate text-[11px] text-[var(--text-secondary)]">出自: {{ refItem.title }}</span>

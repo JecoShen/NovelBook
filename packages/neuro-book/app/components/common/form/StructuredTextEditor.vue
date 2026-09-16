@@ -3,6 +3,7 @@ import type {MarkdownFormatCommand, MarkdownStudioEditorHandle} from "nbook/app/
 import type {AgentTriggerMenuContext, AgentTriggerMenuState} from "nbook/app/components/novel-ide/agent/trigger-menu";
 import TipTapMarkdownEditor from "nbook/app/components/markdown-studio/TipTapMarkdownEditor.vue";
 import MarkdownSourceEditor from "nbook/app/components/markdown-studio/MarkdownSourceEditor.vue";
+import Tooltip from "nbook/app/components/common/Tooltip.vue";
 import type {WorkspaceReferenceResolver} from "nbook/app/components/markdown-studio/tiptap/WorkspaceReference";
 import {useNovelIdeStore} from "nbook/app/stores/novel-ide";
 import type {IdeTheme} from "nbook/app/utils/theme/theme-tokens";
@@ -164,11 +165,12 @@ const rootClass = computed(() => {
 });
 const toolbarClass = computed(() => props.size === "sm" ? "px-2 py-1" : "px-3 py-2");
 const modeGroupClass = computed(() => props.size === "sm" ? "gap-0.5 rounded p-[1px]" : "gap-1 rounded-lg p-0.5");
-const modeButtonClass = computed(() => props.size === "sm" ? "h-5 w-5 rounded-[4px]" : "h-6 w-6 rounded-md");
-const modeIconClass = computed(() => props.size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5");
-const formatButtonClass = computed(() => props.size === "sm" ? "h-5 w-5 rounded-[4px]" : "h-6 w-6 rounded-md");
+// 触控地板 24px：sm 档同样不低于 h-6 w-6，两档只差圆角。
+const modeButtonClass = computed(() => props.size === "sm" ? "h-6 w-6 rounded-[4px]" : "h-6 w-6 rounded-md");
+const modeIconClass = "h-3.5 w-3.5";
+const formatButtonClass = computed(() => props.size === "sm" ? "h-6 w-6 rounded-[4px]" : "h-6 w-6 rounded-md");
 const fullToolbarMinWidth = computed(() => {
-    const buttonSize = props.size === "sm" ? 20 : 24;
+    const buttonSize = 24;
     const formatButtonCount = formatButtons.length + 1;
     const formatGap = 2;
     const modeGroupWidth = (buttonSize * modeButtons.length) + (props.size === "sm" ? 8 : 12);
@@ -333,44 +335,44 @@ defineExpose({
         >
             <div class="flex min-w-0 flex-1 items-center">
                 <div v-if="showFormatTools" class="structured-text-editor__format-tools flex min-w-0 items-center gap-0.5 overflow-hidden text-[var(--text-muted)]">
-                    <button
-                        v-for="button in visibleFormatButtons"
-                        :key="button.command"
-                        type="button"
-                        class="inline-flex shrink-0 items-center justify-center transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-45"
-                        :class="formatButtonClass"
-                        :title="button.title"
-                        :disabled="props.readonly"
-                        @mousedown.prevent
-                        @click="applyFormat(button.command)"
-                    >
-                        <span :class="[modeIconClass, button.iconClass]"></span>
-                    </button>
-                    <button
-                        type="button"
-                        class="inline-flex shrink-0 items-center justify-center transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-45"
-                        :class="formatButtonClass"
-                        title="添加评论"
-                        :disabled="props.readonly"
-                        @mousedown.prevent
-                        @click="addInlineComment"
-                    >
-                        <span :class="[modeIconClass, 'i-lucide-message-square-plus']"></span>
-                    </button>
+                    <Tooltip v-for="button in visibleFormatButtons" :key="button.command" :text="button.title" placement="bottom">
+                        <button
+                            type="button"
+                            class="inline-flex shrink-0 items-center justify-center transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-45"
+                            :class="formatButtonClass"
+                            :disabled="props.readonly"
+                            @mousedown.prevent
+                            @click="applyFormat(button.command)"
+                        >
+                            <span :class="[modeIconClass, button.iconClass]" />
+                        </button>
+                    </Tooltip>
+                    <Tooltip text="添加评论" placement="bottom">
+                        <button
+                            type="button"
+                            class="inline-flex shrink-0 items-center justify-center transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-45"
+                            :class="formatButtonClass"
+                            :disabled="props.readonly"
+                            @mousedown.prevent
+                            @click="addInlineComment"
+                        >
+                            <span :class="[modeIconClass, 'i-lucide-message-square-plus']" />
+                        </button>
+                    </Tooltip>
                 </div>
             </div>
-            <div class="flex shrink-0 items-center border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-muted)]" :class="modeGroupClass">
-                <button
-                    v-for="button in modeButtons"
-                    :key="button.mode"
-                    type="button"
-                    class="inline-flex items-center justify-center transition-colors"
-                    :class="[modeButtonClass, effectiveMode === button.mode ? 'bg-[var(--bg-hover)] text-[var(--text-main)]' : 'hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]']"
-                    :title="button.title"
-                    @click="setMode(button.mode)"
-                >
-                    <span :class="[modeIconClass, button.iconClass]"></span>
-                </button>
+            <div class="flex shrink-0 items-center border border-[var(--border-color)] bg-[var(--bg-panel)] text-[var(--text-muted)]" :class="modeGroupClass" role="group" aria-label="编辑模式">
+                <Tooltip v-for="button in modeButtons" :key="button.mode" :text="button.title" placement="bottom">
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center transition-colors"
+                        :class="[modeButtonClass, effectiveMode === button.mode ? 'bg-[var(--bg-hover)] text-[var(--text-main)]' : 'hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]']"
+                        :aria-pressed="effectiveMode === button.mode"
+                        @click="setMode(button.mode)"
+                    >
+                        <span :class="[modeIconClass, button.iconClass]" />
+                    </button>
+                </Tooltip>
             </div>
         </div>
 
