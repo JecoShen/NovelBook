@@ -481,7 +481,7 @@ describe("World Engine IDE entry", () => {
         expect(workbench).toContain("sliceSubjectFilterQuery");
         expect(workbench).toContain("subjectIds: registeredSubjectIds.join(\",\")");
         expect(workbench).toContain("subjectMode: subjectFilterMode.value");
-        expect(realWorkbenchUtil).toContain("const modeLabel = input.subjectFilterMode === \"all\" ? \"全部 subject\" : \"任一 subject\";");
+        expect(realWorkbenchUtil).toContain("const modeLabel = input.subjectFilterMode === \"all\" ? \"全部主体\" : \"任一主体\";");
         expect(workbench).toContain("@update:selected-subject-ids=\"void updateSelectedSubjectIdsForTimeline($event)\"");
         expect(workbench).toContain("@update-subject-filter-mode=\"void updateSubjectFilterModeForTimeline($event)\"");
         expect(workbench).toContain("@update-slice-health-filter=\"updateSliceHealthFilterForTimeline\"");
@@ -578,8 +578,8 @@ describe("World Engine IDE entry", () => {
         expect(workbench).toContain("attrs: declaredSubjectSystemInitialAttrs(summary, subjectType)");
         expect(workbench).toContain("function declaredSubjectSystemInitialAttrs(summary: WorldWorkbenchPreviewSubjectSystemSummary, subjectType: string): Record<string, WorkbenchJsonValue>");
         expect(workbench).toContain("if (attrNames.has(attr))");
-        expect(realWorkbenchUtil).toContain("当前 subject 时间线暂无 slice");
-        expect(realWorkbenchUtil).toContain("当前未选择 slice");
+        expect(realWorkbenchUtil).toContain("当前主体时间线暂无切片");
+        expect(realWorkbenchUtil).toContain("当前未选择切片");
         expect(workbench).toContain("emptySliceState.action === 'new-slice'");
         expect(workbench).toContain("清空主体过滤");
         expect(workbench).toContain("await refreshWorldForCurrentTimeline({preferredSubjectIds: [payload.subject.id]});");
@@ -615,8 +615,8 @@ describe("World Engine IDE entry", () => {
         expect(workbench).toContain("const targetDraftSliceIds = draftSliceIds.value;");
         expect(workbench).toContain("await loadSliceIntoTimeline(sliceId);");
         expect(workbench).toContain("const firstDraftSliceId = targetDraftSliceIds.find((sliceId) => slices.value.some((slice) => slice.id === sliceId));");
-        expect(workbench).toContain("Issue 所属 slice ${item.sliceId || \"(未知)\"} 当前未加载");
-        expect(workbench.indexOf("highlightedMutationFocus.value = null;", workbench.indexOf("Issue 所属 slice ${item.sliceId || \"(未知)\"} 当前未加载"))).toBeGreaterThan(workbench.indexOf("Issue 所属 slice ${item.sliceId || \"(未知)\"} 当前未加载"));
+        expect(workbench).toContain("问题所属切片 ${item.sliceId || \"(未知)\"} 当前未加载");
+        expect(workbench.indexOf("highlightedMutationFocus.value = null;", workbench.indexOf("问题所属切片 ${item.sliceId || \"(未知)\"} 当前未加载"))).toBeGreaterThan(workbench.indexOf("问题所属切片 ${item.sliceId || \"(未知)\"} 当前未加载"));
         expect(workbench).toContain("buildWorldWorkbenchCurrentReviewQueueIndex");
         expect(realWorkbenchUtil).toContain("export function buildWorldWorkbenchCurrentReviewQueueIndex");
         expect(realWorkbenchUtil).toContain("item.key === focus.issueKey");
@@ -734,7 +734,7 @@ describe("World Engine IDE entry", () => {
         expect(workbench).toContain("function workbenchUnsavedDraftLabels(): string[]");
         expect(workbench).toContain("buildWorldWorkbenchUnsavedDraftLabels");
         expect(realWorkbenchUtil).toContain("export function buildWorldWorkbenchUnsavedDraftLabels");
-        expect(realWorkbenchUtil).toContain("labels.push(\"Slice Composer 草稿\");");
+        expect(realWorkbenchUtil).toContain("labels.push(\"切片编辑器草稿\");");
         expect(realWorkbenchUtil).toContain("labels.push(`${input.metadataDraftCount} 个 metadata 草稿`);");
         expect(realWorkbenchUtil).toContain("labels.push(`${input.valueDraftSliceCount} 个 value 草稿`);");
         expect(workbench).toContain("(e: \"hasUnsavedDraftsChange\", value: boolean): void;");
@@ -787,9 +787,9 @@ describe("World Engine IDE entry", () => {
         ].join("\n"));
         expect(workbench).toContain("const switchedSubjectFilterMode = pendingSubjectIds.length > 0 && subjectFilterMode.value === \"all\";");
         expect(workbench).toContain("subjectFilterMode.value = \"any\";");
-        expect(workbench).toContain("包含待接入 subject 时已切回“任一 subject”过滤");
+        expect(workbench).toContain("包含待接入主体时已切回“任一主体”过滤");
         expect(workbench).toContain("if (mode === \"all\" && pendingSubjectIds.length) {");
-        expect(workbench).toContain("暂不能使用“全部 subject”过滤");
+        expect(workbench).toContain("暂不能使用“全部主体”过滤");
         expect(workbench).toContain("if (mode !== subjectFilterMode.value) {");
         expect(workbench).toContain("highlightedMutationFocus.value = null;");
         expect(workbench).toContain([
@@ -929,7 +929,7 @@ describe("World Engine IDE entry", () => {
         expect(workbenchPreviewInspector).toContain("function copySubjectFileProposalText(text: string, successMessage: string): Promise<boolean>");
         expect(workbenchPreviewInspector).toContain("notification.error(\"复制失败，请手动选择文本后复制。\");");
         expect(workbenchPreviewInspector).toContain("function copySubjectFileProposalTextAndOpen(text: string, successMessage: string, path: string): Promise<void>");
-        expect(workbenchPreviewInspector).toContain("World Engine 工作台正在同步，请稍候再打开目标文件。");
+        expect(workbenchPreviewInspector).toContain("世界引擎工作台正在同步，请稍候再打开目标文件。");
         expect(workbenchPreviewInspector).toContain("目标文件路径为空，无法打开。");
         expect(workbenchPreviewInspector).toContain("if (copied) {");
         expect(workbenchPreviewInspector).toContain("openSubjectFileProposalPath(path);");
@@ -1016,7 +1016,7 @@ describe("World Engine IDE entry", () => {
         expect(mutationEditor).toContain("const initialSubjectId = props.selectedSubjectId || props.subjects[0]?.id || \"world\";");
         expect(mutationEditor).toContain("defaultMutationForPreviewSubject");
         expect(mutationEditor).toContain("const initialMutation = defaultMutationForPreviewSubject(props.schema?.subjectTypes ?? [], props.subjects, initialSubjectId);");
-        expect(mutationEditor).toContain("当前 Project 还没有 ${typeName} subject，不能使用该 schema shortcut。请先创建对应 subject。");
+        expect(mutationEditor).toContain("当前项目还没有 ${typeName} 主体，不能使用该结构快捷填充。请先创建对应主体。");
         expect(mutationEditor).toContain("return props.subjects.find((subject) => subject.type === typeName)?.id ?? \"\";");
         expect(mutationEditor).toContain(":disabled=\"schemaTypeShortcutDisabled(type.type)\"");
         expect(mutationEditor).toContain("usedTimes?: string[];");
@@ -1205,7 +1205,7 @@ describe("World Engine IDE entry", () => {
         expect(mutationEditor).toContain("return \"json\"");
         expect(mutationEditor).toContain("parseJsonObjectBuilderValue");
         expect(mutationEditor).toContain("valueType === \"object\"");
-        expect(mutationEditor).toContain("mutation value 必须是 JSON object");
+        expect(mutationEditor).toContain("变更值必须是 JSON 对象");
         expect(mutationEditor).toContain("必须是 JSON object");
         expect(mutationEditor).toContain("objectFieldRefOptions");
         expect(subjectCreator).toContain("创建主体");

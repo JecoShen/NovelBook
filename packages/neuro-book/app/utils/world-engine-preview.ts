@@ -118,13 +118,13 @@ export function formatWorldEngineConflictMessage(message: string): string {
     const detail = message.match(/existingSliceId=.*$/)?.[0] ?? "";
     const suffix = detail ? `\n${detail}` : "";
     if (message.includes("该时间已有切面")) {
-        return `该时间已有切面。请在 Timeline 中找到该时间的 slice，点击“载入编辑”把本次变更合并进去，或把 time 改到相邻时间。${suffix}`;
+        return `该时间已有切面。请在时间线中找到该时间的切片，点击“载入编辑”把本次变更合并进去，或把 time 改到相邻时间。${suffix}`;
     }
     if (message.includes("目标时间已有非 init 切面")) {
-        return `目标时间已有普通切面，不能自动追加 subject 初始化。请在 Timeline 中载入这个时间的 slice，显式合并初始化变更，或把初始化时间改到相邻时间。${suffix}`;
+        return `目标时间已有普通切面，不能自动追加主体初始化。请在时间线中载入这个时间的切片，显式合并初始化变更，或把初始化时间改到相邻时间。${suffix}`;
     }
     if (message.includes("目标时间已有其他切面")) {
-        return `目标时间已有其他切面。请在 Timeline 中载入目标时间的 slice 合并，或把 time 改到相邻时间。${suffix}`;
+        return `目标时间已有其他切面。请在时间线中载入目标时间的切片 合并，或把 time 改到相邻时间。${suffix}`;
     }
     return message;
 }
@@ -136,7 +136,7 @@ export function parseMutationJson(input: string): ParseResult<WorldMutationDraft
         return parsed;
     }
     if (parsed.value.length === 0) {
-        return {ok: false, message: "patches 必须是非空数组"};
+        return {ok: false, message: "变更必须是非空数组"};
     }
     return parsed;
 }
@@ -147,7 +147,7 @@ export function parseMutationListJson(input: string): ParseResult<WorldMutationD
         // JSON.parse 是外部输入边界，必须先以 unknown 接住再逐层校验。
         const parsed: unknown = JSON.parse(input);
         if (!Array.isArray(parsed)) {
-            return {ok: false, message: "patches 必须是数组"};
+            return {ok: false, message: "变更必须是数组"};
         }
         const mutations: WorldMutationDraft[] = [];
         for (const item of parsed) {
@@ -159,7 +159,7 @@ export function parseMutationListJson(input: string): ParseResult<WorldMutationD
         }
         return {ok: true, value: mutations};
     } catch (error) {
-        return {ok: false, message: error instanceof Error ? error.message : "patches JSON 解析失败"};
+        return {ok: false, message: error instanceof Error ? error.message : "变更 JSON 解析失败"};
     }
 }
 
@@ -177,7 +177,7 @@ export function clampMutationIndex(length: number, index: number): number {
 /** 原位替换指定 mutation，返回新的 mutation 列表和保留后的选中索引。 */
 export function replaceMutationAt(mutations: WorldMutationDraft[], index: number, mutation: WorldMutationDraft): ParseResult<MutationListUpdate> {
     if (!isValidMutationIndex(mutations, index)) {
-        return {ok: false, message: "请选择要替换的 mutation。"};
+        return {ok: false, message: "请选择要替换的变更。"};
     }
     return {
         ok: true,
@@ -212,7 +212,7 @@ export function insertMutationAfter(mutations: WorldMutationDraft[], index: numb
 export function duplicateMutationAt(mutations: WorldMutationDraft[], index: number): ParseResult<MutationListUpdate> {
     const mutation = mutations[index];
     if (!mutation || !isValidMutationIndex(mutations, index)) {
-        return {ok: false, message: "请选择要复制的 mutation。"};
+        return {ok: false, message: "请选择要复制的变更。"};
     }
     const duplicated: WorldMutationDraft = {...mutation};
     if ("value" in mutation && mutation.value !== undefined) {
@@ -224,7 +224,7 @@ export function duplicateMutationAt(mutations: WorldMutationDraft[], index: numb
 /** 删除指定 mutation，返回新的 mutation 列表和删除后的选中索引。 */
 export function deleteMutationAt(mutations: WorldMutationDraft[], index: number): ParseResult<MutationListUpdate> {
     if (!isValidMutationIndex(mutations, index)) {
-        return {ok: false, message: "请选择要删除的 mutation。"};
+        return {ok: false, message: "请选择要删除的变更。"};
     }
     const next = mutations.filter((_, itemIndex) => itemIndex !== index);
     return {
@@ -240,7 +240,7 @@ export function deleteMutationAt(mutations: WorldMutationDraft[], index: number)
 /** 上移或下移指定 mutation 一位；到达边界时返回 changed=false。 */
 export function moveMutationAt(mutations: WorldMutationDraft[], index: number, direction: "up" | "down"): ParseResult<MutationListUpdate> {
     if (!isValidMutationIndex(mutations, index)) {
-        return {ok: false, message: "请选择要移动的 mutation。"};
+        return {ok: false, message: "请选择要移动的变更。"};
     }
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= mutations.length) {
@@ -250,14 +250,14 @@ export function moveMutationAt(mutations: WorldMutationDraft[], index: number, d
                 mutations,
                 index,
                 changed: false,
-                message: direction === "up" ? "所选 mutation 已经在最上方。" : "所选 mutation 已经在最下方。",
+                message: direction === "up" ? "所选变更已经在最上方。" : "所选变更已经在最下方。",
             },
         };
     }
     const currentMutation = mutations[index];
     const targetMutation = mutations[targetIndex];
     if (!currentMutation || !targetMutation) {
-        return {ok: false, message: "请选择要移动的 mutation。"};
+        return {ok: false, message: "请选择要移动的变更。"};
     }
     const next = [...mutations];
     next[index] = targetMutation;

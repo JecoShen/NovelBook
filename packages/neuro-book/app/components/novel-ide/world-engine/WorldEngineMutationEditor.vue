@@ -137,7 +137,7 @@ const mutationLoadOptions = computed<Array<{label: string; value: string}>>(() =
         value: String(index),
     }));
 });
-const sliceActionLabel = computed(() => editingSliceId.value ? "保存 Slice 编辑" : "写入 Slice");
+const sliceActionLabel = computed(() => editingSliceId.value ? "保存切片编辑" : "写入切片");
 const canSubmit = computed(() => Boolean(props.projectRoot) && !props.busy && !saving.value && sliceValidation.value.ok);
 const hasDirtyDraft = computed(() => cleanSnapshot.value !== "" && (serializeSliceForm() !== cleanSnapshot.value || builderDraftDirty.value));
 markCleanSliceForm();
@@ -199,7 +199,7 @@ async function submitSlice(options: {continueAfterSave?: boolean} = {}): Promise
             sliceForm.kind = "event";
             applyDefaultSliceMutation(contextSubjectId);
             lastContinueSaveNotice.value = result.issues.length
-                ? `上一条已写入 ${result.sliceId}，返回 ${result.issues.length} 个 issue，已准备下一步草稿。`
+                ? `上一条已写入 ${result.sliceId}，返回 ${result.issues.length} 个问题，已准备下一步草稿。`
                 : `上一条已写入 ${result.sliceId}，已准备下一步草稿。`;
         } else {
             lastContinueSaveNotice.value = "";
@@ -268,7 +268,7 @@ async function clearEditMode(): Promise<void> {
     if (props.busy || saving.value) {
         return;
     }
-    if (hasDirtyDraft.value && import.meta.client && !await confirmDialog("当前编辑器有未保存草稿，确定切换到新建模式吗？", "Slice Composer 草稿未保存")) {
+    if (hasDirtyDraft.value && import.meta.client && !await confirmDialog("当前编辑器有未保存草稿，确定切换到新建模式吗？", "切片编辑器草稿未保存")) {
         return;
     }
     editingSliceId.value = "";
@@ -291,7 +291,7 @@ function fillMutation(typeName: string, attr: WorldPreviewSchemaAttr): void {
     }
     const subjectId = subjectIdForSchemaType(typeName);
     if (!subjectId) {
-        emit("error", `当前 Project 还没有 ${typeName} subject，不能使用该 schema shortcut。请先创建对应 subject。`);
+        emit("error", `当前项目还没有 ${typeName} 主体，不能使用该结构快捷填充。请先创建对应主体。`);
         return;
     }
     const mutation = defaultMutationForPreviewAttr(subjectId, attr, props.subjects);
@@ -521,7 +521,7 @@ function parseJsonObjectBuilderValue(): ReturnType<typeof parseLooseJsonValue> {
         return parsedValue;
     }
     if (!isJsonObjectValue(parsedValue.value)) {
-        return {ok: false, message: "mutation value 必须是 JSON object"};
+        return {ok: false, message: "变更值必须是 JSON 对象"};
     }
     return parsedValue;
 }
@@ -596,8 +596,8 @@ function schemaTypeShortcutDisabled(typeName: string): boolean {
 
 function schemaTypeShortcutTitle(typeName: string): string {
     return subjectIdForSchemaType(typeName)
-        ? `使用 ${typeName} subject 创建 mutation`
-        : `当前 Project 还没有 ${typeName} subject`;
+        ? `使用 ${typeName} 主体创建变更`
+        : `当前项目还没有 ${typeName} 主体`;
 }
 
 function refreshBuilderDefaultValue(): void {

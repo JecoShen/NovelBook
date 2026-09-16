@@ -114,7 +114,7 @@ const worldViewFilterParts = computed<string[]>(() => {
     const parts: string[] = [];
     if (selectedSubjectIds.value.length) {
         const subjectLabel = selectedSubjectIds.value.map((subjectId) => subjectNameMap.get(subjectId) ?? subjectId).join(", ");
-        const modeLabel = subjectFilterMode.value === "all" ? "全部 subject" : "任一 subject";
+        const modeLabel = subjectFilterMode.value === "all" ? "全部主体" : "任一主体";
         parts.push(`${t("worldEngine.workbenchPreview.subjects")}(${modeLabel}) ${subjectLabel}`);
     }
     if (sliceKindFilter.value !== "all") {

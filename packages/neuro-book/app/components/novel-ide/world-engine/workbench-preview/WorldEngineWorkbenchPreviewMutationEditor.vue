@@ -175,7 +175,7 @@ const issueTriageOptions: IssueTriageOption[] = [
 ];
 const editorViewOptions: SegmentedControlOption[] = [
     {value: "review", label: "问题处理", tone: "warning"},
-    {value: "subject", label: "Subject 视图", tone: "accent"},
+    {value: "subject", label: "主体视图", tone: "accent"},
     {value: "all", label: "总变更", tone: "accent"},
 ];
 
@@ -276,10 +276,10 @@ const nextRelatedSlice = computed(() => currentRelatedIndex.value >= 0 && curren
 const relatedSlicePosition = computed(() => currentRelatedIndex.value >= 0 ? `${currentRelatedIndex.value + 1} / ${relatedSlices.value.length}` : `- / ${relatedSlices.value.length}`);
 const subjectNavigationScopeLabel = computed(() => {
     if (subjectNavigationScope.value === "filter" && props.selectedSubjectIds.length) {
-        const modeLabel = props.subjectFilterMode === "all" ? "全部 subject" : "任一 subject";
-        return `过滤组合：${modeLabel} · kind ${props.sliceKindFilter} · status ${props.sliceHealthFilter}${props.sliceSearch.trim() ? ` · search ${props.sliceSearch.trim()}` : ""}`;
+        const modeLabel = props.subjectFilterMode === "all" ? "全部主体" : "任一主体";
+        return `过滤组合：${modeLabel} · 类型 ${props.sliceKindFilter} · 状态 ${props.sliceHealthFilter}${props.sliceSearch.trim() ? ` · search ${props.sliceSearch.trim()}` : ""}`;
     }
-    return "当前 subject 全量轨迹";
+    return "当前主体全量轨迹";
 });
 const currentSliceReviewItems = computed(() => props.reviewQueueItems.filter((item) => item.sliceId === props.slice.id));
 const visibleReviewQueueItems = computed(() => reviewQueueMode.value === "open" ? props.reviewQueueItems.filter((item) => item.status === "open") : props.reviewQueueItems);
@@ -290,8 +290,8 @@ const reviewQueueModeOptions = computed<SegmentedControlOption[]>(() => [
     {value: "all", label: t("worldEngine.workbenchPreview.allIssues"), tone: "accent"},
 ]);
 const subjectNavigationScopeOptions = computed<SegmentedControlOption[]>(() => [
-    {value: "subject", label: "subject 轨迹", tone: "accent", title: "在当前 subject 的所有相关切片中跳转"},
-    {value: "filter", label: "过滤组合", tone: "accent", disabled: !props.selectedSubjectIds.length, title: "在当前 subject 过滤组合中跳转"},
+    {value: "subject", label: "主体轨迹", tone: "accent", title: "在当前主体的所有相关切片中跳转"},
+    {value: "filter", label: "过滤组合", tone: "accent", disabled: !props.selectedSubjectIds.length, title: "在当前主体过滤组合中跳转"},
 ]);
 const reviewQueuePosition = computed(() => {
     const currentItem = currentReviewQueueItem.value;
@@ -334,14 +334,14 @@ const reviewFocusContext = computed<ReviewFocusContext | null>(() => {
         attr: focus.attr,
         code: issue?.code ?? "manual-focus",
         explanation: issue?.explanation ?? {
-            whatHappened: "当前 patch 行来自审查工作台或外部检查入口定位。",
-            whyItMatters: "这不是后端 issue，只是当前工作台的定位状态。",
+            whatHappened: "当前变更行来自审查工作台或外部检查入口定位。",
+            whyItMatters: "这不是后端问题，只是当前工作台的定位状态。",
             suggestedAction: "可继续查看三联上下文，或清除定位回到普通浏览。",
         },
         identity: issue?.identity,
         key: issue?.key ?? `manual:${props.slice.id}:${focus.subjectId}:${focus.attr}`,
         label: issue?.label ?? "manual",
-        message: issue?.message ?? "当前 mutation 行来自审查工作台或外部检查入口定位。",
+        message: issue?.message ?? "当前变更行来自审查工作台或外部检查入口定位。",
         op: issue?.op,
         patchId: issue?.patchId,
         path: issue?.path,
@@ -540,8 +540,8 @@ function buildMutationContextExplanation(item: MutationContextItem, context: Rev
         confirmation: mutationConfirmationText(item, context),
         relation: mutationRelationText(item.mutation),
         relevance: item.isCurrent
-            ? "这是当前 issue 命中的 mutation。"
-            : `它和当前 issue 同属 ${subjectLabel(item.mutation.subjectId)} / ${context.attr} 的属性链路，用来判断前后基准或覆盖关系。`,
+            ? "这是当前问题命中的变更。"
+            : `它和当前问题同属 ${subjectLabel(item.mutation.subjectId)} / ${context.attr} 的属性链路，用来判断前后基准或覆盖关系。`,
         valueLabel: mutationValueLabel(item.mutation),
     };
 }
@@ -794,7 +794,7 @@ function deletePatchDraft(index: number): void {
         return;
     }
     if (patchDrafts.value.length <= 1) {
-        patchDraftError.value = "slice 至少需要保留 1 条 patch。";
+        patchDraftError.value = "切片至少需要保留 1 条变更。";
         return;
     }
     patchDrafts.value = patchDrafts.value.filter((_, rowIndex) => rowIndex !== index);
@@ -917,7 +917,7 @@ function patchDraftRowKey(row: MutationEditorRow): string {
 /** 按当前本地草稿生成可保存的 patch 列表。 */
 function parsePatchDrafts(): ParsedPatchDraft {
     if (!patchDrafts.value.length) {
-        return {ok: false, error: "patches 不能为空"};
+        return {ok: false, error: "变更不能为空"};
     }
     const patches: WorldSlicePatchDto[] = [];
     for (const [index, patch] of patchDrafts.value.entries()) {
@@ -933,7 +933,7 @@ function parsePatchDrafts(): ParsedPatchDraft {
         if (patch.op !== "remove") {
             const parsedValue = parseWorkbenchPreviewMutationValue(patchValueDraft(index));
             if (!parsedValue.ok) {
-                return {ok: false, error: `第 ${index + 1} 条 patch value 解析失败：${parsedValue.error}`};
+                return {ok: false, error: `第 ${index + 1} 条变更值解析失败：${parsedValue.error}`};
             }
             nextPatch.value = parsedValue.value;
         }
@@ -1310,7 +1310,7 @@ watch(() => props.selectedSubjectIds.length, (count) => {
 </script>
 
 <template>
-    <!-- World Engine 审查工作台：问题处理 / Subject 视图 / 总变更 -->
+    <!-- World Engine 审查工作台：问题处理 / 主体视图 / 总变更 -->
     <section
         data-testid="world-review-panel"
         class="relative flex shrink-0 flex-col overflow-hidden border-t border-[var(--we-border)] bg-[var(--we-bg-panel)] transition-[height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
@@ -1469,9 +1469,9 @@ watch(() => props.selectedSubjectIds.length, (count) => {
                 <div class="grid gap-2 xl:grid-cols-3">
                     <div
                         v-for="contextItem in [
-                            {slot: 'previous', label: '前一个 mutation', empty: '没有更早的相关 mutation', item: reviewMutationContext.previous},
+                            {slot: 'previous', label: '前一个变更', empty: '没有更早的相关变更', item: reviewMutationContext.previous},
                             {slot: 'current', label: '当前 mutation', empty: '当前切片没有命中 mutation', item: reviewMutationContext.current},
-                            {slot: 'next', label: '后一个 mutation', empty: '没有更晚的相关 mutation', item: reviewMutationContext.next},
+                            {slot: 'next', label: '后一个变更', empty: '没有更晚的相关变更', item: reviewMutationContext.next},
                         ]"
                         :key="`mutation-context:${contextItem.slot}`"
                         data-testid="mutation-context-card"

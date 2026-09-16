@@ -483,7 +483,7 @@ async function loadWorld(options: LoadWorldOptions = {}): Promise<void> {
         snapshotIssues.value = [];
         fullSnapshotSubjects.value = null;
         fullSnapshotIssues.value = null;
-        setWorkbenchError(resolveApiErrorMessage(loadError, "读取 World Engine 数据失败"));
+        setWorkbenchError(resolveApiErrorMessage(loadError, "读取世界引擎数据失败"));
     } finally {
         loading.value = false;
     }
@@ -550,7 +550,7 @@ async function reloadTimelineForCurrentSubjectFilter(options: LoadWorldOptions =
         await loadSelectedSliceSnapshots();
     } catch (timelineError) {
         if (requestId === timelineRequestId) {
-            setWorkbenchError(resolveApiErrorMessage(timelineError, "刷新 subject 时间线失败"));
+            setWorkbenchError(resolveApiErrorMessage(timelineError, "刷新主体时间线失败"));
         }
     } finally {
         if (requestId === timelineRequestId) {
@@ -692,7 +692,7 @@ async function saveMutationListPatch(patch: WorldWorkbenchPreviewMutationListPat
         summary: slice.summary,
         kind: slice.kind,
         patches: patch.patches,
-    }, `已保存 ${patch.patches.length} 个 mutation`);
+    }, `已保存 ${patch.patches.length} 个变更`);
 }
 
 /** 批量保存 mutation value 草稿，真实 API 只调用一次 editSlice。 */
@@ -702,7 +702,7 @@ async function saveMutationValuePatches(patches: WorldWorkbenchPreviewMutationVa
     if (!slice || !slicePatches.length) {
         return;
     }
-    await saveSliceEdit(slice, buildWorldWorkbenchEditSliceBody(slice, {}, slicePatches), `已保存 ${slicePatches.length} 个 mutation value`);
+    await saveSliceEdit(slice, buildWorldWorkbenchEditSliceBody(slice, {}, slicePatches), `已保存 ${slicePatches.length} 个变更值`);
 }
 
 /** 调用真实 editSlice，并刷新 timeline / snapshot / issue。 */
@@ -716,7 +716,7 @@ async function saveSliceEdit(slice: WorldWorkbenchPreviewSlice, body: ReturnType
             body,
         });
         notification.success(
-            result.issues.length ? `${successMessage}，返回 ${result.issues.length} 个 issue。` : successMessage,
+            result.issues.length ? `${successMessage}，返回 ${result.issues.length} 个问题。` : successMessage,
             { title: "保存切片成功" }
         );
         clearFiltersIfSavedEditWouldBeHidden({
@@ -877,8 +877,8 @@ async function syncPendingSubjectSystemSubjects(): Promise<void> {
         }
         notification.success(
             issues.length
-                ? `已接入 ${created.length} 个主体系统 subject，返回 ${issues.length} 个 issue。`
-                : `已接入 ${created.length} 个主体系统 subject。`,
+                ? `已接入 ${created.length} 个主体系统主体，返回 ${issues.length} 个问题。`
+                : `已接入 ${created.length} 个主体系统主体。`,
             { title: "同步主体系统成功" }
         );
         selectedSubjectIds.value = created;
@@ -896,7 +896,7 @@ async function syncPendingSubjectSystemSubjects(): Promise<void> {
         await refreshWorldForCurrentTimeline({preferredSubjectIds: created});
         recordTransientIssues(issues, selectedSlice.value?.id ?? "");
         notification.warning(
-            `已接入 ${created.length} 个主体系统 subject，但后续同步失败：\n${message}`,
+            `已接入 ${created.length} 个主体系统主体，但后续同步失败：\n${message}`,
             { title: "主体系统部分同步成功" }
         );
     } finally {
@@ -942,7 +942,7 @@ async function deleteSelectedSlice(): Promise<void> {
             query: projectQuery(),
         });
         notification.success(
-            result.issues.length ? `已删除切片 ${slice.id}，删后返回 ${result.issues.length} 个 issue。` : `已删除切片 ${slice.id}`,
+            result.issues.length ? `已删除切片 ${slice.id}，删后返回 ${result.issues.length} 个问题。` : `已删除切片 ${slice.id}`,
             { title: "删除切片成功" }
         );
         clearSessionStateForDeletedSlice(slice.id);
@@ -1153,7 +1153,7 @@ async function focusReviewIssue(item: WorldWorkbenchPreviewReviewQueueItem): Pro
     }
     const targetSlice = await loadSliceIntoTimeline(item.sliceId);
     if (!targetSlice) {
-        setWorkbenchNotice(`Issue 所属 slice ${item.sliceId || "(未知)"} 当前未加载，无法定位到时间线。`);
+        setWorkbenchNotice(`问题所属切片 ${item.sliceId || "(未知)"} 当前未加载，无法定位到时间线。`);
         focusedSubjectId.value = item.subjectId;
         highlightedMutationFocus.value = null;
         mutationEditorCollapsed.value = false;
@@ -1277,7 +1277,7 @@ async function updateSelectedSubjectIdsForTimeline(subjectIds: string[]): Promis
     if (pendingSubjectIds.length) {
         const labels = pendingSubjectIds.map((subjectId) => subjectNameMap.value.get(subjectId) ?? subjectId).join(", ");
         setWorkbenchNotice(switchedSubjectFilterMode
-            ? `${pendingSubjectTimelineNoticePrefix}：${labels}。包含待接入 subject 时已切回“任一 subject”过滤；请先使用左侧“同步主体系统”，或选择已注册 subject。`
+            ? `${pendingSubjectTimelineNoticePrefix}：${labels}。包含待接入主体时已切回“任一主体”过滤；请先使用左侧“同步主体系统”，或选择已注册主体。`
             : `${pendingSubjectTimelineNoticePrefix}：${labels}。请先使用左侧“同步主体系统”，或选择已注册 subject。`);
     } else if (notice.value.startsWith(pendingSubjectTimelineNoticePrefix)) {
         notice.value = "";
@@ -1302,7 +1302,7 @@ async function updateSubjectFilterModeForTimeline(mode: WorldWorkbenchPreviewSub
     if (mode === "all" && pendingSubjectIds.length) {
         const labels = pendingSubjectIds.map((subjectId) => subjectNameMap.value.get(subjectId) ?? subjectId).join(", ");
         subjectFilterMode.value = "any";
-        setWorkbenchNotice(`${pendingSubjectTimelineNoticePrefix}：${labels}。待接入 subject 还没有 World Engine 切片，暂不能使用“全部 subject”过滤。`);
+        setWorkbenchNotice(`${pendingSubjectTimelineNoticePrefix}：${labels}。待接入主体还没有世界引擎切片，暂不能使用“全部主体”过滤。`);
         return;
     }
     if (mode !== subjectFilterMode.value) {
@@ -1572,7 +1572,7 @@ async function handleSliceComposerSaved(payload: {result: SliceWriteResultDto; t
     const messagePrefix = payload.editing ? "已更新切片" : "已写入切片";
     const continueSuffix = payload.continueAfterSave ? "，已准备下一步草稿" : "";
     const savedNotice = payload.result.issues.length
-        ? `${messagePrefix} ${payload.result.sliceId}，返回 ${payload.result.issues.length} 个 issue${continueSuffix}。`
+        ? `${messagePrefix} ${payload.result.sliceId}，返回 ${payload.result.issues.length} 个问题${continueSuffix}。`
         : `${messagePrefix} ${payload.result.sliceId}${continueSuffix}`;
     sliceComposerVisible.value = payload.continueAfterSave;
     sliceComposerDirty.value = false;
@@ -1670,7 +1670,7 @@ function updateIssueTriage(patch: WorldWorkbenchPreviewIssueTriagePatch): void {
         ...issueTriageStates.value.filter((item) => item.key !== patch.key),
         {identity: patch.identity, key: patch.key, status: patch.status, updatedAt: new Date().toISOString()},
     ];
-    notification.success(`Issue 已标记为 ${issueStatusLabel(patch.status)}`);
+    notification.success(`问题已标记为 ${issueStatusLabel(patch.status)}`);
 }
 
 /** 当前 focused subject 不属于 slice 时，回落到过滤 subject 或 slice 首个触及主体。 */

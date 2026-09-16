@@ -77,8 +77,8 @@ describe("world-engine-preview utils", () => {
         expect(message).toContain("点击“载入编辑”");
         expect(message).toContain("existingSliceId=slice-1");
         const initConflict = formatWorldEngineConflictMessage("目标时间已有非 init 切面，不能把 subject 初始化自动追加进去。请读取 existingSliceId 并显式合并初始化 patches，或选择其他初始化时间。 existingSliceId=slice-2, time=复兴纪元1年 1月1日 00:00:00, title=开场");
-        expect(initConflict).toContain("不能自动追加 subject 初始化");
-        expect(initConflict).toContain("载入这个时间的 slice");
+        expect(initConflict).toContain("不能自动追加主体初始化");
+        expect(initConflict).toContain("载入这个时间的切片");
         expect(initConflict).toContain("existingSliceId=slice-2");
         expect(initConflict).not.toContain("editSlice");
         expect(initConflict).not.toContain("请读取 existingSliceId");
@@ -103,9 +103,9 @@ describe("world-engine-preview utils", () => {
     });
 
     it("拒绝空数组和非法 op", () => {
-        expect(parseMutationJson("[]")).toEqual({ok: false, message: "patches 必须是非空数组"});
+        expect(parseMutationJson("[]")).toEqual({ok: false, message: "变更必须是非空数组"});
         expect(parseMutationListJson("[]")).toEqual({ok: true, value: []});
-        expect(parseMutationListJson("{}")).toEqual({ok: false, message: "patches 必须是数组"});
+        expect(parseMutationListJson("{}")).toEqual({ok: false, message: "变更必须是数组"});
         expect(parseMutationJson(JSON.stringify([{subjectId: "erina", path: "/hp", op: "push"}]))).toEqual({ok: false, message: "patch.op 不合法"});
         expect(parseMutationJson(JSON.stringify([{subjectId: "erina", path: "/hp", op: "replace"}]))).toEqual({ok: false, message: "patch.value 不能为空"});
         expect(parseMutationJson(JSON.stringify([{subjectId: "erina", path: "hp", op: "replace", value: 80}]))).toEqual({ok: false, message: "patch.path 必须是 JSON Pointer（以 / 开头，且不能包含空段）"});
@@ -165,14 +165,14 @@ describe("world-engine-preview utils", () => {
                 mutations,
                 index: 0,
                 changed: false,
-                message: "所选 mutation 已经在最上方。",
+                message: "所选变更已经在最上方。",
             },
         });
         expect(clampMutationIndex(3, 5)).toBe(2);
         expect(clampMutationIndex(0, 5)).toBe(0);
-        expect(replaceMutationAt(mutations, 9, replacement)).toEqual({ok: false, message: "请选择要替换的 mutation。"});
+        expect(replaceMutationAt(mutations, 9, replacement)).toEqual({ok: false, message: "请选择要替换的变更。"});
         expect(insertMutationAfter(mutations, 9, replacement)).toEqual({ok: false, message: "请选择插入位置。"});
-        expect(duplicateMutationAt(mutations, 9)).toEqual({ok: false, message: "请选择要复制的 mutation。"});
+        expect(duplicateMutationAt(mutations, 9)).toEqual({ok: false, message: "请选择要复制的变更。"});
     });
 
     it("复制 mutation 时会复制 JSON value，避免对象值共享引用", () => {

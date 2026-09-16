@@ -203,7 +203,7 @@ export function findWorldWorkbenchFirstRemainingDraftSliceId(draftSliceIds: stri
 export function buildWorldWorkbenchUnsavedDraftLabels(input: WorldWorkbenchUnsavedDraftCounts): string[] {
     const labels: string[] = [];
     if (input.hasSliceComposerDraft) {
-        labels.push("Slice Composer 草稿");
+        labels.push("切片编辑器草稿");
     }
     if (input.metadataDraftCount) {
         labels.push(`${input.metadataDraftCount} 个 metadata 草稿`);
@@ -245,42 +245,42 @@ export function buildWorldWorkbenchEmptySliceState(input: {
         return {
             action: input.pendingSubjectSystemCount ? "sync-subject-system" : "",
             description: input.subjectLabel
-                ? `${input.subjectLabel} 暂无 World Engine 时间线。请先同步主体系统注册身份；同步不会复制或改写 simulation/subjects 六文件正文。`
-                : "当前 subject 暂无 World Engine 时间线。请先同步主体系统注册身份；同步不会复制或改写 simulation/subjects 六文件正文。",
-            title: "当前 subject 尚未接入 World Engine",
+                ? `${input.subjectLabel} 暂无世界引擎时间线。请先同步主体系统注册身份；同步不会复制或改写 simulation/subjects 六文件正文。`
+                : "当前主体暂无世界引擎时间线。请先同步主体系统注册身份；同步不会复制或改写 simulation/subjects 六文件正文。",
+            title: "当前主体尚未接入世界引擎",
         };
     }
     if (input.selectedSubjectIds.length) {
         return {
             action: "new-slice",
             description: input.subjectLabel
-                ? `${input.subjectLabel} 在当前视角下暂无 slice。可以新建 Slice 写入第一条变更，或清空 subject 过滤回到整体世界。`
-                : "当前 subject 时间线暂无 slice。可以新建 Slice 写入第一条变更，或清空 subject 过滤回到整体世界。",
-            title: "当前 subject 时间线暂无 slice",
+                ? `${input.subjectLabel} 在当前视角下暂无切片。可以新建切片写入第一条变更，或清空主体过滤回到整体世界。`
+                : "当前主体时间线暂无切片。可以新建切片写入第一条变更，或清空主体过滤回到整体世界。",
+            title: "当前主体时间线暂无切片",
         };
     }
     if (input.hasSlices || input.hasWorldViewFilters) {
         return {
             action: "new-slice",
-            description: "可以选择一条 slice 继续检查，或新建 Slice 推演下一步。",
-            title: "当前未选择 slice",
+            description: "可以选择一条切片继续检查，或新建切片推演下一步。",
+            title: "当前未选择切片",
         };
     }
     if (input.pendingSubjectSystemCount) {
         return {
             action: "sync-subject-system",
-            description: "可以先同步主体系统，把 simulation/subjects 注册为 World Engine subject；同步只注册身份，不复制或改写六文件正文。",
-            title: "当前 Project 还没有 World Engine slice",
+            description: "可以先同步主体系统，把 simulation/subjects 注册为世界引擎主体；同步只注册身份，不复制或改写六文件正文。",
+            title: "当前项目还没有世界引擎切片",
         };
     }
     return {
         action: input.canCreateWorldSubject ? "create-world-subject" : input.worldSubjectCount ? "new-slice" : "create-subject",
         description: input.worldSubjectCount
-            ? "可以直接新建 Slice 推演当前世界。"
+            ? "可以直接新建切片推演当前世界。"
             : input.canCreateWorldSubject
-                ? "可以先创建 world subject，承载全局世界事件。"
-                : "请先创建 subject，再写入第一条 slice。",
-        title: "当前 Project 还没有 slice",
+                ? "可以先创建世界主体，承载全局世界事件。"
+                : "请先创建主体，再写入第一条切片。",
+        title: "当前项目还没有切片",
     };
 }
 
@@ -320,7 +320,7 @@ export function buildWorldWorkbenchWorldViewFilterParts(input: {
     }
     if (input.selectedSubjectIds.length) {
         const label = input.selectedSubjectIds.map((subjectId) => input.subjectNames.get(subjectId) ?? subjectId).join(", ");
-        const modeLabel = input.subjectFilterMode === "all" ? "全部 subject" : "任一 subject";
+        const modeLabel = input.subjectFilterMode === "all" ? "全部主体" : "任一主体";
         parts.push(`${input.labels.subjects}(${modeLabel}) ${label}`);
     }
     if (input.sliceKindFilter !== "all") {
@@ -674,7 +674,7 @@ export function buildWorldWorkbenchSubjectFileProposals(input: WorldWorkbenchSub
             sliceTime: input.slice.time,
             sliceTitle: input.slice.title,
             sourceKind,
-            sourceLabel: sourceKind === "direct-mutation" ? "直接触及该主体" : "当前主体语境下的 world 事件建议",
+            sourceLabel: sourceKind === "direct-mutation" ? "直接触及该主体" : "当前主体语境下的世界事件建议",
         };
     }).filter((proposal): proposal is WorldWorkbenchSubjectFileProposal => Boolean(proposal));
 }
@@ -709,7 +709,7 @@ export function formatWorldWorkbenchSubjectFileProposal(proposal: WorldWorkbench
     if (proposal.stateReviewReasons.length) {
         lines.push("", "## state.md review", `path: ${proposal.statePath}`, ...proposal.stateReviewReasons.map((reason) => `- ${reason}`));
     }
-    lines.push("", "注意：这是 World Engine 生成的建议，不会自动写入 simulation/subjects。");
+    lines.push("", "注意：这是世界引擎生成的建议，不会自动写入 simulation/subjects。");
     return lines.join("\n");
 }
 
@@ -821,7 +821,7 @@ function buildStateReviewReasons(mutations: WorldSlicePatchDto[], slice: WorldWo
         .filter((mutation) => stateReviewAttrRoots.has(attrRoot(mutation.path)))
         .map((mutation) => `检查 state.md「${stateReviewSection(mutation.path)}」：${formatMutationSummary(mutation)}`);
     if (!reasons.length && slice.summary.trim()) {
-        return ["slice summary 可能包含位置、关系压力、短期目标或可见状态变化，需要人工确认 state.md 是否要更新。"];
+        return ["切片摘要可能包含位置、关系压力、短期目标或可见状态变化，需要人工确认 state.md 是否要更新。"];
     }
     return reasons;
 }

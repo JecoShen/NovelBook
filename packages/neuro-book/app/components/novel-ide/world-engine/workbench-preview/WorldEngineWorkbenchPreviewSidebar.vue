@@ -74,7 +74,7 @@ const subjectReviewFilterOptions = computed<SegmentedControlOption[]>(() => [
     {value: "active", label: t("worldEngine.workbenchPreview.active"), count: activeSubjectCount.value, tone: "accent"},
     {value: "open", label: t("worldEngine.workbenchPreview.open"), count: openReviewSubjectCount.value, tone: "warning"},
     {value: "done", label: t("worldEngine.workbenchPreview.done"), count: doneReviewSubjectCount.value, tone: "accent"},
-    {value: "draft", label: t("worldEngine.workbenchPreview.value"), count: draftSubjectCount.value, tone: "warning", title: "只看有未应用 value 草稿的 subjects；slice metadata 草稿请使用中间 timeline 的 draft 过滤"},
+    {value: "draft", label: t("worldEngine.workbenchPreview.value"), count: draftSubjectCount.value, tone: "warning", title: "只看有未应用值草稿的主体；切片 metadata 草稿请使用中间时间线的草稿过滤"},
 ]);
 const subjectReviewFilterLabel = computed(() => {
     if (subjectReviewFilter.value === "active") {

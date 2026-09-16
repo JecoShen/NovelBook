@@ -161,7 +161,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(page).toContain("sliceReviewSummaries");
         expect(page).toContain("WorldWorkbenchPreviewSliceReviewSummary");
         expect(page).toContain("worldViewFilterParts");
-        expect(page).toContain("const modeLabel = subjectFilterMode.value === \"all\" ? \"全部 subject\" : \"任一 subject\";");
+        expect(page).toContain("const modeLabel = subjectFilterMode.value === \"all\" ? \"全部主体\" : \"任一主体\";");
         expect(page).toContain([
             "function clearSubjectFilter(): void {",
             "    selectedSubjectIds.value = [];",
@@ -285,7 +285,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(filterUtil).toContain("valueDraftCount");
         expect(filterUtil).toContain("matchesWorkbenchPreviewKeywordFilter");
         expect(filterUtil).toContain("buildWorkbenchPreviewFiltersAfterSavedEdit");
-        expect(realUtil).toContain("sourceLabel: sourceKind === \"direct-mutation\" ? \"直接触及该主体\" : \"当前主体语境下的 world 事件建议\"");
+        expect(realUtil).toContain("sourceLabel: sourceKind === \"direct-mutation\" ? \"直接触及该主体\" : \"当前主体语境下的世界事件建议\"");
         expect(realUtil).toContain("`source: ${proposal.sourceLabel}`");
         expect(realUtil).toContain("`sliceId: ${proposal.sliceId}`");
         expect(realUtil).toContain("sliceId: input.slice.id");
@@ -400,7 +400,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(sidebar).toContain("done");
         expect(sidebar).toContain("draft");
         expect(sidebar).toContain("worldEngine.workbenchPreview.valueDraftSubjects");
-        expect(sidebar).toContain("slice metadata 草稿请使用中间 timeline 的 draft 过滤");
+        expect(sidebar).toContain("切片 metadata 草稿请使用中间时间线的草稿过滤");
         expect(sidebar).toContain("worldEngine.workbenchPreview.valueCountShort");
         expect(sidebar).toContain("worldEngine.workbenchPreview.valueDraftCountTitle");
         expect(sidebar).not.toContain("worldEngine.workbenchPreview.attrCount");
@@ -447,8 +447,8 @@ describe("World Engine Workbench preview redesign", () => {
         expect(sliceList).toContain("valueDraftCountMap");
         expect(sliceList).toContain("value-draft-count");
         expect(sliceList).toContain("draftCountForSlice");
-        expect(sliceList).toContain("任一 subject");
-        expect(sliceList).toContain("全部 subject");
+        expect(sliceList).toContain("任一主体");
+        expect(sliceList).toContain("全部主体");
         expect(sliceList).toContain("activeFilterChips");
         expect(sliceList).toContain("WorkbenchPreviewFilterChip");
         expect(sliceList).toContain("WorkbenchPreviewResultStats");
@@ -523,7 +523,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(sliceList).toContain("drafts");
         expect(sliceList).toContain("整体世界");
         expect(sliceList).toContain("单主体");
-        expect(sliceList).toContain("多 subject");
+        expect(sliceList).toContain("多主体");
         expect(sliceList).toContain("data-testid=\"slice-list-clear-subject-filter-top\"");
         expect(sliceList).toContain("清空主体过滤，回到整体世界时间线");
         expect(sliceList).toContain("worldEngine.workbenchPreview.subjectMode");
@@ -719,7 +719,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(inspector).toContain("function copySubjectFileProposalText(text: string, successMessage: string): Promise<boolean>");
         expect(inspector).toContain("notification.error(\"复制失败，请手动选择文本后复制。\");");
         expect(inspector).toContain("function copySubjectFileProposalTextAndOpen(text: string, successMessage: string, path: string): Promise<void>");
-        expect(inspector).toContain("World Engine 工作台正在同步，请稍候再打开目标文件。");
+        expect(inspector).toContain("世界引擎工作台正在同步，请稍候再打开目标文件。");
         expect(inspector).toContain("目标文件路径为空，无法打开。");
         expect(inspector).toContain("if (copied) {");
         expect(inspector).toContain("openSubjectFileProposalPath(path);");
@@ -820,7 +820,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(editor).toContain("updateReviewQueueMode");
         expect(editor).toContain("updateSubjectNavigationScope");
         expect(editor).toContain("问题处理");
-        expect(editor).toContain("Subject 视图");
+        expect(editor).toContain("主体视图");
         expect(editor).toContain("总变更");
         expect(editor).toContain(":model-value=\"view\"");
         expect(editor).toContain(":options=\"editorViewOptions\"");
@@ -842,7 +842,7 @@ describe("World Engine Workbench preview redesign", () => {
         expect(editor).toContain("sliceSearch");
         expect(editor).toContain("relatedSlicePosition");
         expect(editor).toContain("subjectNavigationScopeLabel");
-        expect(editor).toContain("subject 轨迹");
+        expect(editor).toContain("主体轨迹");
         expect(editor).toContain("过滤组合");
         expect(editor).toContain(":aria-pressed=\"activeSubjectId === subjectId\"");
         expect(editor).toContain(":model-value=\"subjectNavigationScope\"");
@@ -989,17 +989,17 @@ describe("World Engine Workbench preview redesign", () => {
         expect(editor).toContain("same subject + attr path");
         expect(editor).toContain("data-testid=\"mutation-context\"");
         expect(editor).toContain("data-testid=\"mutation-context-card\"");
-        expect(editor).toContain("前一个 mutation");
+        expect(editor).toContain("前一个变更");
         expect(editor).toContain("当前 mutation");
-        expect(editor).toContain("后一个 mutation");
-        expect(editor).toContain("没有更早的相关 mutation");
-        expect(editor).toContain("没有更晚的相关 mutation");
+        expect(editor).toContain("后一个变更");
+        expect(editor).toContain("没有更早的相关变更");
+        expect(editor).toContain("没有更晚的相关变更");
         expect(editor).toContain("context.explanation.whatHappened");
         expect(editor).toContain("context.explanation.whyItMatters");
         expect(editor).toContain("context.explanation.suggestedAction");
         expect(editor).not.toContain("buildIssueExplanation");
         expect(editor).toContain("buildMutationContextExplanation");
-        expect(editor).toContain("这不是后端 issue，只是当前工作台的定位状态。");
+        expect(editor).toContain("这不是后端问题，只是当前工作台的定位状态。");
         expect(editor).not.toContain("mutationContextBeforeValue");
         expect(editor).not.toContain("mutationContextAfterValue");
         expect(editor).not.toContain("snapshotSubjectsForSlice");

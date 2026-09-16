@@ -284,7 +284,7 @@ async function copySubjectFileProposalText(text: string, successMessage: string)
 /** 先复制建议片段，再打开目标文件，避免作者打开文件后丢失当前 proposal 上下文。 */
 async function copySubjectFileProposalTextAndOpen(text: string, successMessage: string, path: string): Promise<void> {
     if (props.busy) {
-        notification.error("World Engine 工作台正在同步，请稍候再打开目标文件。");
+        notification.error("世界引擎工作台正在同步，请稍候再打开目标文件。");
         return;
     }
     if (!path.trim()) {
@@ -309,7 +309,7 @@ function openSubjectFileProposalPath(path: string): void {
 /** 请求外层把单条 event proposal 显式追加到 events.jsonl；Inspector 不直接写文件。 */
 function commitSubjectEventProposal(proposal: WorldWorkbenchSubjectFileProposal): void {
     if (props.busy) {
-        notification.error("World Engine 工作台正在同步，请稍候再追加 events.jsonl。");
+        notification.error("世界引擎工作台正在同步，请稍候再追加 events.jsonl。");
         return;
     }
     if (committedSubjectEventKeySet.value.has(worldWorkbenchSubjectEventProposalKey(proposal))) {

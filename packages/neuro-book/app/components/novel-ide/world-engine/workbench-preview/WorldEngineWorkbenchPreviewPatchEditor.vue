@@ -40,7 +40,7 @@ const props = withDefaults(defineProps<{
 }>(), {
     busy: false,
     canAdd: false,
-    emptyText: "当前 subject 在此切片没有 mutation",
+    emptyText: "当前主体在此切片没有变更",
     error: "",
 });
 

@@ -215,8 +215,8 @@ const statusShortcutSlices = computed(() => browsableSlices.value.filter((slice)
 })));
 const statusShortcutStats = computed<WorkbenchPreviewResultStats>(() => collectResultStats(statusShortcutSlices.value));
 const subjectFilterModeOptions = computed<SegmentedControlOption[]>(() => [
-    {value: "any", label: "任一 subject", disabled: props.busy},
-    {value: "all", label: "全部 subject", disabled: props.busy},
+    {value: "any", label: "任一主体", disabled: props.busy},
+    {value: "all", label: "全部主体", disabled: props.busy},
 ]);
 const kindFilterOptions = computed<SegmentedControlOption[]>(() => [
     {value: "all", label: "全部", count: kindShortcutSlices.value.length, disabled: props.busy},
@@ -241,7 +241,7 @@ const scopeLabel = computed(() => {
     if (props.selectedSubjectIds.length === 1) {
         return `单主体：${selectedSubjectFilters.value[0]?.label ?? props.selectedSubjectIds[0]}`;
     }
-    return props.subjectFilterMode === "all" ? "多 subject：全部命中" : "多 subject：任一命中";
+    return props.subjectFilterMode === "all" ? "多主体：全部命中" : "多主体：任一命中";
 });
 const activeFilterChips = computed<WorkbenchPreviewFilterChip[]>(() => {
     const chips: WorkbenchPreviewFilterChip[] = [];
@@ -274,10 +274,10 @@ const activeFilterChips = computed<WorkbenchPreviewFilterChip[]>(() => {
     }
     if (props.selectedSubjectIds.length > 1) {
         chips.push({
-            actionLabel: props.subjectFilterMode === "any" ? "切换为全部 subject" : "切换为任一 subject",
+            actionLabel: props.subjectFilterMode === "any" ? "切换为全部主体" : "切换为任一主体",
             id: "subject-mode",
             label: t("worldEngine.workbenchPreview.subjectMode"),
-            title: props.subjectFilterMode === "any" ? "切换为全部 subject 都命中" : "切换为任一 subject 命中",
+            title: props.subjectFilterMode === "any" ? "切换为全部主体都命中" : "切换为任一主体命中",
             value: props.subjectFilterMode === "any" ? "匹配任一" : "匹配全部",
         });
     }
