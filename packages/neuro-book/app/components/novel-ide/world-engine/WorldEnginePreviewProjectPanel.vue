@@ -91,8 +91,8 @@ function buildIdeOpenPathHref(path: string): string {
             <div v-if="!schema" class="text-sm text-[var(--text-muted)]">未加载</div>
             <div v-else>
                 <div class="mb-3 rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] p-3 text-xs">
-                    <div class="font-medium">{{ schema.calendar.format }}</div>
-                    <div class="mt-1 text-[var(--text-muted)]">{{ schema.calendar.examples.join(" / ") }}</div>
+                    <div class="font-medium">{{ schema.calendar.examples.join(" / ") }}</div>
+                    <div class="mt-1 text-[var(--text-muted)]" title="历法格式模板">格式：{{ schema.calendar.format }}</div>
                 </div>
                 <div v-for="type in schemaTypes" :key="type.type" class="mb-3 rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] p-3">
                     <div class="text-sm font-semibold">{{ type.type }}</div>

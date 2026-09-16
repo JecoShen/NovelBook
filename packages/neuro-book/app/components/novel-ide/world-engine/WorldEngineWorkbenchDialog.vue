@@ -394,6 +394,9 @@ const worldViewFilterParts = computed<string[]>(() => buildWorldWorkbenchWorldVi
     subjectNames: subjectNameMap.value,
 }));
 const worldViewLabel = computed(() => worldViewFilterParts.value.length ? `当前视角：${worldViewFilterParts.value.join(" · ")}` : "整体世界视角");
+// 头部日历 chip 只渲染格式化后的示例时刻；format 模板原文退到 tooltip，避免把 `{eraName}…` 数据模型语法当 UI 文案
+const calendarSampleLabel = computed(() => workbenchSchema.value.calendar.examples[0] ?? "");
+const calendarFormatTitle = computed(() => `历法格式：${workbenchSchema.value.calendar.format}`);
 const selectedSubjectLabel = computed(() => selectedSubjectIds.value.map((subjectId) => subjectNameMap.value.get(subjectId) ?? subjectId).join(", "));
 const emptySliceState = computed<WorldWorkbenchEmptySliceState>(() => buildWorldWorkbenchEmptySliceState({
     canCreateWorldSubject: canCreateWorldSubject.value,
@@ -1888,7 +1891,7 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                     <div class="text-[16px] font-semibold text-[var(--text-main)]" title="WORLD ENGINE WORKBENCH">世界引擎工作台</div>
                     <div class="flex min-w-0 items-center gap-2 truncate text-[12px] text-[var(--text-muted)]">
                         <span class="truncate">{{ props.projectTitle || "未选择 Project" }}</span>
-                        <span v-if="workbenchSchema.calendar.format" class="hidden rounded-md border border-[var(--border-color)] px-1.5 py-0.5 text-[10px] md:inline">{{ workbenchSchema.calendar.format }}</span>
+                        <span v-if="calendarSampleLabel" class="hidden rounded-md border border-[var(--border-color)] px-1.5 py-0.5 text-[10px] md:inline" :title="calendarFormatTitle">{{ calendarSampleLabel }}</span>
                         <span class="hidden truncate lg:inline">{{ worldViewLabel }}</span>
                     </div>
                 </div>
