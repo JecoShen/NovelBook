@@ -17,20 +17,25 @@ export type SettingsSectionCatalogEntry = Readonly<{
     labelKey: string | null;
     fallbackLabel?: string;
     descriptionKey: string;
+    /**
+     * 检索别名:作者按心智词搜(「字体」),设置按功能分区住(「编辑器」)。
+     * 设置对话框搜索与命令面板「设置:」直达共用这份词表;新增分区必须登记,词表只对检索生效不改导航文案。
+     */
+    keywords: readonly string[];
 }>;
 
 /** 顺序即对话框导航顺序;按 scope 过滤时必须保持这个相对顺序。 */
 export const SETTINGS_SECTION_CATALOG: readonly SettingsSectionCatalogEntry[] = [
-    {value: "security", scopes: ["boot"], iconClass: "i-lucide-shield-check", labelKey: "settings.section.security.label", descriptionKey: "settings.section.security.description"},
-    {value: "frontend", scopes: ["browser"], iconClass: "i-lucide-monitor-cog", labelKey: "settings.section.frontend.label", descriptionKey: "settings.section.frontend.description"},
-    {value: "editor", scopes: ["browser"], iconClass: "i-lucide-type", labelKey: "settings.section.editor.label", descriptionKey: "settings.section.editor.description"},
-    {value: "models", scopes: ["global"], iconClass: "i-lucide-cpu", labelKey: "settings.section.models.label", descriptionKey: "settings.section.models.description"},
-    {value: "embedding", scopes: ["global"], iconClass: "i-lucide-binary", labelKey: null, fallbackLabel: "Embedding", descriptionKey: "settings.section.embedding.description"},
-    {value: "cost", scopes: ["global"], iconClass: "i-lucide-circle-dollar-sign", labelKey: "settings.section.cost.label", descriptionKey: "settings.section.cost.description"},
-    {value: "web-tools", scopes: ["global"], iconClass: "i-lucide-search-code", labelKey: "settings.section.webTools.label", descriptionKey: "settings.section.webTools.description"},
-    {value: "agent-profile-models", scopes: ["global", "project"], iconClass: "i-lucide-bot-message-square", labelKey: "settings.section.agentProfileModels.label", descriptionKey: "settings.section.agentProfileModels.description"},
-    {value: "observability", scopes: ["global"], iconClass: "i-lucide-activity", labelKey: "settings.section.observability.label", descriptionKey: "settings.section.observability.description"},
-    {value: "desktop", scopes: ["browser"], iconClass: "i-lucide-panels-top-left", labelKey: "settings.section.desktop.label", descriptionKey: "settings.section.desktop.description"},
+    {value: "security", scopes: ["boot"], iconClass: "i-lucide-shield-check", labelKey: "settings.section.security.label", descriptionKey: "settings.section.security.description", keywords: ["密码", "口令", "登录", "鉴权", "auth"]},
+    {value: "frontend", scopes: ["browser"], iconClass: "i-lucide-monitor-cog", labelKey: "settings.section.frontend.label", descriptionKey: "settings.section.frontend.description", keywords: ["主题", "外观", "皮肤", "颜色", "语言", "界面", "theme"]},
+    {value: "editor", scopes: ["browser"], iconClass: "i-lucide-type", labelKey: "settings.section.editor.label", descriptionKey: "settings.section.editor.description", keywords: ["字体", "字号", "排版", "默认视图", "预览", "源码", "富文本", "font", "markdown"]},
+    {value: "models", scopes: ["global"], iconClass: "i-lucide-cpu", labelKey: "settings.section.models.label", descriptionKey: "settings.section.models.description", keywords: ["服务商", "默认模型", "密钥", "接口", "provider", "api", "key"]},
+    {value: "embedding", scopes: ["global"], iconClass: "i-lucide-binary", labelKey: null, fallbackLabel: "Embedding", descriptionKey: "settings.section.embedding.description", keywords: ["向量", "嵌入", "检索", "embedding"]},
+    {value: "cost", scopes: ["global"], iconClass: "i-lucide-circle-dollar-sign", labelKey: "settings.section.cost.label", descriptionKey: "settings.section.cost.description", keywords: ["费用", "成本", "价格", "币种", "汇率", "token"]},
+    {value: "web-tools", scopes: ["global"], iconClass: "i-lucide-search-code", labelKey: "settings.section.webTools.label", descriptionKey: "settings.section.webTools.description", keywords: ["搜索", "联网", "抓取", "网页", "tavily", "brave"]},
+    {value: "agent-profile-models", scopes: ["global", "project"], iconClass: "i-lucide-bot-message-square", labelKey: "settings.section.agentProfileModels.label", descriptionKey: "settings.section.agentProfileModels.description", keywords: ["角色", "可用模型", "参数", "思考", "agent", "profile"]},
+    {value: "observability", scopes: ["global"], iconClass: "i-lucide-activity", labelKey: "settings.section.observability.label", descriptionKey: "settings.section.observability.description", keywords: ["日志", "记录", "请求", "遥测", "trace"]},
+    {value: "desktop", scopes: ["browser"], iconClass: "i-lucide-panels-top-left", labelKey: "settings.section.desktop.label", descriptionKey: "settings.section.desktop.description", keywords: ["窗口", "缩放", "托盘", "标题栏", "桌面"]},
 ];
 
 /** 读取指定配置目标下可见的分区(保持 CATALOG 顺序)。 */

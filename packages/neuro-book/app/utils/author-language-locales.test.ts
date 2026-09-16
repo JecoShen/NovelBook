@@ -13,6 +13,9 @@ const JARGON_PATTERN = /\b(Providers?|Sessions?|Workflows?|Embeddings?)\b/;
 /** 豁免必须是刻意的 gloss(括号注英文),不是偷懒残留;新增豁免要在评审里说明理由。 */
 const GLOSS_ALLOWLIST = new Set([
     "settings.section.embedding.description",
+    // 帮助与概念:术语卡的名字行,中文主名后括号注英文原文,正是作者语言化的 gloss 形态。
+    "ide.help.concepts.embedding.name",
+    "ide.help.concepts.provider.name",
 ]);
 
 function collectLeaves(value: unknown, path: string, out: Array<{path: string; text: string}>): void {

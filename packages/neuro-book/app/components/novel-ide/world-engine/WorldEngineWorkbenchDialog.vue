@@ -150,7 +150,9 @@ const transientIssues = ref<WorldWorkbenchTransientIssue[]>([]);
 const reviewQueueMode = ref<WorldWorkbenchPreviewReviewQueueMode>("open");
 const sidebarCollapsed = ref(false);
 const subjectCreatorOpen = ref(false);
-const inspectorVisible = ref(true);
+// 检查器默认收起:创建后落点是三栏(主体/时间线/变更条)而非四栏专家台;有 metadata 草稿或主体文件建议时
+// 工具栏按钮与右侧恢复轨会亮起(attention class+计数),草稿/审查/issue 入口仍会主动打开它。
+const inspectorVisible = ref(false);
 const subjectFileProposalFocusVersion = ref(0);
 const committedSubjectEventKeys = ref<string[]>([]);
 const mutationEditorCollapsed = ref(true);
@@ -394,9 +396,10 @@ const worldViewFilterParts = computed<string[]>(() => buildWorldWorkbenchWorldVi
     subjectNames: subjectNameMap.value,
 }));
 const worldViewLabel = computed(() => worldViewFilterParts.value.length ? `当前视角：${worldViewFilterParts.value.join(" · ")}` : "整体世界视角");
-// 头部日历 chip 只渲染格式化后的示例时刻；format 模板原文退到 tooltip，避免把 `{eraName}…` 数据模型语法当 UI 文案
+// 头部日历 chip 只渲染格式化后的示例时刻；format 模板原文退到 tooltip，避免把 `{eraName}…` 数据模型语法当 UI 文案。
+// tooltip 要回答作者的两个问题:这个时刻是什么(历法示例,不是"现在")、去哪改(calendar.ts)。
 const calendarSampleLabel = computed(() => workbenchSchema.value.calendar.examples[0] ?? "");
-const calendarFormatTitle = computed(() => `历法格式：${workbenchSchema.value.calendar.format}`);
+const calendarFormatTitle = computed(() => `历法示例时刻 · 格式：${workbenchSchema.value.calendar.format} · 在 world-engine/calendar.ts 修改历法`);
 const selectedSubjectLabel = computed(() => selectedSubjectIds.value.map((subjectId) => subjectNameMap.value.get(subjectId) ?? subjectId).join(", "));
 const emptySliceState = computed<WorldWorkbenchEmptySliceState>(() => buildWorldWorkbenchEmptySliceState({
     canCreateWorldSubject: canCreateWorldSubject.value,

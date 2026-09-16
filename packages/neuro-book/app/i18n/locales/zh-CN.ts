@@ -242,6 +242,7 @@ const zhCN = {
             placeholder: "搜索设置分区…",
             clear: "清空搜索",
             empty: "没有匹配的分区",
+            trySearch: "试试搜：",
         },
         desktop: {
             title: "桌面应用",
@@ -1164,6 +1165,22 @@ const zhCN = {
                 newChapter: "新建章节…",
                 newLorebook: "新建世界书条目…",
                 newMarkdown: "新建 Markdown 文件…",
+                help: "帮助与概念",
+            },
+        },
+        help: {
+            title: "帮助与概念",
+            subtitle: "写作时会遇到的核心概念,都在这里一句话说清。",
+            concepts: {
+                worldEngine: {name: "世界引擎", description: "为作品世界记账:记录「谁、在什么时间、发生了什么」,随时回看任何一个时刻。"},
+                subject: {name: "主体", description: "世界里会被时间改变的存在——角色、势力、地点、物品都可以是主体。"},
+                slice: {name: "切片", description: "世界的一次心跳:某个时刻一批主体的状态记录。故事每推进一步,世界就叠上一片。"},
+                lorebook: {name: "世界书(Lorebook)", description: "按分类整理的世界设定条目,写作时可以被 AI 引用。"},
+                plotThread: {name: "线索与 MICE", description: "剧情的一条线。MICE 线型提示这条线怎样才算关:milieu 舞台(离开即关)、idea 谜题(揭晓即关)、character 角色(认同即关)、event 事件(解决即关)。"},
+                profile: {name: "Profile", description: "一份预设的 AI 工作方式:模型、参数与提示词的组合。"},
+                session: {name: "对话与对话树", description: "与 AI 助手的一次连续对话;对话树保留每个节点,随时可以回到任一处换个方向继续。"},
+                embedding: {name: "向量检索(Embedding)", description: "把文字变成可比较的向量,让 AI 按意思而不是按字面找到相关内容。"},
+                provider: {name: "服务商(Provider)", description: "提供模型能力的平台。在设置里填入服务商的 Key,就能使用它的模型。"},
             },
         },
         shell: {

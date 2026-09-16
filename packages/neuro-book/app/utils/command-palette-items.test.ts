@@ -52,6 +52,21 @@ describe("resolveAvailableSettingsTargets", () => {
     });
 });
 
+describe("SETTINGS_SECTION_CATALOG 检索别名", () => {
+    it("每个分区都登记非空别名表", () => {
+        for (const entry of SETTINGS_SECTION_CATALOG) {
+            expect(entry.keywords.length, `${entry.value} 缺检索别名`).toBeGreaterThan(0);
+        }
+    });
+
+    it("作者心智词能落到功能分区:字体→编辑器,主题→前端设定,服务商→模型设置", () => {
+        const keywordsOf = (value: string) => SETTINGS_SECTION_CATALOG.find((entry) => entry.value === value)?.keywords ?? [];
+        expect(keywordsOf("editor")).toContain("字体");
+        expect(keywordsOf("frontend")).toContain("主题");
+        expect(keywordsOf("models")).toContain("服务商");
+    });
+});
+
 describe("buildCommandPaletteFileItems", () => {
     it("纯目录不进面板,内容目录与文件进", () => {
         const items = buildCommandPaletteFileItems([

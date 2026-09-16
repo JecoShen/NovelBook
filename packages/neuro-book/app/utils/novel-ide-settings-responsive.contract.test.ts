@@ -13,7 +13,8 @@ describe("Novel IDE Settings responsive contract", () => {
         expect(source).toContain("flex-col gap-4 md:flex-row md:gap-6");
         expect(source).toContain("w-full min-w-0 flex-col pb-2 md:w-[220px] md:shrink-0");
         expect(source).toContain("gap-1.5 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0");
-        expect(source).toContain("hidden truncate text-[10px] text-[var(--text-muted)] md:block");
+        // 分组标签行(5004461b 导航分组单行化的等价新位置):10px muted meta,窄屏隐藏桌面显示
+        expect(source).toContain("hidden px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] md:block");
         expect(source).toContain("mt-auto hidden pt-4 md:block");
     });
 

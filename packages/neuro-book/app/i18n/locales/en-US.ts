@@ -244,6 +244,7 @@ const enUS = {
             placeholder: "Search settings…",
             clear: "Clear search",
             empty: "No matching section",
+            trySearch: "Try: ",
         },
         desktop: {
             title: "Desktop App",
@@ -1166,6 +1167,22 @@ const enUS = {
                 newChapter: "New chapter…",
                 newLorebook: "New lorebook entry…",
                 newMarkdown: "New Markdown file…",
+                help: "Help & Concepts",
+            },
+        },
+        help: {
+            title: "Help & Concepts",
+            subtitle: "The core ideas you'll meet while writing, each in one sentence.",
+            concepts: {
+                worldEngine: {name: "World Engine", description: "Keeps the ledger of your story world: who did what, and when — revisit any moment."},
+                subject: {name: "Subject", description: "Anything in the world that time can change — characters, factions, places, items."},
+                slice: {name: "Slice", description: "One heartbeat of the world: a record of several subjects at a moment. Every story step adds another slice."},
+                lorebook: {name: "Lorebook", description: "Worldbuilding entries organized by category, referenceable by the AI while you write."},
+                plotThread: {name: "Threads & MICE", description: "A plot line. The MICE type hints how it closes: milieu (leaving), idea (answer), character (acceptance), event (resolution)."},
+                profile: {name: "Profile", description: "A preset way for the AI to work: model, parameters and prompts combined."},
+                session: {name: "Sessions & the Session Tree", description: "One continuous conversation with the AI; the tree keeps every node, so you can branch off from any point."},
+                embedding: {name: "Embedding", description: "Turns text into comparable vectors so the AI finds related content by meaning, not by literal words."},
+                provider: {name: "Provider", description: "A platform that serves models. Add its API key in settings to use its models."},
             },
         },
         shell: {

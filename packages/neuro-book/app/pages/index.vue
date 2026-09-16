@@ -8,6 +8,7 @@ import AgentChatSurface from "nbook/app/components/novel-ide/agent/AgentChatSurf
 import AgentTraceViewerDialog from "nbook/app/components/novel-ide/agent/trace-viewer/AgentTraceViewerDialog.vue";import WorkspaceHistoryInboxDialog from "nbook/app/components/novel-ide/history/WorkspaceHistoryInboxDialog.vue";import AgentModeSessionSidebar from "nbook/app/components/novel-ide/agent/AgentModeSessionSidebar.vue";
 import NovelIdeActivityBar from "nbook/app/components/novel-ide/NovelIdeActivityBar.vue";
 import NovelIdeCommandPalette from "nbook/app/components/novel-ide/NovelIdeCommandPalette.vue";
+import NovelIdeHelpDialog from "nbook/app/components/novel-ide/NovelIdeHelpDialog.vue";
 import NovelIdeProfileDialog from "nbook/app/components/novel-ide/NovelIdeProfileDialog.vue";
 import NovelIdeSettingsDialog from "nbook/app/components/novel-ide/NovelIdeSettingsDialog.vue";
 import NovelIdeToolPanel from "nbook/app/components/novel-ide/NovelIdeToolPanel.vue";
@@ -501,6 +502,8 @@ watch(workspaceFileActivateSerial, () => {
 
 /* ===== 命令面板与快捷键层(Ctrl+K / Ctrl+P 开面板,Alt+1..9 切槽位) ===== */
 const commandPaletteOpen = ref(false);
+/** 帮助与概念对话框:命令面板「帮助与概念」动作打开,不依赖项目上下文。 */
+const helpDialogOpen = ref(false);
 /** 设置对话框直达目标:命令面板「设置:X」写入,打开即跳转;关闭后清空,防止下次普通打开误跳。 */
 const settingsInitialTarget = ref<{scope: SettingsScope; section: SettingsSection} | null>(null);
 
@@ -564,6 +567,8 @@ const commandPaletteItems = computed<CommandPaletteItem[]>(() => {
     if (projectSurfaceActive.value) {
         items.push({id: "action:new-markdown", kind: "action", label: t("ide.commandPalette.action.newMarkdown"), target: "new markdown file", iconClass: "i-lucide-file-plus"});
     }
+    // 帮助不依赖项目上下文:概念无处可查是 P2 失分带,入口常驻。
+    items.push({id: "action:help", kind: "action", label: t("ide.commandPalette.action.help"), target: "help concepts glossary 帮助 概念 术语", iconClass: "i-lucide-circle-help"});
     for (const id of ACTIVITY_SHORTCUT_ORDER) {
         if (!enabledActivityIds.value.has(id)) {
             continue;
@@ -586,7 +591,7 @@ const commandPaletteItems = computed<CommandPaletteItem[]>(() => {
             id: `settings:${settingsTarget.scope}:${settingsTarget.section}`,
             kind: "settings",
             label: t("ide.commandPalette.settingsEntry", {section: sectionLabel}),
-            target: `${settingsTarget.section} ${sectionLabel}`,
+            target: `${settingsTarget.section} ${sectionLabel} ${settingsTarget.entry.keywords.join(" ")}`,
             description: t(`settings.scope.${settingsTarget.scope}.label`),
             iconClass: settingsTarget.entry.iconClass,
         });
@@ -618,6 +623,7 @@ async function handleCommandPalettePick(item: CommandPaletteItem): Promise<void>
         case "action:new-chapter": await createWelcomeChapter(); return;
         case "action:new-markdown": await createWelcomeMarkdownFile(); return;
         case "action:new-lorebook": await createWelcomeLorebookEntry(); return;
+        case "action:help": helpDialogOpen.value = true; return;
         default:
             if (item.id.startsWith("action:activity:")) {
                 triggerActivityItem(item.id.slice("action:activity:".length) as WorkbenchActivityItemId);
@@ -2972,6 +2978,7 @@ onBeforeUnmount(() => {
 
         <NovelIdeSettingsDialog v-model="settingsDialogOpen" :initial-target="settingsInitialTarget" />
         <NovelIdeCommandPalette v-model="commandPaletteOpen" :items="commandPaletteItems" @pick="void handleCommandPalettePick($event)" />
+        <NovelIdeHelpDialog v-model="helpDialogOpen" />
         <NovelIdeProfileDialog v-model="accountProfileOpen" />
         <AgentTraceViewerDialog v-if="projectSurfaceActive" v-model="traceViewerOpen" @open-session="void openTraceSession($event)" />
         <WorkspaceHistoryInboxDialog v-if="projectSurfaceActive" v-model="historyInboxOpen" :project-root="isUserAssetsWorkspace ? null : currentProjectRoot" :theme="activeThemeId" />

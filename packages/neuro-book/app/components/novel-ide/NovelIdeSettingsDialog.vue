@@ -456,10 +456,22 @@ const sectionSearchResults = computed<SettingsSectionTarget[]>(() => {
     return searchWorkspaceReferences(targets.map((target, order) => ({
         item: target,
         label: target.entry.labelKey ? t(target.entry.labelKey) : target.entry.fallbackLabel ?? target.section,
-        target: `${target.section} ${t(`settings.scope.${target.scope}.label`)}`,
+        target: `${target.section} ${t(`settings.scope.${target.scope}.label`)} ${target.entry.keywords.join(" ")}`,
         description: t(target.entry.descriptionKey),
         order,
     })), query, 20).map((result) => result.item);
+});
+
+/**
+ * 零结果兜底:给三个常用分区的可点击建议查询,把死胡同变成路径。
+ * 按当前可用分区过滤(boot 目标下编辑器/模型不可见时不建议)。
+ */
+const searchSuggestionSections = computed<SettingsSection[]>(() => {
+    const available = new Set(resolveAvailableSettingsTargets({
+        projectScopeAvailable: projectScopeAvailable.value,
+        desktopAvailable: desktopAvailable.value,
+    }).map((target) => target.section));
+    return (["editor", "models", "frontend"] as const).filter((section) => available.has(section));
 });
 
 /** 跳转搜索结果:沿用与手动切换相同的 dirty 守卫,命中后清空查询回到导航态。 */
@@ -943,7 +955,21 @@ function updateDesktopCloseBehavior(value: string): void {
                 </div>
 
                 <div v-if="sectionSearchQuery.trim()" class="flex min-h-0 min-w-0 flex-col gap-1 overflow-y-auto pb-1">
-                    <div v-if="sectionSearchResults.length === 0" class="px-3 py-6 text-center text-xs text-[var(--text-muted)]">{{ t("settings.search.empty") }}</div>
+                    <div v-if="sectionSearchResults.length === 0" class="flex flex-col items-center gap-2 px-3 py-6 text-center text-xs text-[var(--text-muted)]">
+                        <p>{{ t("settings.search.empty") }}</p>
+                        <div v-if="searchSuggestionSections.length" class="flex flex-wrap items-center justify-center gap-1.5">
+                            <span>{{ t("settings.search.trySearch") }}</span>
+                            <button
+                                v-for="section in searchSuggestionSections"
+                                :key="`suggestion:${section}`"
+                                type="button"
+                                class="rounded-md border border-[var(--border-color)] px-1.5 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
+                                @click="sectionSearchQuery = settingsSectionLabel(section)"
+                            >
+                                {{ settingsSectionLabel(section) }}
+                            </button>
+                        </div>
+                    </div>
                     <button
                         v-for="target in sectionSearchResults"
                         :key="`${target.scope}:${target.section}`"
