@@ -110,7 +110,7 @@ const defaultInspectorWidth = 420;
 const defaultMutationEditorHeight = 292;
 const sliceLimit = 200;
 const queryListLimit = 40;
-const pendingSubjectTimelineNoticePrefix = "待接入 subject 暂无 World Engine 时间线";
+const pendingSubjectTimelineNoticePrefix = "待接入主体暂无世界引擎时间线";
 const emptySchema: WorldSchemaProjectionDto = {
     subjectTypes: [],
     calendar: {
@@ -209,7 +209,7 @@ function setWorkbenchNotice(message: string): void {
 }
 
 /** 保存请求飞行中阻止用户切换上下文或触发其它写入。 */
-function blockSliceComposerSaving(message = "Slice Composer 正在保存，请稍候再切换工作台上下文。"): boolean {
+function blockSliceComposerSaving(message = "切片编辑器正在保存，请稍候再切换工作台上下文。"): boolean {
     if (!sliceComposerSaving.value) {
         return false;
     }
@@ -218,7 +218,7 @@ function blockSliceComposerSaving(message = "Slice Composer 正在保存，请�
 }
 
 /** 工作台数据回流中阻止用户触发会切换上下文的动作。 */
-function blockWorkbenchActionBusy(message = "World Engine 工作台正在同步，请稍候再操作。"): boolean {
+function blockWorkbenchActionBusy(message = "世界引擎工作台正在同步，请稍候再操作。"): boolean {
     if (!workbenchActionBusy.value) {
         return false;
     }
@@ -667,7 +667,7 @@ async function saveMetadataPatch(patch: WorldWorkbenchPreviewSlicePatch): Promis
     if (!slice) {
         return;
     }
-    await saveSliceEdit(slice, buildWorldWorkbenchEditSliceBody(slice, patch), "已保存 slice 元信息");
+    await saveSliceEdit(slice, buildWorldWorkbenchEditSliceBody(slice, patch), "已保存切片元信息");
 }
 
 /** 保存单条 mutation value 草稿。 */
@@ -712,7 +712,7 @@ async function saveSliceEdit(slice: WorldWorkbenchPreviewSlice, body: ReturnType
         });
         notification.success(
             result.issues.length ? `${successMessage}，返回 ${result.issues.length} 个 issue。` : successMessage,
-            { title: "保存 Slice 成功" }
+            { title: "保存切片成功" }
         );
         clearFiltersIfSavedEditWouldBeHidden({
             ...slice,
@@ -726,8 +726,8 @@ async function saveSliceEdit(slice: WorldWorkbenchPreviewSlice, body: ReturnType
         recordTransientIssues(result.issues, result.sliceId || slice.id);
     } catch (saveError) {
         notification.error(
-            formatWorldEngineConflictMessage(resolveApiErrorMessage(saveError, "保存 slice 失败")),
-            { title: "保存 Slice 失败" }
+            formatWorldEngineConflictMessage(resolveApiErrorMessage(saveError, "保存切片失败")),
+            { title: "保存切片失败" }
         );
     } finally {
         actionBusy.value = false;
@@ -754,8 +754,8 @@ function clearFiltersIfSavedEditWouldBeHidden(editedSlice: WorldWorkbenchPreview
 /** 创建 subject 后刷新当前工作台，并选中新 subject。 */
 async function handleSubjectCreated(payload: {subject: WorldSubjectDto; issues: WorldIssueDto[]}): Promise<void> {
     notification.success(
-        payload.issues.length ? `已创建 subject ${payload.subject.id}，返回 ${payload.issues.length} 个 issue。` : `已创建 subject ${payload.subject.id}`,
-        { title: "创建 Subject 成功" }
+        payload.issues.length ? `已创建主体 ${payload.subject.id}，返回 ${payload.issues.length} 个问题。` : `已创建主体 ${payload.subject.id}`,
+        { title: "创建主体成功" }
     );
     selectedSubjectIds.value = [payload.subject.id];
     focusedSubjectId.value = payload.subject.id;
@@ -763,20 +763,20 @@ async function handleSubjectCreated(payload: {subject: WorldSubjectDto; issues: 
     recordTransientIssues(payload.issues, selectedSlice.value?.id ?? "");
 }
 
-/** 显式创建 world subject，用于承载 world.events 等全局世界切面。 */
+/** 显式创建世界主体，用于承载 world.events 等全局世界切面。 */
 async function createWorldSubject(): Promise<void> {
-    if (blockSliceComposerSaving("Slice Composer 正在保存，请稍候再创建 world subject。")) {
+    if (blockSliceComposerSaving("切片编辑器正在保存，请稍候再创建世界主体。")) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再创建 world subject。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再创建世界主体。")) {
         return;
     }
     if (!props.projectRoot || !schema.value) {
-        setWorkbenchError("Schema 未加载，无法创建 world subject。");
+        setWorkbenchError("结构未加载，无法创建世界主体。");
         return;
     }
     if (!hasWorldSchemaType.value) {
-        setWorkbenchError("当前 schema 没有 world subject type，不能创建 world subject。");
+        setWorkbenchError("当前结构缺少 world 主体类型，不能创建世界主体。");
         return;
     }
     const selectedBeforeCreate = [...selectedSubjectIds.value];
@@ -786,14 +786,14 @@ async function createWorldSubject(): Promise<void> {
     const nextSelectedSubjectIds = preservedSubjectContextId ? selectedBeforeCreate : ["world"];
     const nextFocusedSubjectId = preservedSubjectContextId || "world";
     if (hasWorldSubject.value) {
-        setWorkbenchNotice("world subject 已存在。");
+        setWorkbenchNotice("世界主体已存在。");
         selectedSubjectIds.value = nextSelectedSubjectIds;
         focusedSubjectId.value = nextFocusedSubjectId;
         return;
     }
     const time = worldSubjectDefaultTime.value.trim();
     if (!time) {
-        setWorkbenchError("创建 world subject 需要可解析的初始化时间。请先配置 world-engine/calendar.ts。");
+        setWorkbenchError("创建世界主体需要可解析的初始化时间。请先配置 world-engine/calendar.ts。");
         return;
     }
 
@@ -813,17 +813,17 @@ async function createWorldSubject(): Promise<void> {
         selectedSubjectIds.value = nextSelectedSubjectIds;
         notification.success(
             result.issues.length
-                ? `已创建 world subject，返回 ${result.issues.length} 个 issue。`
-                : "已创建 world subject。",
-            { title: "创建 World Subject 成功" }
+                ? `已创建世界主体，返回 ${result.issues.length} 个问题。`
+                : "已创建世界主体。",
+            { title: "创建世界主体成功" }
         );
         await refreshWorldForCurrentTimeline({preferredSubjectIds: nextSelectedSubjectIds});
         focusedSubjectId.value = nextFocusedSubjectId;
         recordTransientIssues(result.issues, selectedSlice.value?.id ?? "");
     } catch (createError) {
         notification.error(
-            formatWorldEngineConflictMessage(resolveApiErrorMessage(createError, "创建 world subject 失败")),
-            { title: "创建 World Subject 失败" }
+            formatWorldEngineConflictMessage(resolveApiErrorMessage(createError, "创建世界主体失败")),
+            { title: "创建世界主体失败" }
         );
     } finally {
         actionBusy.value = false;
@@ -832,10 +832,10 @@ async function createWorldSubject(): Promise<void> {
 
 /** 把真实 simulation/subjects 中尚未注册的主体同步为 World Engine subject 身份。 */
 async function syncPendingSubjectSystemSubjects(): Promise<void> {
-    if (blockSliceComposerSaving("Slice Composer 正在保存，请稍候再同步主体系统。")) {
+    if (blockSliceComposerSaving("切片编辑器正在保存，请稍候再同步主体系统。")) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再同步主体系统。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再同步主体系统。")) {
         return;
     }
     const pending = pendingSubjectSystemSummaries.value;
@@ -914,15 +914,15 @@ function declaredSubjectSystemInitialAttrs(summary: WorldWorkbenchPreviewSubject
 
 /** 删除当前选中的 slice，并刷新真实 timeline。 */
 async function deleteSelectedSlice(): Promise<void> {
-    if (blockSliceComposerSaving("Slice Composer 正在保存，请稍候再删除 Slice。")) {
+    if (blockSliceComposerSaving("切片编辑器正在保存，请稍候再删除切片。")) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再删除 Slice。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再删除切片。")) {
         return;
     }
     const slice = selectedSlice.value;
     if (!slice) {
-        setWorkbenchError("请先选择一个 slice。");
+        setWorkbenchError("请先选择一个切片。");
         return;
     }
     if (!await confirmDialog(`确定要删除切片「${slice.title || slice.id}」吗？此操作不可恢复。`, "删除切片")) {
@@ -938,7 +938,7 @@ async function deleteSelectedSlice(): Promise<void> {
         });
         notification.success(
             result.issues.length ? `已删除切片 ${slice.id}，删后返回 ${result.issues.length} 个 issue。` : `已删除切片 ${slice.id}`,
-            { title: "删除 Slice 成功" }
+            { title: "删除切片成功" }
         );
         clearSessionStateForDeletedSlice(slice.id);
         if (nextDraftSliceId) {
@@ -952,7 +952,7 @@ async function deleteSelectedSlice(): Promise<void> {
     } catch (deleteError) {
         notification.error(
             resolveApiErrorMessage(deleteError, "删除切片失败"),
-            { title: "删除 Slice 失败" }
+            { title: "删除切片失败" }
         );
     } finally {
         actionBusy.value = false;
@@ -1077,11 +1077,11 @@ function focusSubjectContext(subjectId: string): void {
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再切换主体语境。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再切换主体语境。")) {
         return;
     }
     if (!hasSubjectSystemSummary(subjectId)) {
-        setWorkbenchError("该 subject 没有关联的主体系统文件，不能作为主体文件建议语境。");
+        setWorkbenchError("该主体没有关联的主体系统文件，不能作为主体文件建议语境。");
         return;
     }
     focusedSubjectId.value = subjectId;
@@ -1094,7 +1094,7 @@ function clearSubjectContext(): void {
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再清空主体语境。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再清空主体语境。")) {
         return;
     }
     if (!focusedSubjectId.value) {
@@ -1129,8 +1129,8 @@ async function loadSliceIntoTimeline(sliceId: string): Promise<WorldWorkbenchPre
         return loadedSlice;
     } catch (loadError) {
         notification.error(
-            resolveApiErrorMessage(loadError, "读取 issue 所属 slice 失败"),
-            { title: "读取 Slice 失败" }
+            resolveApiErrorMessage(loadError, "读取问题所属切片失败"),
+            { title: "读取切片失败" }
         );
         return null;
     } finally {
@@ -1143,7 +1143,7 @@ async function focusReviewIssue(item: WorldWorkbenchPreviewReviewQueueItem): Pro
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再定位 issue。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再定位问题。")) {
         return;
     }
     const targetSlice = await loadSliceIntoTimeline(item.sliceId);
@@ -1196,7 +1196,7 @@ function viewSubjectTimeline(subjectId: string): void {
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再切换 subject 时间线。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再切换主体时间线。")) {
         return;
     }
     void updateSelectedSubjectIdsForTimeline([subjectId]);
@@ -1207,7 +1207,7 @@ function clearSubjectFilter(): void {
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再清除 subject 过滤。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再清除主体过滤。")) {
         return;
     }
     void updateSelectedSubjectIdsForTimeline([]);
@@ -1217,7 +1217,7 @@ function updateSliceSearchForTimeline(value: string): void {
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再搜索时间线。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再搜索时间线。")) {
         return;
     }
     sliceSearch.value = value;
@@ -1227,7 +1227,7 @@ function updateSliceKindFilterForTimeline(filter: string): void {
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再切换 kind 过滤。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再切换类型过滤。")) {
         return;
     }
     sliceKindFilter.value = filter;
@@ -1237,7 +1237,7 @@ function updateSliceHealthFilterForTimeline(filter: WorldWorkbenchPreviewSliceHe
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再切换状态过滤。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再切换状态过滤。")) {
         return;
     }
     sliceHealthFilter.value = filter;
@@ -1247,7 +1247,7 @@ function removeSubjectFilter(subjectId: string): void {
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再移除 subject 过滤。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再移除主体过滤。")) {
         return;
     }
     void updateSelectedSubjectIdsForTimeline(selectedSubjectIds.value.filter((id) => id !== subjectId));
@@ -1257,7 +1257,7 @@ async function updateSelectedSubjectIdsForTimeline(subjectIds: string[]): Promis
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再切换 subject 过滤。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再切换主体过滤。")) {
         return;
     }
     if (!subjectIds.length && subjectFilterMode.value !== "any") {
@@ -1290,7 +1290,7 @@ async function updateSubjectFilterModeForTimeline(mode: WorldWorkbenchPreviewSub
     if (blockSliceComposerSaving()) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再切换 subject 模式。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再切换主体模式。")) {
         return;
     }
     const pendingSubjectIds = selectedSubjectIds.value.filter((subjectId) => !worldSubjectIdSet.value.has(subjectId));
@@ -1333,22 +1333,22 @@ function openSliceComposer(): void {
     openSliceComposerForInsert(null);
 }
 
-/** 打开新建 Slice Composer；传入上下文时按目标 slice 前后预填时间。 */
+/** 打开新建切片 Composer；传入上下文时按目标 slice 前后预填时间。 */
 function openSliceComposerForInsert(context: Omit<SliceComposerInsertContext, "version"> | null): void {
-    if (blockSliceComposerSaving("Slice Composer 正在保存，请稍候再新建 Slice。")) {
+    if (blockSliceComposerSaving("切片编辑器正在保存，请稍候再新建切片。")) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再新建 Slice。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再新建切片。")) {
         return;
     }
     const requestedSubjectId = sliceComposerRequestedSubjectId.value;
     if (requestedSubjectId && !worldSubjectIdSet.value.has(requestedSubjectId)) {
         const subjectName = subjectNameMap.value.get(requestedSubjectId) ?? requestedSubjectId;
-        setWorkbenchNotice(`主体 ${subjectName} 尚未接入 World Engine。请先同步主体系统，或选择已注册 subject 后再新建 Slice。`);
+        setWorkbenchNotice(`主体 ${subjectName} 尚未接入世界引擎。请先同步主体系统，或选择已注册主体后再新建切片。`);
         return;
     }
     if (!worldSubjects.value.length) {
-        setWorkbenchNotice("当前 Project 还没有 World Engine subject。请先创建 subject 或同步主体系统。");
+        setWorkbenchNotice("当前项目还没有世界引擎主体。请先创建主体或同步主体系统。");
         return;
     }
     const wasVisible = sliceComposerVisible.value;
@@ -1371,7 +1371,7 @@ function openSliceComposerForInsert(context: Omit<SliceComposerInsertContext, "v
 function openSliceComposerAroundSlice(sliceId: string, direction: "before" | "after"): void {
     const slice = slices.value.find((item) => item.id === sliceId);
     if (!slice) {
-        setWorkbenchNotice("目标 slice 已不在当前时间线中。");
+        setWorkbenchNotice("目标切片已不在当前时间线中。");
         return;
     }
     selectedSliceId.value = slice.id;
@@ -1382,9 +1382,9 @@ function openSliceComposerAroundSlice(sliceId: string, direction: "before" | "af
     });
 }
 
-/** 从空状态把作者带到左侧创建 Subject 面板。 */
+/** 从空状态把作者带到左侧创建主体 面板。 */
 function openSubjectCreatorPanel(): void {
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再创建 Subject。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再创建主体。")) {
         return;
     }
     sidebarCollapsed.value = false;
@@ -1397,18 +1397,18 @@ function updateSubjectCreatorOpen(event: Event): void {
 }
 
 async function openSelectedSliceComposer(): Promise<void> {
-    if (blockSliceComposerSaving("Slice Composer 正在保存，请稍候再编辑其它 Slice。")) {
+    if (blockSliceComposerSaving("切片编辑器正在保存，请稍候再编辑其它切片。")) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再编辑其它 Slice。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再编辑其它切片。")) {
         return;
     }
     if (!selectedSlice.value) {
-        setWorkbenchNotice("请先选择要编辑的 slice。");
+        setWorkbenchNotice("请先选择要编辑的切片。");
         return;
     }
     if (!worldSubjects.value.length) {
-        setWorkbenchNotice("当前 Project 还没有 World Engine subject。请先创建 subject 或同步主体系统。");
+        setWorkbenchNotice("当前项目还没有世界引擎主体。请先创建主体或同步主体系统。");
         return;
     }
     if (!sliceComposerVisible.value) {
@@ -1422,10 +1422,10 @@ async function openSelectedSliceComposer(): Promise<void> {
 
 async function closeSliceComposer(): Promise<void> {
     if (sliceComposerSaving.value) {
-        setWorkbenchNotice("Slice Composer 正在保存，请稍候再关闭。");
+        setWorkbenchNotice("切片编辑器正在保存，请稍候再关闭。");
         return;
     }
-    if (sliceComposerHasUnsavedDraft() && !await confirmDialog("当前 Slice Composer 有未保存草稿，确定关闭吗？", "Slice Composer 草稿未保存")) {
+    if (sliceComposerHasUnsavedDraft() && !await confirmDialog("当前切片编辑器有未保存草稿，确定关闭吗？", "切片编辑器草稿未保存")) {
         return;
     }
     sliceComposerVisible.value = false;
@@ -1454,14 +1454,14 @@ function updateSliceComposerSaving(saving: boolean): void {
 
 async function requestWorkbenchClose(): Promise<void> {
     if (sliceComposerSaving.value) {
-        setWorkbenchNotice("Slice Composer 正在保存，请稍候再关闭 Workbench。");
+        setWorkbenchNotice("切片编辑器正在保存，请稍候再关闭工作台。");
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再关闭 Workbench。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再关闭工作台。")) {
         return;
     }
     const unsavedLabels = workbenchUnsavedDraftLabels();
-    if (unsavedLabels.length && !await confirmDialog(`当前 Workbench 有未保存内容：${unsavedLabels.join("、")}。确定关闭并放弃吗？`, "World Engine 草稿未保存")) {
+    if (unsavedLabels.length && !await confirmDialog(`当前工作台有未保存内容：${unsavedLabels.join("、")}。确定关闭并放弃吗？`, "世界引擎草稿未保存")) {
         return;
     }
     emit("update:modelValue", false);
@@ -1474,14 +1474,14 @@ async function openWorkspacePathFromWorkbench(path: string): Promise<void> {
         return;
     }
     if (sliceComposerSaving.value) {
-        setWorkbenchNotice("Slice Composer 正在保存，请稍候再打开工作区文件。");
+        setWorkbenchNotice("切片编辑器正在保存，请稍候再打开工作区文件。");
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再打开工作区文件。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再打开工作区文件。")) {
         return;
     }
     const unsavedLabels = workbenchUnsavedDraftLabels();
-    if (unsavedLabels.length && !await confirmDialog(`当前 Workbench 有未保存内容：${unsavedLabels.join("、")}。打开工作区文件会关闭 Workbench 并放弃这些会话草稿，确定继续吗？`, "World Engine 草稿未保存")) {
+    if (unsavedLabels.length && !await confirmDialog(`当前工作台有未保存内容：${unsavedLabels.join("、")}。打开工作区文件会关闭工作台并放弃这些会话草稿，确定继续吗？`, "世界引擎草稿未保存")) {
         return;
     }
     emit("update:modelValue", false);
@@ -1492,10 +1492,10 @@ async function openWorkspacePathFromWorkbench(path: string): Promise<void> {
 /** 把单条 Subject file proposal 追加到 events.jsonl，并刷新主体系统状态。 */
 async function commitSubjectEventProposal(proposal: WorldWorkbenchSubjectFileProposal): Promise<void> {
     if (sliceComposerSaving.value) {
-        setWorkbenchNotice("Slice Composer 正在保存，请稍候再追加 events.jsonl。");
+        setWorkbenchNotice("切片编辑器正在保存，请稍候再追加 events.jsonl。");
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再追加 events.jsonl。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再追加 events.jsonl。")) {
         return;
     }
     const confirmed = await confirmDialog(`确认追加到 ${proposal.eventsPath}？目标主体：${proposal.subjectName}。JSONL：${proposal.eventJsonLine}`, "追加 events.jsonl");
@@ -1564,7 +1564,7 @@ function workbenchUnsavedDraftLabels(): string[] {
 
 /** Slice Composer 写入/编辑成功后回到真实时间线，并把 issues 接入当前会话审查队列。 */
 async function handleSliceComposerSaved(payload: {result: SliceWriteResultDto; time: string; editing: boolean; continueAfterSave: boolean; contextSubjectId: string; mutations: WorldSlicePatchDto[]}): Promise<void> {
-    const messagePrefix = payload.editing ? "已更新 slice" : "已写入 slice";
+    const messagePrefix = payload.editing ? "已更新切片" : "已写入切片";
     const continueSuffix = payload.continueAfterSave ? "，已准备下一步草稿" : "";
     const savedNotice = payload.result.issues.length
         ? `${messagePrefix} ${payload.result.sliceId}，返回 ${payload.result.issues.length} 个 issue${continueSuffix}。`
@@ -1598,18 +1598,18 @@ async function handleSliceComposerSaved(payload: {result: SliceWriteResultDto; t
             }
             notification.success(
                 `${savedNotice} 可在右侧 Inspector 查看 ${proposalCount} 个主体文件建议。`,
-                { title: payload.editing ? "更新 Slice 成功" : "写入 Slice 成功" }
+                { title: payload.editing ? "更新切片成功" : "写入切片成功" }
             );
         } else {
             notification.success(
                 savedNotice,
-                { title: payload.editing ? "更新 Slice 成功" : "写入 Slice 成功" }
+                { title: payload.editing ? "更新切片成功" : "写入切片成功" }
             );
         }
     } else {
         notification.success(
             savedNotice,
-            { title: payload.editing ? "更新 Slice 成功" : "写入 Slice 成功" }
+            { title: payload.editing ? "更新切片成功" : "写入切片成功" }
         );
     }
     recordTransientIssues(payload.result.issues, payload.result.sliceId);
@@ -1633,10 +1633,10 @@ function clearSubjectFilterIfSavedSliceWouldBeHidden(mutations: WorldSlicePatchD
 
 /** 顶栏全局草稿入口：清掉阻挡过滤，进入 draft 时间线。 */
 async function showAllDraftSlices(): Promise<void> {
-    if (blockSliceComposerSaving("Slice Composer 正在保存，请稍候再查看草稿。")) {
+    if (blockSliceComposerSaving("切片编辑器正在保存，请稍候再查看草稿。")) {
         return;
     }
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再查看草稿。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再查看草稿。")) {
         return;
     }
     const targetDraftSliceIds = draftSliceIds.value;
@@ -1656,7 +1656,7 @@ async function showAllDraftSlices(): Promise<void> {
         selectSlice(firstDraftSliceId);
         return;
     }
-    setWorkbenchNotice("当前草稿所在 slice 未能重新载入，请刷新后再试。");
+    setWorkbenchNotice("当前草稿所在切片未能重新载入，请刷新后再试。");
 }
 
 /** 更新前端会话态 issue triage；不回写后端。 */
@@ -1794,7 +1794,7 @@ function sliceSubjectFilterQuery(): {subjectIds?: string; subjectMode?: WorldWor
 }
 
 function openPreview(): void {
-    if (blockWorkbenchActionBusy("World Engine 工作台正在同步，请稍候再打开 Preview。")) {
+    if (blockWorkbenchActionBusy("世界引擎工作台正在同步，请稍候再打开预览。")) {
         return;
     }
     if (import.meta.client) {
@@ -1890,7 +1890,7 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                 <div class="min-w-0">
                     <div class="text-[16px] font-semibold text-[var(--text-main)]" title="WORLD ENGINE WORKBENCH">世界引擎工作台</div>
                     <div class="flex min-w-0 items-center gap-2 truncate text-[12px] text-[var(--text-muted)]">
-                        <span class="truncate">{{ props.projectTitle || "未选择 Project" }}</span>
+                        <span class="truncate">{{ props.projectTitle || "未选择项目" }}</span>
                         <span v-if="calendarSampleLabel" class="hidden rounded-md border border-[var(--border-color)] px-1.5 py-0.5 text-[10px] md:inline" :title="calendarFormatTitle">{{ calendarSampleLabel }}</span>
                         <span class="hidden truncate lg:inline">{{ worldViewLabel }}</span>
                     </div>
@@ -1916,9 +1916,9 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                     <button type="button" aria-label="刷新" title="刷新" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="void refreshWorldForCurrentTimeline()">
                         <span :class="loading ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-refresh-cw'" class="h-3.5 w-3.5"></span>
                     </button>
-                    <button type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-3 text-[12px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy || !schema" @click="openSliceComposer">
+                    <button type="button" title="SLICE · 一次状态变更" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-color)] px-3 text-[12px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="workbenchActionBusy || !schema" @click="openSliceComposer">
                         <span class="i-lucide-file-plus-2 h-3.5 w-3.5"></span>
-                        新建 Slice
+                        新建切片
                     </button>
                     <button
                         type="button"
@@ -1959,9 +1959,9 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                 <div class="flex h-11 shrink-0 items-center justify-between border-b border-[var(--we-border)] px-4">
                     <div class="flex min-w-0 items-center gap-2">
                         <span class="i-lucide-file-plus-2 h-4 w-4 text-[var(--we-accent)]"></span>
-                        <div class="truncate text-[13px] font-semibold text-[var(--we-text-main)]">新建 / 编辑 Slice</div>
+                        <div class="truncate text-[13px] font-semibold text-[var(--we-text-main)]">新建 / 编辑切片</div>
                     </div>
-                    <button type="button" data-testid="world-slice-composer-close" aria-label="关闭 Slice Composer" title="关闭 Slice Composer" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--we-text-muted)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)]" @click="void closeSliceComposer()">
+                    <button type="button" data-testid="world-slice-composer-close" aria-label="关闭切片编辑器" title="关闭切片编辑器" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--we-text-muted)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)]" @click="void closeSliceComposer()">
                         <span class="i-lucide-x h-4 w-4"></span>
                     </button>
                 </div>
@@ -2156,11 +2156,11 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                             </div>
                             <button v-if="emptySliceState.action === 'create-subject'" type="button" class="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] px-3 text-[13px] text-[var(--we-text-main)] transition-colors hover:bg-[var(--we-bg-hover)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="openSubjectCreatorPanel">
                                 <span class="i-lucide-user-plus h-4 w-4"></span>
-                                创建 Subject
+                                创建主体
                             </button>
                             <button v-else-if="emptySliceState.action === 'create-world-subject'" type="button" class="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-[var(--we-accent-border)] bg-[var(--we-bg-panel)] px-3 text-[13px] font-medium text-[var(--we-accent-strong)] transition-colors hover:bg-[var(--we-bg-hover)] disabled:opacity-50" :disabled="workbenchActionBusy || !worldSubjectDefaultTime" @click="void createWorldSubject()">
                                 <span :class="actionBusy ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-globe-2'" class="h-4 w-4"></span>
-                                创建 world subject
+                                创建世界主体
                             </button>
                             <button v-else-if="emptySliceState.action === 'sync-subject-system'" type="button" class="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-[var(--we-warning-border)] bg-[var(--we-bg-panel)] px-3 text-[13px] font-medium text-[var(--we-warning)] transition-colors hover:bg-[var(--we-bg-hover)] disabled:opacity-50" :disabled="workbenchActionBusy || !subjectSystemSyncTime" @click="void syncPendingSubjectSystemSubjects()">
                                 <span :class="actionBusy ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-link-2'" class="h-4 w-4"></span>
@@ -2169,11 +2169,11 @@ watch(() => reviewQueueItems.value.map((item) => item.key).join("\u0000"), clear
                             <div v-else-if="emptySliceState.action === 'new-slice'" class="mt-4 flex flex-wrap items-center justify-center gap-2">
                                 <button type="button" class="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] px-3 text-[13px] text-[var(--we-text-main)] transition-colors hover:bg-[var(--we-bg-hover)] disabled:opacity-50" :disabled="workbenchActionBusy || !schema" @click="openSliceComposer">
                                     <span class="i-lucide-file-plus-2 h-4 w-4"></span>
-                                    新建 Slice
+                                    新建切片
                                 </button>
                                 <button v-if="selectedSubjectIds.length" type="button" class="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--we-border)] px-3 text-[13px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)] disabled:opacity-50" :disabled="workbenchActionBusy" @click="clearSubjectFilter">
                                     <span class="i-lucide-filter-x h-4 w-4"></span>
-                                    清空 subject 过滤
+                                    清空主体过滤
                                 </button>
                             </div>
                         </div>

@@ -53,7 +53,7 @@ function buildIdeOpenPathHref(path: string): string {
     <!-- Preview Project 与 Schema -->
     <section class="min-w-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)]">
         <div class="border-b border-[var(--border-color)] px-4 py-3">
-            <h2 class="text-sm font-semibold">Project</h2>
+            <h2 class="text-sm font-semibold" title="PROJECT">项目</h2>
         </div>
         <div class="space-y-3 p-4">
             <div v-if="createRecovery" class="space-y-2 rounded-md border border-[var(--status-danger-border)] bg-[var(--status-danger-bg)] p-3 text-xs text-[var(--status-danger)]" role="alert">
@@ -61,11 +61,11 @@ function buildIdeOpenPathHref(path: string): string {
                 <button type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--status-danger-border)] bg-[var(--bg-panel)] px-3 font-medium disabled:opacity-50" :disabled="actionBusy" @click="emit('retry-create-recovery')"><span class="i-lucide-refresh-cw h-3.5 w-3.5" :class="actionBusy ? 'animate-spin' : ''"></span>重新读取 Project 列表</button>
             </div>
             <fieldset class="space-y-3 disabled:opacity-60" :disabled="loadingProjects || loadingWorld || actionBusy || Boolean(createRecovery)">
-                <input v-model="createProjectForm.title" class="h-9 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-3 text-sm outline-none focus:border-[var(--accent-main)]" placeholder="Project title">
-                <input v-model="createProjectForm.summary" class="h-9 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-3 text-sm outline-none focus:border-[var(--accent-main)]" placeholder="Summary">
+                <input v-model="createProjectForm.title" class="h-9 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-3 text-sm outline-none focus:border-[var(--accent-main)]" placeholder="项目标题" title="title">
+                <input v-model="createProjectForm.summary" class="h-9 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-3 text-sm outline-none focus:border-[var(--accent-main)]" placeholder="简介" title="summary">
                 <button type="button" class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-[var(--accent-main)] px-3 text-sm text-[var(--accent-contrast)] disabled:opacity-50" :disabled="loadingProjects || loadingWorld || actionBusy || Boolean(createRecovery)" @click="emit('create-project')">
                     <span class="i-lucide-folder-plus h-4 w-4"></span>
-                    新建 Project
+                    新建项目
                 </button>
             </fieldset>
             <div v-if="selectedProject" class="rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] p-3 text-xs leading-6">
@@ -75,11 +75,11 @@ function buildIdeOpenPathHref(path: string): string {
         </div>
 
         <div class="border-y border-[var(--border-color)] px-4 py-3">
-            <h2 class="text-sm font-semibold">Schema</h2>
+            <h2 class="text-sm font-semibold" title="SCHEMA">结构</h2>
         </div>
         <div class="max-h-[520px] space-y-3 overflow-auto p-4">
-            <div v-if="selectedProject" class="flex min-w-0 flex-wrap gap-1.5" title="Project Workspace 内的 World Engine 配置文件">
-                <a class="inline-flex min-w-0 items-center gap-1 rounded border border-[var(--border-color)] bg-[var(--bg-panel)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" :href="buildIdeOpenPathHref(schemaSourcePath)" target="_blank" rel="noopener noreferrer" title="在主 IDE 打开 schema 配置文件">
+            <div v-if="selectedProject" class="flex min-w-0 flex-wrap gap-1.5" title="项目工作区内的世界引擎配置文件">
+                <a class="inline-flex min-w-0 items-center gap-1 rounded border border-[var(--border-color)] bg-[var(--bg-panel)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" :href="buildIdeOpenPathHref(schemaSourcePath)" target="_blank" rel="noopener noreferrer" title="在主 IDE 打开结构配置文件">
                     <span class="i-lucide-table-properties h-3 w-3 shrink-0"></span>
                     <span class="min-w-0 truncate">{{ schemaSourcePath }}</span>
                 </a>

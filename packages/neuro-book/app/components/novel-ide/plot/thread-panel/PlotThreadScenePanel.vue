@@ -190,7 +190,7 @@ watch(() => [props.selectedThreadId, props.scenes], () => {
         <div class="shrink-0 border-b border-[var(--border-color)] bg-[var(--bg-panel)] px-2 py-2">
             <div class="space-y-1.5">
                 <div class="flex items-center justify-between gap-2">
-                    <span class="text-[10px] font-medium tracking-[0.18em] text-[var(--text-secondary)]">THREAD</span>
+                    <span class="text-[10px] font-medium tracking-[0.18em] text-[var(--text-secondary)]" title="THREAD">线索</span>
                     <div class="flex items-center gap-1">
                         <button
                             type="button"

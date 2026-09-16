@@ -108,6 +108,11 @@ function tabIconClass(tab: WorkspaceEditorTab): string {
     if (tab.editorKind === "monaco") return "i-lucide-file-code-2";
     return "i-lucide-file-question";
 }
+
+/** 继续区显示路径:manuscript/ 根别名为 正文/,原始路径留在行 tooltip。 */
+function displayTabPath(path: string): string {
+    return path.startsWith("manuscript/") ? `正文/${path.slice("manuscript/".length)}` : path;
+}
 </script>
 
 <template>
@@ -190,7 +195,7 @@ function tabIconClass(tab: WorkspaceEditorTab): string {
                         <span :class="tabIconClass(tab)" class="h-4 w-4 shrink-0 text-[var(--accent-text)]"></span>
                         <span class="min-w-0 flex-1">
                             <span class="block truncate text-sm font-medium text-[var(--text-main)]" :class="tab.preview ? 'italic' : ''">{{ tab.title }}</span>
-                            <span class="block truncate text-xs text-[var(--text-secondary)]">{{ tab.path }}</span>
+                            <span class="block truncate text-xs text-[var(--text-secondary)]">{{ displayTabPath(tab.path) }}</span>
                         </span>
                         <span v-if="tab.dirty" class="h-2 w-2 shrink-0 rounded-full bg-[var(--status-warning)]"></span>
                     </button>

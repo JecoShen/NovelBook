@@ -332,7 +332,7 @@ function issueStatusClass(status: WorldWorkbenchPreviewReviewQueueItem["status"]
                                 @keydown.enter.stop
                                 @keydown.space.stop
                             >
-                                +{{ hiddenPatchCount(group) }} patches (点击展开)
+                                +{{ hiddenPatchCount(group) }} 处变更（点击展开）
                             </button>
                             <button
                                 v-if="isSubjectExpanded(group.subjectId) && group.mutations.length > maxVisiblePatchesPerSubject"

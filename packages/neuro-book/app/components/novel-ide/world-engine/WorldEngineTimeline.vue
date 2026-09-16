@@ -36,12 +36,12 @@ const visibleSlices = computed<WorldSliceDto[]>(() => {
 const visibleMutationCount = computed(() => visibleSlices.value.reduce((sum, slice) => sum + (slice.patches?.length ?? 0), 0));
 const timelineEmptyText = computed(() => {
     if (!props.slices.length) {
-        return "暂无 slice。可以先新建 Slice。";
+        return "暂无切片。可以先新建切片。";
     }
     if (timelineSearchText.value.trim()) {
-        return "没有匹配当前搜索条件的 slice。";
+        return "没有匹配当前搜索条件的切片。";
     }
-    return "当前 subject 暂无相关 slice。";
+    return "当前主体暂无相关切片。";
 });
 
 /** 把 timeline slice 压成可搜索文本，覆盖事件元信息和 mutation 关键字段。 */
@@ -60,19 +60,19 @@ function timelineSliceSearchText(slice: WorldSliceDto): string {
         <div class="mb-4 flex items-center justify-between gap-3">
             <div>
                 <h2 class="m-0 text-base font-semibold text-[var(--text-main)]" title="TIMELINE">时间线</h2>
-                <p class="m-0 mt-1 text-[12px] text-[var(--text-muted)]">{{ visibleSlices.length }} / {{ slices.length }} slices · {{ visibleMutationCount }} / {{ totalMutationCount }} mutations · {{ totalIssueCount }} issues</p>
+                <p class="m-0 mt-1 text-[12px] text-[var(--text-muted)]">{{ visibleSlices.length }} / {{ slices.length }} 切片 · {{ visibleMutationCount }} / {{ totalMutationCount }} 变更 · {{ totalIssueCount }} 问题</p>
             </div>
             <div class="flex items-center gap-2">
                 <label class="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--border-color)] px-3 text-[12px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">
                     <input v-model="timelineOnlySelectedSubject" type="checkbox" class="h-4 w-4 accent-[var(--accent-main)]" :disabled="!selectedSubjectId">
                     <span class="i-lucide-filter h-4 w-4"></span>
-                    当前 subject
+                    当前主体
                 </label>
             </div>
         </div>
         <div class="mb-4 flex items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-3">
             <span class="i-lucide-search h-4 w-4 shrink-0 text-[var(--text-muted)]"></span>
-            <input v-model="timelineSearchText" class="h-9 min-w-0 flex-1 bg-transparent text-[13px] text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)]" placeholder="搜索 title / time / summary / mutation">
+            <input v-model="timelineSearchText" class="h-9 min-w-0 flex-1 bg-transparent text-[13px] text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)]" placeholder="搜索标题 / 时刻 / 摘要 / 变更">
             <button v-if="timelineSearchText" type="button" class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="清空搜索" @click="timelineSearchText = ''">
                 <span class="i-lucide-x h-3.5 w-3.5"></span>
             </button>
@@ -90,8 +90,8 @@ function timelineSliceSearchText(slice: WorldSliceDto): string {
                             <span class="i-lucide-triangle-alert h-3.5 w-3.5"></span>
                             {{ slice.issues.length }}
                         </span>
-                        <span class="rounded-md bg-[var(--bg-input)] px-2 py-1 text-[11px] text-[var(--text-muted)]">{{ slice.patches?.length ?? 0 }} patches</span>
-                        <button type="button" class="inline-flex h-7 items-center gap-1 rounded-md border border-[var(--border-color)] px-2 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑 slice" aria-label="编辑 slice" @click.stop="emit('edit-slice', slice.id)">
+                        <span class="rounded-md bg-[var(--bg-input)] px-2 py-1 text-[11px] text-[var(--text-muted)]">{{ slice.patches?.length ?? 0 }} 处变更</span>
+                        <button type="button" class="inline-flex h-7 items-center gap-1 rounded-md border border-[var(--border-color)] px-2 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]" title="编辑切片" aria-label="编辑切片" @click.stop="emit('edit-slice', slice.id)">
                             <span class="i-lucide-pencil h-3.5 w-3.5"></span>
                             编辑
                         </button>

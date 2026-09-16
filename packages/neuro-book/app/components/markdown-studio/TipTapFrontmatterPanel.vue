@@ -47,8 +47,20 @@ const frontmatterSummary = computed(() => {
     if (!props.hasFrontmatter) {
         return t("markdownStudio.frontmatter.noFrontmatter");
     }
-    const firstLine = props.modelValue.split("\n").find((line) => line.trim());
-    return firstLine?.trim() || t("markdownStudio.frontmatter.emptyFrontmatter");
+    const firstLine = props.modelValue.split("\n").find((line) => line.trim())?.trim();
+    if (!firstLine) {
+        return t("markdownStudio.frontmatter.emptyFrontmatter");
+    }
+    // 创建流用 JSON.stringify 写 title 等标量,折叠态摘要去掉 YAML 双引号包装还原原文
+    const quoted = /^([^:]+:\s*)"(.*)"\s*$/.exec(firstLine);
+    if (quoted) {
+        try {
+            return `${quoted[1]}${JSON.parse(`"${quoted[2]}"`) as string}`;
+        } catch {
+            return firstLine;
+        }
+    }
+    return firstLine;
 });
 
 /**

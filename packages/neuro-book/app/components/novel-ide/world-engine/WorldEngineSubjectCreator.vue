@@ -32,13 +32,15 @@ const lastAppliedDefaultTime = ref("");
 
 const schemaTypes = computed(() => props.schema?.subjectTypes ?? []);
 const selectedTypeAttrs = computed(() => schemaTypes.value.find((item) => item.type === form.type)?.attrs ?? []);
+// 类型下拉保留数据模型 id 原文, desc 作 gloss; 不硬译避免与 schema.ts 定义脱节
+const selectedTypeDesc = computed(() => schemaTypes.value.find((item) => item.type === form.type)?.desc ?? "");
 const formDisabled = computed(() => props.busy || creating.value);
 const canSubmit = computed(() => Boolean(props.projectRoot) && !props.busy && !creating.value && form.id.trim() && form.type.trim() && form.time.trim());
 
 /** 创建 World Engine subject；只有 schema default 非空时后端才会写入初始化切面。 */
 async function createSubject(): Promise<void> {
     if (!canSubmit.value) {
-        emit("error", "创建 subject 需要 id、type 和 time。");
+        emit("error", "创建主体需要标识、类型和初始化时刻。");
         return;
     }
 
@@ -64,7 +66,7 @@ async function createSubject(): Promise<void> {
         form.id = "";
         form.name = "";
     } catch (error) {
-        emit("error", formatWorldEngineConflictMessage(resolveApiErrorMessage(error, "创建 subject 失败")));
+        emit("error", formatWorldEngineConflictMessage(resolveApiErrorMessage(error, "创建主体失败")));
     } finally {
         creating.value = false;
     }
@@ -120,19 +122,19 @@ watch(() => props.projectRoot, () => {
             </div>
             <fieldset class="space-y-2 disabled:opacity-60" :disabled="formDisabled">
                 <div class="grid grid-cols-2 gap-2">
-                    <input v-model="form.id" class="h-8 min-w-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="id">
-                    <select v-model="form.type" class="h-8 min-w-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]">
-                        <option v-for="type in schemaTypes" :key="type.type" :value="type.type">{{ type.type }}</option>
+                    <input v-model="form.id" class="h-8 min-w-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="主体 ID" title="id · 数据模型标识">
+                    <select v-model="form.type" class="h-8 min-w-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" :title="selectedTypeDesc || 'type · 数据模型类型'">
+                        <option v-for="type in schemaTypes" :key="type.type" :value="type.type" :title="type.desc || type.type">{{ type.type }}</option>
                     </select>
                 </div>
-                <input v-model="form.name" class="h-8 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="name">
-                <input v-model="form.time" class="h-8 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="time">
+                <input v-model="form.name" class="h-8 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="名称" title="name">
+                <input v-model="form.time" class="h-8 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="初始化时刻" title="time · 按历法格式, 如 C01:00:00">
                 <div class="flex max-h-14 flex-wrap gap-1 overflow-hidden">
                     <span v-for="attr in selectedTypeAttrs.slice(0, 8)" :key="attr.name" class="rounded border border-[var(--border-color)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)]">{{ attr.name }}</span>
                 </div>
                 <button type="button" class="inline-flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[var(--border-color)] px-2 text-[12px] text-[var(--text-main)] hover:bg-[var(--bg-hover)] disabled:opacity-50" :disabled="!canSubmit" @click="void createSubject()">
                     <span :class="creating ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-circle-plus'" class="h-3.5 w-3.5"></span>
-                    创建 Subject
+                    创建主体
                 </button>
             </fieldset>
         </div>

@@ -66,19 +66,19 @@ function runDeleteSelectedMutation(): void {
             <span class="i-lucide-list-plus h-3.5 w-3.5"></span>
             追加
         </button>
-        <button type="button" class="inline-flex h-8 min-w-[86px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--border-color)] px-2 text-[12px] text-[var(--text-main)] hover:bg-[var(--bg-hover)] disabled:opacity-50" :disabled="props.disabled || !canUseSelectedMutation" title="用 Builder 当前内容替换所选 mutation" @click="runReplaceSelectedMutation">
+        <button type="button" class="inline-flex h-8 min-w-[86px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--border-color)] px-2 text-[12px] text-[var(--text-main)] hover:bg-[var(--bg-hover)] disabled:opacity-50" :disabled="props.disabled || !canUseSelectedMutation" title="用编辑器当前内容替换所选变更" @click="runReplaceSelectedMutation">
             <span class="i-lucide-square-pen h-3.5 w-3.5"></span>
             替换所选
         </button>
-        <button type="button" class="inline-flex h-8 min-w-[86px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--border-color)] px-2 text-[12px] text-[var(--text-main)] hover:bg-[var(--bg-hover)] disabled:opacity-50" :disabled="props.disabled || !canUseSelectedMutation" title="在所选 mutation 后插入 Builder 当前内容" @click="runInsertAfterSelectedMutation">
+        <button type="button" class="inline-flex h-8 min-w-[86px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--border-color)] px-2 text-[12px] text-[var(--text-main)] hover:bg-[var(--bg-hover)] disabled:opacity-50" :disabled="props.disabled || !canUseSelectedMutation" title="在所选变更后插入编辑器当前内容" @click="runInsertAfterSelectedMutation">
             <span class="i-lucide-corner-down-right h-3.5 w-3.5"></span>
             插入其后
         </button>
-        <button type="button" class="inline-flex h-8 min-w-[86px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--border-color)] px-2 text-[12px] text-[var(--text-main)] hover:bg-[var(--bg-hover)] disabled:opacity-50" :disabled="props.disabled || !canUseSelectedMutation" title="复制所选 mutation 到下一位" @click="runDuplicateSelectedMutation">
+        <button type="button" class="inline-flex h-8 min-w-[86px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--border-color)] px-2 text-[12px] text-[var(--text-main)] hover:bg-[var(--bg-hover)] disabled:opacity-50" :disabled="props.disabled || !canUseSelectedMutation" title="复制所选变更到下一位" @click="runDuplicateSelectedMutation">
             <span class="i-lucide-copy-plus h-3.5 w-3.5"></span>
             复制所选
         </button>
-        <button type="button" class="inline-flex h-8 min-w-[86px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--status-danger-border)] px-2 text-[12px] text-[var(--status-danger)] hover:bg-[var(--status-danger-bg)] disabled:opacity-50" :disabled="props.disabled || !canUseSelectedMutation" title="删除所选 mutation" @click="runDeleteSelectedMutation">
+        <button type="button" class="inline-flex h-8 min-w-[86px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--status-danger-border)] px-2 text-[12px] text-[var(--status-danger)] hover:bg-[var(--status-danger-bg)] disabled:opacity-50" :disabled="props.disabled || !canUseSelectedMutation" title="删除所选变更" @click="runDeleteSelectedMutation">
             <span class="i-lucide-trash-2 h-3.5 w-3.5"></span>
             删除所选
         </button>

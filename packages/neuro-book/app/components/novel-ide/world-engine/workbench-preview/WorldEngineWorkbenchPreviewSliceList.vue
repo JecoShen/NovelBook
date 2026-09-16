@@ -229,17 +229,17 @@ const kindFilterOptions = computed<SegmentedControlOption[]>(() => [
 ]);
 const statusFilterOptions = computed<SegmentedControlOption[]>(() => [
     {value: "all", label: "全部", disabled: props.busy},
-    {value: "open", label: "open", count: statusShortcutStats.value.openSlices, tone: "warning", title: "只看仍有 open issue 的切片", disabled: props.busy},
-    {value: "done", label: "done", count: statusShortcutStats.value.doneSlices, tone: "accent", title: "只看 review 已处理完成的切片", disabled: props.busy},
-    {value: "clean", label: "clean", count: statusShortcutStats.value.cleanSlices, title: "只看没有派生 issue 的 clean 切片", disabled: props.busy},
-    {value: "draft", label: "draft", count: statusShortcutStats.value.draftSlices, tone: "warning", title: "只看有未应用草稿的切片", disabled: props.busy},
+    {value: "open", label: t("worldEngine.workbenchPreview.open"), count: statusShortcutStats.value.openSlices, tone: "warning", title: "只看仍有待处理问题的切片", disabled: props.busy},
+    {value: "done", label: t("worldEngine.workbenchPreview.done"), count: statusShortcutStats.value.doneSlices, tone: "accent", title: "只看审查已处理完成的切片", disabled: props.busy},
+    {value: "clean", label: t("worldEngine.workbenchPreview.clean"), count: statusShortcutStats.value.cleanSlices, title: "只看没有派生问题的干净切片", disabled: props.busy},
+    {value: "draft", label: t("worldEngine.workbenchPreview.draft"), count: statusShortcutStats.value.draftSlices, tone: "warning", title: "只看有未应用草稿的切片", disabled: props.busy},
 ]);
 const scopeLabel = computed(() => {
     if (!props.selectedSubjectIds.length) {
         return "整体世界";
     }
     if (props.selectedSubjectIds.length === 1) {
-        return `单 subject：${selectedSubjectFilters.value[0]?.label ?? props.selectedSubjectIds[0]}`;
+        return `单主体：${selectedSubjectFilters.value[0]?.label ?? props.selectedSubjectIds[0]}`;
     }
     return props.subjectFilterMode === "all" ? "多 subject：全部命中" : "多 subject：任一命中";
 });
@@ -256,19 +256,19 @@ const activeFilterChips = computed<WorkbenchPreviewFilterChip[]>(() => {
     }
     if (props.sliceKindFilter !== "all") {
         chips.push({
-            actionLabel: "清空 kind",
+            actionLabel: "清空类型",
             id: "kind",
             label: "kind",
-            title: "清空 kind 过滤",
+            title: "清空类型过滤",
             value: props.sliceKindFilter,
         });
     }
     if (props.sliceHealthFilter !== "all") {
         chips.push({
-            actionLabel: "清空 status",
+            actionLabel: "清空状态",
             id: "health",
             label: t("worldEngine.workbenchPreview.status"),
-            title: "清空 issue 状态过滤",
+            title: "清空问题状态过滤",
             value: sliceHealthFilterLabel(props.sliceHealthFilter),
         });
     }
@@ -566,7 +566,7 @@ watch(() => props.resetKey, () => {
                         data-testid="slice-list-clear-subject-filter-top"
                         class="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--we-accent-border)] bg-[var(--we-accent-soft)] px-2 text-[11px] font-medium text-[var(--we-accent-strong)] transition-colors hover:bg-[var(--we-bg-active)] disabled:opacity-45"
                         :disabled="props.busy"
-                        title="清空 subject 过滤，回到整体世界时间线"
+                        title="清空主体过滤，回到整体世界时间线"
                         @click="emit('clearSubjectFilter')"
                     >
                         <span class="i-lucide-filter-x h-3.5 w-3.5"></span>

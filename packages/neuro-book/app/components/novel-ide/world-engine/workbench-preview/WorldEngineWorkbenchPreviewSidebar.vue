@@ -344,7 +344,7 @@ watch(() => props.resetKey, clearLocalFilters);
                             </button>
                         </div>
                     </div>
-                    <div class="mt-2 flex min-w-0 flex-wrap gap-1.5" title="Project Workspace 内的 World Engine 配置文件">
+                    <div class="mt-2 flex min-w-0 flex-wrap gap-1.5" title="项目工作区内的世界引擎配置文件">
                         <button type="button" class="inline-flex min-w-0 items-center gap-1 rounded border border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)] disabled:opacity-45" :disabled="props.busy" title="打开 schema 配置文件" @click="emit('openWorkspacePath', schemaSourcePath)">
                             <span class="i-lucide-table-properties h-3 w-3 shrink-0"></span>
                             <span class="min-w-0 truncate">{{ schemaSourcePath }}</span>
@@ -453,8 +453,8 @@ watch(() => props.resetKey, clearLocalFilters);
                     </div>
                 </div>
                 <div v-if="!filteredSubjects.length" class="rounded-md border border-dashed border-[var(--we-border)] bg-[var(--we-bg-subtle)] px-3 py-8 text-center">
-                    <div class="text-[12px] font-semibold text-[var(--we-text-secondary)]">没有匹配的 subject</div>
-                    <div class="mt-1 text-[11px] text-[var(--we-text-muted)]">当前搜索、type 或状态过滤没有命中</div>
+                    <div class="text-[12px] font-semibold text-[var(--we-text-secondary)]">没有匹配的主体</div>
+                    <div class="mt-1 text-[11px] text-[var(--we-text-muted)]">当前搜索、类型或状态过滤没有命中</div>
                     <button v-if="hasLocalFilters" type="button" class="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--we-border)] bg-[var(--we-bg-panel)] px-2.5 text-[11px] text-[var(--we-text-secondary)] transition-colors hover:bg-[var(--we-bg-hover)] hover:text-[var(--we-text-main)]" @click="clearLocalFilters">
                         <span class="i-lucide-x h-3.5 w-3.5"></span>
                         清空过滤

@@ -138,7 +138,7 @@ function attrPath(name: string): string {
                     @add-object-row="emit('add-object-row')"
                     @remove-object-row="emit('remove-object-row', $event)"
                 />
-                <textarea v-else-if="builderValueMode === 'json'" :value="builder.value" rows="4" class="col-span-2 min-h-[96px] resize-y rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1.5 font-mono text-[12px] leading-5 outline-none focus:border-[var(--accent-main)]" placeholder="{&quot;key&quot;: &quot;value&quot;}" title="当前 value 需要填写 JSON object" @input="updateBuilderField('value', inputValue($event))"></textarea>
+                <textarea v-else-if="builderValueMode === 'json'" :value="builder.value" rows="4" class="col-span-2 min-h-[96px] resize-y rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1.5 font-mono text-[12px] leading-5 outline-none focus:border-[var(--accent-main)]" placeholder="{&quot;key&quot;: &quot;value&quot;}" title="当前值需要填写 JSON 对象" @input="updateBuilderField('value', inputValue($event))"></textarea>
                 <input v-else-if="builderValueMode === 'text'" :value="builder.value" class="h-8 rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="value" @input="updateBuilderField('value', inputValue($event))">
                 <input v-else class="h-8 rounded-md border border-[var(--border-color)] bg-[var(--bg-input)] px-2 text-[12px] opacity-50 outline-none" disabled placeholder="remove">
             </div>

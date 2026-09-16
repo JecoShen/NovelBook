@@ -92,7 +92,7 @@ function toggle() {
             <!-- Value -->
             <div class="min-w-0 flex-1 truncate font-mono text-[var(--text-main)]" :class="{'opacity-50': !hasValue}">
                 <span v-if="!hasValue && !hasDefault" class="text-[10px] italic">undefined</span>
-                <span v-else-if="!hasValue && hasDefault" :title="displayValue">{{ displayValue }} <span class="text-[10px] opacity-60 italic">(default)</span></span>
+                <span v-else-if="!hasValue && hasDefault" :title="displayValue">{{ displayValue }} <span class="text-[10px] opacity-60 italic">(默认)</span></span>
                 <span v-else :title="displayValue">{{ displayValue }}</span>
             </div>
             
