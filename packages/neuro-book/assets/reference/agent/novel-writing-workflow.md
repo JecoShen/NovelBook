@@ -26,7 +26,7 @@
 5. **Plot / state planning**：使用 `novel-writing`（剧情设计 → 拍板落库环节）讨论剧情。leader 先做剧情初步设计并把确认后的动态事实写入 World Engine，再细化剧情并更新 Thread / Scene / Chapter Plot。
 6. **Retrieval handoff**：需要设定上下文时先调用 `retrieval`，leader 选择 `entries[].path` 放入 writer payload 的 `context.lorebookEntries`，不把 retrieval 的 reason / use / risk 直接交给 writer。
 7. **Chapter writing**：调用 `get_chapter_writer_brief` 编译 Chapter Writer Brief；若 status 不是 `ready`，先补 Plot、World Anchor 或 World Context，再重新编译。ready 后按 `novel-writing` 正文循环环节调用普通 `writer`，传完整 brief、目标 `input.path`、建议读取路径和 World Engine 查询提示。
-8. **Post-write check**：leader 按 `novel-writing` 正文循环的评审步骤检查正文；如产生新事实或状态变化，回拍板落库环节做 World Engine 回补。
+8. **Post-write check**：leader 按 `novel-writing` 正文循环的评审步骤检查正文；如产生新事实或状态变化，回拍板落库环节做 World Engine 回补。阶段性 / 卷级体检（完成 3-5 章、一卷或进入新阶段前）使用 `novel-workflow-11-analyze` 出结构化报告，修复回对应环节。
 
 ## Writing Skills
 
@@ -37,11 +37,13 @@ Bundled Workspace Template 中的写作 skill 分三层（详见 `novel-guide`�
 | `novel-guide` | 总览 | 写作流程唯一路线图：三层结构、阶段判断、内置 workflow 一览。 |
 | `novel-import-silly-tavern-card` | 工具支持 | 导入本地 SillyTavern 角色卡 / worldbook。 |
 | `novel-import-tomato-reference` | 工具支持 | 导入番茄小说等外部书稿供拆书分析。 |
+| `novel-data` | 工具支持 | 查询本地 NovelScope 缓存的起点 / 番茄榜单快照与书籍详情。 |
 | `novel-idea-exploration` | 随时可用 | 从模糊灵感整理成故事雏形；不急着初始化 World Engine。 |
-| `novel-genre-research` | 随时可用 | 题材分析、竞品拆书、调研（骨架占位版）。 |
+| `novel-genre-research` | 随时可用 | 题材与竞品调研：novel-data 榜单选题 → 导入对标书 → book-deconstruct 拆书，结论落 lorebook。 |
 | `novel-technique-character-card-workshop` | 随时可用 | 重量级角色理解与写卡技法（20/24/80/200 问）。 |
 | `novel-setup` | 创作流程 | 项目搭建四阶段：项目初始化 → 世界书框架 → 角色设计与细化 → World Engine 初始化。 |
 | `novel-writing` | 创作流程 | 剧情写作循环：剧情设计 → 拍板落库 → 正文/评审/修订；开局模式覆盖黄金三章。 |
+| `novel-workflow-11-analyze` | 创作流程 | 独立质量关卡：情节一致性、角色弧、伏笔兑现、LLM 痕迹、信息边界、World Engine 状态；只出报告，修复回写作循环。 |
 | `novel-writer-execution` | writer 内部 | Writer 执行手册，writer profile 内部参考，leader 不直接调用。 |
 
 Legacy（已归档到 `packages/neuro-book/docs/archived/skills/`，不进 skill catalog）：`novel-workflow-05-emulation-bootstrap`、`novel-workflow-06-emulation-tick`。

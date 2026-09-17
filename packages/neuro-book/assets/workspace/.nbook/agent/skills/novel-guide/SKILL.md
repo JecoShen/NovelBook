@@ -16,13 +16,14 @@ NeuroBook 的写作 skill 分三层。本文件是唯一的全局路线图；各
 | --- | --- |
 | `novel-import-silly-tavern-card` | 导入本地 SillyTavern 角色卡 / worldbook 到当前 Project Workspace |
 | `novel-import-tomato-reference` | 导入番茄小说等外部书稿到 `reference/tomato/`，供拆书分析 |
+| `novel-data` | 查询本地 NovelScope 缓存的起点 / 番茄榜单快照与书籍详情（缓存数据，非实时） |
 
 **2. 随时可用层** —— 不挂在主流程上，任何阶段都可以进入：
 
 | skill | 用途 |
 | --- | --- |
 | `novel-idea-exploration` | 灵感探索：把模糊灵感收束成长简介式故事概述 |
-| `novel-genre-research` | 题材与竞品调研：novel-api 榜单选题 → 导入对标书 → book-deconstruct 拆书 → 结论落 lorebook |
+| `novel-genre-research` | 题材与竞品调研：novel-data 榜单选题 → 导入对标书 → book-deconstruct 拆书 → 结论落 lorebook |
 | `novel-technique-character-card-workshop` | 重量级角色理解与写卡技法：20/24/80/200 问、调色盘、三面性 |
 
 **3. 创作流程层** —— 有先后依赖的主线：
@@ -31,6 +32,7 @@ NeuroBook 的写作 skill 分三层。本文件是唯一的全局路线图；各
 | --- | --- | --- | --- |
 | `novel-setup` | 项目搭建四阶段：项目初始化 → 世界书框架 → 角色设计与细化 → World Engine 初始化 | 新开书、导入书、续写已有书 | 进入 `novel-writing` 开局模式 |
 | `novel-writing` | 剧情写作循环：剧情设计 → 用户拍板落库 → 正文/评审/修订 | `novel-setup` 完成（或老项目已有等价基础） | 每章循环一次，持续使用 |
+| `novel-workflow-11-analyze` | 独立质量关卡：情节一致性、角色弧、伏笔兑现、LLM 痕迹、信息边界、World Engine 状态；只出报告不改正文 | 完成 3-5 章、一卷或进入新阶段前 | 结构化分析报告；修复回 `novel-writing` 对应环节 |
 | `novel-writer-execution` | Writer 执行手册（writer profile 内部参考，leader 不直接调用） | — | — |
 
 ## 典型旅程（新开一本书）
@@ -55,12 +57,17 @@ NeuroBook 的写作 skill 分三层。本文件是唯一的全局路线图；各
 | `book-deconstruct` | 整本外部书稿的商业拆书：章节采样后逐章分析钩子/承诺/爽点/节奏，汇总拆书报告 | `novel-genre-research` 竞品分析；输入=番茄导入目录或单 .md 书稿 |
 | `character-qa-fanout` | 角色理解题批量生成候选答案（分组扇出），供用户逐题挑选 | `novel-technique-character-card-workshop` 的可选批量模式；默认逐题交互不用它 |
 | `split-book` | 按章拆书分析书稿结构与剧情脉络（轻量单文件版） | 快速看结构用它；完整商业拆书用 `book-deconstruct` |
+| `llmlint-review` | 对章节并行跑 llmlint check + detect，合成静态分级 + 密度指纹 + 四象限审稿报告（只检测不修复） | 正文已成稿、要一次拿到规则命中 + AIGC 热区报告时 |
+| `llmlint-full-review` | 在 llmlint-review 基础上走 计划 → 用户审批 → 修复 → 复测 完整闭环 | 要把审稿发现直接修掉并复测 verdict 时 |
+
+> 一致性专项体检用 `consistency-audit`（事实矛盾导向：位置 / 伤势 / 物品 / 认知 / 时间线 / 设定）；卷级或阶段门槛的全面质量检查用 skill `novel-workflow-11-analyze`（一致性之外还覆盖角色弧、伏笔兑现、LLM 痕迹、信息边界）。
 
 ## 阶段判断速查
 
 - 用户说不清要写什么 → `novel-idea-exploration`。
 - 项目没有定位 / lorebook / World Engine → `novel-setup`（从缺的阶段进入，不必从头走）。
 - 讨论剧情、推演局势、写章、改章 → `novel-writing`。
+- 阶段性质量体检（完成 3-5 章 / 一卷 / 进入新阶段前）→ `novel-workflow-11-analyze`。
 - 只整理角色感觉、标签、萌点 → `novel-technique-character-card-workshop`。
 - 要导入外部素材 → import 系列。
 - 分析别人的书、找对标 → `novel-genre-research`。
