@@ -1,30 +1,29 @@
 # Scene Master List — 全书场景主表
 
-> 版本: 2026-08-20 (P2-5 落地)
+> 用途: 全书章节场景主表的 schema 与填写规范, 作者写作期 + 编辑期共用的 single source of truth
+> 配套工具: `scripts/scan-scene-master-list.cjs` (半自动扫描 manuscript, 抽 6 列生成基线表)
+> 设计原则: 失败一律 soft 降级; 不强制场景段 / 价值转换方向 / 钩子枚举 / 任何子段 (抗过度 spec 化)
 > 来源 spec: `docs/superpowers/specs/2026-08-20-p2-5-p2-6.md` §2.3 + §3.2
-> 派生工具: `scripts/scan-scene-master-list.cjs` (派生自 `workspace/qi-shou-fan-shen-cheng-ding-fu/baseline-scan.cjs` i128/i130/i131/i132)
-> 8 列 schema: 6 自动从 frontmatter 抽 + 2 手工留空
-> **严守调研报告 §7.4 抗过度 spec 化**：失败一律 soft 降级；不强制 5 诫命子段；不强制场景段；不强制价值转换方向。
 
 ---
 
 ## §1 用途
 
-`scene-master-list.md` 是全书章节的场景主表，**作者写作期 + 编辑期共用**的 single source of truth。每一行是一章（V1+V2 80 章 = 80 行），自动抽 6 列（从 manuscript `index.md` frontmatter + `## 场景` 段计数），手工填 2 列（价值转换 + 钩子类型）。
+`scene-master-list.md` 是全书章节的场景主表。每一行是一章, 6 列从 manuscript 自动抽 (frontmatter + 目录约定 + `## 场景` 段计数), 2 列由作者手工填 (价值转换 + 钩子类型)。
 
-**跟其他 reference 的关系**：
+**跟其他 reference 的关系**:
 
 | reference | 角色 | 区别 |
 |---|---|---|
-| `scene-six-questions.md` (P1-4) | 单章 6 问软提示 | scene-master-list 是**全书视图** + 自动化 |
+| `scene-six-questions.md` | 单章 6 问软提示 | scene-master-list 是**全书视图** + 自动化 |
 | `story-spec/index.md` | 整卷/整书规格 | scene-master-list 是**章级颗粒** |
 | `lorebook/character/relationship-network.md` | 角色关系网 | scene-master-list 是**章节出现** |
 
-**跟 llmlint 的关系**：
+**跟 llmlint 的关系**:
 
-- `cn.structure.chapter-hook` 5 模式 (i129) 是**自动检测器**，输出 issue 列表
+- `cn.structure.chapter-hook` 子规则组是**自动检测器**, 输出 issue 列表
 - `scene-master-list` 是**作者主动维护**的全书快照
-- 两者互补：llmlint 找具体问题，scene-master-list 给全景
+- 两者互补: llmlint 找具体问题, scene-master-list 给全景
 
 ---
 
@@ -32,89 +31,74 @@
 
 | # | 列名 | 类型 | 来源 | 自动/手工 | 备注 |
 |---|---|---|---|---|---|
-| 1 | `vol` | string | 目录名（第1卷-坠落 / 第2卷-暗潮） | **自动** | 卷名（中文） |
-| 2 | `chapter` | string | frontmatter `chapter:` 字段 | **自动** | 章号（e.g. `ch-001`） |
-| 3 | `title` | string | frontmatter `title:` → 目录名 fallback | **自动** | 章名（V1+V2 baseline 走目录名 fallback） |
-| 4 | `beat` | enum | frontmatter `beat:` 字段 (i128) | **自动** | Save the Cat 15 节拍（80/80 命中） |
-| 5 | `pov` | string | frontmatter `pov:` 字段 | **自动** | POV 角色 slug（V1+V2 baseline 0 命中，无字段） |
-| 6 | `scene` | int | `## 场景` 段计数（P1-4 detector 模式） | **自动** | 场景数（V1+V2 baseline 0/80） |
-| 7 | `value_shift` | enum? | (暂无数据源) | **手工** | `+ → -` / `- → +` / 留空 |
-| 8 | `hook_type` | enum? | i129 5 模式（决策: 不抽，留 V3 手工） | **手工** | `reversal` / `suspense` / `short-drop` / `question` / `ellipsis` / 留空 |
+| 1 | `vol` | string | 卷目录名 | **自动** | 工具约定: 目录名以「第」开头且含「卷」(如 `第1卷-卷名`) |
+| 2 | `chapter` | string | frontmatter `chapter:` 字段 | **自动** | 章号 (如 `ch-001`), 缺则留空 |
+| 3 | `title` | string | frontmatter `title:` → 目录名 fallback | **自动** | fallback = 章节目录名剥掉 `NNN-` 前缀 |
+| 4 | `beat` | enum | frontmatter `beat:` 字段 | **自动** | 项目自定义节拍 (示例: Save the Cat 15 节拍); 非产品内置字段, 缺省留空 |
+| 5 | `pov` | string | frontmatter `pov:` 字段 | **自动** | POV 角色 slug, 缺省留空 |
+| 6 | `scene` | int | `## 场景` 段计数 | **自动** | 未填场景段记 0 |
+| 7 | `value_shift` | enum? | (无数据源) | **手工** | `+ → -` / `- → +` / 维持 / 留空 |
+| 8 | `hook_type` | enum? | 作者判定 | **手工** | `reversal` / `suspense` / `short-drop` / `question` / `ellipsis` / 自定义 / 留空 |
 
-**决策**：6 自动 + 2 手工留空。V1+V2 baseline **前 6 列填，后 2 列空**，V3 写作期由作者手工填。
+**决策**: 6 自动 + 2 手工留空。机器可抽的列不手写, 需要判读的列不硬抽。
 
-**显式不强制**（调研报告 §7.4 抗过度 spec 化）：
+> 注: `beat` 列源自具体项目实践 (Save the Cat 15 节拍), 不是产品级硬约束; 产品内置的结构软提示只有 `scene-six-questions.md` 的场景六问。项目可以换成自己的节拍体系或整列留空。
 
-- ❌ 缺 `## 场景` 段 → 不报错（baseline 0/80 符合预期）
-- ❌ `value_shift` 留空 → 不报错（V1+V2 baseline 留空）
-- ❌ `hook_type` 填错枚举 → 不强制（V3 写作期可自定义）
+**显式不强制** (抗过度 spec 化):
+
+- ❌ 缺 `## 场景` 段 → 不报错 (记 0)
+- ❌ `value_shift` 留空 → 不报错
+- ❌ `hook_type` 填错枚举 → 不强制 (可自定义)
 - ❌ 跨章 `## 场景 N` 编号连续性 → 不检测
-- ❌ 5 诫命子段（Inciting/Progressive/Crisis/Climax/Resolution）→ 不强制
-- ❌ 同一章多场景 → 暂不支持（1 章 1 行）
+- ❌ 5 诫命子段 (Inciting/Progressive/Crisis/Climax/Resolution) → 不强制
+- ❌ 同一章多场景 → 不展开 (1 章 1 行, 只记场景数)
 
 ---
 
-## §3 字段说明（8 段）
+## §3 字段说明
 
 ### §3.1 `vol` (自动)
 
-卷名。**来源**：manuscript 下的子目录名（`第1卷-坠落` / `第2卷-暗潮`）。
-
-**V1+V2 baseline**：100% 命中（V1=30 章 / V2=50 章）。
+卷名。**来源**: manuscript 下的卷目录名。工具识别约定: 目录名以「第」开头且含「卷」字 (如 `第1卷-启程`)。
 
 ### §3.2 `chapter` (自动)
 
-章号。**来源**：frontmatter `chapter:` 字段（e.g. `chapter: ch-001`）。
-
-**V1+V2 baseline**：100% 命中（80/80 章都有此字段，作为反孤儿指针核心）。
+章号。**来源**: frontmatter `chapter:` 字段 (如 `chapter: ch-001`)。建议全书签全, 它是章节的反孤儿指针。
 
 ### §3.3 `title` (自动)
 
-章名。**来源**：frontmatter `title:` 字段（V1+V2 都缺），fallback 到目录名（`001-三个字` → `三个字`）。
+章名。**来源**: frontmatter `title:` 字段; 缺失时 fallback 到章节目录名 (工具识别 `NNN-` 三位数字前缀的目录, 剥掉前缀即为章名, 如 `001-雨夜来信` → `雨夜来信`)。
 
-**V1+V2 baseline**：100% 命中（走目录名 fallback）。
+### §3.4 `beat` (自动)
 
-### §3.4 `beat` (自动) — 联动 i128
+节拍。**来源**: frontmatter `beat:` 字段, 枚举由项目自定。常见取法是 Save the Cat 15 节拍:
 
-Save the Cat 15 节拍。**来源**：frontmatter `beat:` 字段。
+`opening-image` / `theme-stated` / `set-up` / `catalyst` / `debate` / `break-into-two` / `b-story` / `fun-and-games` / `midpoint` / `bad-guys-close-in` / `all-is-lost` / `dark-night` / `break-into-three` / `finale` / `final-image`
 
-15 个枚举值（`opening-image` / `theme-stated` / `set-up` / `catalyst` / `debate` / `break-into-two` / `b-story` / `fun-and-games` / `midpoint` / `bad-guys-close-in` / `all-is-lost` / `dark-night` / `break-into-three` / `finale` / `final-image`）。
+**arc-relative 节拍**: 卷末 `final-image` ≠ 全书 `final-image`, 每卷可以有独立的节拍序列。
 
-**V1+V2 baseline**：80/80 命中（i128 落位后填全）。`ch-040` = `midpoint` 显式命名 100% 命中。
+### §3.5 `pov` (自动)
 
-**arc-relative 节拍**：卷末 `final-image` ≠ 全书 `final-image`。每卷独立的节拍序列。
+POV 角色 slug。**来源**: frontmatter `pov:` 字段。slug 与 lorebook 角色条目同名时可直接交叉引用; 未填留空。
 
-### §3.5 `pov` (自动) — 联动 P1-3 lore-resolver
+### §3.6 `scene` (自动)
 
-POV 角色 slug（e.g. `lu-shen`）。**来源**：frontmatter `pov:` 字段。
+场景数。**来源**: 正文 `## 场景` 段计数 (regex `^## 场景` 锚定段头), 未填记 0。
 
-**V1+V2 baseline**：0/80 命中（无 frontmatter `pov:` 字段，scan 留空）。
-
-**P1-3 lore-resolver** 也用此字段做角色绑定（references 解析）。V3 写作期补全。
-
-### §3.6 `scene` (自动) — 联动 P1-4 scene-six-questions
-
-场景数。**来源**：`## 场景` 段计数（regex `^## 场景` 锚定段头）。
-
-**V1+V2 baseline**：0/80 命中（V1+V2 章节都用 `^## 场景` 段头但实际未填场景段，P1-4 baseline 预期）。
-
-**P1-4 软提示**：`reference/scene-six-questions.md` 6 问作为单章场景填写引导。`scene-master-list` 是章节场景数的**全书快照**。
+单章场景段的填写引导见 `scene-six-questions.md` 六问; scene-master-list 是章节场景数的**全书快照**。
 
 ### §3.7 `value_shift` (手工)
 
-价值转换方向。**作者判定**（不是机器可抽的）：
+价值转换方向, **作者判定** (不是机器可抽的):
 
 - `+ → -` (positive 转 negative)
 - `- → +` (negative 转 positive)
-- `+ → +` (维持 positive)
-- `- → -` (维持 negative)
-- 留空（无明显转换）
+- `+ → +` / `- → -` (维持)
+- 留空 (无明显转换)
 
-**V1+V2 baseline**：0/80 填（V1+V2 价值转换是隐性，作者未标）。
+### §3.8 `hook_type` (手工)
 
-### §3.8 `hook_type` (手工) — 联动 i129 chapter-hook
-
-章末钩子类型。**作者判定**（P2-5 决策: 不从 i129 5 模式抽，留 V3 手工）：
+章末钩子类型, **作者判定**:
 
 - `reversal` (反转)
 - `suspense` (悬念)
@@ -124,106 +108,83 @@ POV 角色 slug（e.g. `lu-shen`）。**来源**：frontmatter `pov:` 字段。
 - 自定义
 - 留空
 
-**V1+V2 baseline**：0/80 填（baseline 留空）。
-
-**与 i129 关系**：i129 chapter-hook 5 模式 detector 在 `cn.structure.chapter-hook` llmlint 规则里跑（auto）。scene-master-list 钩子列是**作者主动标注**（manual），两者不冗余 —— detector 报 issue，作者在表里标 hook_type 用于整体分析。
+**与 llmlint 关系**: 这 5 个模式对应内置规则组 `cn.structure.chapter-hook.{question,ellipsis,reversal,suspense,short-drop}` 的自动检测。两者不冗余 —— detector 报具体 issue, 作者在表里标 `hook_type` 用于全书钩子的整体分析。
 
 ---
 
 ## §4 空白模板
 
-**作者新增章节时按此模板填一行**（从前章 row 复制 + 改值）：
+**新增章节时按此模板填一行** (从前章 row 复制 + 改值):
 
 ```markdown
 | vol | chapter | title | beat | pov | scene | value_shift | hook_type |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 第N卷-XXX | ch-NNN | 章名 | opening-image | lu-shen | 1 |  |  |
+| 第N卷-卷名 | ch-NNN | 章名 | opening-image | role-slug | 1 |  |  |
 ```
 
-**V3 写作期填写清单**：
+**写作期填写清单**:
 
 1. 写完一章后 → 复制前一行 → 改 chapter/title/beat/pov
 2. 数 `## 场景` 段数 → 填 scene
-3. 标价值转换方向 → 填 value_shift
-4. 标章末钩子类型 → 填 hook_type
-5. （可选）回头填 V1+V2 缺失的 pov/scene/value_shift/hook_type
+3. 判定价值转换方向 → 填 value_shift
+4. 判定章末钩子类型 → 填 hook_type
+5. (可选) 阶段性跑扫描脚本, 刷新前 6 列基线
 
 ---
 
-## §5 V1 5 章填表示例
+## §5 填表示例
 
-V1 ch-001 / 005 / 010 / 015 / 020 五章，**前 6 列从 frontmatter + 目录名抽**（V1+V2 baseline 真实数据），**后 2 列手工示例**（演示 V3 写作期怎么填）：
+虚构示例, 演示各列填法 (前 6 列来自自动抽取, 后 2 列手工判定):
 
 ```markdown
 | vol | chapter | title | beat | pov | scene | value_shift | hook_type |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 第1卷-坠落 | ch-001 | 三个字 | opening-image |  | 0 | + → - | reversal |
-| 第1卷-坠落 | ch-005 | 归集节点 | catalyst |  | 0 | - → + | suspense |
-| 第1卷-坠落 | ch-010 | 188号 | break-into-two |  | 0 | + → - | short-drop |
-| 第1卷-坠落 | ch-015 | 四个字 | b-story |  | 0 |  | reversal |
-| 第1卷-坠落 | ch-020 | 同类 | fun-and-games |  | 0 | - → + | question |
+| 第1卷-启程 | ch-001 | 雨夜来信 | opening-image | lin-zhao | 1 | + → - | suspense |
+| 第1卷-启程 | ch-002 | 旧车站 | set-up | lin-zhao | 2 |  | question |
+| 第1卷-启程 | ch-003 | 不速之客 | catalyst |  | 1 | - → + | reversal |
 ```
 
-**示例数据来源**：
+**示例覆盖的情形**:
 
-- `vol`: 目录名 `第1卷-坠落/`
-- `chapter`: frontmatter `chapter: ch-NNN`
-- `title`: 目录名 fallback `001-三个字` → `三个字` (frontmatter 缺 `title:` 字段)
-- `beat`: frontmatter `beat: opening-image` / `catalyst` / `break-into-two` / `b-story` / `fun-and-games` (i128 80/80 命中)
-- `pov`: 留空 (V1+V2 frontmatter 缺 `pov:` 字段, P1-3 lore-resolver 留空)
-- `scene`: 0 (V1+V2 章节无 `## 场景` 段, P1-4 baseline 预期)
-- `value_shift` / `hook_type`: 演示填法（V3 写作期风格指南, V1+V2 baseline 实际全空）
+- `ch-001`: 全列填满的常规行
+- `ch-002`: 一章多场景 (`scene` = 2), `value_shift` 留空 (维持章)
+- `ch-003`: `pov` 留空 (frontmatter 未填 `pov:` 字段时的正常状态)
 
 ---
 
 ## §6 维护工作流
 
-### §6.1 自动 baseline 跑法
+### §6.1 自动基线跑法
 
 ```bash
-# worktree 或主工作区, 任一位置
-cd /www/wwwroot/book.neoshen.dpdns.org
-node scripts/scan-scene-master-list.cjs \
-    workspace/qi-shou-fan-shen-cheng-ding-fu/manuscript \
-    workspace/qi-shou-fan-shen-cheng-ding-fu/.agent/plan/i137-p2-5-baseline-report.md
+node scripts/scan-scene-master-list.cjs <manuscript-dir> <output-md>
+# 例: node scripts/scan-scene-master-list.cjs workspace/<project>/manuscript <project>/.agent/plan/scene-master-baseline.md
 ```
 
-**输出**：
+**工具合同**:
 
-- 顶部 summary: 总章数 / V1 / V2 / 6 列命中率 / 2 列手工留空率
-- 80 行 Markdown table（V1 30 + V2 50）
-- 文件落在 `.agent/plan/` 不污染 `docs/`
+- 卷目录识别: 名字以「第」开头且含「卷」字; 章节目录识别: `NNN-` 三位数字前缀, 内含 `index.md`
+- frontmatter 缺字段 → 对应列留空; 无 frontmatter 或无 `index.md` → 跳过该章并计入 summary
+- 输出: 顶部 summary (总章数 / 各列命中率 / 手工列留空率) + 全量 Markdown 表
+- soft 降级: 参数缺失或目录不存在时打印警告并以退出码 0 结束, 不中断任何流程
+- 输出文件建议落在项目的 `.agent/plan/` 下, 不污染文档目录
 
-### §6.2 V3 写作期手工填 2 列
+### §6.2 写作期手工填 2 列
 
-- **value_shift**: 写完后判定该章价值转换方向（+ → - / - → + / 留空）
-- **hook_type**: 写完后判定章末钩子类型（5 模式 + 留空 + 自定义）
+- **value_shift**: 写完后判定该章价值转换方向
+- **hook_type**: 写完后判定章末钩子类型 (5 模式 + 自定义 + 留空)
 
-### §6.3 baseline 报告使用
+### §6.3 基线报告用法
 
-- **V1+V2 复盘**：80 行表里 6 自动列已填，2 手工列空 → 写 v4.6 复盘时手工补 2 列
-- **V3 启动前置**：baseline 报告是 V3 第 1 章前的全书快照基线
-- **跨卷审查**：i130/i131/i132 reversal+short-drop 模式与 scene-master-list hook_type 列交叉验证
-
----
-
-## §7 已知不变量
-
-- **不动** `writer.profile.tsx` / `neuro-agent-harness.ts` / `server/agent/lore/*` (4 protected assets, 全 untouched)
-- **不动** `assets/.../llmlint/rulesets/.../cn.structure.chapter-hook.json` (i129 stable)
-- **不动** `reference/scene-six-questions.md` (P1-4 产物, P2-5 字段说明引用)
-- **不强制** 5 诫命子段 / 价值转换方向 / 钩子枚举 / 跨章场景连续性
-- **不报** `value_shift` / `hook_type` 留空 / 字段缺失
+- **复盘**: 自动列已填、手工列待补的全书快照, 做卷级/全书复盘时手工补 2 列
+- **新阶段前置**: 进入新卷或新阶段前跑一次, 作为全书状态基线
+- **跨卷审查**: 与 llmlint `chapter-hook` 检测结果交叉验证钩子分布
 
 ---
 
-## §8 验收（spec §5 验证清单）
+## §7 设计约束
 
-- ✅ 文件存在 `reference/scene-master-list.md` (~150 行)
-- ✅ 8 列 schema 完整 (vol/chapter/title/beat/pov/scene/value_shift/hook_type)
-- ✅ 8 段字段说明 (§3.1-§3.8)
-- ✅ V1 5 章填表示例 (ch-001/005/010/015/020)
-- ✅ 空白模板 (§4)
-- ✅ 维护工作流 (§6)
-- ✅ 严守调研报告 §7.4 抗过度 spec 化（§2 末段 + §3.7 + §3.8 + §4）
-- ✅ V1+V2 80 章 baseline 由 `scripts/scan-scene-master-list.cjs` 自动跑（见 §6.1）
+- 工具只读 manuscript, 只写输出报告, 不修改任何章节源文件
+- 缺字段 / 缺场景段 / 手工列留空一律不产生错误, 只如实记录
+- 1 章 1 行; 同一章多场景不展开, 只记场景数
+- 不强制 5 诫命子段 / 价值转换方向 / 钩子枚举 / 跨章场景编号连续性
