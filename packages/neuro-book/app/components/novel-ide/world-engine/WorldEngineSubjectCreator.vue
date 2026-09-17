@@ -77,6 +77,20 @@ function defaultSubjectType(): string {
     return schemaTypes.value[0]?.type ?? "world";
 }
 
+/** 内置 type id 的中文释义(schema type id 是配置键不翻译,沿用 MICE 选项的「id + 释义」形态;自定义类型只显示原 id)。 */
+const BUILTIN_TYPE_GLOSS: Readonly<Record<string, string>> = {
+    world: "世界",
+    character: "角色",
+    location: "地点",
+    faction: "势力",
+    item: "物品",
+};
+
+function subjectTypeOptionLabel(type: string): string {
+    const gloss = BUILTIN_TYPE_GLOSS[type];
+    return gloss ? `${type} ${gloss}` : type;
+}
+
 /** 返回当前 schema 下手动创建 subject 的默认初始化时间。 */
 function defaultSubjectTime(): string {
     return props.schema?.calendar.examples[0] ?? "";
@@ -124,7 +138,7 @@ watch(() => props.projectRoot, () => {
                 <div class="grid grid-cols-2 gap-2">
                     <input v-model="form.id" class="h-8 min-w-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="主体 ID" title="id · 数据模型标识">
                     <select v-model="form.type" class="h-8 min-w-0 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" :title="selectedTypeDesc || 'type · 数据模型类型'">
-                        <option v-for="type in schemaTypes" :key="type.type" :value="type.type" :title="type.desc || type.type">{{ type.type }}</option>
+                        <option v-for="type in schemaTypes" :key="type.type" :value="type.type" :title="type.desc || type.type">{{ subjectTypeOptionLabel(type.type) }}</option>
                     </select>
                 </div>
                 <input v-model="form.name" class="h-8 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-2 text-[12px] outline-none focus:border-[var(--accent-main)]" placeholder="名称" title="name">

@@ -15,6 +15,7 @@ import {resolveApiErrorMessage} from "nbook/app/utils/api-error";
 import {buildDefaultWorkspaceCreatePath} from "nbook/app/utils/workspace-create-path";
 import {buildManagedChapterContent, resolveManagedChapterNumber, resolveManagedChapterPath} from "nbook/app/utils/welcome-chapter-path";
 import {buildWorkspacePathCopyText, type WorkspacePathCopyMode} from "nbook/app/utils/workspace-path-copy";
+import {formatYamlScalar} from "nbook/app/utils/yaml-scalar";
 import {useNovelIdeStore, type WorkspaceFileNode} from "nbook/app/stores/novel-ide";
 import {
     canMovePath,
@@ -568,7 +569,7 @@ function buildLorebookEntryContent(filePath: string, entryType: LorebookEntryTyp
         ? `character:\n    logline: ""\n    profile: {}\n    story: {}\n    meta:\n        pinned: false\n        primaryContext: null\n`
         : "";
     const subtypeBlock = entryType === "character" ? "subtype: person\n" : "";
-    return `---\ntitle: ${JSON.stringify(title)}\ntype: ${entryType}\n${subtypeBlock}status: draft\naliases: []\ntags: []\nsummary: \"\"\nrefs: []\nretrieval:\n    enabled: true\n    trigger: null\ngovernance:\n    source: manual\n    review: proposed\n${characterBlock}---\n\n`;
+    return `---\ntitle: ${formatYamlScalar(title)}\ntype: ${entryType}\n${subtypeBlock}status: draft\naliases: []\ntags: []\nsummary: \"\"\nrefs: []\nretrieval:\n    enabled: true\n    trigger: null\ngovernance:\n    source: manual\n    review: proposed\n${characterBlock}---\n\n`;
 }
 
 function splitName(fileName: string): {stem: string; extension: string} {
@@ -596,7 +597,7 @@ function canCreateDirectoryIndex(node: WorkspaceFileNode): boolean {
 
 function buildDirectoryIndexContent(node: WorkspaceFileNode): string {
     const title = node.title || basename(node.path) || "index";
-    return `---\ntitle: ${JSON.stringify(title)}\nstatus: draft\n---\n\n`;
+    return `---\ntitle: ${formatYamlScalar(title)}\nstatus: draft\n---\n\n`;
 }
 
 function formatMoveError(error: unknown): string {

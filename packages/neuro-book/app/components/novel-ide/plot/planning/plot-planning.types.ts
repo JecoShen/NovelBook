@@ -122,10 +122,10 @@ export const DECISION_ANCHOR_KIND_META: Record<StoryDecisionAnchorKindDto, {labe
 };
 
 /**
- * Scene.outcomeType 下拉选项。首项「未填写」=空串,提交映射 null(D29:null 只表示未填写)。
+ * Scene.outcomeType 下拉选项。首项「(未填写)」=空串,提交映射 null(D29:null 只表示未填写)。
  */
 export const SCENE_OUTCOME_TYPE_OPTIONS: PlanningSelectOption[] = [
-    {value: "", label: "未填写"},
+    {value: "", label: "(未填写)"},
     {value: "yes_but", label: "yes_but 得手但有代价", description: "主动尝试成功,但引入新代价或麻烦"},
     {value: "no_and", label: "no_and 失败且恶化", description: "主动尝试失败,局面进一步恶化"},
     {value: "yes_and", label: "yes_and 得手且更进", description: "成功且额外获益(爽点连击的正当用法)"},
@@ -149,10 +149,10 @@ export const SCENE_PACING_ROLE_OPTIONS: PlanningSelectOption[] = [
 ];
 
 /**
- * Thread.miceType 下拉选项(MICE Quotient 线型:提示这条线怎样才算关)。首项「未填写」=空串,提交映射 null。
+ * Thread.miceType 下拉选项(MICE Quotient 线型:提示这条线怎样才算关)。首项「(未填写)」=空串,提交映射 null;括号形态与 ADR 详情的空值标注一致,避免读起来像已填值。
  */
 export const THREAD_MICE_TYPE_OPTIONS: PlanningSelectOption[] = [
-    {value: "", label: "未填写"},
+    {value: "", label: "(未填写)"},
     {value: "milieu", label: "milieu 舞台", description: "进入某地开线,离开/立足即关线"},
     {value: "idea", label: "idea 谜题", description: "提出问题开线,谜底揭晓即关线"},
     {value: "character", label: "character 角色", description: "身份认同失衡开线,达成新认同即关线"},

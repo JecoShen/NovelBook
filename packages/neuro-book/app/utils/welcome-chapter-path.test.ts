@@ -79,7 +79,11 @@ describe("resolveManagedChapterNumber", () => {
 });
 
 describe("buildManagedChapterContent", () => {
-    it("章节名写入 frontmatter title 并转义", () => {
-        expect(buildManagedChapterContent("第 14 章")).toBe('---\ntitle: "第 14 章"\nstatus: draft\n---\n\n');
+    it("章节名写入 frontmatter title,安全标量平铺不带引号", () => {
+        expect(buildManagedChapterContent("第 14 章")).toBe("---\ntitle: 第 14 章\nstatus: draft\n---\n\n");
+    });
+
+    it("章节名含 YAML 特殊字符时退回双引号转义", () => {
+        expect(buildManagedChapterContent("卷一: 起点")).toBe('---\ntitle: "卷一: 起点"\nstatus: draft\n---\n\n');
     });
 });

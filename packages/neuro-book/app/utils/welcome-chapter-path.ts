@@ -3,6 +3,8 @@
  * (manuscript/<NNN-volume>/<NNN>-chapter/index.md)决定保存位置。
  * 与 plot 预览页 silver-dragon-hime 的 013-chapter 命名保持一致。
  */
+import {formatYamlScalar} from "nbook/app/utils/yaml-scalar";
+
 export type WelcomeChapterTreeNode = Readonly<{
     path: string;
     isDirectory: boolean;
@@ -69,5 +71,5 @@ export function resolveManagedChapterNumber(tree: readonly WelcomeChapterTreeNod
 
 /** 章节初始内容:标题来自作者起的章节名,而不是路径段。 */
 export function buildManagedChapterContent(chapterTitle: string): string {
-    return `---\ntitle: ${JSON.stringify(chapterTitle)}\nstatus: draft\n---\n\n`;
+    return `---\ntitle: ${formatYamlScalar(chapterTitle)}\nstatus: draft\n---\n\n`;
 }

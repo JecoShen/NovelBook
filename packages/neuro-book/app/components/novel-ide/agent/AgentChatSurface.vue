@@ -748,7 +748,7 @@ const branchSwitcherStateByMessageId = computed(() => sessionTreeState.value.swi
 const contextUsageCompactLabel = computed(() => {
     const usage = activeRecovery.value?.contextUsage;
     if (!usage) {
-        return "- / -";
+        return t("agent.chatSurface.contextUsageUnknownCompact");
     }
     return `${formatCompactTokenCount(usage.usedTokens)} / ${formatCompactTokenCount(usage.limitTokens)}`;
 });

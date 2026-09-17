@@ -494,12 +494,12 @@ function updateWorldAnchor(patch: Partial<PlotThreadPanelScene["worldAnchor"]>):
                 </div>
 
                 <div class="space-y-2">
-                    <div class="flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                    <div class="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--text-muted)]">
                         <span>有效引用 (内联派生)</span>
                     </div>
                     <div v-if="visibleRefGroups.length" class="space-y-2.5">
                         <div v-for="group in visibleRefGroups" :key="group.kind" class="space-y-1">
-                            <div class="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-70">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-70">
                                 {{ group.label }}
                             </div>
                             <div class="space-y-1.5">
