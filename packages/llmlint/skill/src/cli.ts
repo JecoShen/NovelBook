@@ -229,7 +229,7 @@ export async function runCli(argv: string[]): Promise<void> {
             "  wide      再加 profile 里判别力 weak 的",
             "  full      再加词表类规则（逐词替换与定点删除）",
             "",
-            "规则的启停沿用项目级 llmlint.config.ts，例如关掉 vocabulary.r18 后它不会出现在摘要里。",
+            "规则的启停沿用项目级 llmlint.config.ts，例如关掉 vocabulary.body 后它不会出现在摘要里。",
         ].join("\n"))
         .action(async (commandOptions: GlobalOptions | Command) => {
             try {

@@ -502,7 +502,7 @@ export default {
     ],
     namespaces: {
         modifier: "medium",
-        "vocabulary.r18": "off",
+        "vocabulary.r18": {enabled: true},
         "商务黑话": "off",
     },
     rules: {
@@ -517,7 +517,7 @@ export default {
 
 覆盖值可用字符串简写或对象。字符串是对象的语法糖：`off` = `{enabled:false}`，`warn`/`error`/级别 = `{enabled:true, level:X}`。对象 `{ enabled?, level?, review?, fixability? }` 只覆盖显式字段；想启用一条默认禁用的规则必须显式写 `enabled: true`（纯属性对象如 `{review:"human"}` 不改启停状态）。
 
-默认配置会启用 `builtin/default`。它已包含 R18/成人词汇规则；普通项目可用 `namespaces: {"vocabulary.r18": "off"}` 关闭，不需要手改 `rules/vocabulary/r18.json`。
+默认配置会启用 `builtin/default`。其中 R18/成人词汇规则**默认关闭**；成人向项目可用 `namespaces: {"vocabulary.r18": {enabled: true}}` 开回，不需要手改 `rules/vocabulary/r18.json`。
 
 ### CLI 工具支持哪些文件格式？
 

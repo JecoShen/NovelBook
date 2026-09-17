@@ -104,6 +104,23 @@ describe("llmlint", () => {
         expect(loadedRules.rules.some((rule) => rule.namespace === "vocabulary.r18")).toBe(false);
     });
 
+    it("vocabulary.r18 内置默认关闭，项目配置可整体开回", async () => {
+        const baseConfig = {
+            rulesets: ["builtin/default"],
+            trustedRulesets: [],
+            ignoreTerms: [],
+            rulesetOverrides: {},
+            rules: {},
+            output: "stylish" as const,
+        };
+
+        const defaultLoaded = await loadRules({...baseConfig, namespaces: {}});
+        expect(defaultLoaded.rules.some((rule) => rule.namespace === "vocabulary.r18")).toBe(false);
+
+        const optedIn = await loadRules({...baseConfig, namespaces: {"vocabulary.r18": {enabled: true}}});
+        expect(optedIn.rules.some((rule) => rule.namespace === "vocabulary.r18")).toBe(true);
+    });
+
     it("多个 ruleset 可向同 namespace append，并按同 id override 产生 diagnostics", async () => {
         const firstRuleset = `test/${randomUUID()}`;
         const secondRuleset = `test/${randomUUID()}`;
@@ -608,7 +625,7 @@ describe("llmlint", () => {
         expect(rules.some((rule) => rule.id === "inflation-novelty" && rule.namespace === "inflation.significance")).toBe(true);
         expect(rules.some((rule) => rule.id === "mechanical-zero-width" && rule.namespace === "mechanical.zero-width")).toBe(true);
         expect(rules.some((rule) => /^cn\..+\.[0-9a-f]{10}$/.test(rule.id))).toBe(false);
-        expect(rules.some((rule) => rule.namespace === "vocabulary.r18" && rule.enabled !== false)).toBe(true);
+        expect(rules.some((rule) => rule.namespace === "vocabulary.r18" && rule.enabled === false)).toBe(true);
         expect(rules.some((rule) => rule.namespace === "modifier.extreme" && rule.enabled !== false)).toBe(false);
         expect(JSON.stringify(rules)).not.toContain(`leg${"acy"}`);
         expect(rules.filter((rule) => rule.id.startsWith("cn.")).every((rule) => rule.source?.importedFrom === "curated-cn-rule-samples")).toBe(true);
@@ -882,9 +899,10 @@ describe("llmlint", () => {
         }
 
         // manual 计数是漂移探测器：新增规则时必须逐条核对 fixability 分类后更新。
-        // 247 = 243 + 4 条 fork structure 规则（chapter-hook.reversal/suspense/short-drop +
+        // 227 = 223 + 4 条 fork structure 规则（chapter-hook.reversal/suspense/short-drop +
         // scene-six-questions），均为语义建议，manual 分类已逐条核对。
-        expect(counts).toEqual({auto: 2, candidate: 0, manual: 247});
+        // vocabulary.r18 20 条默认关闭、不进活动集，不参与计数。
+        expect(counts).toEqual({auto: 2, candidate: 0, manual: 227});
         expect(loadedRules.regexRules
             .filter((rule) => rule.fixability === "auto")
             .every((rule) => rule.action.type === "replace")).toBe(true);

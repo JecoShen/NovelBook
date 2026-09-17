@@ -122,7 +122,7 @@ Most projects need **no config** — without `llmlint.config.ts`, llmlint loads 
 export default {
     rulesets: ["builtin/default"],
     namespaces: {
-        "vocabulary.r18": "off",          // turn off adult-vocabulary rules for general projects
+        "vocabulary.r18": {enabled: true}, // opt back into R18 vocabulary rules for adult projects (off by default)
         "商务黑话": "off",                  // Chinese alias → jargon.business
         "jargon.engineer": {review: "agent"}, // move a bucket into the agent view
     },
@@ -143,14 +143,14 @@ See [`llmlint.config.example.ts`](./llmlint.config.example.ts) for a fully annot
 
 ## Built-in ruleset: `builtin/default`
 
-The official recommended ruleset — 360 rule records (266 enabled by default) across 71 namespaces, merged from a hand-maintained anti-AI-slop set and curated Chinese rule samples (`shuorenhua` / `avoid-ai-writing` / `humanizer`). Run `llmlint rules --format json` for live counts under your current config.
+The official recommended ruleset — 360 rule records (246 enabled by default) across 71 namespaces, merged from a hand-maintained anti-AI-slop set and curated Chinese rule samples (`shuorenhua` / `avoid-ai-writing` / `humanizer`). Run `llmlint rules --format json` for live counts under your current config.
 
 - **agent bucket (shown by default):** `filler`, `opening.cliche`, `inflation.significance`, `transition.summary`, `attribution.vague`, `cliche.uplift`, `sycophantic`, `jargon.business`, …
 - **human bucket (high false-positive / author preference):** `punctuation.dash`, `metaphor`, `modifier`, `jargon.engineer`, `jargon.social`, `translationese`, `structure.fragment`, …
 - **none bucket (mechanical):** `mechanical.zero-width` and the ellipsis/em-dash-tail subset of `punctuation.dedup`. Repeated exclamation/question marks are human-review only.
 - **`mechanical.*` (language-agnostic, high precision):** zero-width characters, homoglyphs, leftover `{{placeholders}}`, chatbot copy-paste artifacts (`:contentReference`, `oaicite`, …).
 
-It ships with R18 / adult-vocabulary rules; general projects can disable them with `namespaces: {"vocabulary.r18": "off"}` rather than editing rule files.
+It ships with R18 / adult-vocabulary rules, **disabled by default**; adult projects can re-enable them with `namespaces: {"vocabulary.r18": {enabled: true}}` rather than editing rule files.
 
 ## Exit codes
 

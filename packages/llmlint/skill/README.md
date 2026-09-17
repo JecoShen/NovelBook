@@ -122,7 +122,7 @@ Web 的本地扫描与服务端 MachineScan 当前只执行 regex+handler span�
 export default {
     rulesets: ["builtin/default"],
     namespaces: {
-        "vocabulary.r18": "off",          // 普通项目关闭成人词汇规则
+        "vocabulary.r18": {enabled: true}, // 成人向项目开回 R18 词汇规则（内置默认关闭）
         "商务黑话": "off",                  // 中文 alias → jargon.business
         "jargon.engineer": {review: "agent"}, // 把某个桶移进 agent 视图
     },
@@ -143,14 +143,14 @@ export default {
 
 ## 内置规则集：`builtin/default`
 
-官方推荐规则集 —— 360 条规则（默认启用 266 条）、覆盖 71 个命名空间，由人工维护的 anti-AI-slop 规则与中文规则样本（`shuorenhua` 说人话 / `avoid-ai-writing` / `humanizer`）策展合并而来。运行 `llmlint rules --format json` 可查看当前配置下的实时统计。
+官方推荐规则集 —— 360 条规则（默认启用 246 条）、覆盖 71 个命名空间，由人工维护的 anti-AI-slop 规则与中文规则样本（`shuorenhua` 说人话 / `avoid-ai-writing` / `humanizer`）策展合并而来。运行 `llmlint rules --format json` 可查看当前配置下的实时统计。
 
 - **agent 桶（默认展示）：** `filler`、`opening.cliche`、`inflation.significance`、`transition.summary`、`attribution.vague`、`cliche.uplift`、`sycophantic`、`jargon.business`……
 - **human 桶（高误杀 / 作者偏好）：** `punctuation.dash`、`metaphor`、`modifier`、`jargon.engineer`、`jargon.social`、`translationese`、`structure.fragment`……
 - **none 桶（机械类）：** `punctuation.dedup`、`mechanical.zero-width`。
 - **`mechanical.*`（语言无关、高精度）：** 零宽字符、同形字、残留的 `{{占位符}}`、复制 AI 输出带进来的角标（`:contentReference`、`oaicite`……）。
 
-内置已包含 R18 / 成人词汇规则；普通项目用 `namespaces: {"vocabulary.r18": "off"}` 关闭即可，不必手改规则文件。
+内置包含 R18 / 成人词汇规则，**默认关闭**；成人向项目用 `namespaces: {"vocabulary.r18": {enabled: true}}` 开回即可，不必手改规则文件。
 
 ## 退出码
 

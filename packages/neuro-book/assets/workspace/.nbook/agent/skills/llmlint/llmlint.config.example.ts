@@ -14,8 +14,8 @@ export default {
     trustedRulesets: [],
     rulesetOverrides: {},
     namespaces: {
-        // 普通（非 R18）项目关闭成人词汇检查
-        "vocabulary.r18": "off",
+        // R18 词汇规则内置默认关闭；成人向项目去掉下行注释显式开回
+        // "vocabulary.r18": {enabled: true},
         // 不想看商务黑话候选时关掉整类
         "商务黑话": "off",
         // 对象形态：只调整审查受众，不改级别、不禁用（把某类默认移进 agent 桶）

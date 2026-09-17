@@ -15,12 +15,12 @@
 
 ## 内置规则包
 
-默认启用 `builtin/default`。它合并人工维护的 anti-ai-slop 规则与 `curated-cn-rule-samples` 中文规则样本的策展结果：同 detector 去重、同 target 的替换候选取并集。内置资产放在 `rules/` 目录下并按维护需要分层，例如 `rules/vocabulary/r18.json`；用户仍通过 `llmlint.config.ts` 控制 ruleset、namespace 或 rule id。它包含 R18/成人词汇规则；普通项目如果不希望检查这类词汇，可以在配置中设置：
+默认启用 `builtin/default`。它合并人工维护的 anti-ai-slop 规则与 `curated-cn-rule-samples` 中文规则样本的策展结果：同 detector 去重、同 target 的替换候选取并集。内置资产放在 `rules/` 目录下并按维护需要分层，例如 `rules/vocabulary/r18.json`；用户仍通过 `llmlint.config.ts` 控制 ruleset、namespace 或 rule id。其中 R18/成人词汇规则默认关闭，成人向项目可以在配置中开回：
 
 ```typescript
 export default {
     namespaces: {
-        "vocabulary.r18": "off",
+        "vocabulary.r18": {enabled: true},
     },
 };
 ```

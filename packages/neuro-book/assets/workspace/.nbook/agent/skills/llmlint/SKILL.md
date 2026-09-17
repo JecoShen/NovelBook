@@ -38,7 +38,7 @@ bun "<skill-root>/bin/llmlint.ts" guide
 - `standard`：再加改法要重写整句的规则。日常默认。
 - `wide` / `full`：`full` 会带上全部逐词替换与定点删除词表，体积明显变大。用户明确要「全部」时才用。
 
-判别力档位需要外部 eval 报告，用 `--profile <report.json>` 传入；没有报告时 `core` 只剩语义规则、`wide` 等同 `standard`。规则启停沿用项目级 `llmlint.config.ts`，例如关掉 `vocabulary.r18` 后它不会出现在摘要里。
+判别力档位需要外部 eval 报告，用 `--profile <report.json>` 传入；没有报告时 `core` 只剩语义规则、`wide` 等同 `standard`。规则启停沿用项目级 `llmlint.config.ts`，例如关掉 `vocabulary.body` 后它不会出现在摘要里。
 
 要把摘要长期挂进某个写作流程（例如存成文风预设文件），先向用户说明这是**从规则库生成**的产物：规则库更新后重新跑 `guide` 覆盖即可，不要手工编辑生成结果，否则下次同步会丢改动。
 

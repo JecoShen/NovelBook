@@ -78,7 +78,7 @@ const CURATED_RULESETS: CuratedRulesetSpec[] = [
         title: "llmlint Default Rules",
         description: "llmlint 官方推荐规则集，合并人工维护的 anti-ai-slop 规则与中文规则样本的策展结果。",
         sourceFiles: CURATION_SOURCE_FILES,
-        forceEnableNamespaces: ["vocabulary.r18"],
+        // vocabulary.r18 刻意不 forceEnable：R18 规则默认关闭入库（产品决策），由测试钉死；再生成时源组若开启会产生 diff 供评审拦截。
         forceDisableSourceFiles: ["极其杀手.json"],
     },
 ];
