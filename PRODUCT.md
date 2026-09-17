@@ -26,7 +26,7 @@ NeuroBook is a local-first AI workspace for long-form novel writing. It exists b
 
 The product mechanism a neighboring product could not truthfully copy is the **four-pillar combination** on a **local-first** stack:
 
-1. **Event-sourced World Engine** — worldview is a stream of typed `patches` (replace / increment / remove / append), never direct mutation. Entry: `world-engine/schema/index.ts`; calendar entry: `world-engine/calendar.ts`.
+1. **Event-sourced World Engine** — worldview is a stream of typed `patches` (replace / increment / remove / append), never direct mutation. Entry: `packages/neuro-book/world-engine/schema/index.ts`; calendar entry: `packages/neuro-book/world-engine/calendar.ts`.
 2. **Two-tree Plot** — 承载树 (carrier tree, chapter presentation) × 因果树 (causality tree, plot organization), connected by `StoryScene`. Same scenes, two angles.
 3. **Markdown Studio** — TipTap-based long-form editor; the manuscript is plain Markdown in a Project Workspace.
 4. **llmlint** — public AI writing-style linter with 5 模式 detector (reversal TP 100% / FP 0%, short-drop TP 100%, plus suspense / dropSummary / scene six questions); ruleset that any AI-generated text must satisfy before the author accepts it.
@@ -62,12 +62,14 @@ New projects no longer generate a `simulation/` directory. Default templates cre
 - App SQLite at `workspace/.nbook/neuro-book.sqlite`; per-Project SQLite at `<project>/.nbook/project.sqlite`.
 - Project identity and display metadata: `<project>/project.yaml`.
 
-**Distribution shapes** (one product, multiple shapes):
+**Distribution shapes** (one product, multiple shapes — upstream capability record):
 
 - Linux x64 / ARM64 Product; macOS x64 / ARM64 Product; Windows x64 Product; Windows Portable; Container (GHCR); Manager; Source.
 - Desktop first-cut is Windows x64; macOS `.app`, public signing, updater, WebView2 distribution and Snap are not yet shipped.
 
-**Dev workflow** (this is product truth, not just ops): branches follow `{type}/{refs}-{slug}`; work in `.worktree/<slug>`; squash-merge via PR; `main` is the only integration branch. Batch work uses the **archive mode** (worktree + cp + 0 push / 0 merge / 0 force-push) — see `AGENTS.md` and the audit archive memory chain.
+**This fork's deployment contract** (contract-level, 2026-09-12): only local linux-x64 is deployed and supported — the PM2-hosted Nuxt product serving book.neoshen.dpdns.org. No desktop shell is deployed; darwin / Windows build or test failures are not action items for this fork, and the CI matrix is narrowed to the single platform. The upstream multi-platform matrix above remains the product capability record, not this deployment's commitment.
+
+**Dev workflow** (this is product truth, not just ops): `main` is the only integration branch; the default is direct work on `main` in the primary workspace. Branches / worktrees (`.worktree/<slug>`) are opened only for large or genuinely parallel work and are deleted immediately after use. The audit-era **archive mode** (worktree + cp + 0 push) was formally closed on 2026-08-20. Since the 0.10.3-canary line the repository is a **Bun workspace monorepo of 12 packages** (`packages/*`, shared rules in `packages/AGENTS.md`) — see `AGENTS.md` and `docs/standards/repository-workflow.md`.
 
 ## Capabilities and Constraints
 
@@ -76,25 +78,25 @@ New projects no longer generate a `simulation/` directory. Default templates cre
 - World Engine: core model, API, Workbench, and author main path are landed. Tasks 56 / 65 / 71 cover this.
 - Plot two trees: 承载树 × 因果树 with StoryScene bridge. Tasks 78 / 93 / 99.
 - Markdown Studio (TipTap) + 48px shared Activity Bar + Desktop Workbench.
-- Agent / Workflow main path landed; Provider API / Automatic Model Discovery merged via PR #101 (Task 104). Real Project, real external Provider, and full end-to-end browser flow are still pending.
+- Agent / Workflow main path landed; Provider API / Automatic Model Discovery merged via PR #101 (Task 104). Real external Provider end-to-end is verified (2026-09-13/14): DeepSeek v4-pro / v4-flash real calls through the Agent Bridge, doubao embedding, and web_search / web_fetch tools all e2e green. Full browser-verified author flow is still pending.
+- Agent Runtime in production (2026-09-13/14): all 14 builtin profiles compile green; 7 creative profiles run on deepseek-v4-pro with quality-tiered reasoningEffort (summarizer / world.engine = high, rest medium); Agent Bridge control plane enabled (auth prefix exemption `5ef27c84`, token injected via ecosystem `4c322a14`). Writer quality chain repaired end-to-end: llmlint polish command executable in production, lore injection scans chapter briefs, chapter-title implicit trigger and carryOver wiring landed (`56093e40`), summarizer writeback back-feeds canonical assets from the production overlay (`d4d1694d`).
 - Project lifecycle, snapshot, path, runtime artifact contract landed. Cross-environment release verification still pending.
 - llmlint 3.0.0 vendored; P1-3 lore-resolver (M-1..M-11 minor 11/11 APPLIED + I-1 production wiring 5 commits merged) with 32/32 lore + 16/16 writer profile tests passing; P1-4 scene-six-questions (level=low soft prompt, CJK-safe baseline, V1+V2 0/80 baseline); i134 perf 0.00/0.22/3.31 ms vs 100/20/50 ms thresholds (10000×/90×/15× margin).
-- Product Runtime: 5-platform Product, Windows Portable, Container, public manifest/checksum and GHCR published as `0.9.6-canary.20260814.024826Z.9653191d`; 22 release jobs green.
+- Product Runtime: current canary line is `0.10.3-canary` (RELEASE.md, 2026-09-13) — monorepo migration to 12 workspace packages closed out, Agent abort-persistence contract, lore writing injection, upstream UI fixes. This fork's production runs `0.10.2-canary.20260908.091411Z.2e86c254` plus commits through `e7e0f2e5`. Upstream evidence: 5-platform Product, Windows Portable, Container, public manifest/checksum and GHCR published as `0.9.6-canary.20260814.024826Z.9653191d`; 22 release jobs green.
 
 **Confirmed technical constraints**:
 
 - AGPL-3.0-only license. See `Brand Commitments`.
-- The 4 protected assets (writer.profile.tsx, neuro-agent-harness.ts, server/agent/lore/*, llmlint) are `shared mutable on main` for the I-1 era — this is a documented exception, not a pattern. After the 5-audit batch, future batches return to the 0-push / 0-merge archive mode.
+- The audit-era protected-assets exception (4 assets `shared mutable on main` for the I-1 era) ended with the archive-mode closure on 2026-08-20; these files now follow the default direct-on-`main` workflow.
 - Filesystem, Project SQLite, History SQLite, Session JSONL, Job JSON do not provide a global atomic transaction. Distributed-transaction or cross-language runtime is not on the table.
 - Electron / Tauri spike retains some cross-language duplicated implementation. That is an accepted architectural boundary.
 - Architecture debts (P2, not current runtime failures): `shared/Manager` runtime dependency cycle; `shared/server/agent` circular type dependency; core Facade single-class size; OpenAPI generated artifacts written back to route source. Boundary: see `docs/adr/0015-architecture-boundaries-and-deferred-structure.md`.
 
 **Explicitly undecided** (recorded, not invented):
 
-- Whether to publish a stable (non-canary) release and on what cadence.
+- Whether to publish a stable (non-canary) release and on what cadence. This fork's public release pipeline is additionally blocked: `manager:verify-public` structurally fails for the fork (upstream mid-train; contract-trimming decision pending, recorded 2026-09-13).
 - Whether the public Application Canary should bundle the Electron Desktop ZIP / Depot (currently it does not).
 - macOS real package (`.app`), public signing, updater, WebView2 distribution.
-- Real external Provider end-to-end flow with a real model.
 - Browser-acceptance and real-author writing smoke for the full product loop (focused tests and typecheck pass; browser smoke does not replace them).
 
 ## Brand Commitments
@@ -107,13 +109,15 @@ New projects no longer generate a `simulation/` directory. Default templates cre
 - **Open documentation surface**: docs/, reference/, .agents/tasks/, docs/adr/, and the published Release notes are part of the product, not afterthoughts.
 - **Theme system, not ad-hoc colors**: Novel IDE colors consume the variables registered in `app/utils/theme/README.md`; the 8 built-in themes are the contract. New themes register, not override.
 - **Status color semantics are stable**: `warning` (草稿/待审/未保存), `success` (完成/已同步), `danger` (错误/删除/冲突), `info` (运行中/引用/说明), `accent` (选中/当前/主操作). Content / editor / chip category colors are exceptions, not violations.
-- **Honest gaps**: capabilities still pending (stable release, macOS, signing, real external Provider, full browser-verified author flow) are documented in `PROJECT-STATUS.md` and `RELEASE.md`, not papered over. Future work must not invent evidence that does not exist.
+- **Honest gaps**: capabilities still pending (stable release, this fork's public release pipeline blocked by `manager:verify-public`, macOS, signing, full browser-verified author flow) are documented in `PROJECT-STATUS.md` and `RELEASE.md`, not papered over. Future work must not invent evidence that does not exist.
 
 ## Evidence on Hand
 
 Real evidence paths and counts; future work must not fabricate any of these:
 
-- **Published Release**: `v0.9.6-canary.20260814.024826Z.9653191d` — 12 public assets, 22 jobs green, source revision `778ef7d413650472df847601607e5983aa31e949`, GHCR digest `sha256:34294b4a...`. See `PROJECT-STATUS.md` § "2026-08-14 `0.9.6-canary` 发布状态".
+- **Current canary line**: `0.10.3-canary` (RELEASE.md, 2026-09-13) — monorepo migration to 12 workspace packages closed out, Agent abort-persistence contract, lore writing injection. This fork's production deployment runs `0.10.2-canary.20260908.091411Z.2e86c254` plus commits through `e7e0f2e5` (2026-09-14). Last upstream public release evidence: `v0.9.6-canary.20260814.024826Z.9653191d` — 12 public assets, 22 jobs green, source revision `778ef7d413650472df847601607e5983aa31e949`, GHCR digest `sha256:34294b4a...`. See `PROJECT-STATUS.md`.
+- **Agent Runtime verified e2e (2026-09-13/14)**: real external Provider end-to-end green — DeepSeek v4-flash via the Agent Bridge (auth prefix exemption `5ef27c84`; bridge token injected via ecosystem `4c322a14`), 7 creative profiles on deepseek-v4-pro with tiered reasoningEffort, doubao-embedding-vision with explicit `dimensions: 2048` (1536 rejected with 400), tavily web_search + local-readability web_fetch. All 14 builtin profiles compile green in production. Writer quality chain: llmlint polish command executable, lore injection scans chapter briefs, chapter-title implicit trigger + carryOver wired (`56093e40`), summarizer writeback back-feeds canonical (`d4d1694d`), 22 lorebook files cleaned of 35 generic-word triggers.
+- **Quality gates (2026-09-11/12)**: push-triggered CI restored after the 2026-09-10 monorepo merge broke it (deferred upstream `7ed1630b` pulled in); Full tests first complete green 2026-09-12 (run 34691013707, 26m42s — worker=1, projection sourceRoot decoupling, data-plane mocks); docs:check 247→0.
 - **Manager**: `0.1.0-canary.54` public provenance verified.
 - **llmlint 3.0.0** vendored (sibling `llmlint` repo). 5 模式 detector TP 100% / FP 0% on the locked baseline; P1-4 scene-six-questions baseline 0/80 (V1 + V2). Source: `.agents/tasks/51-anti-ai-slop-skill/README.md`.
 - **P1-3 lore-resolver + I-1 wiring**: 14 commits merged into `main` (`49e62466` etc.), spec v4.5 → v4.7, 32/32 lore + 16/16 writer profile tests, tsc 0 errors, i134 perf far under threshold. Source: `docs/superpowers/specs/2026-08-19-p1-3-lore-resolver.md`.
@@ -141,7 +145,7 @@ Real evidence paths and counts; future work must not fabricate any of these:
 
 4. **AI as assistant, not author.** llmlint rules are a hard gate. The author decides; the AI proposes. Style rules are public and audited, not proprietary black boxes.
 
-5. **Honest gaps over papered-over claims.** Capabilities still pending (stable, macOS, signing, real external Provider, full browser-verified author flow) are recorded in `PROJECT-STATUS.md` and `RELEASE.md`. Future work must not invent evidence that does not exist, and must not claim "tested" when only "compiled" or "typechecked" is true.
+5. **Honest gaps over papered-over claims.** Capabilities still pending (stable release, fork public release pipeline, macOS, signing, full browser-verified author flow) are recorded in `PROJECT-STATUS.md` and `RELEASE.md`. Future work must not invent evidence that does not exist, and must not claim "tested" when only "compiled" or "typechecked" is true.
 
 ## Accessibility & Inclusion
 
