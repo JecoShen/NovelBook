@@ -228,23 +228,20 @@ const agentSurfaceRef = ref<InstanceType<typeof AgentChatSurface> | null>(null);
 type InlinePromptOwner = Readonly<{
     revision: number;
     operationKey: string;
-    surface: NonNullable<typeof agentSurfaceRef.value>;
 }>;
 let inlinePromptRequestRevision = 0;
 
-/** 捕获 Prompt Bar 调用时的 Surface 实例与独立 Inline Project generation。 */
+/** 捕获 Prompt Bar 调用时的 Inline controller 与 Project generation。 */
 function captureInlinePromptOwner(): InlinePromptOwner | null {
-    const surface = agentSurfaceRef.value;
-    const operationKey = unref(surface?.inlineOperationScopeKey);
-    if (!surface || typeof operationKey !== "string") return null;
-    return {revision: ++inlinePromptRequestRevision, operationKey, surface};
+    const operationKey = inlineEditorAgent.operationScopeKey.value;
+    if (!operationKey) return null;
+    return {revision: ++inlinePromptRequestRevision, operationKey};
 }
 
 /** 页面副作用只能由当前 Prompt 请求和当前 Project generation 发布。 */
 function acceptsInlinePromptOwner(owner: InlinePromptOwner): boolean {
     return owner.revision === inlinePromptRequestRevision
-        && agentSurfaceRef.value === owner.surface
-        && unref(owner.surface.inlineOperationScopeKey) === owner.operationKey;
+        && inlineEditorAgent.operationScopeKey.value === owner.operationKey;
 }
 
 const studio = useMarkdownStudioController({
@@ -1275,7 +1272,6 @@ async function sendInlineEditorPrompt(): Promise<void> {
         const result = await inlineEditorAgent.sendPrompt(
             payload,
             buildInlineVisibleMessage(payload),
-            owner.operationKey,
         );
         if (!acceptsInlinePromptOwner(owner) || result.status === "superseded") return;
         inlinePromptInstruction.value = "";
@@ -1341,21 +1337,13 @@ async function createInlineEditorSession(): Promise<void> {
 }
 
 /**
- * 进入 Agent 模式查看当前 Inline AI session。
+ * 在右侧 Agent 面板中打开当前 Inline AI session。
  */
 async function openInlineEditorSessionChat(): Promise<void> {
     const owner = captureInlinePromptOwner();
     if (!owner) return;
     try {
-        agentSessionPanelOpen.value = true;
-        await nextTick();
-        const result = await owner.surface.openInlineEditorSession();
-        if (result.status === "failed") {
-            if (owner.revision === inlinePromptRequestRevision && agentSurfaceRef.value === owner.surface) {
-                inlinePromptStatusText.value = result.message;
-            }
-            return;
-        }
+        const result = await inlineEditorAgent.openSession();
         if (!acceptsInlinePromptOwner(owner) || result.status === "superseded") return;
         await showAgentSession(result.value.sessionId);
     } catch (error) {
@@ -1388,16 +1376,7 @@ watch(currentWorkspaceViewMode, (mode) => {
     viewMode.value = mode;
 }, {immediate: true});
 
-watch([inlinePromptAvailable, agentSurfaceRef], ([available, surface]) => {
-    if (available && surface?.refreshInlineEditorSessions) {
-        void surface.refreshInlineEditorSessions().catch((error: unknown) => {
-            if (agentSurfaceRef.value !== surface) return;
-            notification.error(resolveApiErrorMessage(error, t("ide.inlineAi.bindFailed")), {title: "Inline AI"});
-        });
-    }
-}, {immediate: true});
-
-watch(() => unref(agentSurfaceRef.value?.inlineOperationScopeKey), (nextScope, previousScope) => {
+watch(() => inlineEditorAgent.operationScopeKey.value, (nextScope, previousScope) => {
     if (previousScope === undefined || nextScope === previousScope) return;
     inlinePromptRequestRevision += 1;
     inlinePromptRunning.value = false;

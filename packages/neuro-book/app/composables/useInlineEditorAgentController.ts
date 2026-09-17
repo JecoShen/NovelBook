@@ -221,10 +221,7 @@ export function useInlineEditorAgentController(
         operationRevision.value += 1;
     }
 
-    function captureOperation(expectedOperationKey?: string): AgentSurfaceActivationAttempt | null {
-        if (expectedOperationKey !== undefined && expectedOperationKey !== operationScopeKey.value) {
-            return null;
-        }
+    function captureOperation(): AgentSurfaceActivationAttempt | null {
         return operationController.capture(scopeKey.value);
     }
 
@@ -411,9 +408,8 @@ export function useInlineEditorAgentController(
     async function sendPrompt(
         payload: InlineEditPayload,
         visibleMessage: string,
-        expectedOperationKey?: string,
     ): Promise<AgentSurfaceOperationResult<void>> {
-        const owner = captureOperation(expectedOperationKey);
+        const owner = captureOperation();
         if (!owner) return {status: "superseded"};
         const targetResult = await ensureSession(owner);
         if (targetResult.status === "superseded") return targetResult;

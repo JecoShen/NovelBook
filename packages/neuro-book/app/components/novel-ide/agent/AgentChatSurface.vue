@@ -3781,7 +3781,6 @@ onMounted(() => {
 
 defineExpose({
     operationScopeKey: surfaceOperationKey,
-    inlineOperationScopeKey: inlineOperationKey,
     activeSessionId,
     sessions,
     loadingSession,
