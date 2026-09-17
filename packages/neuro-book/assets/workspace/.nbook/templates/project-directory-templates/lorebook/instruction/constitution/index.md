@@ -94,7 +94,7 @@ ext: {}
 
 ### 对用户的说明
 
-- 本文件应在项目初始化阶段（`novel-workflow-02-project-bootstrap`）与 Agent 共同确定。
+- 本文件应在项目初始化阶段（`novel-setup` 阶段一）与 Agent 共同确定。
 - 创作过程中可以修改本文件，但修改应谨慎——它影响所有已写和待写的章节。
 - 如果发现某条宪法规则在实践中不可行，应主动修改宪法而非默默违反。
 - 修改历史可在 `PROJECT-STATUS.md` 或 git log 中追踪。

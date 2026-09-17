@@ -1,6 +1,6 @@
 ---
-name: novel-workflow-11-analyze
-description: 小说流程 11：质量分析。不改正文，只产出结构化分析报告。覆盖情节一致性、角色弧完整度、伏笔兑现率、LLM 写作痕迹、信息边界越界和 World Engine 状态一致性。用于阶段性质量检查，或在进入下一卷/下一阶段前做全面体检。
+name: novel-quality-audit
+description: 小说质量分析。不改正文，只产出结构化分析报告。覆盖情节一致性、角色弧完整度、伏笔兑现率、LLM 写作痕迹、信息边界越界和 World Engine 状态一致性。用于阶段性质量检查，或在进入下一卷/下一阶段前做全面体检。
 when_to_use:
   - 用户要求检查质量、分析问题、做阶段性体检
   - 完成 3-5 章后做中期检查
@@ -9,20 +9,20 @@ when_to_use:
   - 用户感觉"哪里不对但说不上来"时做诊断
 ---
 
-# novel-workflow-11-analyze：质量分析
+# novel-quality-audit：质量分析
 
 本 skill 是写作流程中的**独立质量关卡**。它不修改任何正文，只产出结构化的分析报告。所有发现以严重度分级，附带证据和修复建议，但不自动执行修复——修复决定权在用户。
 
 ## 与其他流程的关系
 
 ```
-... → 09-chapter-writing → 11-analyze → 10-revision（如需修复）→ 11-analyze（复查）
+... → novel-writing（章节写作）→ novel-quality-audit → novel-writing 修订环节（如需修复）→ novel-quality-audit（复查）
 ```
 
-- **10-revision** 是修复工具，负责改正文。
-- **11-analyze** 是诊断工具，只发现问题、不修复。
-- 分析报告中标记为 `CRITICAL` / `HIGH` 的问题，用户可选择进入 10-revision 修复。
-- 修复完成后可再次运行 11-analyze 做复查（只复检上次标记的问题）。
+- **修复**回 `novel-writing` 正文循环的修订环节执行，负责改正文。
+- **novel-quality-audit** 是诊断工具，只发现问题、不修复。
+- 分析报告中标记为 `CRITICAL` / `HIGH` 的问题，用户可选择回 `novel-writing` 修订环节修复。
+- 修复完成后可再次运行 novel-quality-audit 做复查（只复检上次标记的问题）。
 
 ## 边界
 
@@ -259,7 +259,7 @@ when_to_use:
 
 - 建议优先修复：C1, H2, ...
 - 建议在下一轮写作中关注：...
-- 建议进入 10-revision 修复范围：...
+- 建议修复范围（回 `novel-writing` 修订环节）：...
 ```
 
 ## 收尾
@@ -268,7 +268,7 @@ when_to_use:
 
 - 分析范围和执行的维度。
 - 各严重度的问题数量。
-- 是否需要进入 10-revision 修复。
+- 是否需要回 `novel-writing` 修订环节修复。
 - 修复优先级建议。
 
 不要把完整报告内容重复粘贴到聊天中——报告已写入文件。
