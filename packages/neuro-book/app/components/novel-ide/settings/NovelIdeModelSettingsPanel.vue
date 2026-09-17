@@ -15,6 +15,7 @@ import {clearModelCostDraft, createModelCostDraft} from "nbook/app/components/no
 import {candidateFromLibrary, requiredModelFields} from "nbook/app/components/novel-ide/settings/model-draft-factory";
 import {parseDraftInteger, parseModelInput, parseModelReasoning, type ModelSettingsModelDraft, type ModelSettingsProviderDraft} from "nbook/app/components/novel-ide/settings/model-settings-draft";
 import type {SavedModelGroupView} from "nbook/app/components/novel-ide/settings/model-settings-view";
+import {reduceSetupWizardAutoOpen, type SetupWizardAutoOpenPhase} from "nbook/app/components/novel-ide/settings/setup-wizard-auto-open";
 import {useModelCheckSession} from "nbook/app/components/novel-ide/settings/useModelCheckSession";
 import {useModelDiscoverySession} from "nbook/app/components/novel-ide/settings/useModelDiscoverySession";
 import {useModelSettingsDraftSession, type ModelSettingsPanelProps, type ModelSettingsScope} from "nbook/app/components/novel-ide/settings/useModelSettingsDraftSession";
@@ -127,6 +128,7 @@ const expandedGroups = ref<Record<string, boolean>>({});
 const setupWizardStep = ref<0 | 1 | 2 | 3>(0);
 const setupWizardProviderKey = ref("");
 const setupWizardDismissed = ref(false);
+const setupWizardAutoOpenPhase = ref<SetupWizardAutoOpenPhase>("idle");
 const setupWizardProvider = computed(() => draft.value.providers.find((provider) => provider.localKey === setupWizardProviderKey.value) ?? null);
 const showSetupWizard = computed(() => !isProjectScope.value && !loading.value && setupWizardStep.value > 0);
 // 模板里 `as 1 | 2 | 3` 会被当成已废弃的 filter 管道,收窄放 computed 里做。
@@ -180,10 +182,15 @@ function closeSetupWizard(): void {
 }
 
 watch(() => [loading.value, draft.value.providers.length] as const, ([isLoading, providerCount]) => {
-    if (isLoading || isProjectScope.value) {
+    if (isProjectScope.value) {
         return;
     }
-    if (providerCount === 0 && !setupWizardDismissed.value && setupWizardStep.value === 0) {
+    const verdict = reduceSetupWizardAutoOpen(setupWizardAutoOpenPhase.value, isLoading, providerCount);
+    setupWizardAutoOpenPhase.value = verdict.phase;
+    if (isLoading) {
+        return;
+    }
+    if (verdict.shouldOpen && !setupWizardDismissed.value && setupWizardStep.value === 0) {
         setupWizardStep.value = 1;
     }
     // 草稿被整体重载(切换 scope / restore)时,向导引用的服务商可能已不在草稿里。
