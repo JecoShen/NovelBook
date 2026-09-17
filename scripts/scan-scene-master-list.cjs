@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// scan-scene-master-list.cjs — P2-5 半自动 scene-master-list 工具
-// 派生自 workspace/qi-shou-fan-shen-cheng-ding-fu/baseline-scan.cjs (i128/i130/i131/i132) 90% 代码
+// scan-scene-master-list.cjs — 半自动 scene-master-list 基线扫描工具
 // 8 列 schema: vol / chapter / title / beat / pov / scene / value_shift / hook_type
 // 6 列自动从 frontmatter 抽, 2 列手工留空
-// 严守调研报告 §7.4 抗过度 spec 化: 失败一律 soft 降级, 退出码 0
+// schema 与填写规范: packages/neuro-book/assets/reference/scene-master-list.md
+// 抗过度 spec 化: 失败一律 soft 降级, 退出码 0
 
 const fs = require('node:fs')
 const path = require('node:path')
@@ -54,7 +54,7 @@ for (const volName of VOLUMES) {
     const frontmatter = fmMatch[1]
     const body = fmMatch[2]
 
-    // 抽 6 自动列 (V1+V2 frontmatter 实际只有 chapter + beat 字段, 其他 fallback)
+    // 抽 6 自动列 (frontmatter 缺字段时走目录名 fallback 或留空)
     const vol = volName
     const chapterMatch = frontmatter.match(/^chapter:\s*(.+)$/m)
     const chapter = (chapterMatch ? chapterMatch[1] : '').trim().replace(/^["']|["']$/g, '')
@@ -71,7 +71,7 @@ for (const volName of VOLUMES) {
     const sceneMatches = body.match(/^## 场景/gm) || []
     const scene = String(sceneMatches.length)
 
-    // 2 手工列留空 (V1+V2 baseline 留空, V3 写作期填)
+    // 2 手工列留空 (机器不可抽, 作者写作期自填)
     const valueShift = ''
     const hookType = ''
 
@@ -88,8 +88,8 @@ const table = [
   ...rows.map(r => `| ${r.vol} | ${r.chapter} | ${r.title} | ${r.beat} | ${r.pov} | ${r.scene} | ${r.valueShift} | ${r.hookType} |`),
 ]
 
-const v1Rows = rows.filter(r => r.vol.includes('第1卷'))
-const v2Rows = rows.filter(r => r.vol.includes('第2卷'))
+const volCounts = {}
+for (const r of rows) volCounts[r.vol] = (volCounts[r.vol] || 0) + 1
 const beatHits = rows.filter(r => r.beat).length
 const povHits = rows.filter(r => r.pov).length
 const sceneHits = rows.filter(r => parseInt(r.scene, 10) > 0).length
@@ -97,19 +97,18 @@ const valueShiftFills = rows.filter(r => r.valueShift).length
 const hookTypeFills = rows.filter(r => r.hookType).length
 
 const summary = [
-  '# P2-5 Scene Master List — V1+V2 Baseline Report',
+  '# Scene Master List — Baseline Report',
   '',
   `> 生成日期: ${new Date().toISOString().split('T')[0]}`,
-  `> 工具: scripts/scan-scene-master-list.cjs (派生自 workspace/.../baseline-scan.cjs i130)`,
-  `> 范围: V1+V2 80 章 (调研报告 §2.1 "60 章" 已校正 80 章, V1=30 V2=50)`,
+  `> 工具: scripts/scan-scene-master-list.cjs`,
+  `> 范围: ${MANUSCRIPT_DIR}`,
   `> 8 列 schema: 6 自动 (vol/chapter/title/beat/pov/scene) + 2 手工留空 (value_shift/hook_type)`,
   '',
   '## Summary',
   '',
-  `- 总章数: ${rows.length} 行 (期望 80, 调研报告校正)`,
-  `- V1 30 章: ${v1Rows.length} 行`,
-  `- V2 50 章: ${v2Rows.length} 行`,
-  `- 6 自动列命中率: vol ${v1Rows.length + v2Rows.length}/${rows.length} / chapter ${rows.filter(r => r.chapter).length}/${rows.length} / title ${rows.filter(r => r.title).length}/${rows.length} / beat ${beatHits}/${rows.length} / pov ${povHits}/${rows.length} / scene ${sceneHits}/${rows.length}`,
+  `- 总章数: ${rows.length} 行`,
+  ...Object.keys(volCounts).sort().map(v => `- ${v}: ${volCounts[v]} 行`),
+  `- 6 自动列命中率: vol ${rows.length}/${rows.length} / chapter ${rows.filter(r => r.chapter).length}/${rows.length} / title ${rows.filter(r => r.title).length}/${rows.length} / beat ${beatHits}/${rows.length} / pov ${povHits}/${rows.length} / scene ${sceneHits}/${rows.length}`,
   `- 2 手工列留空: value_shift ${valueShiftFills}/${rows.length} / hook_type ${hookTypeFills}/${rows.length}`,
   `- 跳过: ${skipped} 章 (无 frontmatter 或无 index.md)`,
   '',
@@ -119,12 +118,10 @@ const summary = [
   '',
   '## Notes',
   '',
-  '- value_shift / hook_type 留空 (调研报告 §7.4 抗过度 spec 化, P2-5 决策不强制)',
-  '- V1 30 / V2 50 是项目实际章数, 调研报告 §2.1 "60 章" 是项目初期估算已过期',
-  '- manuscript 实际路径: 第1卷-坠落/NNN-标题/index.md (不是调研报告假设 vol-01/ch-NNN/)',
-  '- 跟 P1-3 lore pov 字段 + i128 beat 字段 + i129 chapter-hook 5 模式 同源',
-  '- V3 写作期手工填 value_shift / hook_type 列, 不强制 (严守 §7.4)',
-  '- V1+V2 frontmatter 实际只有 chapter + beat 字段, title 走目录名 fallback, pov 留空',
+  '- value_shift / hook_type 留空 (抗过度 spec 化, 不强制; 作者写作期手工填)',
+  '- 卷目录识别: 名字以「第」开头且含「卷」字; 章节目录识别: NNN- 三位数字前缀, 内含 index.md',
+  '- frontmatter 缺字段 → 对应列留空; title 缺失时 fallback 到章节目录名 (剥掉 NNN- 前缀)',
+  '- schema 与填写规范: packages/neuro-book/assets/reference/scene-master-list.md',
   '',
 ].join('\n')
 
