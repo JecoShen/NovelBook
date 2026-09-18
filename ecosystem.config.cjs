@@ -10,7 +10,13 @@ module.exports = {
   apps: [
     {
       name: 'book-neoshen',
-      script: '.output/server/index.mjs',
+      // 走设计的启动路径 product-start（2026-09-18 起）：每次启动先 seedSystemAssets
+      // （资产随部署自动安装/升级，dirty/local 不动；bundled 包被删改则 fail-closed
+      // 拒绝启动 → 靠 max_restarts+backoff 兜底）+ check-migrations + prepare-system-assets，
+      // 再 spawn 真正的 nitro 子进程。此前裸跑 index.mjs 绕过 seed，导致 7-22 起
+      // state root 资产两月未同步（v1→v2 迁移从未触发）。注意：nitro 子进程
+      // stdio:ignore，PM2 日志不再有应用输出，应用日志看 logs/server-current.jsonl。
+      script: '.output/server/commands/product-start.mjs',
       interpreter: '/www/server/nodejs/v24.15.0/bin/bun',
       cwd: '/www/wwwroot/book.neoshen.dpdns.org',
       env: {
@@ -22,7 +28,7 @@ module.exports = {
         NEURO_BOOK_APPLICATION_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
         NEURO_BOOK_STATE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org',
         NEURO_BOOK_CACHE_ROOT: '/www/wwwroot/book.neoshen.dpdns.org/cache',
-        // 裸跑 index.mjs 也必须声明 Product 运行态身份（对齐 product-command.mjs 的注入）：
+        // Product 运行态身份显式声明（product-start 也会自行向上解析，显式值优先）：
         // 缺 PRODUCT_IMAGE_ROOT 时运行路径会误判为 Source 模式，去加载仓库源码投影
         // （#scripts 解析失败 → Agent API 全 500，2026-09-13 事故）；REPOSITORY_ROOT
         // 是 profile-dsl Import.path 在 Product Runtime 下的强制显式根。
