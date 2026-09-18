@@ -16,8 +16,12 @@ module.exports = {
       // 再 spawn 真正的 nitro 子进程。此前裸跑 index.mjs 绕过 seed，导致 7-22 起
       // state root 资产两月未同步（v1→v2 迁移从未触发）。注意：nitro 子进程
       // stdio:ignore，PM2 日志不再有应用输出，应用日志看 logs/server-current.jsonl。
-      script: '.output/server/commands/product-start.mjs',
-      interpreter: '/www/server/nodejs/v24.15.0/bin/bun',
+      // interpreter 'none' + bun 作 script：PM2 fork 容器用 require() 加载入口，
+      // 而 product-start.mjs 含顶层 await（require 不支持 async module），
+      // 必须让 PM2 直接 spawn bun 二进制（2026-09-18 首次切换因此崩环 9 次）。
+      script: '/www/server/nodejs/v24.15.0/bin/bun',
+      args: '.output/server/commands/product-start.mjs',
+      interpreter: 'none',
       cwd: '/www/wwwroot/book.neoshen.dpdns.org',
       env: {
         NODE_ENV: 'production',
