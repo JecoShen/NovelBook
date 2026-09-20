@@ -47,6 +47,10 @@ const runtimeWorkspaceWatchIgnore = [
 export default defineNuxtConfig({
     ssr: false,
     buildId: productBuildId,
+    // *.preview.vue 是带 mock 数据的开发探针页，不属于产品界面：生产构建经 ignore
+    // 从页面扫描与打包中整体排除（路由不存在即 404）；dev 由 nuxi dev 注入
+    // NODE_ENV=development 保持原样可用。若某探针页转正为产品功能，改名去掉 .preview。
+    ignore: process.env.NODE_ENV === "development" ? [] : ["**/*.preview.vue"],
     alias: {
         nbook: rootDir,
     },
