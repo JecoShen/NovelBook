@@ -2572,7 +2572,7 @@ describe("ProjectLifecycle", () => {
         }
     });
 
-    it("delete不等待tombstone清理但close会等待并保留后台cleanup诊断", async () => {
+    it("delete不等待回收区迁移但close会等待并保留后台cleanup诊断", async () => {
         const workspaceRoot = await mkdtemp(testHostPath("nbook-project-lifecycle-"));
         roots.push(workspaceRoot);
         const projectRoot = path.join(workspaceRoot, "delete-cleanup-diagnostic");
@@ -2582,7 +2582,7 @@ describe("ProjectLifecycle", () => {
             "kind: novel\ntitle: Delete Cleanup Diagnostic\nsummary: \"\"\n",
             "utf8",
         );
-        const cleanupFailure = Object.assign(new Error("injected tombstone cleanup failure"), {code: "EIO"});
+        const cleanupFailure = Object.assign(new Error("injected trash adopt failure"), {code: "EIO"});
         let announceCleanupStarted: (() => void) | null = null;
         const cleanupStarted = new Promise<void>((resolve) => {
             announceCleanupStarted = resolve;
@@ -2596,15 +2596,15 @@ describe("ProjectLifecycle", () => {
             mkdir,
             open,
             readFile,
-            rename,
-            rm: async (filePath, options) => {
-                if (filePath.replaceAll("\\", "/").includes("/.nbook/deleted-projects/v1-")) {
+            rename: async (oldPath, newPath) => {
+                if (newPath.replaceAll("\\", "/").includes("/.nbook/trash/")) {
                     announceCleanupStarted?.();
                     await cleanupGate;
                     throw cleanupFailure;
                 }
-                await rm(filePath, options);
+                await rename(oldPath, newPath);
             },
+            rm,
         };
         const lifecycle = new ProjectLifecycle(absoluteFsPath(workspaceRoot), {manifestAdapter});
 
@@ -2625,12 +2625,17 @@ describe("ProjectLifecycle", () => {
             expect(lifecycle.diagnostics.cleanupIssues).toEqual([{
                 kind: "transaction-cleanup",
                 operation: "delete",
-                target: "tombstone",
+                target: "trash",
                 phase: "remove",
                 path: expect.stringMatching(/^\.nbook\/deleted-projects\/v1-[0-9a-f-]+$/u),
                 code: "PROJECT_ROOT_IO",
                 systemCode: "EIO",
             }]);
+            // 回收迁移失败绝不rm原始数据：tombstone仍完整留在deleted-projects等待保留期兜底。
+            const tombstoneParent = path.join(workspaceRoot, ".nbook", "deleted-projects");
+            const tombstones = (await readdir(tombstoneParent)).filter((name) => name.startsWith("v1-"));
+            expect(tombstones).toHaveLength(1);
+            await expect(access(path.join(tombstoneParent, tombstones[0]!, "project.yaml"))).resolves.toBeUndefined();
         } finally {
             releaseCleanup?.();
             await lifecycle.close();

@@ -56,6 +56,11 @@ import {
     type ProjectCoverUpload,
     type PublishedProjectCover,
 } from "nbook/server/workspace-files/project-cover-store";
+import {
+    DEFAULT_PROJECT_TRASH_RETENTION_MS,
+    ProjectTrashStore,
+    type ProjectTrashEntry,
+} from "nbook/server/workspace-files/project-trash";
 
 export {
     isProjectLifecycleError,
@@ -197,6 +202,12 @@ export type ProjectDeleteResult = {
     readonly projectRoot: WorkspaceRelativePath;
 };
 
+/** restoreDeleted成功后返回重新发布的presence revision。 */
+export type ProjectRestoreResult = {
+    readonly revision: number;
+    readonly projectRoot: WorkspaceRelativePath;
+};
+
 const DEFAULT_PROJECT_TEMPLATE: ProjectTemplateName = "default";
 
 /** 首版只包装现有默认模板能力，不在Lifecycle内建设模板registry。 */
@@ -276,6 +287,10 @@ export type ProjectLifecycleOptions = {
     readonly rootIdentityOptions?: ProjectRootIdentityOptions;
     readonly snapshotTtlMs?: number;
     readonly templateAdapter?: ProjectTemplateAdapter;
+    /** 回收区条目保留时长；默认30天，超龄由周期清扫物理清除。 */
+    readonly trashRetentionMs?: number;
+    /** 回收区周期清扫间隔；默认每日，测试注入短间隔驱动确定性aging。 */
+    readonly trashSweepIntervalMs?: number;
     readonly watchDebounceMs?: number;
     readonly watcherAdapter?: ProjectLifecycleWatcherAdapter;
 };
@@ -322,8 +337,8 @@ export type ProjectDiscoveryIssue =
 /** Lifecycle事务临时目录未能完成best-effort清理时保留的内部诊断。 */
 export type ProjectCleanupIssue = {
     readonly kind: "transaction-cleanup";
-    readonly operation: "ensure" | "create" | "import" | "delete" | "metadata-update" | "cover-update";
-    readonly target: "staging" | "tombstone" | "manifest-temp" | "recovery-temp" | "cover-file";
+    readonly operation: "ensure" | "create" | "import" | "delete" | "restore" | "metadata-update" | "cover-update";
+    readonly target: "staging" | "tombstone" | "trash" | "manifest-temp" | "recovery-temp" | "cover-file";
     /** Workspace Root-relative内部事务路径，不暴露绝对文件系统位置。 */
     readonly path: WorkspaceRelativePath;
 } & (
@@ -400,7 +415,7 @@ export type PreparedProjectOpen = ProjectEnsureResult & {
 };
 
 /** Lifecycle公开mutation操作名。 */
-export type ProjectLifecycleOperation = "ensure" | "create" | "import" | "delete" | "metadata-update" | "cover-update";
+export type ProjectLifecycleOperation = "ensure" | "create" | "import" | "delete" | "restore" | "metadata-update" | "cover-update";
 
 /** Mutation失败时所处的稳定事务阶段。 */
 export type ProjectLifecycleTransactionPhase =
@@ -520,6 +535,7 @@ const PROJECT_DISCOVERY_ISSUE_LIMIT = 64;
 const PROJECT_CLEANUP_ISSUE_LIMIT = 64;
 const DEFAULT_PROJECT_SNAPSHOT_TTL_MS = 5_000;
 const DEFAULT_PROJECT_WATCH_DEBOUNCE_MS = 120;
+const DEFAULT_PROJECT_TRASH_SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const EMPTY_PROJECT_LIFECYCLE_DIAGNOSTICS: ProjectLifecycleDiagnosticsSnapshot = Object.freeze({
     revision: 0,
     discoveryIssues: Object.freeze([]),
@@ -574,6 +590,8 @@ export class ProjectLifecycle {
     private readonly templateAdapter: ProjectTemplateAdapter;
     private readonly watchDebounceMs: number;
     private readonly watcherAdapter: ProjectLifecycleWatcherAdapter;
+    private readonly trashStore: ProjectTrashStore;
+    private readonly trashSweepIntervalMs: number;
     private revision = 0;
     private cachedState: ProjectDiscoveryState | null = null;
     private invalidationGeneration = 0;
@@ -597,6 +615,9 @@ export class ProjectLifecycle {
     private watcherError: ProjectLifecycleDiagnosticError | null = null;
     private watchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
     private closePromise: Promise<void> | null = null;
+    private trashMaintenanceStarted = false;
+    private trashSweepTimer: ReturnType<typeof setInterval> | null = null;
+    private trashSweepInFlight = false;
     private readonly workspaceObservers = new Map<ResolvedProjectWorkspace, Set<() => void>>();
 
     /** 建立一个严格绑定到指定 Workspace Root 的 Project 生命周期。 */
@@ -616,6 +637,12 @@ export class ProjectLifecycle {
         this.templateAdapter = options.templateAdapter ?? nodeProjectTemplateAdapter(workspaceRoot);
         this.watchDebounceMs = options.watchDebounceMs ?? DEFAULT_PROJECT_WATCH_DEBOUNCE_MS;
         this.watcherAdapter = options.watcherAdapter ?? NODE_PROJECT_LIFECYCLE_WATCHER_ADAPTER;
+        this.trashStore = new ProjectTrashStore(workspaceRoot, {
+            adapter: this.transactionAdapter,
+            now: this.now,
+            retentionMs: options.trashRetentionMs ?? DEFAULT_PROJECT_TRASH_RETENTION_MS,
+        });
+        this.trashSweepIntervalMs = options.trashSweepIntervalMs ?? DEFAULT_PROJECT_TRASH_SWEEP_INTERVAL_MS;
     }
 
     /** 返回合法 Project 的轻量、不可变 snapshot。 */
@@ -1312,7 +1339,7 @@ export class ProjectLifecycle {
             }
 
             this.startBackground(
-                this.cleanupOwnedTransactionPath("delete", "tombstone", tombstoneRoot, tombstoneToken),
+                this.trashDeletedProject(ref, tombstoneRoot, tombstoneToken),
             );
             try {
                 await releaseProjectLocks(mutation, occupancy);
@@ -1363,6 +1390,291 @@ export class ProjectLifecycle {
             `delete无法发布Project absence：${ref.projectRoot}`,
             cause,
         );
+    }
+
+    /**
+     * 从回收区恢复一个已删除Project。
+     *
+     * 恢复就是把entry payload同卷rename回原一级路径并重新发布presence；原位置已被
+     * （同名新Project等）占用时稳定返回PROJECT_EXISTS，不覆盖任何现存数据。
+     */
+    async restoreDeleted(ref: ProjectWorkspaceRef): Promise<ProjectRestoreResult> {
+        return this.runOperation(
+            (operation) => this.restoreDeletedWithin(ref, operation),
+            {kind: "durable", commit: (result) => result},
+        );
+    }
+
+    /** 在持锁短事务中移回payload、发布presence，并把空entry壳回收降为后台best-effort。 */
+    private async restoreDeletedWithin(
+        inputRef: ProjectWorkspaceRef,
+        operation: LifecycleOperationContext,
+    ): Promise<ProjectRestoreResult> {
+        const ref = projectWorkspaceRef(inputRef.projectRoot);
+        const entry = await this.trashStore.findByProjectRoot(ref.projectRoot);
+        if (!entry) {
+            throw new ProjectLifecycleError(
+                "PROJECT_NOT_FOUND",
+                `回收区中不存在可恢复的Project：${ref.projectRoot}`,
+            );
+        }
+        const mutation = await this.lockModule.acquireMutation();
+        let occupancy: ProjectOccupancyHandle | null = null;
+        let committedResult: ProjectRestoreResult | null = null;
+        try {
+            operation.assertActive();
+            occupancy = await this.lockModule.acquireOccupancy(ref);
+            operation.assertActive();
+            const targetRoot = absoluteFsPath(path.join(this.workspaceRoot, ref.projectRoot));
+            const resolveExisting = async (): Promise<ResolvedProjectWorkspace | null> => {
+                try {
+                    return await this.resolveWithin(ref, operation);
+                } catch (error) {
+                    if (isProjectNotFoundError(error)) {
+                        return null;
+                    }
+                    throw error;
+                }
+            };
+            if (await resolveExisting()) {
+                throw new ProjectLifecycleTransactionError(
+                    "PROJECT_EXISTS",
+                    "restore",
+                    "publish-root",
+                    false,
+                    `Project Workspace已存在，无法从回收区恢复：${ref.projectRoot}`,
+                );
+            }
+            await assertRealPathContained(this.workspaceRoot, targetRoot);
+            if (await resolveExisting()) {
+                throw new ProjectLifecycleTransactionError(
+                    "PROJECT_EXISTS",
+                    "restore",
+                    "publish-root",
+                    false,
+                    `Project Workspace已存在，无法从回收区恢复：${ref.projectRoot}`,
+                );
+            }
+            operation.assertActive();
+            mutation.assertHealthy();
+            occupancy.assertHealthy();
+
+            const payloadToken = await this.rootIdentity.capturePhysical(entry.payloadRoot);
+            let payloadPublished = false;
+            try {
+                await this.transactionAdapter.rename(entry.payloadRoot, targetRoot);
+                payloadPublished = true;
+                await this.rootIdentity.revalidatePhysical(targetRoot, payloadToken);
+            } catch (error) {
+                if (!payloadPublished) {
+                    try {
+                        await this.rootIdentity.revalidatePhysical(targetRoot, payloadToken);
+                        payloadPublished = true;
+                    } catch (targetError) {
+                        try {
+                            await this.rootIdentity.revalidatePhysical(entry.payloadRoot, payloadToken);
+                        } catch (sourceError) {
+                            throw new ProjectLifecycleTransactionError(
+                                "PROJECT_ROLLBACK_FAILED",
+                                "restore",
+                                "rollback",
+                                "unknown",
+                                `restore rename失败后无法确认回收条目位置：${ref.projectRoot}`,
+                                new AggregateError(
+                                    [error, targetError, sourceError],
+                                    "Project restore rename结果无法判定",
+                                ),
+                            );
+                        }
+                        throw new ProjectLifecycleTransactionError(
+                            "PROJECT_PUBLISH_FAILED",
+                            "restore",
+                            "publish-root",
+                            false,
+                            `无法把回收条目移回Project位置：${ref.projectRoot}`,
+                            error,
+                        );
+                    }
+                }
+                await this.rollbackRestoredProject(
+                    ref,
+                    entry,
+                    targetRoot,
+                    payloadToken,
+                    "publish-root",
+                    error,
+                );
+            }
+
+            try {
+                const transactionGate = this.transactionCommitGate(operation, mutation, occupancy);
+                const commitGate = async () => {
+                    await transactionGate();
+                    await this.rootIdentity.revalidatePhysical(targetRoot, payloadToken);
+                    await transactionGate();
+                };
+                const state = await this.refreshState(operation, commitGate, mutation);
+                committedResult = Object.freeze({
+                    revision: state.revision,
+                    projectRoot: ref.projectRoot,
+                });
+            } catch (error) {
+                await this.rollbackRestoredProject(
+                    ref,
+                    entry,
+                    targetRoot,
+                    payloadToken,
+                    "publish-snapshot",
+                    error,
+                );
+            }
+
+            this.startBackground(this.removeRestoredTrashEntry(entry));
+            try {
+                await releaseProjectLocks(mutation, occupancy);
+            } catch (error) {
+                throwCommittedLockReleaseFailure("restore", error);
+            }
+            if (!committedResult) {
+                throw new Error(`restore未产生已提交结果：${ref.projectRoot}`);
+            }
+            return committedResult;
+        } catch (error) {
+            if (committedResult) {
+                throw error;
+            }
+            return await throwAfterLockRelease(error, mutation, occupancy, "restore");
+        }
+    }
+
+    /** restore未提交时只把仍由本事务拥有的payload移回原回收条目位置。 */
+    private async rollbackRestoredProject(
+        ref: ProjectWorkspaceRef,
+        entry: ProjectTrashEntry,
+        targetRoot: AbsoluteFsPath,
+        payloadToken: ProjectRootPhysicalToken,
+        phase: Extract<ProjectLifecycleTransactionPhase, "publish-root" | "publish-snapshot">,
+        cause: unknown,
+    ): Promise<never> {
+        try {
+            await this.rootIdentity.assertPhysicalVacant(entry.payloadRoot);
+            await this.rootIdentity.revalidatePhysical(targetRoot, payloadToken);
+            await this.transactionAdapter.rename(targetRoot, entry.payloadRoot);
+            await this.rootIdentity.revalidatePhysical(entry.payloadRoot, payloadToken);
+        } catch (rollbackError) {
+            throw new ProjectLifecycleTransactionError(
+                "PROJECT_ROLLBACK_FAILED",
+                "restore",
+                "rollback",
+                "unknown",
+                `restore失败且无法把Project root移回回收区：${ref.projectRoot}`,
+                new AggregateError([cause, rollbackError], "Project restore rollback失败"),
+            );
+        }
+        throw new ProjectLifecycleTransactionError(
+            "PROJECT_PUBLISH_FAILED",
+            "restore",
+            phase,
+            false,
+            `restore无法发布Project presence：${ref.projectRoot}`,
+            cause,
+        );
+    }
+
+    /**
+     * delete提交后把仍由本事务拥有的tombstone迁入回收区，替代即时rm。
+     * ownership复核与cleanupOwnedTransactionPath同一语义；迁移失败只留诊断并把数据留在
+     * 原tombstone，由周期清扫按保留期兜底，绝不在回收失败时rm原始数据。
+     */
+    private async trashDeletedProject(
+        ref: ProjectWorkspaceRef,
+        tombstoneRoot: AbsoluteFsPath,
+        tombstoneToken: ProjectRootPhysicalToken,
+    ): Promise<void> {
+        let ownership: Awaited<ReturnType<ProjectRootIdentityModule["inspectPhysicalOwnership"]>>;
+        try {
+            ownership = await this.rootIdentity.inspectPhysicalOwnership(tombstoneRoot, tombstoneToken);
+        } catch (error) {
+            this.recordCleanupIoIssue("delete", "tombstone", tombstoneRoot, "ownership-check", error);
+            return;
+        }
+        if (ownership === "missing") {
+            return;
+        }
+        if (ownership === "replaced") {
+            this.appendCleanupIssue(Object.freeze({
+                kind: "transaction-cleanup",
+                operation: "delete",
+                target: "tombstone",
+                phase: "ownership-check",
+                path: cleanupRelativePath(this.workspaceRoot, tombstoneRoot),
+                code: "PROJECT_ROOT_REPLACED",
+            }));
+            return;
+        }
+        try {
+            await this.trashStore.adopt({tombstoneRoot, projectRoot: ref.projectRoot});
+        } catch (error) {
+            this.recordCleanupIoIssue("delete", "trash", tombstoneRoot, "remove", error);
+        }
+    }
+
+    /** restore提交后回收空entry壳；失败只留诊断，保留期清扫最终兜底。 */
+    private async removeRestoredTrashEntry(entry: ProjectTrashEntry): Promise<void> {
+        try {
+            await this.trashStore.removeEntry(entry.entryRoot);
+        } catch (error) {
+            this.recordCleanupIoIssue("restore", "trash", entry.entryRoot, "remove", error);
+        }
+    }
+
+    /** 首个公开operation幂等启动回收区维护：启动即清扫一次，此后按固定周期清扫。 */
+    private ensureTrashMaintenance(): void {
+        if (this.lifecycleState !== "running" || this.trashMaintenanceStarted) {
+            return;
+        }
+        this.trashMaintenanceStarted = true;
+        this.startTrashSweep();
+        const timer = setInterval(() => {
+            this.startTrashSweep();
+        }, this.trashSweepIntervalMs);
+        // unref保证定时器绝不单独吊住进程；close()统一clearInterval，不产生悬挂句柄。
+        timer.unref?.();
+        this.trashSweepTimer = timer;
+    }
+
+    /** 登记一轮后台清扫；in-flight去重避免慢文件系统上清扫自重叠。 */
+    private startTrashSweep(): void {
+        if (this.lifecycleState !== "running" || this.trashSweepInFlight) {
+            return;
+        }
+        this.trashSweepInFlight = true;
+        this.startBackground((async () => {
+            try {
+                await this.runTrashSweep();
+            } finally {
+                this.trashSweepInFlight = false;
+            }
+        })());
+    }
+
+    /** 清扫超龄回收条目与遗留tombstone；失败压缩为cleanup诊断，不影响前台操作。 */
+    private async runTrashSweep(): Promise<void> {
+        const tombstoneParent = absoluteFsPath(path.join(this.workspaceRoot, ".nbook", "deleted-projects"));
+        try {
+            const report = await this.trashStore.sweep({tombstoneParent});
+            for (const issue of report.issues) {
+                this.recordCleanupIoIssue(
+                    "delete",
+                    "trash",
+                    issue.entryRoot,
+                    issue.phase === "scan" ? "ownership-check" : "remove",
+                    issue.error,
+                );
+            }
+        } catch (error) {
+            this.recordCleanupIoIssue("delete", "trash", tombstoneParent, "ownership-check", error);
+        }
     }
 
     /** 在单个Lifecycle operation内完成ensure，统一close/abort门禁。 */
@@ -1981,6 +2293,10 @@ export class ProjectLifecycle {
             clearTimeout(this.watchDebounceTimer);
             this.watchDebounceTimer = null;
         }
+        if (this.trashSweepTimer) {
+            clearInterval(this.trashSweepTimer);
+            this.trashSweepTimer = null;
+        }
         const watcher = this.watcher;
         const watcherClosePromise = this.watcherClosePromise;
         this.cachedState = null;
@@ -2343,6 +2659,7 @@ export class ProjectLifecycle {
         completion?: LifecycleOperationCompletion<Pending, Result>,
     ): Promise<Result> {
         this.assertRunning();
+        this.ensureTrashMaintenance();
         const operation: LifecycleOperationContext = {
             signal: this.abortController.signal,
             assertActive: () => this.assertOperationActive(),
