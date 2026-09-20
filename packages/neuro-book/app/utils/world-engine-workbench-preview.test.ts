@@ -27,7 +27,7 @@ import {
 import {isWorldWorkbenchSubjectSystemMaintenanceSlice} from "nbook/app/utils/world-engine-workbench-slice-classifier";
 import {buildWorldWorkbenchEmptySliceState} from "nbook/app/utils/world-engine-workbench-real";
 
-const pagePath = fileURLToPath(new URL("../pages/world-engine.workbench-preview.vue", import.meta.url));
+const pagePath = fileURLToPath(new URL("../pages/world-engine-workbench.preview.vue", import.meta.url));
 const workbenchDialogPath = fileURLToPath(new URL("../components/novel-ide/world-engine/WorldEngineWorkbenchDialog.vue", import.meta.url));
 const mockPath = fileURLToPath(new URL("./world-engine-workbench-preview-mock.ts", import.meta.url));
 const stateUtilPath = fileURLToPath(new URL("./world-engine-workbench-preview-state.ts", import.meta.url));

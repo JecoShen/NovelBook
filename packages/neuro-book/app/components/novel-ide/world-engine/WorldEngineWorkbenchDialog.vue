@@ -358,12 +358,13 @@ const headerOverflowItems = computed<DropdownItem[]>(() => [
         danger: true,
         disabled: workbenchActionBusy.value || !selectedSlice.value,
     },
-    {
+    // 预览探针页只在 dev 构建存在（生产构建排除 *.preview.vue），生产不出示死链入口。
+    ...(import.meta.dev ? [{
         value: "preview",
         label: "预览",
         iconClass: "i-lucide-external-link",
         disabled: workbenchActionBusy.value,
-    },
+    }] : []),
 ]);
 
 function handleHeaderOverflowSelect(value: string): void {
