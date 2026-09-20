@@ -15,6 +15,7 @@ import {
     WorkspaceContentStateFrontmatterSchema,
     WORKSPACE_CONTENT_STATUSES,
 } from "nbook/server/workspace-files/content-node-schema";
+import {writeTextFileAtomically} from "nbook/server/workspace-files/atomic-file-write";
 import {isRuntimeGeneratedWorkspacePath} from "nbook/server/workspace-files/runtime-generated-path";
 import type {WorkspaceIssueSummaryDto} from "nbook/shared/dto/workspace-tree.dto";
 
@@ -327,7 +328,7 @@ export async function writeWorkspaceTextFile(rootInput: AbsoluteFsPath, filePath
     }
     assertTextFileSize(Buffer.byteLength(content, "utf-8"));
     await fs.mkdir(path.dirname(absolutePath), {recursive: true});
-    await fs.writeFile(absolutePath, content, "utf-8");
+    await writeTextFileAtomically(absolutePath, content);
 }
 
 /**
@@ -355,7 +356,7 @@ export async function createWorkspaceFile(input: WorkspaceNewFileInput): Promise
     }
 
     await fs.mkdir(path.dirname(absolutePath), {recursive: true});
-    await fs.writeFile(absolutePath, input.content ?? "", "utf-8");
+    await writeTextFileAtomically(absolutePath, input.content ?? "");
     return buildWorkspaceNode(root, absolutePath, {
         lorebookRoot: DEFAULT_LOREBOOK_ROOT,
         chapterRoot: DEFAULT_CHAPTER_ROOT,
@@ -375,10 +376,10 @@ export async function createWorkspaceDirectory(input: WorkspaceNewDirectoryInput
 
     await fs.mkdir(absolutePath, {recursive: true});
     if (input.indexContent !== undefined && input.indexContent !== null) {
-        await fs.writeFile(path.join(absolutePath, "index.md"), input.indexContent, "utf-8");
+        await writeTextFileAtomically(path.join(absolutePath, "index.md"), input.indexContent);
     }
     if (input.stateContent !== undefined && input.stateContent !== null) {
-        await fs.writeFile(path.join(absolutePath, "state.md"), input.stateContent, "utf-8");
+        await writeTextFileAtomically(path.join(absolutePath, "state.md"), input.stateContent);
     }
 
     return buildWorkspaceNode(root, absolutePath, {
@@ -415,7 +416,7 @@ export async function createWorkspaceContentState(input: WorkspaceContentStateCr
         throw new Error(`目标 state.md 已存在: ${toWorkspaceDisplayPath(root, statePath)}`);
     }
 
-    await fs.writeFile(statePath, input.stateContent, "utf-8");
+    await writeTextFileAtomically(statePath, input.stateContent);
     return buildWorkspaceNode(root, absolutePath, {
         lorebookRoot: DEFAULT_LOREBOOK_ROOT,
         chapterRoot: DEFAULT_CHAPTER_ROOT,
@@ -912,7 +913,7 @@ async function fixMissingWorkspaceContentFrontmatter(root: string, node: Workspa
         return node;
     }
 
-    await fs.writeFile(indexPath, renderMarkdownDocument(fixed.frontmatter, parsed.body), "utf-8");
+    await writeTextFileAtomically(indexPath, renderMarkdownDocument(fixed.frontmatter, parsed.body));
     fixedPaths.push(toWorkspaceDisplayPath(root, indexPath));
     return {
         ...node,
