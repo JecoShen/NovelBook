@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import {createClient, type Client} from "@libsql/client";
+import {createClient, type Client, type InStatement, type ResultSet} from "@libsql/client";
 import {createError} from "h3";
 import * as yaml from "yaml";
 import {absoluteFsPath, assertRealPathContained, resolveContainedFilePath, type AbsoluteFsPath} from "nbook/server/runtime/paths/file-path";
@@ -17,6 +17,14 @@ export const PROJECT_DATABASE_RELATIVE_PATH = ".nbook/project.sqlite";
 export const PROJECT_CONFIG_RELATIVE_PATH = ".nbook/config.json";
 export const PROJECT_DELETED_MARKER_RELATIVE_PATH = ".nbook/deleted-project.json";
 const STORY_PLOT_BACKUP_RELATIVE_PATH = ".nbook/story-plot-backup.json";
+
+/** 当前产品写出的 Project SQLite schema 版本；迁移成功后在事务内由 PROJECT_MIGRATION_SQL 末尾盖章。 */
+const PROJECT_SCHEMA_VERSION = 1;
+
+/** 迁移步只依赖语句执行；libsql 的 Client 与 Transaction 都满足这个窄合同。 */
+type ProjectMigrationExecutor = {
+    execute(stmt: InStatement): Promise<ResultSet>;
+};
 
 const PROJECT_MIGRATION_SQL = `
 CREATE TABLE IF NOT EXISTS "ProjectMetadata" (
@@ -267,7 +275,7 @@ CREATE INDEX IF NOT EXISTS "WorldPatch_subjectId_instant_seq_idx" ON "WorldPatch
 CREATE INDEX IF NOT EXISTS "WorldPatch_subjectId_path_instant_idx" ON "WorldPatch"("subjectId", "path", "instant");
 CREATE INDEX IF NOT EXISTS "WorldPatch_path_idx" ON "WorldPatch"("path");
 INSERT INTO "ProjectMetadata" ("key", "value", "updatedAt")
-VALUES ('schemaVersion', '1', CURRENT_TIMESTAMP)
+VALUES ('schemaVersion', '${PROJECT_SCHEMA_VERSION}', CURRENT_TIMESTAMP)
 ON CONFLICT("key") DO UPDATE SET "value" = excluded."value", "updatedAt" = CURRENT_TIMESTAMP;
 `;
 
@@ -353,6 +361,8 @@ export async function initProjectDatabase(
 
 /**
  * 按 Project Workspace 绝对根目录初始化或迁移 Project SQLite。
+ * 迁移整体在单个事务内提交：重建表流程(DROP→RENAME)中途失败会回滚，
+ * 原表保持可用，不会在库里留下 *_next 残表或推进一半的 schemaVersion。
  */
 export async function initProjectDatabaseAtRoot(projectRoot: string): Promise<string> {
     const databasePath = path.join(projectRoot, PROJECT_DATABASE_RELATIVE_PATH);
@@ -360,18 +370,77 @@ export async function initProjectDatabaseAtRoot(projectRoot: string): Promise<st
     const client = createClient({url: toSqliteFileUrl(databasePath)});
     try {
         await client.execute("PRAGMA foreign_keys = ON");
-        for (const statement of splitSqlStatements(PROJECT_MIGRATION_SQL)) {
-            await client.execute(statement);
+        const schemaVersion = await readProjectSchemaVersion(client);
+        if (schemaVersion !== null && schemaVersion > PROJECT_SCHEMA_VERSION) {
+            throw createError({
+                statusCode: 409,
+                message: `Project SQLite schema 版本(${schemaVersion})高于当前产品支持的版本(${PROJECT_SCHEMA_VERSION})，请升级产品后再打开`,
+            });
         }
-        await migratePlotSceneBridgeSchema(client, projectRoot);
-        await migrateStorySceneChapterEntity(client);
-        await ensureWorldSliceSummaryColumn(client);
-        await ensurePlanningLayerColumns(client);
+        await runProjectSchemaMigration(client, projectRoot);
     } finally {
         await client.close();
         collectReleasedSqliteHandles();
     }
     return databasePath;
+}
+
+/**
+ * 读取 Project SQLite 的 schemaVersion，是迁移入口的版本分发点。
+ * 返回 null 表示新库或版本戳引入前的老库；现有迁移步全部按实际 schema 状态自检，
+ * 所以 null 与旧版本目前走同一份幂等步清单——版本号在这里先守住
+ * “高于产品版本即拒绝、且绝不回写降版”的边界，未来多版本断步从这里分发。
+ */
+async function readProjectSchemaVersion(client: ProjectMigrationExecutor): Promise<number | null> {
+    if (!await sqliteTableExists(client, "ProjectMetadata")) {
+        return null;
+    }
+    const result = await client.execute(`SELECT "value" FROM "ProjectMetadata" WHERE "key" = 'schemaVersion'`);
+    if (result.rows.length === 0) {
+        return null;
+    }
+    const parsed = Number(result.rows[0].value);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+        throw createError({
+            statusCode: 500,
+            message: `Project SQLite schemaVersion 元数据损坏：${String(result.rows[0].value)}`,
+        });
+    }
+    return parsed;
+}
+
+/**
+ * 单事务执行全部迁移步(BEGIN IMMEDIATE → COMMIT，任一步失败 ROLLBACK)。
+ * SQLite 的 PRAGMA foreign_keys 在事务内切换是 no-op，而重建表必须处于 FK OFF，
+ * 因此 OFF/ON 在事务外成对设置(SQLite 官方重建表流程)；libsql file: 连接是单连接，
+ * BEGIN 前设置的 FK OFF 在整个事务内持续有效。
+ */
+async function runProjectSchemaMigration(client: Client, projectRoot: string): Promise<void> {
+    await client.execute("PRAGMA foreign_keys = OFF");
+    const transaction = await client.transaction("write");
+    try {
+        for (const statement of splitSqlStatements(PROJECT_MIGRATION_SQL)) {
+            await transaction.execute(statement);
+        }
+        await migratePlotSceneBridgeSchema(transaction, projectRoot);
+        await migrateStorySceneChapterEntity(transaction);
+        await ensureWorldSliceSummaryColumn(transaction);
+        await ensurePlanningLayerColumns(transaction);
+        await transaction.commit();
+    } catch (error) {
+        try {
+            await transaction.rollback();
+        } catch {
+            // 原错误是迁移失败的真相；rollback 错误不能覆盖它。
+        }
+        throw error;
+    } finally {
+        try {
+            await client.execute("PRAGMA foreign_keys = ON");
+        } catch {
+            // 连接随 client.close() 释放；FK 恢复失败不改变已提交/已回滚的结果。
+        }
+    }
 }
 
 /**
@@ -386,11 +455,11 @@ function splitSqlStatements(sql: string): string[] {
 }
 
 /** 旧 Project SQLite 可能早于 slice-level summary，初始化时做幂等补列。 */
-async function ensureWorldSliceSummaryColumn(client: Client): Promise<void> {
-    const result = await client.execute(`PRAGMA table_info("WorldSlice")`);
+async function ensureWorldSliceSummaryColumn(executor: ProjectMigrationExecutor): Promise<void> {
+    const result = await executor.execute(`PRAGMA table_info("WorldSlice")`);
     const hasSummary = result.rows.some((row) => String(row.name ?? "") === "summary");
     if (!hasSummary) {
-        await client.execute(`ALTER TABLE "WorldSlice" ADD COLUMN "summary" TEXT NOT NULL DEFAULT ''`);
+        await executor.execute(`ALTER TABLE "WorldSlice" ADD COLUMN "summary" TEXT NOT NULL DEFAULT ''`);
     }
 }
 
@@ -399,60 +468,55 @@ async function ensureWorldSliceSummaryColumn(client: Client): Promise<void> {
  * 新库由 PROJECT_MIGRATION_SQL 的 CREATE TABLE 直接带上;老库靠这里补齐。
  * 必须在 migrateStorySceneChapterEntity 之后执行,避免补的列被旧库 StoryScene 重建丢掉。
  */
-async function ensurePlanningLayerColumns(client: Client): Promise<void> {
-    const threadColumns = await tableColumns(client, "StoryThread");
+async function ensurePlanningLayerColumns(executor: ProjectMigrationExecutor): Promise<void> {
+    const threadColumns = await tableColumns(executor, "StoryThread");
     if (!threadColumns.has("miceType")) {
-        await client.execute(`ALTER TABLE "StoryThread" ADD COLUMN "miceType" TEXT`);
+        await executor.execute(`ALTER TABLE "StoryThread" ADD COLUMN "miceType" TEXT`);
     }
-    const sceneColumns = await tableColumns(client, "StoryScene");
+    const sceneColumns = await tableColumns(executor, "StoryScene");
     if (!sceneColumns.has("outcomeType")) {
-        await client.execute(`ALTER TABLE "StoryScene" ADD COLUMN "outcomeType" TEXT`);
+        await executor.execute(`ALTER TABLE "StoryScene" ADD COLUMN "outcomeType" TEXT`);
     }
     if (!sceneColumns.has("pacingRole")) {
-        await client.execute(`ALTER TABLE "StoryScene" ADD COLUMN "pacingRole" TEXT`);
+        await executor.execute(`ALTER TABLE "StoryScene" ADD COLUMN "pacingRole" TEXT`);
     }
 }
 
 /** 将旧 StoryPlot 模型迁移为 Scene 字段，并清理 plot:// 剧情引用。 */
-async function migratePlotSceneBridgeSchema(client: Client, projectRoot: string): Promise<void> {
-    await ensureStorySceneWorldAnchorColumns(client);
-    await client.execute("PRAGMA foreign_keys = OFF");
-    try {
-        await backupAndMergeStoryPlots(client, projectRoot);
-        await rebuildStorySceneRefWithoutPlotTarget(client);
-        await client.execute(`DROP INDEX IF EXISTS "StoryPlot_sceneId_sortOrder_key"`);
-        await client.execute(`DROP INDEX IF EXISTS "StoryPlot_sceneId_sortOrder_idx"`);
-        await client.execute(`DROP TABLE IF EXISTS "StoryPlot"`);
-    } finally {
-        await client.execute("PRAGMA foreign_keys = ON");
-    }
+async function migratePlotSceneBridgeSchema(executor: ProjectMigrationExecutor, projectRoot: string): Promise<void> {
+    await ensureStorySceneWorldAnchorColumns(executor);
+    await backupAndMergeStoryPlots(executor, projectRoot);
+    await rebuildStorySceneRefWithoutPlotTarget(executor);
+    await executor.execute(`DROP INDEX IF EXISTS "StoryPlot_sceneId_sortOrder_key"`);
+    await executor.execute(`DROP INDEX IF EXISTS "StoryPlot_sceneId_sortOrder_idx"`);
+    await executor.execute(`DROP TABLE IF EXISTS "StoryPlot"`);
 }
 
 /** 补齐早期 Project SQLite 缺少的 Scene World Anchor 列。 */
-async function ensureStorySceneWorldAnchorColumns(client: Client): Promise<void> {
-    const columns = await tableColumns(client, "StoryScene");
+async function ensureStorySceneWorldAnchorColumns(executor: ProjectMigrationExecutor): Promise<void> {
+    const columns = await tableColumns(executor, "StoryScene");
     if (!columns.has("startInstant")) {
-        await client.execute(`ALTER TABLE "StoryScene" ADD COLUMN "startInstant" BIGINT`);
+        await executor.execute(`ALTER TABLE "StoryScene" ADD COLUMN "startInstant" BIGINT`);
     }
     if (!columns.has("endInstant")) {
-        await client.execute(`ALTER TABLE "StoryScene" ADD COLUMN "endInstant" BIGINT`);
+        await executor.execute(`ALTER TABLE "StoryScene" ADD COLUMN "endInstant" BIGINT`);
     }
     if (!columns.has("subjectIdsJson")) {
-        await client.execute(`ALTER TABLE "StoryScene" ADD COLUMN "subjectIdsJson" TEXT NOT NULL DEFAULT '[]'`);
+        await executor.execute(`ALTER TABLE "StoryScene" ADD COLUMN "subjectIdsJson" TEXT NOT NULL DEFAULT '[]'`);
     }
     if (!columns.has("locationSubjectId")) {
-        await client.execute(`ALTER TABLE "StoryScene" ADD COLUMN "locationSubjectId" TEXT`);
+        await executor.execute(`ALTER TABLE "StoryScene" ADD COLUMN "locationSubjectId" TEXT`);
     }
-    await client.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_startInstant_idx" ON "StoryScene"("startInstant")`);
+    await executor.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_startInstant_idx" ON "StoryScene"("startInstant")`);
 }
 
 /** 备份旧 Plot 行，并将其剧情信息分段合并到所属 Scene。 */
-async function backupAndMergeStoryPlots(client: Client, projectRoot: string): Promise<void> {
-    if (!await sqliteTableExists(client, "StoryPlot")) {
+async function backupAndMergeStoryPlots(executor: ProjectMigrationExecutor, projectRoot: string): Promise<void> {
+    if (!await sqliteTableExists(executor, "StoryPlot")) {
         return;
     }
 
-    const plotRows = await client.execute(`
+    const plotRows = await executor.execute(`
         SELECT "id", "sceneId", "sortOrder", "kind", "summary", "effect", "writingTip", "note", "createdAt", "updatedAt"
         FROM "StoryPlot"
         ORDER BY "sceneId" ASC, "sortOrder" ASC, "id" ASC
@@ -479,7 +543,7 @@ async function backupAndMergeStoryPlots(client: Client, projectRoot: string): Pr
     }
 
     for (const [sceneId, rows] of rowsByScene) {
-        const sceneResult = await client.execute({
+        const sceneResult = await executor.execute({
             sql: `SELECT "summary", "purpose", "writingTip" FROM "StoryScene" WHERE "id" = ?`,
             args: [sceneId],
         });
@@ -488,7 +552,7 @@ async function backupAndMergeStoryPlots(client: Client, projectRoot: string): Pr
             continue;
         }
 
-        await client.execute({
+        await executor.execute({
             sql: `
                 UPDATE "StoryScene"
                 SET "summary" = ?, "purpose" = ?, "writingTip" = ?, "updatedAt" = CURRENT_TIMESTAMP
@@ -521,124 +585,119 @@ export function chapterIdentityFromPath(chapterPath: string): {name: string; tit
  * 老库:为每个 (storyId, chapterPath) 自动补一行 StoryChapter(actId 留空,由 bootstrap/leader 后续分卷),
  * 再重建 StoryScene 表以 chapterId 替换 chapterPath 并回填映射。新库直接跳到索引兜底。
  */
-async function migrateStorySceneChapterEntity(client: Client): Promise<void> {
-    const columns = await tableColumns(client, "StoryScene");
+async function migrateStorySceneChapterEntity(executor: ProjectMigrationExecutor): Promise<void> {
+    const columns = await tableColumns(executor, "StoryScene");
     if (columns.has("chapterPath")) {
-        await client.execute("PRAGMA foreign_keys = OFF");
-        try {
-            // 1. 为每个 (storyId, chapterPath) 确保一行 StoryChapter,sortOrder 按 path 升序追加。
-            const pairs = await client.execute(`
-                SELECT DISTINCT "storyId", "chapterPath"
-                FROM "StoryScene"
-                WHERE "chapterPath" IS NOT NULL AND "chapterPath" != ''
-                ORDER BY "storyId" ASC, "chapterPath" ASC
-            `);
-            for (const row of pairs.rows) {
-                const storyId = Number(row.storyId);
-                const identity = chapterIdentityFromPath(String(row.chapterPath));
-                await client.execute({
-                    sql: `
-                        INSERT INTO "StoryChapter" ("storyId", "actId", "sortOrder", "name", "title")
-                        SELECT ?, NULL, COALESCE((SELECT MAX("sortOrder") FROM "StoryChapter" WHERE "storyId" = ?), 0) + 1, ?, ?
-                        WHERE NOT EXISTS (SELECT 1 FROM "StoryChapter" WHERE "storyId" = ? AND "name" = ?)
-                    `,
-                    args: [storyId, storyId, identity.name, identity.title, storyId, identity.name],
-                });
-            }
-
-            // 2. 收集 scene → chapter 映射(name 推导在 JS 侧,避免 SQL 重复实现)。
-            const sceneRows = await client.execute(`
-                SELECT "id", "storyId", "chapterPath" FROM "StoryScene"
-                WHERE "chapterPath" IS NOT NULL AND "chapterPath" != ''
-            `);
-            const sceneChapterIds: Array<{sceneId: number; chapterId: number}> = [];
-            for (const row of sceneRows.rows) {
-                const identity = chapterIdentityFromPath(String(row.chapterPath));
-                const chapterRow = await client.execute({
-                    sql: `SELECT "id" FROM "StoryChapter" WHERE "storyId" = ? AND "name" = ?`,
-                    args: [Number(row.storyId), identity.name],
-                });
-                const chapterId = chapterRow.rows[0]?.id;
-                if (chapterId !== undefined && chapterId !== null) {
-                    sceneChapterIds.push({sceneId: Number(row.id), chapterId: Number(chapterId)});
-                }
-            }
-
-            // 3. 重建 StoryScene:chapterId 替换 chapterPath。
-            await client.execute(`DROP INDEX IF EXISTS "StoryScene_threadId_threadSortOrder_key"`);
-            await client.execute(`DROP INDEX IF EXISTS "StoryScene_threadId_threadSortOrder_idx"`);
-            await client.execute(`DROP INDEX IF EXISTS "StoryScene_chapterPath_chapterSortOrder_idx"`);
-            await client.execute(`DROP INDEX IF EXISTS "StoryScene_storyId_status_idx"`);
-            await client.execute(`DROP INDEX IF EXISTS "StoryScene_startInstant_idx"`);
-            await client.execute(`
-                CREATE TABLE "StoryScene_next" (
-                    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    "storyId" INTEGER NOT NULL,
-                    "threadId" INTEGER NOT NULL,
-                    "chapterId" INTEGER,
-                    "threadSortOrder" INTEGER NOT NULL,
-                    "chapterSortOrder" INTEGER,
-                    "title" TEXT NOT NULL,
-                    "status" TEXT NOT NULL DEFAULT 'draft',
-                    "summary" TEXT NOT NULL DEFAULT '',
-                    "purpose" TEXT,
-                    "writingTip" TEXT,
-                    "note" TEXT,
-                    "startInstant" BIGINT,
-                    "endInstant" BIGINT,
-                    "subjectIdsJson" TEXT NOT NULL DEFAULT '[]',
-                    "locationSubjectId" TEXT,
-                    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    CONSTRAINT "StoryScene_storyId_fkey" FOREIGN KEY ("storyId") REFERENCES "Story" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-                    CONSTRAINT "StoryScene_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "StoryThread" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-                    CONSTRAINT "StoryScene_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "StoryChapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-                )
-            `);
-            await client.execute(`
-                INSERT INTO "StoryScene_next" (
-                    "id", "storyId", "threadId", "chapterId", "threadSortOrder", "chapterSortOrder",
-                    "title", "status", "summary", "purpose", "writingTip", "note",
-                    "startInstant", "endInstant", "subjectIdsJson", "locationSubjectId", "createdAt", "updatedAt"
-                )
-                SELECT
-                    "id", "storyId", "threadId", NULL, "threadSortOrder", "chapterSortOrder",
-                    "title", "status", "summary", "purpose", "writingTip", "note",
-                    "startInstant", "endInstant", "subjectIdsJson", "locationSubjectId", "createdAt", "updatedAt"
-                FROM "StoryScene"
-            `);
-            await client.execute(`DROP TABLE "StoryScene"`);
-            await client.execute(`ALTER TABLE "StoryScene_next" RENAME TO "StoryScene"`);
-            for (const {sceneId, chapterId} of sceneChapterIds) {
-                await client.execute({
-                    sql: `UPDATE "StoryScene" SET "chapterId" = ? WHERE "id" = ?`,
-                    args: [chapterId, sceneId],
-                });
-            }
-            await client.execute(`CREATE UNIQUE INDEX IF NOT EXISTS "StoryScene_threadId_threadSortOrder_key" ON "StoryScene"("threadId", "threadSortOrder")`);
-            await client.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_threadId_threadSortOrder_idx" ON "StoryScene"("threadId", "threadSortOrder")`);
-            await client.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_storyId_status_idx" ON "StoryScene"("storyId", "status")`);
-            await client.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_startInstant_idx" ON "StoryScene"("startInstant")`);
-        } finally {
-            await client.execute("PRAGMA foreign_keys = ON");
+        // 1. 为每个 (storyId, chapterPath) 确保一行 StoryChapter,sortOrder 按 path 升序追加。
+        const pairs = await executor.execute(`
+            SELECT DISTINCT "storyId", "chapterPath"
+            FROM "StoryScene"
+            WHERE "chapterPath" IS NOT NULL AND "chapterPath" != ''
+            ORDER BY "storyId" ASC, "chapterPath" ASC
+        `);
+        for (const row of pairs.rows) {
+            const storyId = Number(row.storyId);
+            const identity = chapterIdentityFromPath(String(row.chapterPath));
+            await executor.execute({
+                sql: `
+                    INSERT INTO "StoryChapter" ("storyId", "actId", "sortOrder", "name", "title")
+                    SELECT ?, NULL, COALESCE((SELECT MAX("sortOrder") FROM "StoryChapter" WHERE "storyId" = ?), 0) + 1, ?, ?
+                    WHERE NOT EXISTS (SELECT 1 FROM "StoryChapter" WHERE "storyId" = ? AND "name" = ?)
+                `,
+                args: [storyId, storyId, identity.name, identity.title, storyId, identity.name],
+            });
         }
+
+        // 2. 收集 scene → chapter 映射(name 推导在 JS 侧,避免 SQL 重复实现)。
+        const sceneRows = await executor.execute(`
+            SELECT "id", "storyId", "chapterPath" FROM "StoryScene"
+            WHERE "chapterPath" IS NOT NULL AND "chapterPath" != ''
+        `);
+        const sceneChapterIds: Array<{sceneId: number; chapterId: number}> = [];
+        for (const row of sceneRows.rows) {
+            const identity = chapterIdentityFromPath(String(row.chapterPath));
+            const chapterRow = await executor.execute({
+                sql: `SELECT "id" FROM "StoryChapter" WHERE "storyId" = ? AND "name" = ?`,
+                args: [Number(row.storyId), identity.name],
+            });
+            const chapterId = chapterRow.rows[0]?.id;
+            if (chapterId !== undefined && chapterId !== null) {
+                sceneChapterIds.push({sceneId: Number(row.id), chapterId: Number(chapterId)});
+            }
+        }
+
+        // 3. 重建 StoryScene:chapterId 替换 chapterPath。
+        await executor.execute(`DROP INDEX IF EXISTS "StoryScene_threadId_threadSortOrder_key"`);
+        await executor.execute(`DROP INDEX IF EXISTS "StoryScene_threadId_threadSortOrder_idx"`);
+        await executor.execute(`DROP INDEX IF EXISTS "StoryScene_chapterPath_chapterSortOrder_idx"`);
+        await executor.execute(`DROP INDEX IF EXISTS "StoryScene_storyId_status_idx"`);
+        await executor.execute(`DROP INDEX IF EXISTS "StoryScene_startInstant_idx"`);
+        await executor.execute(`
+            CREATE TABLE "StoryScene_next" (
+                "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                "storyId" INTEGER NOT NULL,
+                "threadId" INTEGER NOT NULL,
+                "chapterId" INTEGER,
+                "threadSortOrder" INTEGER NOT NULL,
+                "chapterSortOrder" INTEGER,
+                "title" TEXT NOT NULL,
+                "status" TEXT NOT NULL DEFAULT 'draft',
+                "summary" TEXT NOT NULL DEFAULT '',
+                "purpose" TEXT,
+                "writingTip" TEXT,
+                "note" TEXT,
+                "startInstant" BIGINT,
+                "endInstant" BIGINT,
+                "subjectIdsJson" TEXT NOT NULL DEFAULT '[]',
+                "locationSubjectId" TEXT,
+                "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT "StoryScene_storyId_fkey" FOREIGN KEY ("storyId") REFERENCES "Story" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT "StoryScene_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "StoryThread" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT "StoryScene_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "StoryChapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+            )
+        `);
+        await executor.execute(`
+            INSERT INTO "StoryScene_next" (
+                "id", "storyId", "threadId", "chapterId", "threadSortOrder", "chapterSortOrder",
+                "title", "status", "summary", "purpose", "writingTip", "note",
+                "startInstant", "endInstant", "subjectIdsJson", "locationSubjectId", "createdAt", "updatedAt"
+            )
+            SELECT
+                "id", "storyId", "threadId", NULL, "threadSortOrder", "chapterSortOrder",
+                "title", "status", "summary", "purpose", "writingTip", "note",
+                "startInstant", "endInstant", "subjectIdsJson", "locationSubjectId", "createdAt", "updatedAt"
+            FROM "StoryScene"
+        `);
+        await executor.execute(`DROP TABLE "StoryScene"`);
+        await executor.execute(`ALTER TABLE "StoryScene_next" RENAME TO "StoryScene"`);
+        for (const {sceneId, chapterId} of sceneChapterIds) {
+            await executor.execute({
+                sql: `UPDATE "StoryScene" SET "chapterId" = ? WHERE "id" = ?`,
+                args: [chapterId, sceneId],
+            });
+        }
+        await executor.execute(`CREATE UNIQUE INDEX IF NOT EXISTS "StoryScene_threadId_threadSortOrder_key" ON "StoryScene"("threadId", "threadSortOrder")`);
+        await executor.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_threadId_threadSortOrder_idx" ON "StoryScene"("threadId", "threadSortOrder")`);
+        await executor.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_storyId_status_idx" ON "StoryScene"("storyId", "status")`);
+        await executor.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_startInstant_idx" ON "StoryScene"("startInstant")`);
     }
     // chapterId 索引对新老库统一兜底;不能放 PROJECT_MIGRATION_SQL,老库在迁移前没有该列。
-    await client.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_chapterId_chapterSortOrder_idx" ON "StoryScene"("chapterId", "chapterSortOrder")`);
+    await executor.execute(`CREATE INDEX IF NOT EXISTS "StoryScene_chapterId_chapterSortOrder_idx" ON "StoryScene"("chapterId", "chapterSortOrder")`);
 }
 
 /** SQLite 不能稳定跨版本 DROP COLUMN，这里重建 StorySceneRef 来删除 targetPlotId。 */
-async function rebuildStorySceneRefWithoutPlotTarget(client: Client): Promise<void> {
-    const columns = await tableColumns(client, "StorySceneRef");
+async function rebuildStorySceneRefWithoutPlotTarget(executor: ProjectMigrationExecutor): Promise<void> {
+    const columns = await tableColumns(executor, "StorySceneRef");
     if (!columns.has("targetPlotId")) {
         return;
     }
 
-    await client.execute(`DROP INDEX IF EXISTS "StorySceneRef_sceneId_sortOrder_idx"`);
-    await client.execute(`DROP INDEX IF EXISTS "StorySceneRef_targetThreadId_idx"`);
-    await client.execute(`DROP INDEX IF EXISTS "StorySceneRef_targetSceneId_idx"`);
-    await client.execute(`DROP INDEX IF EXISTS "StorySceneRef_targetPlotId_idx"`);
-    await client.execute(`
+    await executor.execute(`DROP INDEX IF EXISTS "StorySceneRef_sceneId_sortOrder_idx"`);
+    await executor.execute(`DROP INDEX IF EXISTS "StorySceneRef_targetThreadId_idx"`);
+    await executor.execute(`DROP INDEX IF EXISTS "StorySceneRef_targetSceneId_idx"`);
+    await executor.execute(`DROP INDEX IF EXISTS "StorySceneRef_targetPlotId_idx"`);
+    await executor.execute(`
         CREATE TABLE "StorySceneRef_next" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             "sceneId" INTEGER NOT NULL,
@@ -657,7 +716,7 @@ async function rebuildStorySceneRefWithoutPlotTarget(client: Client): Promise<vo
             CONSTRAINT "StorySceneRef_targetSceneId_fkey" FOREIGN KEY ("targetSceneId") REFERENCES "StoryScene" ("id") ON DELETE SET NULL ON UPDATE CASCADE
         )
     `);
-    await client.execute(`
+    await executor.execute(`
         INSERT INTO "StorySceneRef_next" (
             "id", "sceneId", "sortOrder", "relation", "rawTarget", "targetKind",
             "targetThreadId", "targetSceneId", "visibility", "note", "createdAt", "updatedAt"
@@ -668,23 +727,23 @@ async function rebuildStorySceneRefWithoutPlotTarget(client: Client): Promise<vo
         FROM "StorySceneRef"
         WHERE "targetKind" != 'plot' AND "rawTarget" NOT LIKE 'plot://%'
     `);
-    await client.execute(`DROP TABLE "StorySceneRef"`);
-    await client.execute(`ALTER TABLE "StorySceneRef_next" RENAME TO "StorySceneRef"`);
-    await client.execute(`CREATE INDEX IF NOT EXISTS "StorySceneRef_sceneId_sortOrder_idx" ON "StorySceneRef"("sceneId", "sortOrder")`);
-    await client.execute(`CREATE INDEX IF NOT EXISTS "StorySceneRef_targetThreadId_idx" ON "StorySceneRef"("targetThreadId")`);
-    await client.execute(`CREATE INDEX IF NOT EXISTS "StorySceneRef_targetSceneId_idx" ON "StorySceneRef"("targetSceneId")`);
+    await executor.execute(`DROP TABLE "StorySceneRef"`);
+    await executor.execute(`ALTER TABLE "StorySceneRef_next" RENAME TO "StorySceneRef"`);
+    await executor.execute(`CREATE INDEX IF NOT EXISTS "StorySceneRef_sceneId_sortOrder_idx" ON "StorySceneRef"("sceneId", "sortOrder")`);
+    await executor.execute(`CREATE INDEX IF NOT EXISTS "StorySceneRef_targetThreadId_idx" ON "StorySceneRef"("targetThreadId")`);
+    await executor.execute(`CREATE INDEX IF NOT EXISTS "StorySceneRef_targetSceneId_idx" ON "StorySceneRef"("targetSceneId")`);
 }
 
-async function sqliteTableExists(client: Client, tableName: string): Promise<boolean> {
-    const result = await client.execute({
+async function sqliteTableExists(executor: ProjectMigrationExecutor, tableName: string): Promise<boolean> {
+    const result = await executor.execute({
         sql: `SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ? LIMIT 1`,
         args: [tableName],
     });
     return result.rows.length > 0;
 }
 
-async function tableColumns(client: Client, tableName: string): Promise<Set<string>> {
-    const result = await client.execute(`PRAGMA table_info("${tableName}")`);
+async function tableColumns(executor: ProjectMigrationExecutor, tableName: string): Promise<Set<string>> {
+    const result = await executor.execute(`PRAGMA table_info("${tableName}")`);
     return new Set(result.rows.map((row) => String(row.name ?? "")));
 }
 
