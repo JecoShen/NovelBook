@@ -396,14 +396,15 @@ async function readProjectSchemaVersion(client: ProjectMigrationExecutor): Promi
         return null;
     }
     const result = await client.execute(`SELECT "value" FROM "ProjectMetadata" WHERE "key" = 'schemaVersion'`);
-    if (result.rows.length === 0) {
+    const row = result.rows[0];
+    if (row === undefined) {
         return null;
     }
-    const parsed = Number(result.rows[0].value);
+    const parsed = Number(row.value);
     if (!Number.isInteger(parsed) || parsed < 1) {
         throw createError({
             statusCode: 500,
-            message: `Project SQLite schemaVersion 元数据损坏：${String(result.rows[0].value)}`,
+            message: `Project SQLite schemaVersion 元数据损坏：${String(row.value)}`,
         });
     }
     return parsed;
