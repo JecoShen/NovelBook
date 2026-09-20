@@ -12,12 +12,45 @@ describe("备份排除规则", () => {
         expect(shouldExcludeFromBackup("workspace\\a\\x.tmp")).toBe(true);
     });
 
+    it("排除收集侧真实产出的 workspace/ 前缀形态（生产实测回归钉）", () => {
+        // 收集器产出的条目名恒带 workspace/ 前缀，规则必须命中该形态而不是裸目录名
+        expect(shouldExcludeFromBackup("workspace/.nbook/logs")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/logs/app.log")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/secrets")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/secrets/token.json")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/novel-a/secrets/draft.md")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/.staging/pending.bin")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/novel-a/.nbook/runtime-artifact-import-cache/blob.bin")).toBe(true);
+    });
+
+    it("排除 .nbook 下的 traces/sessions/locks 运行态子树（含目录本身）", () => {
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/traces")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/traces/run-1/trace.jsonl")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/sessions")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/sessions/sess-1/session.jsonl")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/locks/projects/abc.metadata.json")).toBe(true);
+    });
+
     it("保留正常内容文件（含名字里带 logs 的非目录命中）", () => {
         expect(shouldExcludeFromBackup("workspace/manuscript/chapter-1.md")).toBe(false);
         expect(shouldExcludeFromBackup("config.yaml")).toBe(false);
         expect(shouldExcludeFromBackup(".env")).toBe(false);
         expect(shouldExcludeFromBackup("workspace/logs-notes.md")).toBe(false);
         expect(shouldExcludeFromBackup("workspace/.nbook/neuro-book.sqlite")).toBe(false);
+    });
+
+    it("保留作品数据与设置：正文、lore、项目库、history、profiles、workflows、jobs", () => {
+        expect(shouldExcludeFromBackup("workspace/novel-a/manuscript/chapter-1.md")).toBe(false);
+        expect(shouldExcludeFromBackup("workspace/novel-a/lorebook/world/history.md")).toBe(false);
+        expect(shouldExcludeFromBackup("workspace/novel-a/.nbook/project.sqlite")).toBe(false);
+        expect(shouldExcludeFromBackup("workspace/novel-a/.nbook/history.sqlite")).toBe(false);
+        expect(shouldExcludeFromBackup("workspace/.nbook/config.json")).toBe(false);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/profiles/writer/profile.json")).toBe(false);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/workflows/main.json")).toBe(false);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/jobs/job-1.json")).toBe(false);
+        // 作品目录里同名的 traces/sessions 不是 Agent 运行态，不误排
+        expect(shouldExcludeFromBackup("workspace/novel-a/traces/ch-1.md")).toBe(false);
+        expect(shouldExcludeFromBackup("workspace/novel-a/sessions/notes.md")).toBe(false);
     });
 
     it("SQLite 判定只按 .sqlite 后缀", () => {

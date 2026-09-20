@@ -26,7 +26,9 @@ beforeAll(async () => {
     fixtureRoot = await mkdtemp(testHostPath("nbook-archive-fixture-"));
     tmpDir = await mkdtemp(testHostPath("nbook-archive-out-"));
 
-    // 假 State Root：workspace 正文 + 应用库（真 SQLite）+ 顶层 config/.env + 应排除物
+    // 假 State Root：workspace 正文 + 应用库（真 SQLite）+ 顶层 config/.env + 应排除物。
+    // 应排除物必须放在 workspace 树内——收集器只走 workspace/，放在 State Root 顶层的
+    // logs/secrets 永远进不了收集器，无法钉住“规则与收集路径形态漂移”这类静默失效。
     await mkdir(join(fixtureRoot, "workspace", "novel-a", "manuscript"), {recursive: true});
     await mkdir(join(fixtureRoot, "workspace", ".nbook"), {recursive: true});
     await mkdir(join(fixtureRoot, "logs"), {recursive: true});
@@ -39,11 +41,31 @@ beforeAll(async () => {
     await writeFile(join(fixtureRoot, "config.yaml"), "auth:\n  enabled: true\n");
     await writeFile(join(fixtureRoot, ".env"), "SECRET=1\n");
 
-    const dbPath = join(fixtureRoot, "workspace", ".nbook", "neuro-book.sqlite").replaceAll("\\", "/");
-    const client = createClient({url: `file:${dbPath}`});
-    await client.execute("CREATE TABLE demo (id INTEGER PRIMARY KEY, name TEXT)");
-    await client.execute("INSERT INTO demo (name) VALUES ('hello')");
-    client.close();
+    // workspace 树内的应排除物（生产真实形态）与必须保留的设置类文件
+    await mkdir(join(fixtureRoot, "workspace", ".nbook", "agent", "traces", "run-1"), {recursive: true});
+    await mkdir(join(fixtureRoot, "workspace", ".nbook", "agent", "sessions", "sess-1"), {recursive: true});
+    await mkdir(join(fixtureRoot, "workspace", ".nbook", "agent", "profiles", "writer"), {recursive: true});
+    await mkdir(join(fixtureRoot, "workspace", ".nbook", "logs"), {recursive: true});
+    await mkdir(join(fixtureRoot, "workspace", ".nbook", "locks", "projects"), {recursive: true});
+    await mkdir(join(fixtureRoot, "workspace", "secrets"), {recursive: true});
+    await mkdir(join(fixtureRoot, "workspace", "novel-a", ".nbook", "runtime-artifact-import-cache"), {recursive: true});
+    await writeFile(join(fixtureRoot, "workspace", ".nbook", "agent", "traces", "run-1", "trace.jsonl"), "trace");
+    await writeFile(join(fixtureRoot, "workspace", ".nbook", "agent", "sessions", "sess-1", "session.jsonl"), "session");
+    await writeFile(join(fixtureRoot, "workspace", ".nbook", "agent", "profiles", "writer", "profile.json"), "{}");
+    await writeFile(join(fixtureRoot, "workspace", ".nbook", "logs", "app.log"), "workspace log");
+    await writeFile(join(fixtureRoot, "workspace", ".nbook", "locks", "projects", "lease.metadata.json"), "{}");
+    await writeFile(join(fixtureRoot, "workspace", "secrets", "token.json"), "fake-secret");
+    await writeFile(join(fixtureRoot, "workspace", "novel-a", ".nbook", "runtime-artifact-import-cache", "blob.bin"), "cache");
+
+    for (const dbPath of [
+        join(fixtureRoot, "workspace", ".nbook", "neuro-book.sqlite"),
+        join(fixtureRoot, "workspace", "novel-a", ".nbook", "project.sqlite"),
+    ]) {
+        const client = createClient({url: `file:${dbPath.replaceAll("\\", "/")}`});
+        await client.execute("CREATE TABLE demo (id INTEGER PRIMARY KEY, name TEXT)");
+        await client.execute("INSERT INTO demo (name) VALUES ('hello')");
+        client.close();
+    }
 });
 
 afterAll(async () => {
@@ -68,8 +90,8 @@ describe("BackupArchiveService", () => {
         );
 
         expect(result.warnings).toEqual([]);
-        expect(result.fileCount).toBe(4); // chapter-1.md + neuro-book.sqlite + config.yaml + .env
-        expect(progress.at(-1)).toEqual([4, 4]);
+        expect(result.fileCount).toBe(6); // chapter-1.md + profile.json + 2×.sqlite + config.yaml + .env
+        expect(progress.at(-1)).toEqual([6, 6]);
 
         const envelopeBytes = await readFile(result.backupPath);
         expect(envelopeBytes.byteLength).toBe(result.fileSize);
@@ -88,13 +110,20 @@ describe("BackupArchiveService", () => {
         const zipBytes = Buffer.concat(decryptedChunks);
 
         const entries = unzipSync(new Uint8Array(zipBytes));
-        expect(Object.keys(entries).sort()).toEqual([
+        const entryNames = Object.keys(entries);
+        expect(entryNames.sort()).toEqual([
             ".env",
             "config.yaml",
             "nb-backup.json",
+            "workspace/.nbook/agent/profiles/writer/profile.json",
             "workspace/.nbook/neuro-book.sqlite",
+            "workspace/novel-a/.nbook/project.sqlite",
             "workspace/novel-a/manuscript/chapter-1.md",
         ]);
+        // 排除物在 fixture 磁盘上真实存在且位于收集范围内，缺席只能来自规则命中；
+        // 规则与收集路径形态一旦再漂移（本次 bug 的复发形态），本条立即变红
+        expect(entryNames.some((name) => /(^|\/)(secrets|logs|\.staging|runtime-artifact-import-cache)(\/|$)/.test(name))).toBe(false);
+        expect(entryNames.some((name) => /(^|\/)\.nbook\/(agent\/(traces|sessions)|locks)(\/|$)/.test(name))).toBe(false);
 
         const manifest = JSON.parse(strFromU8(entries["nb-backup.json"] as Uint8Array)) as {formatVersion: number; encryption: string};
         expect(manifest.formatVersion).toBe(2);

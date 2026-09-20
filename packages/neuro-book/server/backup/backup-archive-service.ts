@@ -12,7 +12,8 @@ import type {BackupEncryptionKey} from "nbook/server/backup/backup-keyring-servi
 import {createBackupEnvelopeCipher} from "nbook/server/backup/backup-envelope";
 
 // State Root 归档服务（Task 112 spec §9.4）：范围 = workspace/ + config.yaml + .env；
-// 排除 logs/、锁/临时/wal/shm；SQLite 经 VACUUM INTO 冷快照保证一致性；
+// 排除集由 backup-archive-rules 判定（secrets/logs、.nbook 下 traces/sessions/locks、
+// 暂存与缓存、锁/临时/wal/shm）；SQLite 经 VACUUM INTO 冷快照保证一致性；
 // fflate 流式打包（边写边算 sha256，不持大 buffer）。
 
 export type BackupArchiveResult = {
