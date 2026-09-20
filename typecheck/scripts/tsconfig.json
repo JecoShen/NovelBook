@@ -73,6 +73,7 @@
     "../../packages/owned-process/src/windows-adapter.ts",
     "../../packages/owned-process/src/windows-supervisor-source.ts",
     "../../scripts/build/build-product-runtime-image.ts",
+    "../../scripts/build/client-chunk-budget.d.mts",
     "../../scripts/build/check-product-runtime-policies.ts",
     "../../scripts/build/local-product-publisher.ts",
     "../../scripts/build/measure-product-runtime-image.ts",

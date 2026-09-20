@@ -7,6 +7,7 @@ import {currentProductPlatform} from "#scripts/utils/product-platform";
 import {resolveWorkspaceRoots} from "#scripts/utils/workspace-roots";
 import type {ProductPlatform} from "@notnotype/neuro-book-contracts/platform";
 import {LocalProductPublisher} from "#scripts/build/local-product-publisher";
+import {assertClientChunkBudget} from "#scripts/build/client-chunk-budget.mjs";
 import {
     PRODUCT_RUNTIME_MAX_BYTES,
     PRODUCT_RUNTIME_MAX_FILES,
@@ -71,6 +72,8 @@ export async function buildProductRuntimeImage(): Promise<void> {
                 await buildProductRuntimePayload(context, buildEnvironment);
             },
         });
+        // chunk 预算必须在 publish 前断言：超支时候选直接报废，live `.output` 不被触碰。
+        await assertClientChunkBudget(candidate.path);
         const published = await new LocalProductPublisher(roots.repositoryRoot, builder).publish({
             candidate,
             explicitOutputRoot: process.env.NEURO_BOOK_OUTPUT_DIR?.trim() || undefined,
