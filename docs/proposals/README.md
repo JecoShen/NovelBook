@@ -8,6 +8,8 @@
 - [`../packages/neuro-book/docs/proposals/agent-skills-adaptation.md`](../../packages/neuro-book/docs/proposals/agent-skills-adaptation.md)：Agent Skills 项目化适配，状态为 `accepted`。
 - [`../packages/neuro-book/docs/proposals/agent-model-execution-surfaces.md`](../../packages/neuro-book/docs/proposals/agent-model-execution-surfaces.md)：Harness Agent、completion 与 headless 三套调用面、Catalog、授权和 Workflow 重放边界，状态为 `accepted`。
 - [`p-005-development-workflow-governance.md`](./p-005-development-workflow-governance.md)：`P-005`，current Work 是 Task 的强制容器，Task 指定唯一 canonical role；Issue 由 Work 可选引用，Proposal 独立且可被多个 Work 引用，Agent主导执行，开发者在明示节点参与，PM/Reviewer按需，状态为`accepted`。
+- [`p-006-state-root-out-of-checkout.md`](./p-006-state-root-out-of-checkout.md)：`P-006`，生产 State Root 迁出 git checkout 根，消除 `git clean -fdx` 灭失全部用户数据（含本地备份）的单点失败域，状态为 `draft`。
+- [`p-007-production-deploy-rollback.md`](./p-007-production-deploy-rollback.md)：`P-007`，本机生产部署改为版本化产物 + symlink 原子切换 + 健康门禁（含 browser-smoke）+ 失败回切，消除无回滚、构建窗口事故与运行版本脱钩，状态为 `draft`。
 
 已完成沉淀的信息架构提案见 [`../packages/neuro-book/docs/archived/proposals/documentation-information-architecture.md`](../../packages/neuro-book/docs/archived/proposals/documentation-information-architecture.md)。
 
