@@ -71,8 +71,6 @@ export default defineNuxtConfig({
             include: [
                 "@dnd-kit/dom",
                 "@dnd-kit/vue",
-                "@milkdown/core",
-                "@milkdown/prose",
                 "@tiptap/core",
                 "@tiptap/extension-placeholder",
                 "@tiptap/markdown",
