@@ -94,6 +94,10 @@ export default defineNuxtConfig({
         },
         build: {
             reportCompressedSize: false,
+            // 不要在这里加 manualChunks：monaco/mermaid/tiptap 天然是 entry 的
+            // dynamic import（懒加载），manualChunks 会把它们提升为 entry 的静态
+            // 依赖变成首屏预载（2026-09-20 实测回归）。首屏 eager 集合由
+            // scripts/build/client-chunk-budget.mjs 在产物层做预算门禁。
         },
     },
     components: [
@@ -166,10 +170,6 @@ export default defineNuxtConfig({
         "the-new-css-reset/css/reset.css",
         "nbook/app/styles/theme-vars.css",
         "nbook/app/styles/reference-chips.css",
-        "@vue-flow/core/dist/style.css",
-        "@vue-flow/core/dist/theme-default.css",
-        "@vue-flow/controls/dist/style.css",
-        "@vue-flow/minimap/dist/style.css",
     ],
     modules: [
         "nuxt-auth-utils",

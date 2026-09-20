@@ -11,6 +11,12 @@ import {
     VueFlow,
 } from "@vue-flow/core";
 import {MiniMap} from "@vue-flow/minimap";
+// vue-flow 样式随本组件的 chunk 加载：tree 组件树整体只被 preview 面消费，
+// 若放回 nuxt.config 全局 css[] 会让生产构建也携带这部分死样式。
+import "@vue-flow/core/dist/style.css";
+import "@vue-flow/core/dist/theme-default.css";
+import "@vue-flow/controls/dist/style.css";
+import "@vue-flow/minimap/dist/style.css";
 import {computed, nextTick, ref, watch} from "vue";
 import PlotSceneNode from "nbook/app/components/novel-ide/plot/tree/PlotSceneNode.vue";
 import PlotTreeToolbar from "nbook/app/components/novel-ide/plot/tree/PlotTreeToolbar.vue";
