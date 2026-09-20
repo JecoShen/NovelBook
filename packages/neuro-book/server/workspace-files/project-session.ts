@@ -16,6 +16,8 @@ import {
     type ProjectListSnapshot,
     type ProjectMetadataUpdateInput,
     type ProjectMetadataUpdateResult,
+    type ProjectRestoreResult,
+    type ProjectTrashedEntry,
 } from "nbook/server/workspace-files/project-lifecycle";
 import type {
     ProjectModuleHandle,
@@ -144,6 +146,16 @@ export function updateProjectCover(input: ProjectCoverUpdateInput): Promise<Proj
 /** 删除已经显式关闭的Project；本入口绝不隐式close。 */
 export function deleteProject(ref: ProjectWorkspaceRef): Promise<ProjectDeleteResult> {
     return serviceFor(resolveRuntimeWorkspaceRoot()).deleteProject(ref);
+}
+
+/** 列出回收区中仍可恢复的Project条目。 */
+export function listTrashedProjects(): Promise<readonly ProjectTrashedEntry[]> {
+    return serviceFor(resolveRuntimeWorkspaceRoot()).listTrashedProjects();
+}
+
+/** 从回收区恢复一个已删除Project；同名Session仍打开时拒绝。 */
+export function restoreDeletedProject(ref: ProjectWorkspaceRef): Promise<ProjectRestoreResult> {
+    return serviceFor(resolveRuntimeWorkspaceRoot()).restoreDeletedProject(ref);
 }
 
 /** strict-open accessor：只返回当前结构化Project的ready generation。 */

@@ -148,6 +148,32 @@ export const ProjectDeleteResponseDtoSchema = z.object({
     projectRoot: ProjectRootDtoSchema,
 }).strict();
 
+/** GET /api/projects/trash 的回收区条目；删除后保留期内可恢复。 */
+export const ProjectTrashEntryDtoSchema = z.object({
+    projectRoot: ProjectRootDtoSchema,
+    /** ISO 8601删除时间。 */
+    deletedAt: z.string(),
+    deletedAtMs: z.number().int().nonnegative(),
+    /** 条目将被周期清扫物理清除的时间点（deletedAtMs + 保留期）。 */
+    expiresAtMs: z.number().int().nonnegative(),
+}).strict();
+
+/** 回收区没有 presence revision 概念，列表只携带条目本身。 */
+export const ProjectTrashListResponseDtoSchema = z.object({
+    entries: z.array(ProjectTrashEntryDtoSchema),
+}).strict();
+
+/** POST /api/projects/trash/restore 的结构化目标。 */
+export const ProjectTrashRestoreRequestDtoSchema = z.object({
+    projectRoot: ProjectRootDtoSchema,
+}).strict();
+
+/** restore 成功后返回重新发布的 presence revision。 */
+export const ProjectTrashRestoreResponseDtoSchema = z.object({
+    revision: ProjectRevisionDtoSchema,
+    projectRoot: ProjectRootDtoSchema,
+}).strict();
+
 export type ProjectRootDto = z.infer<typeof ProjectRootDtoSchema>;
 export type ProjectMetadataDto = z.infer<typeof ProjectMetadataDtoSchema>;
 export type ProjectCandidateDto = z.infer<typeof ProjectCandidateDtoSchema>;
@@ -164,3 +190,7 @@ export type ProjectCloseRequestDto = z.infer<typeof ProjectCloseRequestDtoSchema
 export type ProjectCloseResponseDto = z.infer<typeof ProjectCloseResponseDtoSchema>;
 export type ProjectDeleteRequestDto = z.infer<typeof ProjectDeleteRequestDtoSchema>;
 export type ProjectDeleteResponseDto = z.infer<typeof ProjectDeleteResponseDtoSchema>;
+export type ProjectTrashEntryDto = z.infer<typeof ProjectTrashEntryDtoSchema>;
+export type ProjectTrashListResponseDto = z.infer<typeof ProjectTrashListResponseDtoSchema>;
+export type ProjectTrashRestoreRequestDto = z.infer<typeof ProjectTrashRestoreRequestDtoSchema>;
+export type ProjectTrashRestoreResponseDto = z.infer<typeof ProjectTrashRestoreResponseDtoSchema>;

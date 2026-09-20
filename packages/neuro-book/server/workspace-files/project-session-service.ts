@@ -17,6 +17,8 @@ import {
     type ProjectMetadataUpdateInput,
     type ProjectMetadataUpdateResult,
     type PreparedProjectOpen,
+    type ProjectRestoreResult,
+    type ProjectTrashedEntry,
 } from "nbook/server/workspace-files/project-lifecycle";
 import type {
     ProjectModuleHandle,
@@ -55,6 +57,8 @@ export type ProjectControlLifecycle = {
         access?: ProjectMetadataAccess,
     ): Promise<ProjectCoverUpdateResult>;
     delete(ref: ProjectWorkspaceRef): Promise<ProjectDeleteResult>;
+    readTrashedProjects(): Promise<readonly ProjectTrashedEntry[]>;
+    restoreDeleted(ref: ProjectWorkspaceRef): Promise<ProjectRestoreResult>;
     prepareOpen(ref: ProjectWorkspaceRef): Promise<PreparedProjectOpen>;
     /** 观察同一Lifecycle捕获的物理root identity；replacement通知必须是generation-scoped。 */
     observeWorkspace(
@@ -380,6 +384,28 @@ export class ProjectSessionService {
             ));
         }
         return this.lifecycle.delete(ref);
+    }
+
+    /** 列出回收区中仍可恢复的Project条目；只读操作不触碰任何Session generation。 */
+    async listTrashedProjects(): Promise<readonly ProjectTrashedEntry[]> {
+        if (this.state !== "running") {
+            throw new ProjectSessionRuntimeClosedError();
+        }
+        return this.lifecycle.readTrashedProjects();
+    }
+
+    /** 从回收区恢复Project；同名Session generation仍存在时拒绝，与delete同一占用合同。 */
+    restoreDeletedProject(ref: ProjectWorkspaceRef): Promise<ProjectRestoreResult> {
+        if (this.state !== "running") {
+            return Promise.reject(new ProjectSessionRuntimeClosedError());
+        }
+        if (this.entries.has(canonicalProjectLocator(this.workspaceRoot, ref))) {
+            return Promise.reject(new ProjectInUseError(
+                ref.projectRoot,
+                new Error("ProjectSession generation仍存在，必须先显式close成功"),
+            ));
+        }
+        return this.lifecycle.restoreDeleted(ref);
     }
 
     /** strict-open数据面只取得当前locator发布的精确ready generation。 */

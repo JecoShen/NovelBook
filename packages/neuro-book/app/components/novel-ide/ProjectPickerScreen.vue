@@ -25,7 +25,7 @@ import {
 import {formatTimestamp} from "nbook/app/components/novel-ide/agent/agent-message";
 import Dialog from "nbook/app/components/common/Dialog.vue";
 import OriginalImagePreviewDialog from "nbook/app/components/common/OriginalImagePreviewDialog.vue";
-import type {ProjectMetadataDto} from "nbook/shared/dto/project.dto";
+import type {ProjectMetadataDto, ProjectTrashEntryDto} from "nbook/shared/dto/project.dto";
 import type {AgentSessionSummaryDto} from "nbook/shared/dto/agent-session.dto";
 import {canonicalImageMime, isUnspecifiedImageMime} from "nbook/shared/media/raster-image";
 
@@ -45,13 +45,15 @@ const { confirm } = useDialog();
 const notification = useNotification();
 const sessionApi = useAgentSessionApi();
 const novelIdeStore = useNovelIdeStore();
-const { novels } = storeToRefs(novelIdeStore);
+const { novels, trashedProjects } = storeToRefs(novelIdeStore);
 const {
     loadProjects: refreshProjects,
     createProject,
     deleteProject,
     forgetProject,
     updateProjectCover,
+    loadTrashedProjects,
+    restoreTrashedProject,
 } = novelIdeStore;
 const { t, locale } = useI18n();
 
@@ -90,6 +92,11 @@ const recoveryHasMore = ref(false);
 const recoveryTotal = ref(0);
 const recoveryTargets = ref<Record<number, string>>(Object.create(null) as Record<number, string>);
 const recoveryActionId = ref<number | null>(null);
+const trashExpanded = ref(false);
+const trashLoading = ref(false);
+const trashLoaded = ref(false);
+const trashError = ref("");
+const restoreBusyRoots = ref<Set<string>>(new Set());
 let recoveryAttempt = 0;
 const RECOVERY_PAGE_SIZE = 20;
 const currentCoverRecovery = computed(() => {
@@ -140,7 +147,65 @@ onMounted(() => {
     // 进书架即取待确认会话:确认零待确认后整块恢复区不渲染(新手第一屏不该看到存量问题噪音);
     // 有待确认时徽标直接带数量;读取失败保留原行为(区域可见,展开后见错误与重试)。
     void loadRecoverySessions(0, false);
+    // 回收区同款预取:空回收区不渲染区块,有条目时徽标带数量。
+    void loadTrash();
 });
+
+/** 读取回收区条目；失败只保留局部错误态，不影响书架主列表。 */
+const loadTrash = async (): Promise<void> => {
+    trashLoading.value = true;
+    trashError.value = "";
+    try {
+        await loadTrashedProjects();
+        trashLoaded.value = true;
+    } catch (error) {
+        trashError.value = resolveApiErrorMessage(error, t("ide.picker.trashLoadFailed"));
+    } finally {
+        trashLoading.value = false;
+    }
+};
+
+/** 挂载时已预取；这里只在预取失败(trashLoaded=false)时承担展开重试。 */
+const toggleTrash = async (): Promise<void> => {
+    trashExpanded.value = !trashExpanded.value;
+    if (trashExpanded.value && !trashLoaded.value && !trashLoading.value) {
+        await loadTrash();
+    }
+};
+
+/** 条目剩余可恢复时间的展示口径：不足一天按「今天清除」。 */
+const trashExpiresLabel = (entry: ProjectTrashEntryDto): string => {
+    const remainingMs = entry.expiresAtMs - Date.now();
+    if (remainingMs <= 0) {
+        return t("ide.picker.trashExpiresToday");
+    }
+    return t("ide.picker.trashExpiresDays", {days: Math.ceil(remainingMs / (24 * 60 * 60 * 1000))});
+};
+
+/** 恢复回收区条目；失败后重拉回收区自愈（条目可能已被清扫或同名位置已占用）。 */
+const handleRestoreTrashEntry = async (entry: ProjectTrashEntryDto): Promise<void> => {
+    if (restoreBusyRoots.value.has(entry.projectRoot)) return;
+    if (!await confirm(
+        t("ide.picker.trashRestoreConfirm", {title: entry.projectRoot}),
+        t("ide.picker.trashRestore"),
+        {confirmLabel: t("ide.picker.trashRestore")},
+    )) {
+        return;
+    }
+    restoreBusyRoots.value = new Set([...restoreBusyRoots.value, entry.projectRoot]);
+    try {
+        await restoreTrashedProject(entry.projectRoot);
+        notification.success(t("ide.picker.trashRestored", {title: entry.projectRoot}));
+    } catch (error) {
+        notification.error(
+            resolveApiErrorMessage(error, t("ide.picker.trashRestoreFailed")),
+            {title: t("ide.picker.trashRestoreFailed")},
+        );
+        await loadTrash();
+    } finally {
+        restoreBusyRoots.value = new Set([...restoreBusyRoots.value].filter((root) => root !== entry.projectRoot));
+    }
+};
 
 /** 挂载时已预取首屏；这里只在预取失败(recoveryLoaded=false)时承担展开重试。 */
 const toggleRecovery = async (): Promise<void> => {
@@ -833,6 +898,53 @@ onBeforeUnmount(() => {
                             <span v-if="recoveryLoading" class="i-lucide-loader-circle h-4 w-4 animate-spin"></span>
                             {{ t("ide.picker.recoveryLoadMore") }}
                         </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 回收区：删除的作品在保留期内可恢复。已知为空且未展开时整块隐藏。 -->
+            <section v-if="!trashLoaded || trashedProjects.length > 0 || trashExpanded" class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-panel)]">
+                <button type="button" class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left sm:px-5" :aria-expanded="trashExpanded" @click="void toggleTrash()">
+                    <span class="min-w-0">
+                        <span class="flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]">
+                            <span class="i-lucide-trash-2 h-4 w-4 text-[var(--text-muted)]"></span>
+                            {{ t("ide.picker.trashTitle") }}
+                            <span v-if="trashLoaded" class="rounded-full border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-0.5 text-[10px] font-normal text-[var(--text-muted)]">{{ t("ide.picker.trashCount", {count: trashedProjects.length}) }}</span>
+                        </span>
+                        <span class="mt-1 block text-xs leading-5 text-[var(--text-secondary)]">{{ t("ide.picker.trashSummary") }}</span>
+                    </span>
+                    <span class="i-lucide-chevron-down h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform" :class="trashExpanded ? 'rotate-180' : ''"></span>
+                </button>
+
+                <div v-if="trashExpanded" class="border-t border-[var(--border-color)] px-4 py-4 sm:px-5">
+                    <div v-if="trashLoading && !trashLoaded" class="flex items-center justify-center gap-2 py-8 text-sm text-[var(--text-muted)]" role="status">
+                        <span class="i-lucide-loader-circle h-4 w-4 animate-spin"></span>
+                        {{ t("ide.picker.loading") }}
+                    </div>
+                    <div v-else-if="trashError" class="rounded-md border border-[var(--status-danger-border)] bg-[var(--status-danger-bg)] px-3 py-3 text-sm text-[var(--status-danger)]" role="alert">
+                        <p>{{ trashError }}</p>
+                        <button type="button" class="mt-3 rounded-md border border-[var(--status-danger-border)] bg-[var(--bg-panel)] px-3 py-1.5 text-xs" @click="void loadTrash()">{{ t("ide.picker.retry") }}</button>
+                    </div>
+                    <div v-else-if="trashedProjects.length === 0" class="py-8 text-center text-sm text-[var(--text-muted)]">{{ t("ide.picker.trashEmpty") }}</div>
+                    <div v-else class="space-y-3">
+                        <article v-for="entry in trashedProjects" :key="entry.projectRoot" class="rounded-md border border-[var(--border-color)] bg-[var(--bg-main)] p-3">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="min-w-0">
+                                    <h3 class="truncate text-sm font-medium text-[var(--text-main)]">{{ entry.projectRoot }}</h3>
+                                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
+                                        <span class="flex items-center gap-1">
+                                            <span class="i-lucide-clock-3 h-3 w-3"></span>
+                                            {{ t("ide.picker.trashDeletedAt", {time: formatDate(entry.deletedAt)}) }}
+                                        </span>
+                                        <span class="text-[var(--status-warning)]">{{ trashExpiresLabel(entry) }}</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[var(--border-color)] bg-[var(--bg-panel)] px-3 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] disabled:opacity-50" :disabled="restoreBusyRoots.has(entry.projectRoot)" @click="void handleRestoreTrashEntry(entry)">
+                                    <span :class="restoreBusyRoots.has(entry.projectRoot) ? 'i-lucide-loader-circle animate-spin' : 'i-lucide-undo-2'" class="h-3.5 w-3.5"></span>
+                                    {{ t("ide.picker.trashRestore") }}
+                                </button>
+                            </div>
+                        </article>
                     </div>
                 </div>
             </section>

@@ -4,6 +4,9 @@ import type {
     ProjectListResponseDto,
     ProjectMetadataDto,
     ProjectMutationResponseDto,
+    ProjectTrashEntryDto,
+    ProjectTrashListResponseDto,
+    ProjectTrashRestoreResponseDto,
 } from "nbook/shared/dto/project.dto";
 import {ProjectCatalogRefreshError} from "nbook/app/utils/project-mutation-error";
 import type {ThemeVars} from "nbook/app/utils/theme/theme-tokens";
@@ -141,7 +144,7 @@ export type WorkspaceUploadResult = {
 
 export type WorkspaceKind = "novel" | "user-assets";
 type WorkspaceQueryInput = {projectRoot: string} | {workspaceKind: "user-assets"};
-type ProjectCatalogMutation = "create" | "delete" | "cover-update";
+type ProjectCatalogMutation = "create" | "delete" | "cover-update" | "restore";
 
 type WorkspaceSessionState = {
     activeWorkspaceTabPath: string;
@@ -1825,6 +1828,29 @@ export const useNovelIdeStore = defineStore("novelIde", () => {
         });
     };
 
+    /** 回收区中仍可恢复的 Project 条目；只在选择界面读取，不随 Workspace 打开刷新。 */
+    const trashedProjects = ref<readonly ProjectTrashEntryDto[]>(Object.freeze([]));
+
+    /** 读取回收区条目；失败向调用方抛出，由 UI 决定局部错误态。 */
+    const loadTrashedProjects = async (): Promise<void> => {
+        const result = await $fetch<ProjectTrashListResponseDto>("/api/projects/trash");
+        trashedProjects.value = Object.freeze(result.entries.map((entry) => Object.freeze({...entry})));
+    };
+
+    /** 从回收区恢复 Project；成功响应统一回读服务端权威 Catalog，回收区本地移除该条目。 */
+    const restoreTrashedProject = async (projectRoot: string): Promise<void> => {
+        await runProjectMutation<ProjectTrashRestoreResponseDto>({
+            operation: "restore",
+            request: () => $fetch<ProjectTrashRestoreResponseDto>("/api/projects/trash/restore", {
+                method: "POST",
+                body: {projectRoot},
+            }),
+        });
+        trashedProjects.value = Object.freeze(
+            trashedProjects.value.filter((entry) => entry.projectRoot !== projectRoot),
+        );
+    };
+
     /** 上传或清除 Project 封面，并由 Store 唯一发布返回的 metadata。 */
     const updateProjectCover = async (projectRoot: string, file: File | null): Promise<ProjectMetadataDto> => {
         const result = await runProjectMutation<ProjectMutationResponseDto>({
@@ -1908,6 +1934,9 @@ export const useNovelIdeStore = defineStore("novelIde", () => {
         customThemes,
         canAccessWorkspace,
         deleteProject,
+        trashedProjects,
+        loadTrashedProjects,
+        restoreTrashedProject,
         deleteWorkspacePath,
         downloadCurrentWorkspace,
         forgetProject,

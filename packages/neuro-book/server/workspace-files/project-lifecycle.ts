@@ -208,6 +208,16 @@ export type ProjectRestoreResult = {
     readonly projectRoot: WorkspaceRelativePath;
 };
 
+/** 回收区中仍可恢复的Project条目投影；不暴露绝对路径、entry名与marker内部细节。 */
+export type ProjectTrashedEntry = {
+    readonly projectRoot: WorkspaceRelativePath;
+    /** ISO 8601删除时间，直接取自entry marker。 */
+    readonly deletedAt: string;
+    readonly deletedAtMs: number;
+    /** deletedAtMs + 保留期；到期后条目随时可能被周期清扫物理清除。 */
+    readonly expiresAtMs: number;
+};
+
 const DEFAULT_PROJECT_TEMPLATE: ProjectTemplateName = "default";
 
 /** 首版只包装现有默认模板能力，不在Lifecycle内建设模板registry。 */
@@ -591,6 +601,7 @@ export class ProjectLifecycle {
     private readonly watchDebounceMs: number;
     private readonly watcherAdapter: ProjectLifecycleWatcherAdapter;
     private readonly trashStore: ProjectTrashStore;
+    private readonly trashRetentionMs: number;
     private readonly trashSweepIntervalMs: number;
     private revision = 0;
     private cachedState: ProjectDiscoveryState | null = null;
@@ -637,10 +648,11 @@ export class ProjectLifecycle {
         this.templateAdapter = options.templateAdapter ?? nodeProjectTemplateAdapter(workspaceRoot);
         this.watchDebounceMs = options.watchDebounceMs ?? DEFAULT_PROJECT_WATCH_DEBOUNCE_MS;
         this.watcherAdapter = options.watcherAdapter ?? NODE_PROJECT_LIFECYCLE_WATCHER_ADAPTER;
+        this.trashRetentionMs = options.trashRetentionMs ?? DEFAULT_PROJECT_TRASH_RETENTION_MS;
         this.trashStore = new ProjectTrashStore(workspaceRoot, {
             adapter: this.transactionAdapter,
             now: this.now,
-            retentionMs: options.trashRetentionMs ?? DEFAULT_PROJECT_TRASH_RETENTION_MS,
+            retentionMs: this.trashRetentionMs,
         });
         this.trashSweepIntervalMs = options.trashSweepIntervalMs ?? DEFAULT_PROJECT_TRASH_SWEEP_INTERVAL_MS;
     }
@@ -655,6 +667,38 @@ export class ProjectLifecycle {
                 revision: state.revision,
                 projects: state.projects,
             });
+        });
+    }
+
+    /**
+     * 返回回收区中仍可恢复的条目，按删除时间倒序。
+     * 无payload的marker残壳、marker不可读与projectRoot不再是合法一级目录名的条目
+     * 都不可恢复，不进入投影；它们只等保留期清扫。
+     */
+    async readTrashedProjects(): Promise<readonly ProjectTrashedEntry[]> {
+        return this.runOperation(async (operation) => {
+            const entries = await this.trashStore.listEntries();
+            operation.assertActive();
+            const restorable: ProjectTrashedEntry[] = [];
+            for (const entry of entries) {
+                if (!entry.hasPayload || entry.projectRoot === null || entry.marker === null) {
+                    continue;
+                }
+                let ref: ProjectWorkspaceRef;
+                try {
+                    ref = projectWorkspaceRef(entry.projectRoot);
+                } catch {
+                    continue;
+                }
+                restorable.push({
+                    projectRoot: ref.projectRoot,
+                    deletedAt: entry.marker.deletedAt,
+                    deletedAtMs: entry.deletedAtMs,
+                    expiresAtMs: entry.deletedAtMs + this.trashRetentionMs,
+                });
+            }
+            restorable.sort((left, right) => right.deletedAtMs - left.deletedAtMs);
+            return Object.freeze(restorable);
         });
     }
 
