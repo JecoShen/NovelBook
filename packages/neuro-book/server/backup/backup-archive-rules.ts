@@ -21,6 +21,7 @@ const EXCLUDED_NBOOK_SUBTREES: readonly string[] = [
     "agent/sessions", // 会话转录，本机进行中状态
     "locks",
     "trash", // 删除回收区（project-lifecycle 保留 30 天的项目副本），恢复备份不应复活已删内容
+    "deleted-projects", // delete 事务的 tombstone 暂存；回收迁移失败时长留至保留期满，同属已删内容
 ];
 
 /**

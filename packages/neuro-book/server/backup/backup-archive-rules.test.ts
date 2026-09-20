@@ -39,6 +39,14 @@ describe("备份排除规则", () => {
         expect(shouldExcludeFromBackup("workspace/novel-a/trash/draft-notes.md")).toBe(false);
     });
 
+    it("排除 .nbook 锚定的 deleted-projects 墓碑暂存（回收迁移失败时的长留形态）", () => {
+        expect(shouldExcludeFromBackup("workspace/.nbook/deleted-projects")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/deleted-projects/v1-abc/payload/manuscript/chapter-1.md")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/novel-a/.nbook/deleted-projects/v1-def/payload/project.sqlite")).toBe(true);
+        // 项目根内的 deleted-project.json 删除标记是项目元数据，不在此子树语义内
+        expect(shouldExcludeFromBackup("workspace/novel-a/.nbook/deleted-project.json")).toBe(false);
+    });
+
     it("保留正常内容文件（含名字里带 logs 的非目录命中）", () => {
         expect(shouldExcludeFromBackup("workspace/manuscript/chapter-1.md")).toBe(false);
         expect(shouldExcludeFromBackup("config.yaml")).toBe(false);
