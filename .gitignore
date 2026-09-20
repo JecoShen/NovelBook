@@ -57,6 +57,9 @@ product/
 .traces/
 /workspace/
 /logs/
+# 本地自动备份落点（<State Root>/backups/）。生产 State Root 现为 checkout 根，
+# 未配置恢复码时备份为明文 zip，必须物理隔绝误入公开仓的可能；根治靠 State Root 外迁。
+/backups/
 /coverage/
 **/AGENTS.LOCAL.md
 /.worktree/
