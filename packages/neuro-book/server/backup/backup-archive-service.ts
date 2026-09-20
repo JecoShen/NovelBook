@@ -12,14 +12,16 @@ import type {BackupEncryptionKey} from "nbook/server/backup/backup-keyring-servi
 import {createBackupEnvelopeCipher} from "nbook/server/backup/backup-envelope";
 
 // State Root 归档服务（Task 112 spec §9.4）：范围 = workspace/ + config.yaml + .env；
-// 排除集由 backup-archive-rules 判定（secrets/logs、.nbook 下 traces/sessions/locks、
+// 排除集由 backup-archive-rules 判定（secrets/logs、.nbook 下 traces/sessions/locks/trash、
 // 暂存与缓存、锁/临时/wal/shm）；SQLite 经 VACUUM INTO 冷快照保证一致性；
 // fflate 流式打包（边写边算 sha256，不持大 buffer）。
+// encryptionKey 为 null 时产出未加密裸 zip（本地自动备份且用户未配置恢复码的场景，
+// manifest.encryption="none"、result.keyId="none"）；云备份调用方恒传 key，行为不变。
 
 export type BackupArchiveResult = {
     backupPath: string;
     sha256: string; // hex 小写
-    keyId: string;
+    keyId: string; // 未加密明文归档为 "none"
     fileSize: number;
     fileCount: number;
     appVersion: string;
@@ -84,12 +86,13 @@ async function snapshotSqlite(sourcePath: string, snapshotDir: string): Promise<
 
 export class BackupArchiveService {
     /**
-     * 打包整个 State Root，并把 zip 输出直接加密为 `.nbbackup` envelope。
+     * 打包整个 State Root。传入密钥时把 zip 输出直接加密为 `.nbbackup` envelope；
+     * encryptionKey 为 null 时产出未加密裸 zip（本地自动备份明文分支）。
      */
     async createArchive(
         paths: RuntimePaths,
         tmpDir: string,
-        encryptionKey: BackupEncryptionKey,
+        encryptionKey: BackupEncryptionKey | null,
         onProgress?: ArchiveProgress,
     ): Promise<BackupArchiveResult> {
         await mkdir(tmpDir, {recursive: true});
@@ -114,10 +117,10 @@ export class BackupArchiveService {
         const hash = createHash("sha256");
         let fileSize = 0;
         let zipError: Error | null = null;
-        const envelope = createBackupEnvelopeCipher(encryptionKey);
+        const envelope = encryptionKey ? createBackupEnvelopeCipher(encryptionKey) : null;
 
-        /** 写入完整 envelope 字节，同时维护上传摘要与大小。 */
-        const writeEnvelopeBytes = (bytes: Uint8Array): void => {
+        /** 写入完整产物字节（envelope 密文或明文 zip），同时维护归档摘要与大小。 */
+        const writeArchiveBytes = (bytes: Uint8Array): void => {
             if (bytes.byteLength === 0) {
                 return;
             }
@@ -125,7 +128,9 @@ export class BackupArchiveService {
             fileSize += bytes.byteLength;
             out.write(Buffer.from(bytes));
         };
-        writeEnvelopeBytes(envelope.prefix);
+        if (envelope) {
+            writeArchiveBytes(envelope.prefix);
+        }
 
         const zip = new Zip((error, data, final) => {
             if (error) {
@@ -134,10 +139,12 @@ export class BackupArchiveService {
                 return;
             }
             try {
-                writeEnvelopeBytes(envelope.cipher.update(data));
+                writeArchiveBytes(envelope ? envelope.cipher.update(data) : data);
                 if (final) {
-                    writeEnvelopeBytes(envelope.cipher.final());
-                    writeEnvelopeBytes(envelope.cipher.getAuthTag());
+                    if (envelope) {
+                        writeArchiveBytes(envelope.cipher.final());
+                        writeArchiveBytes(envelope.cipher.getAuthTag());
+                    }
                     out.end();
                 }
             } catch (cipherError) {
@@ -178,7 +185,7 @@ export class BackupArchiveService {
                 formatVersion: 2,
                 appVersion,
                 createdAt: new Date().toISOString(),
-                encryption: "AES-256-GCM",
+                encryption: envelope ? "AES-256-GCM" : "none",
             }, null, 4)), true);
             await drainIfNeeded();
 
@@ -208,7 +215,7 @@ export class BackupArchiveService {
         return {
             backupPath,
             sha256: hash.digest("hex"),
-            keyId: encryptionKey.keyId,
+            keyId: encryptionKey?.keyId ?? "none",
             fileSize,
             fileCount: files.length,
             appVersion,

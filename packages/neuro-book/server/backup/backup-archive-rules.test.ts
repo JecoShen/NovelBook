@@ -31,6 +31,14 @@ describe("备份排除规则", () => {
         expect(shouldExcludeFromBackup("workspace/.nbook/locks/projects/abc.metadata.json")).toBe(true);
     });
 
+    it("排除 .nbook 锚定的 trash 回收区，但不误伤作品树里的同名目录", () => {
+        expect(shouldExcludeFromBackup("workspace/.nbook/trash")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/trash/novel-a/manuscript/chapter-1.md")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/novel-a/.nbook/trash/copy/manuscript/chapter-1.md")).toBe(true);
+        // 作品目录里非 .nbook 锚定的 trash 是正常内容，不误排
+        expect(shouldExcludeFromBackup("workspace/novel-a/trash/draft-notes.md")).toBe(false);
+    });
+
     it("保留正常内容文件（含名字里带 logs 的非目录命中）", () => {
         expect(shouldExcludeFromBackup("workspace/manuscript/chapter-1.md")).toBe(false);
         expect(shouldExcludeFromBackup("config.yaml")).toBe(false);

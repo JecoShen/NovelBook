@@ -20,6 +20,7 @@ const EXCLUDED_NBOOK_SUBTREES: readonly string[] = [
     "agent/traces", // 全文 prompt+正文 trace，实测可达数百 MB 且可再生成
     "agent/sessions", // 会话转录，本机进行中状态
     "locks",
+    "trash", // 删除回收区（project-lifecycle 保留 30 天的项目副本），恢复备份不应复活已删内容
 ];
 
 /**
