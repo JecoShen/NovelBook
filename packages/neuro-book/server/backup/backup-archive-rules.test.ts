@@ -23,11 +23,13 @@ describe("备份排除规则", () => {
         expect(shouldExcludeFromBackup("workspace/novel-a/.nbook/runtime-artifact-import-cache/blob.bin")).toBe(true);
     });
 
-    it("排除 .nbook 下的 traces/sessions/locks 运行态子树（含目录本身）", () => {
+    it("排除 .nbook 下的 traces/sessions/migrations/locks 运行态子树（含目录本身）", () => {
         expect(shouldExcludeFromBackup("workspace/.nbook/agent/traces")).toBe(true);
         expect(shouldExcludeFromBackup("workspace/.nbook/agent/traces/run-1/trace.jsonl")).toBe(true);
         expect(shouldExcludeFromBackup("workspace/.nbook/agent/sessions")).toBe(true);
         expect(shouldExcludeFromBackup("workspace/.nbook/agent/sessions/sess-1/session.jsonl")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/migrations")).toBe(true);
+        expect(shouldExcludeFromBackup("workspace/.nbook/agent/migrations/session-v2/run-1/manifest.json")).toBe(true);
         expect(shouldExcludeFromBackup("workspace/.nbook/locks/projects/abc.metadata.json")).toBe(true);
     });
 

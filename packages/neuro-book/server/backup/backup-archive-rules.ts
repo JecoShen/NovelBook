@@ -19,6 +19,7 @@ const EXCLUDED_DIRECTORY_SEGMENTS: ReadonlySet<string> = new Set([
 const EXCLUDED_NBOOK_SUBTREES: readonly string[] = [
     "agent/traces", // 全文 prompt+正文 trace，实测可达数百 MB 且可再生成
     "agent/sessions", // 会话转录，本机进行中状态
+    "agent/migrations", // 迁移前快照只在原机 rollback 窗口内有价值；跨机恢复时 sessions 已是新格式，快照只剩体积
     "locks",
     "trash", // 删除回收区（project-lifecycle 保留 30 天的项目副本），恢复备份不应复活已删内容
     "deleted-projects", // delete 事务的 tombstone 暂存；回收迁移失败时长留至保留期满，同属已删内容
