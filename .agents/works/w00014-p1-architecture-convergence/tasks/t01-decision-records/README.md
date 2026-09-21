@@ -19,3 +19,8 @@ role: leader
 ## 验证
 
 - `bun run governance:check` 通过；ADR 编号不与现有冲突（当前最大 0019）。
+
+## 结果（2026-09-22 完成）
+
+- 提交 `1448724b`（Work 登记）与 `b8183394`：ADR 0020（harness 降级收口）、ADR 0021（nb-ui 废弃）、ADR 0015 第 2 轮复核（§4 维持延期 + 体量监控挂钩复核清单）、w00002/w00003 收口说明。
+- 验证：governance:check 零 failure；docs:check 6051 文件零 failure。
