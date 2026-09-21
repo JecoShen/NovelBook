@@ -63,6 +63,10 @@ CI 通过只表示自动检查完成，不等于批准合并。维护者负责�
 
 获得合并许可后，按 [`../testing/README.md#验证门禁`](../testing/README.md#验证门禁) 确认当前改动所需门禁的有效证据，不重复尚有效的检查。按 Work 编号流程，登记提交必须先进入远端 `master`，实现分支从包含该提交的最新基线创建，因而登记提交是实现分支的共同祖先；实现分支 squash merge 后，只有主工作区没有未发布改动且未被其它 Agent 占用时，才用 fast-forward 同步。主工作区被占用或存在未发布改动时不操作、不切换分支、不强行同步，待 owner 完成后从最新远端 `master` 继续。满足上述条件时，任何 worktree 或 Agent 更新远端 `master` 后，主工作区使用 fast-forward 同步；失败从断点继续，不重复已完成动作。
 
+## 跟随上游整树合并
+
+整树跟随上游合并后，必须执行 [`upstream-merge-wiring-checklist.md`](upstream-merge-wiring-checklist.md) 的接线复核（fork 独有接线已三次被合并静默覆盖），复核结果写入合并提交说明；未复核的整树合并不进入发布或部署流程。
+
 ## Sibling 与 Vendor
 
 当前 workspace 包内修改与验证遵循 [`../../packages/AGENTS.md`](../../packages/AGENTS.md)，不再执行 sibling 快照同步。外部源 checkout 不因本仓任务被修改；推送前确认当前仓库。
