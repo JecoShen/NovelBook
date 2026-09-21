@@ -3,6 +3,7 @@
 - 状态：Accepted
 - 日期：2026-08-07
 - 复核：2026-09-02 第 1 轮重新评估 — 维持延期（见下方「复核记录」）
+- 复核：2026-09-22 第 2 轮重新评估（§4）— 维持延期，体量监控挂钩复核清单（见下方「复核记录」）
 - 关联任务：[Task 123](../../.agents/tasks/123-repo-structure-optimization/README.md)、[Task 142](../../.agents/tasks/142-post-merge-reliability-hardening/README.md)、[Task 143](../../.agents/tasks/143-desktop-envelope-installation-spike/README.md)
 - 相关决策：[ADR 0010](0010-desktop-storage-loopback-shutdown.md)、[ADR 0014](0014-agent-job-durable-history.md)
 
@@ -89,6 +90,14 @@ Electron 和 Tauri 目前仍是 Desktop spike。配置、端口、Supervisor、�
 ### 验证边界口径修正
 
 原「验证边界」中 `bun run typecheck` 退出码 255（Bun bin remap / `corrupted node_modules`）为 2026-08-07 快照，已过时：2026-08-21 修复 typecheck 链路（`desktop/electron` workspace install 串联 + `NODE_OPTIONS` 堆调整），2026-08-27 根 typecheck 收口至 0 错误。当前 `bun run typecheck` 可正常执行。
+
+## 2026-09-22 复核记录（第 2 轮重新评估，仅 §4）
+
+2026-09-20 全量架构审查 P1-8 实测：`index.vue` 3,083 行、`novel-ide.ts` 2,040 行、生产 `neuro-agent-harness.ts` 8,531 行、`AgentChatSurface.vue` 4,455 行、`server/api/config/global.put.ts` 5,244 行，`server/agent` 目录 108,845 行约占全应用一半——体量较 2026-08-07 登记时仍在增长，但仍未出现「重新评估清单」第 4 条要求的证据（可复现的用户流程回归、多人合并冲突、无法隔离的 focused test 失败）。
+
+结论：**§4 维持延期，状态不变**。新增一项管理动作：上述五个文件与 `server/agent` 目录的行数快照纳入 `docs/standards/upstream-merge-wiring-checklist.md` 的体量监控节，每次上游整树合并或季度复核时重新测量；任一文件增长超过快照 50%，或出现清单证据时，按清单新开独立 task/ADR 评估拆分，不在普通改动中顺手拆。
+
+双 harness 并存（审查 P1-1）已由 [ADR 0020](0020-neuro-agent-harness-scope-freeze.md) 独立收口，与本条正交。
 
 ## 验证边界（2026-08-07 原始记录）
 
