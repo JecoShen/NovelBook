@@ -69,6 +69,58 @@ describe("PiRequestRecorder", () => {
         expect(index).toHaveLength(3);
     });
 
+    it("字节闸：从旧到新删至总量达标，index 同步收敛", async () => {
+        const recorder = new PiRequestRecorder({tracesRoot});
+        // 每条 pad 10KB（含结构开销约 10.8KB），6 条；35KB 闸恰好留最新 3 条。
+        for (let i = 0; i < 6; i++) {
+            await recorder.record(draft({
+                correlation: {kind: "turn", sessionId: 7, turnIndex: i},
+                request: {provider: "anthropic", api: "anthropic-messages", model: "claude-x", payload: {pad: "x".repeat(10_000)}},
+            }), {maxRecords: 100, maxBytes: 35_000});
+        }
+        const bucketDir = join(tracesRoot, "7");
+        const files = (await readdir(bucketDir)).filter((n) => n.endsWith(".json")).map((n) => Number(n.slice(0, -5))).sort((a, b) => a - b);
+        expect(files).toEqual([4, 5, 6]);
+        const index = await readIndex(bucketDir);
+        expect(index.map((entry) => Number(entry.id))).toEqual([4, 5, 6]);
+        expect(index.reduce((sum, entry) => sum + entry.bytes, 0)).toBeLessThanOrEqual(35_000);
+    });
+
+    it("字节闸：最新一条单条超闸仍保留，不清空 bucket", async () => {
+        const recorder = new PiRequestRecorder({tracesRoot});
+        for (let i = 0; i < 2; i++) {
+            await recorder.record(draft({
+                correlation: {kind: "turn", sessionId: 7, turnIndex: i},
+                request: {provider: "anthropic", api: "anthropic-messages", model: "claude-x", payload: {pad: "x".repeat(50_000)}},
+            }), {maxRecords: 100, maxBytes: 1_000});
+        }
+        const bucketDir = join(tracesRoot, "7");
+        const files = (await readdir(bucketDir)).filter((n) => n.endsWith(".json")).map((n) => Number(n.slice(0, -5)));
+        expect(files).toEqual([2]);
+        const index = await readIndex(bucketDir);
+        expect(index).toHaveLength(1);
+    });
+
+    it("sweepAll 对全部现存 bucket 执行一次双闸收敛", async () => {
+        const recorder = new PiRequestRecorder({tracesRoot});
+        for (const sessionId of [7, 8]) {
+            for (let i = 0; i < 4; i++) {
+                await recorder.record(draft({
+                    correlation: {kind: "turn", sessionId, turnIndex: i},
+                    request: {provider: "anthropic", api: "anthropic-messages", model: "claude-x", payload: {pad: "x".repeat(10_000)}},
+                }), {maxRecords: 100, maxBytes: 0});
+            }
+        }
+        await recorder.sweepAll({maxRecords: 100, maxBytes: 25_000});
+        for (const sessionId of [7, 8]) {
+            const bucketDir = join(tracesRoot, String(sessionId));
+            const files = (await readdir(bucketDir)).filter((n) => n.endsWith(".json"));
+            expect(files).toHaveLength(2);
+            const index = await readIndex(bucketDir);
+            expect(index).toHaveLength(2);
+        }
+    });
+
     it("无 sessionId 落 _system bucket", async () => {
         const recorder = new PiRequestRecorder({tracesRoot});
         await recorder.record(draft({correlation: {kind: "health-check"}}), {maxRecords: 100});

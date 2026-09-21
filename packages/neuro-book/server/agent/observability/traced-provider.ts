@@ -22,6 +22,8 @@ export type PiTraceSettings = {
     enabled: boolean;
     capturePayload: boolean;
     maxRecords: number;
+    /** 每 session bucket 的 trace 总字节上限；<= 0 不限。 */
+    maxBytes: number;
 };
 
 /** 一次 traced 调用的绑定：recorder 实例 + 开关 + 领域关联。 */
@@ -184,7 +186,7 @@ class TraceCollector {
             timing: {startedAt: this.startedAtIso, ttftMs: this.ttftMs, durationMs: Date.now() - this.startedAtMs},
         };
         // fire-and-forget：recorder 内部串行 + best-effort，不阻塞、不抛。
-        void this.binding.recorder.record(draft, {maxRecords: this.binding.settings.maxRecords});
+        void this.binding.recorder.record(draft, {maxRecords: this.binding.settings.maxRecords, maxBytes: this.binding.settings.maxBytes});
     }
 }
 

@@ -1613,6 +1613,11 @@ defineRouteMeta({
                                             "minimum": 0,
                                             "maximum": 9007199254740991
                                         },
+                                        "maxBytesPerBucket": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                        },
                                         "capturePayload": {
                                             "type": "boolean"
                                         }
@@ -3374,6 +3379,11 @@ defineRouteMeta({
                                                         "type": "boolean"
                                                     },
                                                     "maxRecords": {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 9007199254740991
+                                                    },
+                                                    "maxBytesPerBucket": {
                                                         "type": "integer",
                                                         "minimum": 0,
                                                         "maximum": 9007199254740991

@@ -27,6 +27,7 @@ import type {
     PiTraceConfig,
     WorkspaceHistorySettingsConfig,
 } from "nbook/server/config/types";
+import {DEFAULT_PI_TRACE_MAX_BYTES_PER_BUCKET} from "nbook/server/config/types";
 import type {JsonValue} from "nbook/server/agent/messages/types";
 import {ThinkingLevelSchema} from "nbook/shared/dto/app-settings.dto";
 import {
@@ -97,6 +98,7 @@ const DEFAULT_WEB_SETTINGS: WebSettingsConfig = {
 const DEFAULT_PI_TRACE: PiTraceConfig = {
     enabled: true,
     maxRecords: 100,
+    maxBytesPerBucket: DEFAULT_PI_TRACE_MAX_BYTES_PER_BUCKET,
     capturePayload: true,
 };
 
@@ -109,6 +111,7 @@ function normalizeObservability(input: StoredGlobalConfig["observability"]): Obs
         piTrace: {
             enabled: typeof raw.enabled === "boolean" ? raw.enabled : DEFAULT_PI_TRACE.enabled,
             maxRecords: typeof raw.maxRecords === "number" && Number.isInteger(raw.maxRecords) && raw.maxRecords >= 0 ? raw.maxRecords : DEFAULT_PI_TRACE.maxRecords,
+            maxBytesPerBucket: typeof raw.maxBytesPerBucket === "number" && Number.isInteger(raw.maxBytesPerBucket) && raw.maxBytesPerBucket >= 0 ? raw.maxBytesPerBucket : DEFAULT_PI_TRACE.maxBytesPerBucket,
             capturePayload: typeof raw.capturePayload === "boolean" ? raw.capturePayload : DEFAULT_PI_TRACE.capturePayload,
         },
     };

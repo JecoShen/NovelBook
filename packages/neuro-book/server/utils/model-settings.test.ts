@@ -87,7 +87,7 @@ describe("provider/model Pi checks", () => {
         const record = vi.fn(async () => undefined);
         const binding: PiTraceBinding = {
             recorder: {record} as PiTraceBinding["recorder"],
-            settings: {enabled: true, capturePayload: true, maxRecords: 100},
+            settings: {enabled: true, capturePayload: true, maxRecords: 100, maxBytes: 0},
             correlation: {kind: "health-check", mode: "model-check"},
         };
 

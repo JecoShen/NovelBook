@@ -44,7 +44,7 @@ describe("tracedStreamSimple", () => {
     function binding(overrides: Partial<PiTraceBinding["settings"]> = {}): PiTraceBinding {
         return {
             recorder,
-            settings: {enabled: true, capturePayload: true, maxRecords: 100, ...overrides},
+            settings: {enabled: true, capturePayload: true, maxRecords: 100, maxBytes: 0, ...overrides},
             correlation: {kind: "turn", sessionId: 42, invocationId: "inv-1", profileKey: "leader.default", turnIndex: 0},
         };
     }

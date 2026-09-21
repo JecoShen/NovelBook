@@ -212,9 +212,14 @@ export type PiTraceConfig = {
     enabled: boolean;
     /** 每 session 保留最近多少条 trace。 */
     maxRecords: number;
+    /** 每 session 的 trace 总字节上限（0 不限）。条数闸管不住单条数 MB 的肥 trace，体积由本闸收敛。 */
+    maxBytesPerBucket: number;
     /** 是否完整存 provider 原生请求体（含 prompt）。false 时只留元数据（暂未实现摘要）。 */
     capturePayload: boolean;
 };
+
+/** maxBytesPerBucket 默认值：64MB，约覆盖最近十余条含全量正文的肥 trace（本部署实测单条可达 5.8MB）。 */
+export const DEFAULT_PI_TRACE_MAX_BYTES_PER_BUCKET = 64 * 1024 * 1024;
 
 /**
  * 工作区文件历史（操作日志）配置。enabled 是 Global 独有总开关；其余四项 Project 可覆盖。

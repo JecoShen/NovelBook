@@ -150,6 +150,12 @@ export type PiTraceIndexEntry = {
 export type PiTraceWriteOptions = {
     /** 每 bucket 保留最近多少条；<= 0 表示不裁剪。 */
     maxRecords: number;
+    /**
+     * 每 bucket 保留总字节上限（按 index 记录的 bytes 累计，缺失条目按 0 保守不删）；缺省或 <= 0 不限。
+     * 条数闸管不住单条肥 trace（创作场景全量 prompt 实测单条可达数 MB），字节闸才是体积闸门。
+     * 最新一条恒保留，即使它单条已超闸。
+     */
+    maxBytes?: number;
 };
 
 /** bucket 目录名白名单：纯数字 sessionId 或 _system（writeOnce 的 fallback bucket 命名由本模块决定）。 */
@@ -208,6 +214,26 @@ export class PiRequestRecorder {
         await this.tail;
     }
 
+    /**
+     * 对全部现存 bucket 执行一次双闸裁剪。挂进串行写队列，与在途 record 不交错；
+     * 失败经 onWriteError 上报，不抛。供启动/首次活动时收敛存量肥桶——写入路径的
+     * prune 只覆盖当前 bucket，不再活跃的 bucket 只能靠这里触达。
+     */
+    async sweepAll(options: PiTraceWriteOptions): Promise<void> {
+        const run = this.tail.then(async () => {
+            const entries = await readdir(this.tracesRoot, {withFileTypes: true}).catch(() => [] as import("node:fs").Dirent[]);
+            for (const entry of entries) {
+                if (entry.isDirectory() && isValidTraceBucket(entry.name)) {
+                    await this.prune(join(this.tracesRoot, entry.name), options);
+                }
+            }
+        }).catch((error) => {
+            this.onWriteError?.(error);
+        });
+        this.tail = run;
+        await run;
+    }
+
     private async writeOnce(draft: PiTraceDraft, options: PiTraceWriteOptions): Promise<void> {
         const bucket = draft.correlation.sessionId !== undefined ? String(draft.correlation.sessionId) : "_system";
         const bucketDir = join(this.tracesRoot, bucket);
@@ -245,9 +271,7 @@ export class PiRequestRecorder {
         };
         await appendFile(join(bucketDir, "index.jsonl"), `${JSON.stringify(indexEntry)}\n`, "utf8");
 
-        if (options.maxRecords > 0) {
-            await this.prune(bucketDir, options.maxRecords);
-        }
+        await this.prune(bucketDir, options);
     }
 
     /** 分配全局单调 seq；镜像 session-repo 的 session-seq.json。 */
@@ -266,21 +290,48 @@ export class PiRequestRecorder {
         return next;
     }
 
-    /** 每 bucket 只保留 seq 最大的 maxRecords 条，删更旧的 json，并把 index.jsonl 重写为保留集。 */
-    private async prune(bucketDir: string, maxRecords: number): Promise<void> {
+    /** 双闸裁剪（条数 + 字节，先到先删）：删更旧的 json，并把 index.jsonl 重写为保留集。 */
+    private async prune(bucketDir: string, options: PiTraceWriteOptions): Promise<void> {
+        const maxBytes = options.maxBytes ?? 0;
+        const byteLimitActive = maxBytes > 0;
+        if (options.maxRecords <= 0 && !byteLimitActive) {
+            return;
+        }
         const files = await readdir(bucketDir).catch(() => [] as string[]);
         const seqs = files
             .filter((name) => name.endsWith(".json"))
             .map((name) => Number(name.slice(0, -".json".length)))
             .filter((n) => Number.isInteger(n))
             .sort((a, b) => a - b);
-        if (seqs.length <= maxRecords) {
+        const removed = new Set<number>();
+        if (options.maxRecords > 0 && seqs.length > options.maxRecords) {
+            for (const seq of seqs.slice(0, seqs.length - options.maxRecords)) {
+                removed.add(seq);
+            }
+        }
+        if (byteLimitActive && seqs.length - removed.size > 1) {
+            const bytesBySeq = await this.readBytesBySeq(bucketDir);
+            let total = 0;
+            let kept = 0;
+            for (const seq of [...seqs].reverse()) {
+                if (removed.has(seq)) {
+                    continue;
+                }
+                total += bytesBySeq.get(seq) ?? 0;
+                kept += 1;
+                // 最新一条恒保留：单条超闸不清空 bucket
+                if (total > maxBytes && kept > 1) {
+                    removed.add(seq);
+                }
+            }
+        }
+        if (removed.size === 0) {
             return;
         }
-        const removed = new Set(seqs.slice(0, seqs.length - maxRecords).map((n) => String(n)));
-        for (const id of removed) {
-            await rm(join(bucketDir, `${id}.json`), {force: true});
+        for (const seq of removed) {
+            await rm(join(bucketDir, `${seq}.json`), {force: true});
         }
+        const removedIds = new Set([...removed].map((seq) => String(seq)));
         const indexPath = join(bucketDir, "index.jsonl");
         const raw = await readFile(indexPath, "utf8").catch(() => "");
         if (!raw) {
@@ -291,11 +342,32 @@ export class PiRequestRecorder {
                 return false;
             }
             try {
-                return !removed.has(String((JSON.parse(line) as PiTraceIndexEntry).id));
+                return !removedIds.has(String((JSON.parse(line) as PiTraceIndexEntry).id));
             } catch {
                 return false;
             }
         });
         await writeFile(indexPath, keptLines.length ? `${keptLines.join("\n")}\n` : "", "utf8");
+    }
+
+    /** 读 index.jsonl 的 seq→bytes 映射；坏行跳过，缺失条目按 0（保守方向：不因此触发删除）。 */
+    private async readBytesBySeq(bucketDir: string): Promise<Map<number, number>> {
+        const result = new Map<number, number>();
+        const raw = await readFile(join(bucketDir, "index.jsonl"), "utf8").catch(() => "");
+        for (const line of raw.split("\n")) {
+            if (!line.trim()) {
+                continue;
+            }
+            try {
+                const entry = JSON.parse(line) as PiTraceIndexEntry;
+                const seq = Number(entry.id);
+                if (Number.isInteger(seq) && typeof entry.bytes === "number") {
+                    result.set(seq, entry.bytes);
+                }
+            } catch {
+                // 坏行跳过
+            }
+        }
+        return result;
     }
 }

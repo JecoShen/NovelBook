@@ -147,6 +147,7 @@ import type {ProfileRuntimeSettings} from "nbook/shared/agent/profile-runtime-se
 import {extractPatchTargetPaths} from "nbook/server/agent/tools/apply-patch";
 import {isReadonlyMode, type AgentMode} from "nbook/shared/dto/agent-session.dto";
 import type {EffectiveConfig, RuntimeConfigTarget} from "nbook/server/config/types";
+import {DEFAULT_PI_TRACE_MAX_BYTES_PER_BUCKET} from "nbook/server/config/types";
 import {runProjectFileOperation} from "nbook/server/workspace-files/project-data-plane-guard";
 import type {
     AgentSummary,
@@ -5225,24 +5226,28 @@ export class NeuroAgentHarness {
         throw new Error(`当前 profile ${frame.profileKey} 的有效配置已关闭 Compaction，上下文 ${usage.tokens} tokens 已超过模型 ${frame.model.id} 的 ${frame.model.contextWindow} token 限制。`);
     }
 
-    /** 从 effective config 摘 Pi trace 设置三元组（prepareRun / 无 frame 场景共用）。 */
+    /** 从 effective config 摘 Pi trace 设置四元组（prepareRun / 无 frame 场景共用）。 */
     private piTraceSettings(config: EffectiveConfig): PiTraceSettings {
         return {
             enabled: config.observability.piTrace.enabled,
             capturePayload: config.observability.piTrace.capturePayload,
             maxRecords: config.observability.piTrace.maxRecords,
+            maxBytes: config.observability.piTrace.maxBytesPerBucket,
         };
     }
 
     /** 从 RunFrame 组装本轮 Pi 请求 trace 绑定：recorder + config 解析的开关 + 领域关联。 */
     private piTraceBinding(frame: RunFrame, kind: PiTraceKind = "turn"): PiTraceBinding {
+        const settings: PiTraceSettings = {
+            enabled: frame.piTrace?.enabled ?? false,
+            capturePayload: frame.piTrace?.capturePayload ?? false,
+            maxRecords: frame.piTrace?.maxRecords ?? 100,
+            maxBytes: frame.piTrace?.maxBytes ?? DEFAULT_PI_TRACE_MAX_BYTES_PER_BUCKET,
+        };
+        this.maybeSweepPiTraces(settings);
         return {
             recorder: this.piTraceRecorder,
-            settings: {
-                enabled: frame.piTrace?.enabled ?? false,
-                capturePayload: frame.piTrace?.capturePayload ?? false,
-                maxRecords: frame.piTrace?.maxRecords ?? 100,
-            },
+            settings,
             correlation: {
                 kind,
                 sessionId: frame.sessionId,
@@ -5256,11 +5261,29 @@ export class NeuroAgentHarness {
 
     /** 无 RunFrame 时（手动 compact / health-check）从 effective config 组装正式 trace 绑定。 */
     traceBinding(config: EffectiveConfig, correlation: PiTraceCorrelation): PiTraceBinding {
+        const settings = this.piTraceSettings(config);
+        this.maybeSweepPiTraces(settings);
         return {
             recorder: this.piTraceRecorder,
-            settings: this.piTraceSettings(config),
+            settings,
             correlation,
         };
+    }
+
+    /**
+     * 进程生命周期一次的存量 bucket 收敛：写入路径的 prune 只覆盖当前 bucket，不再活跃的
+     * bucket 靠这里触达。首次组装 trace 绑定时触发（此时 config 已在手上，无需新增配置读取
+     * 通道）；enabled 关闭时不置位，待开启后的首次绑定再执行。sweepAll 内部挂 recorder
+     * 串行队列且 best-effort，此处无需捕获。
+     */
+    private piTraceSweepDone = false;
+
+    private maybeSweepPiTraces(settings: PiTraceSettings): void {
+        if (this.piTraceSweepDone || !settings.enabled) {
+            return;
+        }
+        this.piTraceSweepDone = true;
+        void this.piTraceRecorder.sweepAll({maxRecords: settings.maxRecords, maxBytes: settings.maxBytes});
     }
 
     private async streamAssistant(input: {
