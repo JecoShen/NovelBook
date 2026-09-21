@@ -179,9 +179,13 @@ describe("迁移后九个 CI 工作流结构合同", () => {
             .map(([name]) => name);
         expect(wrongBranch).toEqual([]);
         // main 允许直推、无 PR 评审，这两个代码门禁必须覆盖 push 才有约束力。
-        for (const name of ["code-baseline.yml", "workspace-packages.yml"]) {
+        // desktop-envelope-contract 同理（P1-6）：桌面合同曾因只挂 PR 在 main 上零门禁。
+        for (const name of ["code-baseline.yml", "workspace-packages.yml", "desktop-envelope-contract.yml"]) {
             expect((await readWorkflow(name)).on?.push?.branches, name).toEqual([DEFAULT_BRANCH]);
         }
+        // desktop-envelope 的 push/PR 监听面必须一致，防止单侧漂移后再次出现结构性盲区。
+        const desktop = await readWorkflow("desktop-envelope-contract.yml");
+        expect(desktop.on?.push?.paths).toEqual(desktop.on?.pull_request?.paths);
     });
 
     it("Electron 独立 lockfile 使用 POSIX workspace 路径", async () => {

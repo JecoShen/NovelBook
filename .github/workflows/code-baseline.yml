@@ -113,7 +113,23 @@ jobs:
       - name: Check workflow and Docker contracts
         # scripts/typecheck/** 的两个用例此前不在任何 vitest 收集面内（scripts/vitest.config.ts
         # 的 include 漏了该目录，且全仓没有一处跑该 config 的全量）——测试在仓库里却从不执行。
-        run: bun x vitest run --config scripts/vitest.config.ts scripts/ci/agent-governance.test.ts scripts/ci/workspace-workflows.test.ts scripts/build/dockerfile-contract.test.ts scripts/typecheck/non-desktop-runner.test.ts scripts/typecheck/project-graph.test.ts
+        run: bun x vitest run --config scripts/vitest.config.ts scripts/ci/agent-governance.test.ts scripts/ci/workspace-workflows.test.ts scripts/ci/lint-ratchet.test.ts scripts/build/dockerfile-contract.test.ts scripts/typecheck/non-desktop-runner.test.ts scripts/typecheck/project-graph.test.ts
+
+  lint:
+    name: Lint ratchet
+    # P1-5：全仓 eslint 计数对 scripts/ci/lint-baseline.json 只降不升。
+    # 不挂 needs.changes 作用域：lint 是全仓口径，任何改动都可能推高计数。
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --linker hoisted
+      - name: Run lint ratchet
+        run: bun run lint:ratchet
 
   typecheck:
     name: Typecheck

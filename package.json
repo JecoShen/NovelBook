@@ -27,6 +27,8 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:ratchet": "bun scripts/ci/lint-ratchet.ts",
+    "lint:ratchet:update": "bun scripts/ci/lint-ratchet.ts --update",
     "typecheck:layers": "bun scripts/typecheck/non-desktop-runner.ts",
     "github:labels": "bun scripts/ci/github-labels.ts",
     "governance:check": "bun scripts/ci/agent-governance.ts",
