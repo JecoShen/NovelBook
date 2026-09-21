@@ -10,6 +10,10 @@
 - [`p-005-development-workflow-governance.md`](./p-005-development-workflow-governance.md)：`P-005`，current Work 是 Task 的强制容器，Task 指定唯一 canonical role；Issue 由 Work 可选引用，Proposal 独立且可被多个 Work 引用，Agent主导执行，开发者在明示节点参与，PM/Reviewer按需，状态为`accepted`。
 - [`p-006-state-root-out-of-checkout.md`](./p-006-state-root-out-of-checkout.md)：`P-006`，生产 State Root 迁出 git checkout 根，消除 `git clean -fdx` 灭失全部用户数据（含本地备份）的单点失败域，状态为 `draft`。
 - [`p-007-production-deploy-rollback.md`](./p-007-production-deploy-rollback.md)：`P-007`，本机生产部署改为版本化产物 + symlink 原子切换 + 健康门禁（含 browser-smoke）+ 失败回切，消除无回滚、构建窗口事故与运行版本脱钩，状态为 `draft`。
+- [`p-008-nb-memory-main-chain-retrieval.md`](./p-008-nb-memory-main-chain-retrieval.md)：`P-008`，nb-memory 接入 writer 主链 lore 检索（可插拔检索器 + shadow 双跑三阶段收敛，替换字符串 trigger 匹配），状态为 `draft`。
+- [`p-009-provider-resilience.md`](./p-009-provider-resilience.md)：`P-009`，Provider 韧性：harness 层重试/backoff（零输出门禁）+ profile fallbackModelKeys 降级链 + CJK 修正 token 估算器，状态为 `draft`。
+- [`p-010-invocation-concurrency-governance.md`](./p-010-invocation-concurrency-governance.md)：`P-010`，Agent invocation 并发治理：invokeCore 全局槽位（交互/后台分级、有界排队超时拒绝）+ per-turn 工具执行闸 + AgentJobManager 有界执行，状态为 `draft`。
+- [`p-011-fork-release-gate.md`](./p-011-fork-release-gate.md)：`P-011`，fork 发布门禁适配：`manager:verify-public` 改 dispatcher 分派，fork 模式本地一致性校验替代 npm provenance（upstream 语义字节级保留），状态为 `draft`。
 
 已完成沉淀的信息架构提案见 [`../packages/neuro-book/docs/archived/proposals/documentation-information-architecture.md`](../../packages/neuro-book/docs/archived/proposals/documentation-information-architecture.md)。
 
