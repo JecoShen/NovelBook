@@ -221,7 +221,7 @@ describe("迁移后九个 CI 工作流结构合同", () => {
         expect(commands(deploy)).toContain("bun run docs:check");
     });
 
-    it("六自治包 matrix 由变更选择器驱动并保留 owner、命令、路径和 artifact", async () => {
+    it("自治包 matrix 由变更选择器驱动并保留 owner、命令、路径和 artifact", async () => {
         const workflow = await readWorkflow("workspace-packages.yml");
         expect(paths(workflow)).toEqual(expect.arrayContaining([
             "packages/llmlint/web/**",
@@ -241,8 +241,8 @@ describe("迁移后九个 CI 工作流结构合同", () => {
         }
         const harnessRow = WORKSPACE_PACKAGE_CHECKS.find((row) => row.name === "neuro-agent-harness");
         expect(harnessRow?.commands).toContain("bun run verify");
-        const uiRow = WORKSPACE_PACKAGE_CHECKS.find((row) => row.name === "nb-ui");
-        expect(uiRow?.commands).toContain("bun run test");
+        // nb-ui 已按 ADR 0021 废弃归档：matrix 不得再出现该格，避免 CI 为未接线资产付费。
+        expect(WORKSPACE_PACKAGE_CHECKS.some((row) => row.name === "nb-ui")).toBe(false);
         const packageStep = packageJob?.steps?.find((step) => step.name === "Run package checks");
         expect(packageStep).toMatchObject({"working-directory": "${{ matrix.directory }}", run: "${{ matrix.commands }}"});
         expect(workflow.jobs["llmlint-web"]?.if).toBe("needs.select-packages.outputs.run_web_island == 'true'");
@@ -404,12 +404,19 @@ describe("迁移后九个 CI 工作流结构合同", () => {
     });
 
     it("code-baseline 与 product-platforms 的 PR paths 覆盖全部 packages 目录", async () => {
+        // 已归档包原地保留但退出 CI 面（ADR 0021），paths 覆盖义务按显式名单豁免；
+        // 名单外的新目录仍强制要求 paths，防止活跃包静默脱离门禁。
+        const archivedPackages = new Set(["nb-ui"]);
         const dirents = await readdir(resolve(root, "packages"), {withFileTypes: true});
         const packageDirs = dirents.filter((d) => d.isDirectory()).map((d) => d.name);
         expect(packageDirs.length).toBeGreaterThanOrEqual(12);
         for (const name of ["code-baseline.yml", "product-platforms.yml"]) {
             const prPaths = (await readWorkflow(name)).on?.pull_request?.paths ?? [];
             for (const dir of packageDirs) {
+                if (archivedPackages.has(dir)) {
+                    expect(prPaths, `${name}: 归档包不得留在 paths: packages/${dir}`).not.toContain(`packages/${dir}/**`);
+                    continue;
+                }
                 expect(prPaths, `${name}: packages/${dir}`).toContain(`packages/${dir}/**`);
             }
         }

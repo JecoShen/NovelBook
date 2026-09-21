@@ -13,11 +13,12 @@
         "./skill-test-api": "./skill/test-api.ts"
     },
     "scripts": {
-        "test": "bun run registry:build && bun run test:vitest && bun run test:bun",
+        "harness:ensure": "bun run --cwd ../neuro-agent-harness build",
+        "test": "bun run harness:ensure && bun run registry:build && bun run test:vitest && bun run test:bun",
         "test:vitest": "vitest run --exclude tests/agent-invocation-revision-migration.test.ts",
         "test:bun": "bun test tests/agent-invocation-revision-migration.test.ts web/tests/nuxt/use-agent-chat.test.ts evals",
         "registry:build": "cd web && bun scripts/build-registry.ts",
-        "typecheck": "bun run registry:build && tsc --noEmit --pretty false",
+        "typecheck": "bun run harness:ensure && bun run registry:build && tsc --noEmit --pretty false",
         "verify": "bun run typecheck && bun test && bun skill/bin/llmlint.ts --version && bun skill/bin/llmlint.ts rules --detector semantic --format json && bun skill/bin/llmlint.ts guide --tier core",
         "web:dev": "cd web && bun run dev",
         "web:build": "cd web && bun run build",

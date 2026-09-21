@@ -1,5 +1,7 @@
 # nb-ui 项目规则
 
+> **已归档（2026-09-22，[ADR 0021](../../docs/adr/0021-nb-ui-retirement-single-design-system.md)）**：本包已废弃，不在 workspaces/install/CI 面内，不要在此开发。以下规则仅供阅读 provenance。
+
 本包位于 `packages/nb-ui`，遵循仓库共享 Agent 合同 [`../../AGENTS.md`](../../AGENTS.md)。本文件只保留 nb-ui 的项目专属规则，不复制根共享正文。
 
 本包是 NeuroBook 的独立 Vue/Nuxt 组件库。任何修改都必须保持公共组件、主题包和 playground 三个表面一致。

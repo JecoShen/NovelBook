@@ -51,7 +51,7 @@ neuro-book/
 │   ├── nb-memory/                  # episode、facts 与主体注册表
 │   ├── nb-history/                 # 操作日志、事件溯源与内容寻址快照
 │   ├── nb-workflow/                # 可重放的脚本化 Workflow Kernel
-│   ├── nb-ui/                      # 共享 Vue/Nuxt UI 基础组件
+│   ├── nb-ui/                      # 已归档（ADR 0021）：不在 workspaces/CI，仅保留 provenance
 │   ├── llmlint/skill/              # llmlint Skill 单一源；产品投影由此生成
 │   ├── owned-process/             # 受管子进程托管
 │   ├── file-snapshot-cache/        # 文件快照缓存

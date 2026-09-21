@@ -60,7 +60,7 @@ NeuroBook 当前处于快速开发阶段，产品主线已收敛到 Novel 写作
 
 ## 仓库结构与上游关系（2026-09-11 核对）
 
-- **拆包**：2026-09-10 的 `9076c082` 跟随上游重构，仓库从单体拆为 12 个 workspace 包（根 `package.json` 的 `workspaces` 声明与 `packages/` 实际目录一致；该合并的提交信息沿用上游 “13-package” 说法，多算了不在根 workspaces 的 `desktop/electron`）。包边界正文见 [`docs/modules/monorepo-boundaries.md`](docs/modules/monorepo-boundaries.md)。
+- **拆包**：2026-09-10 的 `9076c082` 跟随上游重构，仓库从单体拆为 12 个 workspace 包（该合并的提交信息沿用上游 “13-package” 说法，多算了不在根 workspaces 的 `desktop/electron`）。2026-09-22 起为 **11 个**：`nb-ui` 按 ADR 0021 废弃归档（移出 workspaces 与 CI matrix，目录原地保留作 provenance）。包边界正文见 [`docs/modules/monorepo-boundaries.md`](docs/modules/monorepo-boundaries.md)。
 - **上游关系**：`main` 是 `upstream/master` 的**严格超集**——重新 fetch 后 `git rev-list --left-right --count main...upstream/master` 为 `218 / 0`，上游 HEAD `106f5e7b` 是 `main` 的祖先。不存在“落后上游”的待同步量。
 - **fork 独有增量的性质**：218 条中 docs 61、fix 58、chore 39、test 23、feat 15。产品增量集中在中文写作质量工程（llmlint 规则集、lore 上下文注入、场景六问模板、scene-master-list schema、Writer 避讳词），平台能力主要来自上游。
 - **门禁现状**：

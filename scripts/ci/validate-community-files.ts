@@ -188,7 +188,6 @@ const codeBaselinePaths = [
     "packages/nb-history/**",
     "packages/nb-workflow/**",
     "packages/nb-memory/**",
-    "packages/nb-ui/**",
     "packages/neuro-agent-harness/**",
     "packages/llmlint/**",
     "packages/neuro-book/assets/**",

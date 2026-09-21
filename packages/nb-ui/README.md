@@ -1,5 +1,7 @@
 # nb-ui
 
+> **已归档（2026-09-22，[ADR 0021](../../docs/adr/0021-nb-ui-retirement-single-design-system.md)）**：本包已废弃——不在根 `workspaces`、`bun install`、typecheck 与 CI matrix 面内，NeuroBook 的单一设计系统是主应用内基元 + 8 主题。目录原地保留作 provenance，不要在此新增或修改代码；重开条件见 ADR 0021。
+
 Shared Vue/Nuxt UI primitives for NeuroBook-derived projects.
 
 ## Local development

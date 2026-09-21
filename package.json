@@ -15,7 +15,6 @@
     "packages/nb-history",
     "packages/nb-workflow",
     "packages/nb-memory",
-    "packages/nb-ui",
     "packages/neuro-agent-harness",
     "packages/llmlint",
     "packages/neuro-book"
@@ -26,7 +25,6 @@
     "#scripts/*": "./scripts/*.ts"
   },
   "scripts": {
-    "postinstall": "bun run --cwd packages/neuro-agent-harness build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck:layers": "bun scripts/typecheck/non-desktop-runner.ts",

@@ -17,7 +17,8 @@ NeuroBook 以一个 monorepo 维护应用、共享合同、Product Runtime、Des
 | Project / Workspace | `packages/neuro-book/server/workspace-files/`、State Root 的 `workspace/`、Project SQLite、Workspace 文件协议 | Project API、文件工具、Workspace CLI | `workspace/` 是运行时逻辑前缀；Source Dev 默认把物理 State Root 放在 Windows `%LOCALAPPDATA%/NeuroBook/data`、macOS `~/Library/Application Support/NeuroBook/data`、Linux `$XDG_DATA_HOME/NeuroBook/data`，不使用 checkout 根 `workspace/` |
 | World Engine | `packages/neuro-book/world-engine/` 与 `packages/neuro-book/assets/reference/world-engine/` | Plot、Agent tools、写作流程 | 保持独立领域 Module；Product runtime 通过显式 runtime island 消费 |
 | Product Runtime / Release | `packages/neuro-book/server/runtime/`、根 `scripts/build/`、`scripts/deploy/`、`scripts/release/` | Product、Portable、Container、Release | 共享验证和发布入口保持根宿主 owner；应用运行期书架投影到 Product `server/assets/reference/` |
-| Workspace 自治包 | `packages/nb-history/`、`nb-workflow/`、`nb-memory/`、`nb-ui/`、`neuro-agent-harness/`、`llmlint/` | 各包公开 exports、包内测试和应用消费者 | 各包独立 owner；包级治理资产覆盖专属行为，统一文档站只投影用户入口 |
+| Workspace 自治包 | `packages/nb-history/`、`nb-workflow/`、`nb-memory/`、`neuro-agent-harness/`、`llmlint/` | 各包公开 exports、包内测试和应用消费者 | 各包独立 owner；包级治理资产覆盖专属行为，统一文档站只投影用户入口 |
+| 已归档包 | `packages/nb-ui/`（ADR 0021，2026-09-22 废弃） | 无消费者、不进 workspaces/install/CI | 原地保留作 provenance；UI 演进走主应用内基元+8 主题，重开条件见 ADR 0021 |
 | Manager | `packages/neuro-book-manager/` | `@notnotype/neuro-book-manager`、`neuro-book` bin、Desktop 正式 subpath | 独立包；拥有 UAC client/broker 与 Product verifier，exports 的 types/runtime 条件必须同时覆盖真实消费者 |
 | Desktop Envelope | `desktop/` 与 `packages/neuro-book-contracts/src/desktop*` | Electron/Tauri、Manager、Desktop Contract | 保持根级独立安装图；宿主实现通过 contracts 或 Manager 正式 subpath 消费，不深导入应用或 sibling 源码 |
 
