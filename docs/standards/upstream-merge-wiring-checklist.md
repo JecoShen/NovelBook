@@ -33,7 +33,7 @@ git merge-base --is-ancestor <branch> main && echo merged
 | 7 | `docs/tasks` 回魂 | `git ls-files docs/tasks` | 应为空（canonical 在 `.agents/tasks/` 与包级 `.agents/tasks/`） |
 | 8 | 治理合同 | `bun run governance:check` | failures 为空 |
 | 9 | nb-ui 归档状态（ADR 0021） | `grep -c "packages/nb-ui" package.json scripts/ci/workspace-package-matrix.ts` | 0；matrix 为 5 格 |
-| 10 | postinstall 解耦（ADR 0020） | `grep -c postinstall package.json` | 0；harness 构建由 llmlint `harness:ensure` 驱动 |
+| 10 | postinstall 解耦（ADR 0020） | `grep -c postinstall package.json` | 0；harness 构建由 llmlint 及其 web 孤岛的 `harness:ensure` 链首自保 |
 | 11 | lint ratchet 基线 | `bun run lint:ratchet` | 实测计数 ≤ `scripts/ci/lint-baseline.json` |
 | 12 | fork CI 平台收窄 | `scripts/build/product-platform-matrix.ts` 的 `FORK_CI_TARGET_PLATFORMS` 仅 `linux-x64-glibc` | 未被上游合并恢复为全平台日常门禁 |
 

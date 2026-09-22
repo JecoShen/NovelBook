@@ -35,7 +35,10 @@ describe("Docker Product runtime contract", () => {
             optionalDependencies?: Record<string, string>;
             peerDependencies?: Record<string, string>;
         });
-        expect(manifests[0]?.scripts?.postinstall).toBe("bun run --cwd packages/neuro-agent-harness build");
+        // ADR 0020 / w00014 t04：根 postinstall 已解耦，harness dist 由消费者自保
+        // （llmlint 及 web 孤岛的 harness:ensure）；镜像内由 build stage 显式构建（下方断言）。
+        // 此处反向锁死：postinstall 不得复活，否则 install 链重新被单包构建态绑架。
+        expect(manifests[0]?.scripts?.postinstall).toBeUndefined();
         const manifestPathByName = new Map(workspaceManifests.map((source, index) => [
             (JSON.parse(source) as {name: string}).name,
             `packages/${packageDirectories[index]}/package.json`,

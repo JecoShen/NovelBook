@@ -55,7 +55,6 @@
     "../../packages/neuro-book/server/plot/services/story.service.ts",
     "../../packages/neuro-book/server/plot/services/thread.service.ts",
     "../../packages/neuro-book/server/utils/novel-chapter.ts",
-    "../../packages/neuro-book/server/workspace-files/atomic-file-write.ts",
     "../../packages/neuro-book/server/workspace-files/content-node-schema.ts",
     "../../packages/neuro-book/server/workspace-files/content-node-templates.ts",
     "../../packages/neuro-book/server/workspace-files/llmlint-skill-projection.ts",

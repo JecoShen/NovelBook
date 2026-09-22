@@ -3,18 +3,19 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "harness:ensure": "bun run --cwd ../../neuro-agent-harness build",
         "build:registry": "bun scripts/build-registry.ts",
         "build:report": "bun scripts/build-report.ts",
         "db:generate": "prisma generate",
         "db:init": "bun scripts/init-db.ts",
         "db:migrate": "prisma migrate dev",
-        "dev": "bun scripts/build-registry.ts && bun scripts/build-report.ts && nuxt dev",
-        "build": "bun scripts/build-registry.ts && bun scripts/build-report.ts && nuxt build",
+        "dev": "bun run harness:ensure && bun scripts/build-registry.ts && bun scripts/build-report.ts && nuxt dev",
+        "build": "bun run harness:ensure && bun scripts/build-registry.ts && bun scripts/build-report.ts && nuxt build",
         "start": "node .output/server/index.mjs",
-        "generate": "bun scripts/build-registry.ts && bun scripts/build-report.ts && nuxt generate",
+        "generate": "bun run harness:ensure && bun scripts/build-registry.ts && bun scripts/build-report.ts && nuxt generate",
         "preview": "nuxt preview",
-        "typecheck": "bun scripts/build-registry.ts && vue-tsc --noEmit",
-        "typecheck:server": "vue-tsc --noEmit -p .nuxt/tsconfig.server.json"
+        "typecheck": "bun run harness:ensure && bun scripts/build-registry.ts && vue-tsc --noEmit",
+        "typecheck:server": "bun run harness:ensure && vue-tsc --noEmit -p .nuxt/tsconfig.server.json"
     },
     "dependencies": {
         "@floating-ui/dom": "^1.7.6",
