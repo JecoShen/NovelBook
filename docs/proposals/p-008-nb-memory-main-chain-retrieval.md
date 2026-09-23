@@ -88,3 +88,4 @@ A 先行；B 仅在 shadow 证据充分且开发者要求压缩工期时考虑�
 ## 决策记录
 
 - 2026-09-22：Leader 起草（依据架构审查 P1-2，证据经三轮复核；方向已由开发者拍板：nb-memory 接入 writer 主链，或过渡期 as-of 检索补充）。待开发者评审：阶段划分（三阶段 vs 直接切换）、`retriever` 配置项命名与默认值、prompt 装配延迟预算数值、shadow 期长度与切换证据门槛、trigger 路径终态（永久降级 vs 退役删除）、`.nbook/memory/` 是否纳入本地备份面、项目级配置覆盖是否需要。
+- 2026-09-23：Leader 补充实证（评审辅助，待评审问题清单不变）：备份覆盖问题已核实——`server/backup/backup-archive-rules.ts` 的两级排除清单（`EXCLUDED_DIRECTORY_SEGMENTS` / `EXCLUDED_NBOOK_SUBTREES`）均不含 memory 子树，云备份与本地每日备份（共用 BackupArchiveService）对 `.nbook/memory/` **自动覆盖**：jsonl 事实源直接入包，`index.sqlite` 按 SQLite 合同走 VACUUM INTO 冷快照。建议维持默认覆盖（恢复即完整）；把派生的 `index.sqlite` 加排除属 Task 阶段可选优化，非评审决策项。

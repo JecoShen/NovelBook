@@ -167,3 +167,4 @@ A 先行；B 因知识分层放弃；C 不解决问题；D 留作网关用户的
   - Q4：`compaction.summaryModelKey` 是否随提案给一个产品推荐的便宜模型默认模板，还是仅开放字段、默认值维持主模型（推荐后者，避免替用户做成本决策）。
   - Q5：CJK 段系数 1.5 字符/token 与验收误差带 ±25% 的最终取值（需基准数据集校准）。
   - Q6：错误分类对 `errorMessage` 字符串解析的依赖是否可接受（fail-closed 兜底），还是 v1 即在 traced 层包装结构化错误（成本：触碰 traced-provider 与 adapter 边界，且 status 在 SDK 重试耗尽前不可得）。
+- 2026-09-23：Q5 实测校准（Leader 对生产 traces 离线分析；方法：对 `usage.input>0` 记录取 systemPrompt+messages 全文本字符数 ÷ input tokens；cacheRead>0 记录以 input+cacheRead 为分母——已验证 `usage.input` 不含缓存命中，chars/input 中位数虚高至 306 不可用）：CJK 占比 50–90% 文本实测 **1.69 字符/token**（n=6，p10–p90 1.63–1.71，ark deepseek-v4-flash tokenizer）；ASCII 主导 ≈4.1–4.75；即 chars/4 对 CJK 重内容低估 ≈2.4 倍（坐实审查"2–4 倍"结论）。分段启发式 CJK 系数 1.5 落在实测安全侧（高估 token → 压缩提前触发），±25% 验收误差带可达（段内 p10–p90 仅 ±5%）。局限：单一 provider tokenizer 样本，跨 provider 偏差由 Task 验收基准覆盖。
