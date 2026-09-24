@@ -1,6 +1,6 @@
 # P-009：Provider 韧性（429 重试/backoff + fallback chain + CJK token 估算器）
 
-- 状态：draft（提交开发者评审）
+- 状态：accepted（2026-09-24 开发者评审通过）
 - 来源：`.local/architecture-review-2026-09-20.md` P1-3（三轮复核属实）；方向已由开发者拍板（429/backoff/重试 + fallback chain + CJK 真 tokenizer 覆盖估算器），本提案落成可评审设计
 - 姊妹提案：[`p-010-invocation-concurrency-governance.md`](./p-010-invocation-concurrency-governance.md)（并发槽位治理，正交）
 
@@ -168,3 +168,11 @@ A 先行；B 因知识分层放弃；C 不解决问题；D 留作网关用户的
   - Q5：CJK 段系数 1.5 字符/token 与验收误差带 ±25% 的最终取值（需基准数据集校准）。
   - Q6：错误分类对 `errorMessage` 字符串解析的依赖是否可接受（fail-closed 兜底），还是 v1 即在 traced 层包装结构化错误（成本：触碰 traced-provider 与 adapter 边界，且 status 在 SDK 重试耗尽前不可得）。
 - 2026-09-23：Q5 实测校准（Leader 对生产 traces 离线分析；方法：对 `usage.input>0` 记录取 systemPrompt+messages 全文本字符数 ÷ input tokens；cacheRead>0 记录以 input+cacheRead 为分母——已验证 `usage.input` 不含缓存命中，chars/input 中位数虚高至 306 不可用）：CJK 占比 50–90% 文本实测 **1.69 字符/token**（n=6，p10–p90 1.63–1.71，ark deepseek-v4-flash tokenizer）；ASCII 主导 ≈4.1–4.75；即 chars/4 对 CJK 重内容低估 ≈2.4 倍（坐实审查"2–4 倍"结论）。分段启发式 CJK 系数 1.5 落在实测安全侧（高估 token → 压缩提前触发），±25% 验收误差带可达（段内 p10–p90 仅 ±5%）。局限：单一 provider tokenizer 样本，跨 provider 偏差由 Task 验收基准覆盖。
+- 2026-09-24：开发者评审通过（对 Leader 评审辅助建议全部认可）：
+  - Q1：`agent.resilience.enabled` 默认 **true**（零输出门禁下成功路径零变化）。
+  - Q2：维持 `DEFAULT_PI_MAX_RETRIES = 5` 不变，文档引导希望产品层完全接管策略的 provider 调低；最坏 18 请求只发生在持续故障态，可接受。
+  - Q3：不可重试错误（4xx 鉴权/参数、content_filter）一律**不触发** fallback；主对话 fallback **允许跨 provider**。
+  - Q4：仅开放 `summaryModelKey` 字段，默认维持主模型，不提供产品推荐的便宜模型模板（不替用户做成本决策）。
+  - Q5：CJK 段系数 1.5、验收误差带 ±25% 拍定——已获 9/23 生产 traces 实测支持（CJK 重文本 1.69 字符/token，chars/4 低估 ≈2.4 倍）。
+  - Q6：v1 接受 `errorMessage` 字符串解析 + fail-closed（无法归类 = 不可重试）；traced 层结构化错误包装留作后续增强。
+  实施 Work：w00017。

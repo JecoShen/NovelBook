@@ -1,6 +1,6 @@
 # P-008：nb-memory 接入 writer 主链 lore 检索
 
-- 状态：draft（提交开发者评审）
+- 状态：accepted（2026-09-24 开发者评审通过）
 - 来源：`.local/architecture-review-2026-09-20.md` P1-2（三轮复核属实）；开发者已拍板方向——nb-memory 接入 writer 主链（或过渡期：as-of 检索补充 lore 注入）
 
 ## 问题
@@ -89,3 +89,12 @@ A 先行；B 仅在 shadow 证据充分且开发者要求压缩工期时考虑�
 
 - 2026-09-22：Leader 起草（依据架构审查 P1-2，证据经三轮复核；方向已由开发者拍板：nb-memory 接入 writer 主链，或过渡期 as-of 检索补充）。待开发者评审：阶段划分（三阶段 vs 直接切换）、`retriever` 配置项命名与默认值、prompt 装配延迟预算数值、shadow 期长度与切换证据门槛、trigger 路径终态（永久降级 vs 退役删除）、`.nbook/memory/` 是否纳入本地备份面、项目级配置覆盖是否需要。
 - 2026-09-23：Leader 补充实证（评审辅助，待评审问题清单不变）：备份覆盖问题已核实——`server/backup/backup-archive-rules.ts` 的两级排除清单（`EXCLUDED_DIRECTORY_SEGMENTS` / `EXCLUDED_NBOOK_SUBTREES`）均不含 memory 子树，云备份与本地每日备份（共用 BackupArchiveService）对 `.nbook/memory/` **自动覆盖**：jsonl 事实源直接入包，`index.sqlite` 按 SQLite 合同走 VACUUM INTO 冷快照。建议维持默认覆盖（恢复即完整）；把派生的 `index.sqlite` 加排除属 Task 阶段可选优化，非评审决策项。
+- 2026-09-24：开发者评审通过（对 Leader 评审辅助建议全部认可），开放问题逐项拍板：
+  1. 阶段划分：三阶段 shadow → primary → 退役评估（方案 A），不直接替换。
+  2. 配置项：`agent.loreContext.retriever`（`trigger | shadow | memory`），默认 `trigger`。
+  3. 延迟预算：Task 阶段拍定——字面路 p95 < 50ms；语义路每次注入至多 1 次 embed 调用，超时 2s 自动降级 trigger 路。
+  4. shadow → primary 切换门槛按证据量而非时长：≥20 次真实 invoke 两路召回对照 + 差异人工抽样，对照报告落 Task 证据后评审。
+  5. trigger 路径终态：保留为永久降级兜底（memory → trigger → 空串三级退回），不删除。
+  6. `.nbook/memory/` 备份：维持默认自动覆盖（9/23 已核实两级排除清单均不含 memory 子树）；派生 `index.sqlite` 是否加排除属 Task 阶段可选优化。
+  7. 项目级覆盖：v1 只做 global 配置；项目级覆盖后续追加，不破坏兼容。
+  实施 Work：w00016。

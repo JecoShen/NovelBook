@@ -1,6 +1,6 @@
 # P-011：fork 发布门禁适配（manager:verify-public 结构性阻断裁剪）
 
-- 状态：draft（提交开发者评审）
+- 状态：accepted（2026-09-24 开发者评审通过）
 - 来源：`PROJECT-STATUS.md:77`「fork 发布门禁」段（2026-09-13 登记）的立项要求：「裁剪门禁属合同任务（触点：`scripts/release/release.ts`、release-assets 测试、`release-container.yml`、ADR 0015），待立项」
 
 ## 问题
@@ -127,3 +127,10 @@ A 落地；B 的报告成分并入 A；C 否决。判定的唯一权威位置是
   4. fork 发布的 Windows Portable/GHCR 验收继续嵌入上游 npm Manager 的语义是否接受（推荐接受 + Manager 版本冻结约束），还是需要立后续项改嵌 fork 本机构建？
   5. dispatcher 文件名与常量命名（`public-manager-gate.ts` / `FORK_PUBLIC_MANAGER_GATE_MODE`）是否有更符合仓库惯例的取法？
 - 附带动作（实施时）：`docs/proposals/README.md` 活跃提案清单登记本提案。
+- 2026-09-24：开发者评审通过（对 Leader 评审辅助建议全部认可）：
+  1. fork 模式本地校验复用完整 `manager:pack`（fail-closed 强度与 verify-public 隔离安装哲学同构）。
+  2. 保留 npm 漂移 best-effort 情报报告（try/catch 兜底，离线不阻断），作为上游恢复观察窗。
+  3. `manager:release` 仅文档声明在 fork 不可用，不加 fail-fast 守卫（不改上游文件）。
+  4. 接受 Windows Portable/GHCR 验收继续嵌入上游 npm Manager + **Manager 版本冻结约束**（fork 不得提升 `packages/neuro-book-manager` 版本号，直至「改嵌 fork 本机构建 Manager」另行立项）。
+  5. 命名拍板 `scripts/release/public-manager-gate.ts` / `FORK_PUBLIC_MANAGER_GATE_MODE`，沿用 `FORK_CI_TARGET_PLATFORMS` 先例。
+  附带动作随本次评审通过一并完成（README 状态登记 accepted）。实施 Work：w00019。
