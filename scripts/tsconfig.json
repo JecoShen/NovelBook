@@ -38,6 +38,7 @@
         "build/product-runtime-image-builder.ts",
         "release/create-interrupted-operation.ts",
         "release/install-dependencies.ts",
+        "release/public-manager-gate.ts",
         "release/verify-windows-portable-restart.ts",
         "release/manager-release-contract.test.ts",
         "release/manager-release-vitest.config.ts",

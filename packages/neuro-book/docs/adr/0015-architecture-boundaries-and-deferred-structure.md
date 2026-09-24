@@ -81,3 +81,7 @@ Electron 和 Tauri 目前仍是 Desktop spike。配置、端口、Supervisor、�
 - 直接运行 `node node_modules/nuxt/bin/nuxt.mjs typecheck --dotenv .env.typecheck --logLevel silent`：通过，退出码 0。
 - `bun run typecheck` 未进入 TypeScript，Bun 报告 `Bun failed to remap this bin to its proper location within node_modules.`，并提示 `corrupted node_modules directory`，退出码 255。
 - 本轮未运行全仓测试、浏览器验收、真实 provider 或发布流程；本 ADR 不替代这些门禁。
+
+## 复核记录
+
+- 2026-09-24（p-011 / w00019）：fork 发布门禁适配落地。`manager:verify-public` 入口改为 dispatcher（`scripts/release/public-manager-gate.ts`），fork 形态下「Manager 构建输入未漂移」的发布证据改由本地一致性校验（完整 `manager:pack` + 本机构建 `--version` 断言）产生，npm provenance 语义冻结而非失效（fork 不发布 npm，公开 gitHead 承诺无主体）；upstream 模式经 `NEURO_BOOK_PUBLIC_MANAGER_GATE=upstream` 原样复跑。本 ADR 的「Manager 脱离主仓库独立发布」重新评估触发条件不受影响；Task 140/142 记录的 verify-public 拦截语义在 `verify-public-manager.ts` 中字节保留。

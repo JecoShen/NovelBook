@@ -31,6 +31,7 @@
 
 - 仓库从单体拆分为 12 个 workspace 包并完成 fork 适配；恢复被合并抹掉的门禁：lint（stylistic 关闭）、分层 typecheck 八层、docs:check 清零、代码门禁覆盖 main 直推；Full tests 单 worker 串行首次完整全绿。
 - 清理公开仓历史用户数据残留；生产 PM2 配置显式声明 Application/State/Cache Root 并关闭进程内 APM（Bun 下每 800ms 空烧半核）。
+- fork 发布门禁适配：`manager:verify-public` 改 dispatcher 分派，fork 模式以本地一致性校验（`manager:pack` + 版本断言）替代 npm provenance 校验，upstream 语义经开关一行恢复（p-011）。
 
 ### 升级须知
 

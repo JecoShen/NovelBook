@@ -63,7 +63,7 @@
     "manager:test": "bun run --cwd packages/neuro-book-manager test && bun x vitest run --config scripts/release/manager-release-vitest.config.ts scripts/release/manager-release-contract.test.ts",
     "manager:typecheck": "bun run --cwd packages/neuro-book-manager typecheck",
     "manager:pack": "bun run --cwd packages/neuro-book-manager pack:check",
-    "manager:verify-public": "bun scripts/release/verify-public-manager.ts",
+    "manager:verify-public": "bun scripts/release/public-manager-gate.ts",
     "test:desktop-contract": "bun --bun node_modules/vitest/vitest.mjs run --config scripts/release/desktop-contract-vitest.config.ts",
     "docs:stage": "bun scripts/ci/stage-docs-locales.ts",
     "docs:dev": "bun run docs:stage && vitepress dev vitepress",

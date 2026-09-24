@@ -465,6 +465,21 @@ describe("Product Release宿主合同", () => {
         );
     });
 
+    it("fork发布门禁dispatcher委托upstream语义并保留fork本地一致性校验", async () => {
+        const dispatcher = await readFile(resolve(ROOT, "scripts/release/public-manager-gate.ts"), "utf8");
+        const rootPackageJson = JSON.parse(await readFile(resolve(ROOT, "package.json"), "utf8")) as {
+            scripts: Record<string, string>;
+        };
+        const scriptsTsconfig = JSON.parse(await readFile(resolve(ROOT, "scripts/tsconfig.json"), "utf8")) as {include?: string[]};
+        expect(rootPackageJson.scripts["manager:verify-public"]).toBe("bun scripts/release/public-manager-gate.ts");
+        expect(dispatcher).toContain('FORK_PUBLIC_MANAGER_GATE_MODE = "fork"');
+        expect(dispatcher).toContain("NEURO_BOOK_PUBLIC_MANAGER_GATE");
+        expect(dispatcher).toContain('"bun", "scripts/release/verify-public-manager.ts"');
+        expect(dispatcher).toContain('"bun", "run", "manager:pack"');
+        expect(dispatcher).toContain('"--version"');
+        expect(scriptsTsconfig.include).toContain("release/public-manager-gate.ts");
+    });
+
     it("正式POSIX Product消费路径保留归档中的文件权限", async () => {
         const workflow = await readFile(resolve(ROOT, ".github/workflows/release-container.yml"), "utf8");
         const verifier = await readFile(resolve(ROOT, "scripts/release/verify-posix-product.sh"), "utf8");
