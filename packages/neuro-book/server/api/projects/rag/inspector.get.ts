@@ -636,10 +636,6 @@ defineRouteMeta({
 } as never,
 });
 
-
-
-
-
 /**
  * 读取 Project RAG Inspector 的索引与向量元数据快照。
  */

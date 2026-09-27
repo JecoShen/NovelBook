@@ -21,7 +21,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {routeMetaMap, type RouteMetaEntry} from "../../server/openapi/route-map";
 import {buildOpenAPIOperation} from "../../server/openapi/operation-builder";
 
-const applicationRoot = fileURLToPath(new URL("../", import.meta.url));
+// 脚本位于 scripts/build/：applicationRoot 必须上两级到包根，否则 serverApiDir
+// 落到 scripts/server/api 全量 File not found（生成器静默失效的复发点）。
+const applicationRoot = fileURLToPath(new URL("../../", import.meta.url));
 const serverApiDir = resolve(applicationRoot, "server/api");
 
 // ─── Marker comment for idempotent replacement ──────────────────

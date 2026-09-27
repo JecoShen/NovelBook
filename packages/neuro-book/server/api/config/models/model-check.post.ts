@@ -464,10 +464,6 @@ defineRouteMeta({
 } as never,
 });
 
-
-
-
-
 /**
  * 将 HTTP 请求/响应断开转换为模型检查可用的 AbortSignal。
  */
