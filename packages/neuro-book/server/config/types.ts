@@ -187,6 +187,8 @@ export type EffectiveConfig = {
          * 为空表示未配置，消费方兜底为单条默认模型；通常不超过 5 条。
          */
         visibleModels: AgentVisibleModelConfig[];
+        /** writer 主链 lore 上下文注入配置（p-008）。 */
+        loreContext: LoreContextConfig;
     };
     ui: {
         theme: string;
@@ -200,6 +202,19 @@ export type EffectiveConfig = {
     web: WebSettingsConfig;
     observability: ObservabilityConfig;
     history: WorkspaceHistorySettingsConfig;
+};
+
+/**
+ * lore 选卡检索器（p-008 三阶段收敛）：
+ * - `trigger`：现状字符串匹配（默认，永久降级兜底）；
+ * - `shadow`：双跑——注入仍用 trigger 结果，memory 召回与两路差异只写观测日志；
+ * - `memory`：nb-memory 检索进注入，任何失败自动退回 trigger。
+ */
+export type LoreRetrieverMode = "trigger" | "shadow" | "memory";
+
+/** writer 主链 lore 上下文注入配置。v1 只支持 global 配置。 */
+export type LoreContextConfig = {
+    retriever: LoreRetrieverMode;
 };
 
 /** 可观测配置。第一版只有 Pi 请求 trace。 */
@@ -258,6 +273,7 @@ export type StoredGlobalConfig = {
         profileRuntimeDefaults?: ProfileRuntimeSettingsPatch;
         profiles?: Record<string, StoredAgentProfileConfig>;
         visibleModels?: AgentVisibleModelConfig[];
+        loreContext?: Partial<LoreContextConfig>;
     };
     ui?: Partial<EffectiveConfig["ui"]>;
     editor?: {

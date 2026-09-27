@@ -62,6 +62,7 @@
     "../../packages/neuro-book/server/agent/lore/lore-frontmatter.ts",
     "../../packages/neuro-book/server/agent/lore/lore-resolver-cache.ts",
     "../../packages/neuro-book/server/agent/lore/lore-resolver.ts",
+    "../../packages/neuro-book/server/agent/lore/lore-shadow-log.ts",
     "../../packages/neuro-book/server/agent/messages/stored-message-codec.ts",
     "../../packages/neuro-book/server/agent/messages/stored-message-tokens.ts",
     "../../packages/neuro-book/server/agent/messages/stored-user-markdown.ts",

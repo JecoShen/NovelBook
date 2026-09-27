@@ -524,7 +524,8 @@ defineRouteMeta({
                                             "profileModelDefaults": {},
                                             "profileRuntimeDefaults": {},
                                             "profiles": {},
-                                            "visibleModels": []
+                                            "visibleModels": [],
+                                            "loreContext": {}
                                         },
                                         "type": "object",
                                         "properties": {
@@ -1211,6 +1212,21 @@ defineRouteMeta({
                                                     ],
                                                     "additionalProperties": false
                                                 }
+                                            },
+                                            "loreContext": {
+                                                "default": {},
+                                                "type": "object",
+                                                "properties": {
+                                                    "retriever": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "trigger",
+                                                            "shadow",
+                                                            "memory"
+                                                        ]
+                                                    }
+                                                },
+                                                "additionalProperties": false
                                             }
                                         },
                                         "required": [
@@ -1218,7 +1234,8 @@ defineRouteMeta({
                                             "profileModelDefaults",
                                             "profileRuntimeDefaults",
                                             "profiles",
-                                            "visibleModels"
+                                            "visibleModels",
+                                            "loreContext"
                                         ],
                                         "additionalProperties": false
                                     },
@@ -1645,11 +1662,6 @@ defineRouteMeta({
                                                         "type": "boolean"
                                                     },
                                                     "maxRecords": {
-                                                        "type": "integer",
-                                                        "minimum": 0,
-                                                        "maximum": 9007199254740991
-                                                    },
-                                                    "maxBytesPerBucket": {
                                                         "type": "integer",
                                                         "minimum": 0,
                                                         "maximum": 9007199254740991
@@ -3505,12 +3517,6 @@ defineRouteMeta({
     }
 } as never,
 });
-
-
-
-
-
-
 
 /**
  * 重置 Project Workspace 中指定 profile 的 profile home。

@@ -412,7 +412,10 @@ export const GlobalConfigDtoSchema = z.object({
         profileRuntimeDefaults: ProfileRuntimeSettingsPatchDtoSchema.default({}),
         profiles: ConfigAgentProfileMapDtoSchema,
         visibleModels: z.array(AgentVisibleModelConfigDtoSchema).default([]),
-    }).default({defaultProfileKey: {novel: null, userAssets: null}, profileModelDefaults: {}, profileRuntimeDefaults: {}, profiles: {}, visibleModels: []}),
+        loreContext: z.object({
+            retriever: z.enum(["trigger", "shadow", "memory"]),
+        }).partial().default({}),
+    }).default({defaultProfileKey: {novel: null, userAssets: null}, profileModelDefaults: {}, profileRuntimeDefaults: {}, profiles: {}, visibleModels: [], loreContext: {}}),
     ui: UiConfigDtoSchema.default({theme: "sepia", customThemes: [], costCurrency: "USD"}),
     editor: EditorConfigDtoSchema.default({
         markdown: DEFAULT_MARKDOWN_EDITOR_PREFERENCES,
@@ -438,6 +441,9 @@ export const GlobalConfigUpdateDtoSchema = z.object({
         profileRuntimeDefaults: ProfileRuntimeSettingsPatchDtoSchema.default({}),
         profiles: ConfigAgentProfileMapDtoSchema,
         visibleModels: z.array(AgentVisibleModelConfigDtoSchema).default([]),
+        loreContext: z.object({
+            retriever: z.enum(["trigger", "shadow", "memory"]),
+        }).partial().default({}),
     }).optional(),
     ui: UiConfigDtoSchema.optional(),
     editor: EditorConfigDtoSchema.optional(),

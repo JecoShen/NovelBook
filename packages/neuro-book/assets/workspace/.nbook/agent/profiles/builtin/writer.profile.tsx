@@ -13,7 +13,7 @@ import {profileText} from "nbook/profile-sdk";
 import {DEFAULT_WRITING_REFERENCE_PRESET, buildWritingReference, legacyReferenceKeyToHomeKey, loadWritingReferencePresets, normalizeReferenceHomeKey} from "nbook/profile-sdk/writing";
 import {DEFAULT_WRITING_STYLE_PRESET, buildWritingStyle, legacyStyleKeyToHomeKey, loadWritingStylePresets, normalizeStyleHomeKey} from "nbook/profile-sdk/writing";
 import {DEFAULT_AVOID_WORDS_PRESET, buildAvoidWords} from "nbook/profile-sdk/writing";
-import {resolveForChapter, renderInjectedMarkdown, readRecentLoreInjections, recordLoreInjection} from "nbook/profile-sdk/lore";
+import {resolveChapterLore, renderInjectedMarkdown, readRecentLoreInjections, recordLoreInjection} from "nbook/profile-sdk/lore";
 import type {ReadyProjectSessionRef as LoreReadyProjectSessionRef} from "nbook/profile-sdk/lore";
 import {defineLowCodeForm, profileHomeResource} from "nbook/profile-sdk";
 import {defineProfileHome} from "nbook/profile-sdk";
@@ -509,7 +509,7 @@ async function readFileSafely(
  * carryOver 取最近 3 条注入记录: 记录按 invoke 追加而非按章, 同章重写会产生多条,
  * 3 条约等于前一章的注入集合, 又不让 carryOver 挤占全部 maxPaths 槽位。
  * - payload 缺失 / project 缺失 / 合并扫描文本 < 100 chars → return ""
- * - resolveForChapter 失败 / 0 命中 → return ""
+ * - resolveChapterLore 失败 / 0 命中 → return ""
  * - renderInjectedMarkdown 失败 → return ""
  * - 任何失败 → console.warn + return "" (per spec §4 降级)
  */
@@ -532,7 +532,9 @@ async function renderChapterLoreContext(
             return "";
         }
         const carryOverPaths = await readRecentLoreInjections(project as LoreReadyProjectSessionRef, {limit: 3});
-        const resolved = await resolveForChapter({
+        // p-008：选卡走配置闸入口（trigger/shadow/memory）；默认 trigger 与旧
+        // resolveForChapter 同语义同结果，memory 路任何失败自动退回 trigger。
+        const resolved = await resolveChapterLore({
             project: project as LoreReadyProjectSessionRef,
             chapterText: scanText,
             carryOverPaths,

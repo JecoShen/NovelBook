@@ -26,6 +26,8 @@ import type {
     ObservabilityConfig,
     PiTraceConfig,
     WorkspaceHistorySettingsConfig,
+    LoreContextConfig,
+    LoreRetrieverMode,
 } from "nbook/server/config/types";
 import {DEFAULT_PI_TRACE_MAX_BYTES_PER_BUCKET} from "nbook/server/config/types";
 import type {JsonValue} from "nbook/server/agent/messages/types";
@@ -101,6 +103,26 @@ const DEFAULT_PI_TRACE: PiTraceConfig = {
     maxBytesPerBucket: DEFAULT_PI_TRACE_MAX_BYTES_PER_BUCKET,
     capturePayload: true,
 };
+
+/** loreContext 默认值：trigger 是现状行为与永久降级兜底（p-008 决策 2/5）。 */
+const DEFAULT_LORE_CONTEXT: LoreContextConfig = {
+    retriever: "trigger",
+};
+
+const LORE_RETRIEVER_MODES: readonly LoreRetrieverMode[] = ["trigger", "shadow", "memory"];
+
+/**
+ * 归一化 loreContext：非法 retriever 值丢弃回落 trigger（fail-closed 到现状行为）。
+ * v1 只做 global 配置，Project 覆盖不存在因此无需遮蔽处理。
+ */
+function normalizeLoreContext(input: Partial<LoreContextConfig> | null | undefined): LoreContextConfig {
+    const raw = input && typeof input === "object" ? input : {};
+    return {
+        retriever: LORE_RETRIEVER_MODES.includes(raw.retriever as LoreRetrieverMode)
+            ? raw.retriever as LoreRetrieverMode
+            : DEFAULT_LORE_CONTEXT.retriever,
+    };
+}
 
 /**
  * 归一化可观测配置：从存储层 partial 覆盖默认值，带类型守卫。
@@ -179,6 +201,7 @@ export function createDefaultEffectiveConfig(): EffectiveConfig {
             profileRuntimeDefaults: {},
             profiles: {},
             visibleModels: [],
+            loreContext: {...DEFAULT_LORE_CONTEXT},
         },
         ui: {
             theme: DEFAULT_THEME,
@@ -218,6 +241,7 @@ export function normalizeGlobalConfig(input: Partial<StoredGlobalConfig> | null 
             profileRuntimeDefaults: normalizeProfileRuntimeSettingsPatch(raw.agent?.profileRuntimeDefaults),
             profiles: normalizeAgentProfiles(raw.agent?.profiles),
             visibleModels: normalizeAgentVisibleModels(raw.agent?.visibleModels),
+            loreContext: normalizeLoreContext(raw.agent?.loreContext),
         },
         ui: {
             theme: normalizeTheme(raw.ui?.theme, customThemes),
@@ -301,6 +325,8 @@ export function resolveEffectiveConfig(globalConfig: StoredGlobalConfig, project
     effective.agent.profileRuntimeDefaults = globalRuntimeDefaults;
     effective.agent.profiles = normalizeCompleteAgentProfiles(globalProfilePatches, effective.agent.profileModelDefaults, globalRuntimeDefaults);
     effective.agent.visibleModels = normalizeAgentVisibleModels(globalConfig.agent?.visibleModels);
+    // v1 global-only（p-008 决策 7）：不读 projectConfig，项目级覆盖后续追加。
+    effective.agent.loreContext = normalizeLoreContext(globalConfig.agent?.loreContext);
     effective.ui.customThemes = normalizeCustomThemes(globalConfig.ui?.customThemes);
     effective.ui.theme = normalizeTheme(globalConfig.ui?.theme, effective.ui.customThemes);
     effective.ui.costCurrency = normalizeCostCurrency(globalConfig.ui?.costCurrency);

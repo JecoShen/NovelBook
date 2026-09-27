@@ -15,7 +15,8 @@ import { containsSourceRootDescendant } from '#scripts/build/product-source-path
 // 投影产物指纹 = {schema, tsconfig, dependencies, inputFiles}：文件清单类常量（如
 // copyReachableDeclarations 入口队列）不在指纹内，改动它们必须 bump 本 schema，
 // 否则磁盘上的旧投影会被同指纹命中（2026-09-13 lore 子入口接入时实测复现）。
-export const AUTHORING_SDK_TYPE_PROJECTION_SCHEMA = 'nbook.authoring-sdk-type-projection/v3'
+// v4：AUTHORING_RUNTIME_TYPE_STUB_FILES 新增 lore-retriever stub（p-008）。
+export const AUTHORING_SDK_TYPE_PROJECTION_SCHEMA = 'nbook.authoring-sdk-type-projection/v4'
 
 // 清单必须与 PROFILE_AUTHORING_ALLOWED_SDK_SPECIFIERS 登记的作者可用子入口对齐，
 // 并与 product-authoring-kit.ts 的 SDK 清单保持一致；漏掉的子入口会在 typecheck 报
@@ -49,6 +50,9 @@ const AUTHORING_RUNTIME_TYPE_STUB_FILES = {
   'nbook/server/agent/profiles/writer-writing-avoid-words': 'writer-writing-avoid-words.d.ts',
   'nbook/server/agent/world-engine-tool-description': 'world-engine-tool-description.d.ts',
   'nbook/server/low-code-form/resource-preset': 'resource-preset.d.ts',
+  // p-008：配置闸选卡入口的运行时实现拖 config-service/world-embedding/nb-memory
+  // 完整 server 图，不属于作者可见声明图；SDK 侧签名锚定 lore-resolver 轻量类型。
+  'nbook/server/agent/lore/lore-retriever': 'lore-retriever.d.ts',
 } as const
 
 export const AUTHORING_SDK_DEPENDENCIES = [
@@ -269,6 +273,11 @@ async function writeAuthoringRuntimeTypeStubs(stubRoot: string): Promise<void> {
     writeFile(resolve(stubRoot, 'resource-preset.d.ts'), [
       'import type { ResourcePresetDefinition } from \'nbook/profile-sdk/contracts\'',
       'export function profileHomeResource(input: { directory: string, extension?: \'.md\', template?: string }): ResourcePresetDefinition',
+    ].join('\n'), 'utf8'),
+    writeFile(resolve(stubRoot, 'lore-retriever.d.ts'), [
+      'import type { ResolveForChapterInput, ResolveForChapterResult } from \'nbook/server/agent/lore/lore-resolver\'',
+      'export type ResolveChapterLoreInput = ResolveForChapterInput & { readonly retrieverOverride?: \'trigger\' | \'shadow\' | \'memory\' }',
+      'export function resolveChapterLore(input: ResolveChapterLoreInput): Promise<ResolveForChapterResult>',
     ].join('\n'), 'utf8'),
   ])
 }

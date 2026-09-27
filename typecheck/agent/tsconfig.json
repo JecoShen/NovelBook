@@ -56,6 +56,8 @@
     "../../packages/neuro-book/server/agent/http.ts",
     "../../packages/neuro-book/server/agent/index.ts",
     "../../packages/neuro-book/server/agent/jobs/agent-job-manager.ts",
+    "../../packages/neuro-book/server/agent/lore/lore-memory-index.ts",
+    "../../packages/neuro-book/server/agent/lore/lore-retriever.ts",
     "../../packages/neuro-book/server/agent/messages/message-utils.ts",
     "../../packages/neuro-book/server/agent/profiles/adhoc-profile.ts",
     "../../packages/neuro-book/server/agent/profiles/default-profile.ts",

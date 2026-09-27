@@ -31,3 +31,13 @@ role: tasker
 ## 产出
 
 叙事与验证落 `walkthroughs/`；shadow 对照数据（切换评审用）落 `evidences/`。primary 切换评审在后续 Task 进行，门槛：≥20 次真实 invoke 两路对照 + 差异人工抽样。
+
+## 结果（2026-09-27，Tasker）
+
+全部范围落地，验收 1–6 实测通过；叙事见 [`walkthroughs/implementation.md`](walkthroughs/implementation.md)，验收 3 基准与观测记录样例见 [`evidences/literal-path-latency-benchmark.md`](evidences/literal-path-latency-benchmark.md)。
+
+- 交付：planned Spec `agent.writer-lore-context` + 检索器 dispatch（trigger/shadow/memory）+ memory 检索器与索引生命周期（facts 直报零 LLM、新代 append-only 增量、后台构建不阻塞、30s 刷新节流、2s query embed 超时降级、NullEmbedPort 纯字面路）+ 项目级 shadow 观测 jsonl + `agent.loreContext.retriever` 配置闸全登记链（zod→types→normalizer→重生成 meta）+ nb-memory workspace 依赖双侧登记 + writer profile 切新入口。
+- 验证：lore 套件 46/46、`server/config` 84/84、typecheck 八层 0、lint ratchet 2145/1513 持平、docs:check 6075 零 failure、governance:check 零告警；字面路 p95=20.24ms（预算 50ms）；trigger 一致性 deep-equal 单测锁定。
+- 偏差：观测日志走 lore-carryover 项目级 jsonl 先例（非 piTrace 桶）；旧代 facts 归并时过滤不物理清理（nb-memory 无删除 API 的设计内方案）；SDK 签名锚定轻量类型 + 投影 stub v4（重图不进作者可见声明图）。详见 walkthrough 偏差与决定节。
+- 顺带修复（独立提交）：generate-openapi-meta applicationRoot 拆包后指向错误（37 路由静默失效），修复 + 全量重生成 canonical 化。
+- 观察：`leader-assets-profile.test.ts` leader.default 用例本机 20s 超时为 HEAD 既有（干净 HEAD A/B 同败，非本 Task 回归）；生产生效需 state root 资产同步 + profile compile 普查；真实语义路 e2e 与 shadow 配置闸翻转转后续授权动作。

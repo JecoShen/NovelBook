@@ -86,6 +86,7 @@
     "@notnotype/neuro-book-contracts": "workspace:*",
     "@notnotype/neuro-book": "workspace:*",
     "@notnotype/nb-history": "workspace:*",
+    "@notnotype/nb-memory": "workspace:*",
     "@notnotype/nb-workflow": "workspace:*",
     "@notnotype/owned-process": "workspace:*",
     "@nuxt/kit": "^4.3.1",

@@ -245,3 +245,37 @@ describe("config normalizer Provider Config identity", () => {
         expect(Object.keys(effective.models.providers.provider?.models ?? {})).toEqual(["unique"]);
     });
 });
+
+describe("config normalizer loreContext（p-008）", () => {
+    it("默认值：retriever=trigger（现状行为与永久降级兜底）", () => {
+        const effective = resolveEffectiveConfig(normalizeGlobalConfig({}), null);
+        expect(effective.agent.loreContext).toEqual({retriever: "trigger"});
+    });
+
+    it("合法值 shadow/memory 生效", () => {
+        expect(resolveEffectiveConfig(normalizeGlobalConfig({
+            agent: {loreContext: {retriever: "shadow"}},
+        }), null).agent.loreContext.retriever).toBe("shadow");
+        expect(resolveEffectiveConfig(normalizeGlobalConfig({
+            agent: {loreContext: {retriever: "memory"}},
+        }), null).agent.loreContext.retriever).toBe("memory");
+    });
+
+    it("非法 retriever 值 fail-closed 回落 trigger", () => {
+        const effective = resolveEffectiveConfig(normalizeGlobalConfig({
+            agent: {loreContext: {retriever: "bogus" as never}},
+        }), null);
+        expect(effective.agent.loreContext.retriever).toBe("trigger");
+    });
+
+    it("v1 global-only：project 文件手写 loreContext 不产生遮蔽", () => {
+        const global = normalizeGlobalConfig({
+            agent: {loreContext: {retriever: "shadow"}},
+        });
+        const project = {
+            agent: {loreContext: {retriever: "memory"}},
+        } as unknown as StoredProjectConfig;
+        const effective = resolveEffectiveConfig(global, project);
+        expect(effective.agent.loreContext.retriever).toBe("shadow");
+    });
+});
