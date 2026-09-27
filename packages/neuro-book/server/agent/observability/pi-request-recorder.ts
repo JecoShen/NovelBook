@@ -54,7 +54,7 @@ export type PiTraceSegment = {
     range: {start: number; end: number} | null;
     /** 与区间内消息一一对应的 Profile DSL 来源名；无来源的位置为 null。整段无来源时省略本字段。 */
     labels?: (readonly string[] | null)[];
-    /** 纯估算（chars/4，与 compaction 同口径）。真实值由消费方按 provider usage 比例校准。 */
+    /** 纯估算（CJK 分段启发式，与 compaction 同口径）。真实值由消费方按 provider usage 比例校准。 */
     estimatedTokens: number;
 };
 

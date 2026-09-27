@@ -2,7 +2,7 @@ import type {AgentMessage, ImageContent, Message, TextContent} from "nbook/serve
 import type {StoredAgentMessage, StoredAttachmentContent, StoredContent} from "nbook/server/agent/messages/stored-types";
 
 // 本模块会进 profile artifact 依赖图，必须保持零 npm 运行时依赖；
-// pi-agent-core 的 token 估算器在 `stored-message-tokens.ts`。
+// token 估算器在 `stored-message-tokens.ts`（CJK 分段启发式，同为零 npm 运行时依赖）。
 
 /**
  * Pi 的图片估算器使用约 4800 个字符作为单张图片的保守成本。

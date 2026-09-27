@@ -53,8 +53,9 @@ describe("stored message presentation", () => {
             timestamp: 2,
         };
 
-        expect(estimateStoredMessageTokens(imageOnly)).toBe(1_200);
-        expect(estimateStoredMessageTokens(withText)).toBe(1_201);
+        // CJK 估算器（p-009）每条消息 +4 overhead：1200+4 / 1200+1+4。
+        expect(estimateStoredMessageTokens(imageOnly)).toBe(1_204);
+        expect(estimateStoredMessageTokens(withText)).toBe(1_205);
     });
 
     it("上下文估算保留最近 assistant usage，并只估算其后的 attachment", () => {
@@ -82,7 +83,8 @@ describe("stored message presentation", () => {
 
         const usage = estimateStoredContextTokens(messages);
         expect(usage.usageTokens).toBe(120);
-        expect(usage.trailingTokens).toBe(1_200);
-        expect(usage.tokens).toBe(1_320);
+        // trailing 附件消息：1200 固定成本 + 4 消息 overhead（p-009 新口径）。
+        expect(usage.trailingTokens).toBe(1_204);
+        expect(usage.tokens).toBe(1_324);
     });
 });

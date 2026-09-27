@@ -86,13 +86,21 @@ describe("buildTraceSegments", () => {
         expect(segments.map((segment) => segment.kind)).toEqual(["appending", "conversation", "appending"]);
     });
 
-    it("估算 token 按 chars/4，与 compaction 口径一致", () => {
-        const segments = buildTraceSegments({
+    it("估算 token 与 compaction 同口径：ASCII 4 字符/token，CJK 1.5 字符/token（p-009）", () => {
+        const ascii = buildTraceSegments({
             systemPrompt: "",
             tools: [],
             messages: [userMessage("a".repeat(40))],
         });
-        expect(segments[0]?.estimatedTokens).toBe(10);
+        // 40 ASCII → 10 + 4 消息 overhead
+        expect(ascii[0]?.estimatedTokens).toBe(14);
+        const cjk = buildTraceSegments({
+            systemPrompt: "",
+            tools: [],
+            messages: [userMessage("汉".repeat(40))],
+        });
+        // 40 CJK → ceil(40/1.5)=27 + 4 消息 overhead
+        expect(cjk[0]?.estimatedTokens).toBe(31);
     });
 });
 

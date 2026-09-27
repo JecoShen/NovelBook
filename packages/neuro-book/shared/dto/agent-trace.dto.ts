@@ -39,7 +39,7 @@ export type AgentTraceSegmentDto = {
     range: {start: number; end: number} | null;
     /** 与区间内消息一一对应的来源名；无来源位置为 null，整段无来源时缺省。 */
     labels?: (readonly string[] | null)[];
-    /** 纯估算（chars/4）。展示真实值时由前端按 provider usage 比例校准。 */
+    /** 纯估算（CJK 分段启发式）。展示真实值时由前端按 provider usage 比例校准。 */
     estimatedTokens: number;
 };
 

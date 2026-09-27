@@ -214,7 +214,7 @@ import {LocalAttachmentBlobAdapter} from "nbook/server/agent/attachments/local-a
 import {AgentAttachmentCodec, canonicalImageMime} from "nbook/server/agent/attachments/agent-attachment-codec";
 import {hasStoredAttachment, storedMessagesForText} from "nbook/server/agent/attachments/agent-attachment-codec";
 import {SessionAttachmentAuthority} from "nbook/server/agent/attachments/session-attachment-authority";
-import {estimateStoredContextTokens} from "nbook/server/agent/messages/stored-message-tokens";
+import {estimatePlainTextTokens, estimateStoredContextTokens} from "nbook/server/agent/messages/stored-message-tokens";
 import type {AttachmentId, AttachmentRef} from "nbook/shared/dto/agent-attachment.dto";
 import {AttachmentError} from "nbook/server/agent/attachments/types";
 import {attachmentIdFromMarkdownTarget, parseAgentImageMarkdown, serializeAgentImageMarkdown} from "nbook/shared/agent/agent-image-markdown";
@@ -3963,7 +3963,7 @@ export class NeuroAgentHarness {
                 text: storedMessageText(entry.message).slice(0, 500),
                 timestamp: entry.timestamp,
             }));
-        const estimatedTokens = estimateTextTokens(JSON.stringify(recentMessages));
+        const estimatedTokens = estimatePlainTextTokens(JSON.stringify(recentMessages));
         if (estimatedTokens > tokenBudget) {
             throw new Error(`get_session recentMessages 超出 tokenBudget：估算 ${estimatedTokens} > ${tokenBudget}。复杂历史查询请到 session 文件目录使用 bash、jq、rg 自助查询。`);
         }
@@ -8437,10 +8437,6 @@ function createInvocationAbortGate(): InvocationAbortGate {
             resolvePromise!(result);
         },
     };
-}
-
-function estimateTextTokens(text: string): number {
-    return Math.ceil(text.length / 4);
 }
 
 /** 只保留文件名语义，并把登记名称限制在公开 DTO 的稳定上限内。 */

@@ -3,6 +3,7 @@ import type {JsonValue} from "nbook/server/agent/messages/types";
 import type {SessionEntry, SessionSnapshot} from "nbook/server/agent/session/types";
 import type {JsonlSessionRepository} from "nbook/server/agent/session/session-repo";
 import {messageText} from "nbook/server/agent/messages/message-utils";
+import {estimatePlainTextTokens} from "nbook/server/agent/messages/stored-message-tokens";
 
 export const AGENT_DIALOGUE_CONTENT_RENDERER_VERSION = 1;
 
@@ -51,10 +52,10 @@ export function buildAgentDialogueContent(input: {
 }
 
 /**
- * 粗略 token 估算，和 harness 现有 estimateTextTokens 保持同一量级。
+ * 对话正文的 token 估算，与 compaction/触发线共用 CJK 分段口径（stored-message-tokens）。
  */
 export function estimateDialogueContentTokens(text: string): number {
-    return Math.ceil(text.length / 4);
+    return estimatePlainTextTokens(text);
 }
 
 function renderDialogueEntry(entry: SessionEntry): string | null {

@@ -449,7 +449,8 @@ describe("compaction", () => {
             .filter((entry) => entry.type === "compaction")
             .at(-1);
         expect(summaryPromptText(summaryPrompt)).toContain(attachmentMarker(block));
-        expect(latest?.type === "compaction" ? latest.details?.summarizedTokens : undefined).toBe(1_200);
+        // 1200 附件固定成本 + 4 消息 overhead（p-009 CJK 估算器新口径）。
+        expect(latest?.type === "compaction" ? latest.details?.summarizedTokens : undefined).toBe(1_204);
         expect(latest?.type === "compaction" ? latest.tokensBefore : undefined).toBeGreaterThanOrEqual(1_200);
     });
 });
