@@ -145,6 +145,8 @@ function buildGlobalConfigPayload(): GlobalConfigUpdateDto {
             profileRuntimeDefaults: buildProfileRuntimeSettingsPatch(profileRuntimeDefaults.value),
             profiles: buildGlobalProfileConfigMap(profiles.value, editorSnapshot.value?.global.agent?.profiles ?? {}),
             visibleModels: base.agent?.visibleModels ?? [],
+            loreContext: base.agent?.loreContext ?? {},
+            concurrency: base.agent?.concurrency ?? {},
         },
     };
 }

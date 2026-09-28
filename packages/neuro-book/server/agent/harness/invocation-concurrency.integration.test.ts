@@ -19,6 +19,7 @@ import {
     useInvocationConcurrencyGate,
 } from "nbook/server/agent/harness/invocation-concurrency-gate";
 import type {AgentConcurrencyConfig} from "nbook/server/config/types";
+import type {NeuroAgentTool} from "nbook/server/agent/tools/types";
 
 /**
  * 全局并发闸 harness 集成测试（p-010 验收 2/3/5）：
@@ -31,7 +32,9 @@ function createProbeTool() {
     let maxActive = 0;
     let opened = false;
     const waiters: Array<() => void> = [];
-    const tool = {
+    // 显式标注 NeuroAgentTool：独立构造时 content type 字面量会 widen 成 string，
+    // 分层 typecheck 不覆盖测试文件，全量 vue-tsc 会在 register() 处报 TS2345。
+    const tool: NeuroAgentTool = {
         key: "cc_probe",
         name: "cc_probe",
         label: "Concurrency Probe",

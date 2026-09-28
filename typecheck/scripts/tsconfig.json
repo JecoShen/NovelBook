@@ -93,6 +93,7 @@
     "../../scripts/release/manager-release-contract.test.ts",
     "../../scripts/release/manager-release-vitest.config.ts",
     "../../scripts/release/normalize-bun-lockfile.ts",
+    "../../scripts/release/public-manager-gate.ts",
     "../../scripts/release/verify-windows-portable-restart.ts",
     "../../scripts/utils/application-package.ts",
     "../../scripts/utils/product-platform.ts",
