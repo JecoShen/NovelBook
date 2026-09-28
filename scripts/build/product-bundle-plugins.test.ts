@@ -7,6 +7,7 @@ import {promisify} from "node:util";
 
 import {build} from "esbuild";
 import {describe, expect, it} from "vitest";
+import {testHostPath} from "@notnotype/neuro-book-test-support/test-path";
 import {productRuntimeCompatibilityPlugin} from "#scripts/build/product-bundle-plugins";
 
 const execFileAsync = promisify(execFile);

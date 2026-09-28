@@ -171,6 +171,12 @@ export function productOpaqueImportDefinitions(): ProductOpaqueImportDefinition[
             reason: "Product command 的共享依赖按当前 Runtime 与平台选择 module implementation；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（同上），仅 Source 开发模式执行。",
             smoke: "Product command start and database/application-state migrations",
         },
+        {
+            pathPattern: "authoring/nbook/profile-sdk/lore.mjs",
+            count: 5,
+            reason: "p-008 起 lore SDK 运行时图经 lore-retriever/lore-memory-index 接入记忆索引与 embedding，保留与既有登记同族的五处 opaque dynamic import：runtime-artifact-import 按已编译 artifact 地址动态加载、运行时选择 SQLite 驱动（bun:sqlite/node:sqlite）、jiti TS module loader；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（同上），仅 Source 开发模式执行。",
+            smoke: "Profile compile/import with lore SDK chapter lore resolution",
+        },
     ];
 }
 
