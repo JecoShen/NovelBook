@@ -19,3 +19,4 @@ p-008（2026-09-24 accepted）的实施 Work。目标：writer 主链 lore 卡�
 
 - t01：planned Spec + 可插拔检索器与 shadow 双跑（阶段 1）。
 - 后续（不预建）：primary 切换与对照报告评审、trigger 退役评估。
+- 后续（不预建）：authoring kit lore 图瘦身。2026-09-29 CI 实证 lore.mjs 5.7KB→14.5MB（minified），authoring-kit 基线 14.5MB→28.8MB 已按实测重登记；jiti TS loader、Source 类型投影缓存等 Source-only 机制随图混入产品 bundle，可评估剥离或按运行模式裁剪。
