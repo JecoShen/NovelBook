@@ -1,5 +1,6 @@
 import {createError, getRouterParam} from "h3";
 import {NeuroAgentHarness} from "nbook/server/agent/harness/neuro-agent-harness";
+import {AGENT_INVOCATION_CONCURRENCY_LIMIT_CODE} from "nbook/server/agent/harness/invocation-concurrency-gate";
 import {JsonlSessionRepository} from "nbook/server/agent/session/session-repo";
 import {runtimePathsFromEnv} from "nbook/server/runtime/paths/runtime-paths";
 import {AgentHistoryQueryError} from "nbook/server/agent/session/history-query";
@@ -10,7 +11,7 @@ import {isSessionCurrentProjectError} from "nbook/server/agent/session/current-p
 import {isAgentSessionNotFoundError} from "nbook/server/agent/session/session-not-found-error";
 import {requireReadyAgentSessionStore} from "nbook/server/agent/session/agent-session-store-runtime";
 import {projectPublicInvocationResult} from "nbook/server/agent/events/public-invocation-result-projection";
-import type {InvokeAgentInput} from "nbook/server/agent/harness/types";
+import type {AgentInvocationResult, InvokeAgentInput} from "nbook/server/agent/harness/types";
 import type {ServerTimingSink} from "nbook/server/utils/server-timing-sink";
 import {
     AgentSessionIdSchema,
@@ -173,8 +174,20 @@ export async function getAgentSessionRelations(sessionId: number, harness = useA
 export async function invokeAgentSession(sessionId: number, body: AgentInvokeRequestDto, harness = useAgentHarness()): Promise<InvokeAgentResult> {
     return withAgentSessionHttpError(sessionId, async () => {
         const result = await harness.invokeAgent(toInvokeInput(sessionId, body));
+        throwOnInvocationConcurrencyLimit(result);
         return projectPublicInvocationResult(result);
     });
+}
+
+/** 全局并发闸排队超时（p-010）→ UI 失败面 HTTP 503 + code（p-010 决策 5）。 */
+function throwOnInvocationConcurrencyLimit(result: AgentInvocationResult): void {
+    if (result.errorInfo?.code === AGENT_INVOCATION_CONCURRENCY_LIMIT_CODE) {
+        throw createError({
+            statusCode: 503,
+            message: result.error ?? "Agent invocation 并发槽位排队超时",
+            data: {code: AGENT_INVOCATION_CONCURRENCY_LIMIT_CODE, retryable: true},
+        });
+    }
 }
 
 /** 查询 Session 全分支附件目录。 */
@@ -251,6 +264,9 @@ export async function runAgentSessionCommand(sessionId: number, body: AgentComma
 export async function moveAgentSessionTree(sessionId: number, body: AgentTreeRequestDto, harness = useAgentHarness()): Promise<AgentTreeResult> {
     return withAgentSessionHttpError(sessionId, async () => {
         const result = await harness.moveTree(sessionId, body);
+        if (result.invocation) {
+            throwOnInvocationConcurrencyLimit(result.invocation);
+        }
         return result.invocation
             ? {...result, invocation: projectPublicInvocationResult(result.invocation)}
             : {status: result.status, state: result.state};

@@ -105,6 +105,27 @@ describe('POST /api/agent/bridge/sessions/:sessionId/invoke', () => {
     expect(result).toEqual({ ok: true })
   })
 
+  it('全局闸排队超时：errorInfo.code=AGENT_INVOCATION_CONCURRENCY_LIMIT → 与预审并列映射 429，且入闸类别为 background', async () => {
+    mocks.validateBody.mockResolvedValue({ mode: 'prompt', clientMessageId: 'x', message: { content: [] } })
+    mocks.invokeAgent.mockResolvedValue({
+      status: 'error',
+      error: 'Agent invocation 并发槽位排队超时',
+      errorInfo: { message: 'Agent invocation 并发槽位排队超时', phase: 'pre_loop', code: 'AGENT_INVOCATION_CONCURRENCY_LIMIT', retryable: true },
+    })
+    const handler = (await import('nbook/server/api/agent/bridge/sessions/[sessionId]/invoke.post')).default
+    const event = makeEvent()
+
+    await expect(handler(event)).rejects.toMatchObject({
+      statusCode: 429,
+      data: { code: 'AGENT_INVOCATION_CONCURRENCY_LIMIT', retryable: true },
+    })
+    expect(mocks.invokeAgent).toHaveBeenCalledWith(expect.objectContaining({
+      concurrencyClass: 'background',
+    }))
+    expect(mocks.projectPublicInvocationResult).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledTimes(1)
+  })
+
   it('并发超限：acquire 抛 BridgeConcurrencyLimitError → 路由映射 429', async () => {
     mocks.validateBody.mockResolvedValue({ mode: 'prompt', clientMessageId: 'x', message: { content: [] } })
     mocks.acquire.mockImplementation(() => {

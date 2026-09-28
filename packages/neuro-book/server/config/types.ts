@@ -189,6 +189,8 @@ export type EffectiveConfig = {
         visibleModels: AgentVisibleModelConfig[];
         /** writer 主链 lore 上下文注入配置（p-008）。 */
         loreContext: LoreContextConfig;
+        /** invocation 并发治理配置（p-010）。 */
+        concurrency: AgentConcurrencyConfig;
     };
     ui: {
         theme: string;
@@ -215,6 +217,26 @@ export type LoreRetrieverMode = "trigger" | "shadow" | "memory";
 /** writer 主链 lore 上下文注入配置。v1 只支持 global 配置。 */
 export type LoreContextConfig = {
     retriever: LoreRetrieverMode;
+};
+
+/**
+ * invocation 并发治理配置（p-010 决策 1：默认值 2/1/60s/4/32/4）。
+ * v1 只支持 global 配置；后三项为 A2（per-turn 工具执行闸）/A3（AgentJobManager 有界执行）预留，
+ * A1 阶段登记但不产生行为。
+ */
+export type AgentConcurrencyConfig = {
+    /** 同时处于 harness 运行段的 invocation 上限。 */
+    maxConcurrentInvocations: number;
+    /** 只为 interactive 保留的槽位数；background 同时占用 ≤ 上限减保留位。 */
+    reservedInteractiveSlots: number;
+    /** 运行段槽位排队超时（毫秒），超时抛 AGENT_INVOCATION_CONCURRENCY_LIMIT。 */
+    acquireTimeoutMs: number;
+    /** A2 预留：同 segment 并行工具调用宽度上限。 */
+    maxParallelToolCallsPerTurn: number;
+    /** A2 预留：单 turn 工具调用总数上限。 */
+    maxToolCallsPerTurn: number;
+    /** A3 预留：AgentJobManager 活动执行数上限。 */
+    maxActiveJobs: number;
 };
 
 /** 可观测配置。第一版只有 Pi 请求 trace。 */
@@ -274,6 +296,7 @@ export type StoredGlobalConfig = {
         profiles?: Record<string, StoredAgentProfileConfig>;
         visibleModels?: AgentVisibleModelConfig[];
         loreContext?: Partial<LoreContextConfig>;
+        concurrency?: Partial<AgentConcurrencyConfig>;
     };
     ui?: Partial<EffectiveConfig["ui"]>;
     editor?: {

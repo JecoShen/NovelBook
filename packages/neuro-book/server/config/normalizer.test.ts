@@ -279,3 +279,69 @@ describe("config normalizer loreContext（p-008）", () => {
         expect(effective.agent.loreContext.retriever).toBe("shadow");
     });
 });
+
+describe("config normalizer concurrency（p-010）", () => {
+    it("默认值：2/1/60s/4/32/4（p-010 决策 1）", () => {
+        const effective = resolveEffectiveConfig(normalizeGlobalConfig({}), null);
+        expect(effective.agent.concurrency).toEqual({
+            maxConcurrentInvocations: 2,
+            reservedInteractiveSlots: 1,
+            acquireTimeoutMs: 60_000,
+            maxParallelToolCallsPerTurn: 4,
+            maxToolCallsPerTurn: 32,
+            maxActiveJobs: 4,
+        });
+    });
+
+    it("合法值原样生效", () => {
+        const effective = resolveEffectiveConfig(normalizeGlobalConfig({
+            agent: {concurrency: {maxConcurrentInvocations: 8, reservedInteractiveSlots: 2, acquireTimeoutMs: 30_000}},
+        }), null);
+        expect(effective.agent.concurrency).toEqual(expect.objectContaining({
+            maxConcurrentInvocations: 8,
+            reservedInteractiveSlots: 2,
+            acquireTimeoutMs: 30_000,
+        }));
+    });
+
+    it("非法值逐字段 fail-closed 回落默认", () => {
+        const effective = resolveEffectiveConfig(normalizeGlobalConfig({
+            agent: {concurrency: {
+                maxConcurrentInvocations: 0,
+                reservedInteractiveSlots: -1,
+                acquireTimeoutMs: 300,
+                maxParallelToolCallsPerTurn: 1.5,
+                maxToolCallsPerTurn: "32" as never,
+                maxActiveJobs: 10_000,
+            }},
+        }), null);
+        expect(effective.agent.concurrency).toEqual({
+            maxConcurrentInvocations: 2,
+            reservedInteractiveSlots: 1,
+            acquireTimeoutMs: 60_000,
+            maxParallelToolCallsPerTurn: 4,
+            maxToolCallsPerTurn: 32,
+            maxActiveJobs: 4,
+        });
+    });
+
+    it("reservedInteractiveSlots 收敛到 < maxConcurrentInvocations（background 永不可运行的配置被钳断）", () => {
+        expect(resolveEffectiveConfig(normalizeGlobalConfig({
+            agent: {concurrency: {maxConcurrentInvocations: 2, reservedInteractiveSlots: 5}},
+        }), null).agent.concurrency.reservedInteractiveSlots).toBe(1);
+        expect(resolveEffectiveConfig(normalizeGlobalConfig({
+            agent: {concurrency: {maxConcurrentInvocations: 1, reservedInteractiveSlots: 1}},
+        }), null).agent.concurrency.reservedInteractiveSlots).toBe(0);
+    });
+
+    it("v1 global-only：project 文件手写 concurrency 不产生遮蔽", () => {
+        const global = normalizeGlobalConfig({
+            agent: {concurrency: {maxConcurrentInvocations: 4}},
+        });
+        const project = {
+            agent: {concurrency: {maxConcurrentInvocations: 99}},
+        } as unknown as StoredProjectConfig;
+        const effective = resolveEffectiveConfig(global, project);
+        expect(effective.agent.concurrency.maxConcurrentInvocations).toBe(4);
+    });
+});

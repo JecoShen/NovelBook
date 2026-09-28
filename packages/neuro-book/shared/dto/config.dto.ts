@@ -397,6 +397,16 @@ export const WorkspaceHistoryConfigDtoSchema = WorkspaceHistoryFieldsDtoSchema.p
 /** Project 侧文件历史覆盖：结构性不含 enabled。 */
 export const ProjectWorkspaceHistoryConfigDtoSchema = WorkspaceHistoryFieldsDtoSchema.omit({enabled: true}).partial();
 
+/** invocation 并发治理（p-010）：上界由 normalizer fail-closed 收敛，DTO 只守下界与整数性。 */
+export const AgentConcurrencyConfigDtoSchema = z.object({
+    maxConcurrentInvocations: z.number().int().min(1),
+    reservedInteractiveSlots: z.number().int().min(0),
+    acquireTimeoutMs: z.number().int().min(1000),
+    maxParallelToolCallsPerTurn: z.number().int().min(1),
+    maxToolCallsPerTurn: z.number().int().min(1),
+    maxActiveJobs: z.number().int().min(1),
+}).partial();
+
 export const GlobalConfigDtoSchema = z.object({
     models: z.object({
         default: NullableModelKeySchema,
@@ -415,7 +425,8 @@ export const GlobalConfigDtoSchema = z.object({
         loreContext: z.object({
             retriever: z.enum(["trigger", "shadow", "memory"]),
         }).partial().default({}),
-    }).default({defaultProfileKey: {novel: null, userAssets: null}, profileModelDefaults: {}, profileRuntimeDefaults: {}, profiles: {}, visibleModels: [], loreContext: {}}),
+        concurrency: AgentConcurrencyConfigDtoSchema.default({}),
+    }).default({defaultProfileKey: {novel: null, userAssets: null}, profileModelDefaults: {}, profileRuntimeDefaults: {}, profiles: {}, visibleModels: [], loreContext: {}, concurrency: {}}),
     ui: UiConfigDtoSchema.default({theme: "sepia", customThemes: [], costCurrency: "USD"}),
     editor: EditorConfigDtoSchema.default({
         markdown: DEFAULT_MARKDOWN_EDITOR_PREFERENCES,
@@ -444,6 +455,7 @@ export const GlobalConfigUpdateDtoSchema = z.object({
         loreContext: z.object({
             retriever: z.enum(["trigger", "shadow", "memory"]),
         }).partial().default({}),
+        concurrency: AgentConcurrencyConfigDtoSchema.default({}),
     }).optional(),
     ui: UiConfigDtoSchema.optional(),
     editor: EditorConfigDtoSchema.optional(),

@@ -465,3 +465,62 @@ describe("agent session http helpers", () => {
         });
     });
 });
+
+describe("全局并发闸失败面映射（p-010）", () => {
+    const concurrencyLimitedResult = {
+        sessionId: 12,
+        invocationId: "run-limited",
+        status: "error" as const,
+        acceptance: {state: "none" as const},
+        error: "Agent invocation 并发槽位排队超时",
+        errorPhase: "pre_loop" as const,
+        errorInfo: {
+            message: "Agent invocation 并发槽位排队超时",
+            phase: "pre_loop" as const,
+            code: "AGENT_INVOCATION_CONCURRENCY_LIMIT",
+            retryable: true,
+        },
+    };
+
+    it("invokeAgentSession：闸超时错误结果映射 HTTP 503 + code", async () => {
+        const invokeAgent = vi.fn(async () => concurrencyLimitedResult);
+
+        await expect(invokeAgentSession(12, {
+            mode: "prompt",
+            message: {text: "hello"},
+        }, {invokeAgent} as never)).rejects.toMatchObject({
+            statusCode: 503,
+            data: {code: "AGENT_INVOCATION_CONCURRENCY_LIMIT", retryable: true},
+        });
+    });
+
+    it("invokeAgentSession：非闸错误结果不映射，走既有投影", async () => {
+        const invokeAgent = vi.fn(async () => ({
+            ...concurrencyLimitedResult,
+            errorInfo: {message: "provider failed", phase: "model" as const},
+        }));
+
+        const result = await invokeAgentSession(12, {
+            mode: "prompt",
+            message: {text: "hello"},
+        }, {invokeAgent} as never);
+        expect(result.status).toBe("error");
+        expect(result.error).toBe("Agent invocation 并发槽位排队超时");
+    });
+
+    it("moveAgentSessionTree：随行 invoke 闸超时同样映射 503", async () => {
+        const moveTree = vi.fn(async () => ({
+            status: "invoked" as const,
+            state: {activeInvocation: null, steerQueue: [], followUpQueue: {status: "ready", items: []}},
+            invocation: concurrencyLimitedResult,
+        }));
+
+        await expect(moveAgentSessionTree(12, {
+            targetEntryId: "entry-1",
+            position: "after",
+        } as never, {moveTree} as never)).rejects.toMatchObject({
+            statusCode: 503,
+            data: {code: "AGENT_INVOCATION_CONCURRENCY_LIMIT"},
+        });
+    });
+});

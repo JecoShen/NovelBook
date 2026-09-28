@@ -42,6 +42,7 @@
     "../../packages/neuro-book/server/agent/events/public-invocation-result-projection.ts",
     "../../packages/neuro-book/server/agent/harness/agent-visible-models.ts",
     "../../packages/neuro-book/server/agent/harness/compaction.ts",
+    "../../packages/neuro-book/server/agent/harness/invocation-concurrency-gate.ts",
     "../../packages/neuro-book/server/agent/harness/model-resolver.ts",
     "../../packages/neuro-book/server/agent/harness/neuro-agent-harness.ts",
     "../../packages/neuro-book/server/agent/harness/prepare-next-turn.ts",

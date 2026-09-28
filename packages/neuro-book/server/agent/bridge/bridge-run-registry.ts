@@ -7,6 +7,10 @@
  *
  * 全局实例用 `globalThis` 缓存（镜像 `useAgentHarness()` 的单例模式），
  * 避免在多次 module re-evaluation 时丢失跨调用的并发计数。
+ *
+ * 与全局 invocation 并发闸（p-010，invocation-concurrency-gate.ts）的分工：
+ * 本 Registry 是 bridge 入口预审（per-project 公平性 + 429 立即拒绝的 CLI 合同），
+ * 全局闸是所有入口进入 harness 运行段前的统一兜底（有界排队 + 超时拒绝），两者保留并存。
  */
 
 const DEFAULT_PER_PROJECT_LIMIT = 1

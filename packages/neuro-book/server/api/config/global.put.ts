@@ -489,7 +489,8 @@ defineRouteMeta({
                                 "profileRuntimeDefaults": {},
                                 "profiles": {},
                                 "visibleModels": [],
-                                "loreContext": {}
+                                "loreContext": {},
+                                "concurrency": {}
                             },
                             "type": "object",
                             "properties": {
@@ -1191,6 +1192,43 @@ defineRouteMeta({
                                         }
                                     },
                                     "additionalProperties": false
+                                },
+                                "concurrency": {
+                                    "default": {},
+                                    "type": "object",
+                                    "properties": {
+                                        "maxConcurrentInvocations": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "reservedInteractiveSlots": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "acquireTimeoutMs": {
+                                            "type": "integer",
+                                            "minimum": 1000,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "maxParallelToolCallsPerTurn": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "maxToolCallsPerTurn": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "maxActiveJobs": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                        }
+                                    },
+                                    "additionalProperties": false
                                 }
                             },
                             "required": [
@@ -1199,7 +1237,8 @@ defineRouteMeta({
                                 "profileRuntimeDefaults",
                                 "profiles",
                                 "visibleModels",
-                                "loreContext"
+                                "loreContext",
+                                "concurrency"
                             ],
                             "additionalProperties": false
                         },
@@ -2271,7 +2310,8 @@ defineRouteMeta({
                                             "profileRuntimeDefaults": {},
                                             "profiles": {},
                                             "visibleModels": [],
-                                            "loreContext": {}
+                                            "loreContext": {},
+                                            "concurrency": {}
                                         },
                                         "type": "object",
                                         "properties": {
@@ -2973,6 +3013,43 @@ defineRouteMeta({
                                                     }
                                                 },
                                                 "additionalProperties": false
+                                            },
+                                            "concurrency": {
+                                                "default": {},
+                                                "type": "object",
+                                                "properties": {
+                                                    "maxConcurrentInvocations": {
+                                                        "type": "integer",
+                                                        "minimum": 1,
+                                                        "maximum": 9007199254740991
+                                                    },
+                                                    "reservedInteractiveSlots": {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 9007199254740991
+                                                    },
+                                                    "acquireTimeoutMs": {
+                                                        "type": "integer",
+                                                        "minimum": 1000,
+                                                        "maximum": 9007199254740991
+                                                    },
+                                                    "maxParallelToolCallsPerTurn": {
+                                                        "type": "integer",
+                                                        "minimum": 1,
+                                                        "maximum": 9007199254740991
+                                                    },
+                                                    "maxToolCallsPerTurn": {
+                                                        "type": "integer",
+                                                        "minimum": 1,
+                                                        "maximum": 9007199254740991
+                                                    },
+                                                    "maxActiveJobs": {
+                                                        "type": "integer",
+                                                        "minimum": 1,
+                                                        "maximum": 9007199254740991
+                                                    }
+                                                },
+                                                "additionalProperties": false
                                             }
                                         },
                                         "required": [
@@ -2981,7 +3058,8 @@ defineRouteMeta({
                                             "profileRuntimeDefaults",
                                             "profiles",
                                             "visibleModels",
-                                            "loreContext"
+                                            "loreContext",
+                                            "concurrency"
                                         ],
                                         "additionalProperties": false
                                     },

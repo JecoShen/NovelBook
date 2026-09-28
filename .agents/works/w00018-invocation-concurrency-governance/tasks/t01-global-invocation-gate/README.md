@@ -26,3 +26,12 @@ role: tasker
 3. 槽位泄漏：abort / provider 抛错 / 客户端断开三路径后 `snapshot().active` 归零（防回归守门）。
 4. bridge 回归：既有 429 合同与 bridge-run-registry 测试不动；UI 超时映射 503。
 5. 低负载（单 invoke）行为与事件序列和现状一致；配置热读单测锁定（改 config 免重启生效，已持槽位不受影响）。
+
+## 结果（2026-09-28，Tasker）
+
+全部范围落地，验收 1–5 实测通过；叙事见 [`walkthroughs/implementation.md`](walkthroughs/implementation.md)，行为轨迹与套件汇总见 [`evidences/gate-behavior-traces.md`](evidences/gate-behavior-traces.md)。
+
+- 交付：planned Spec `agent.invocation-concurrency` + 并发闸模块（globalThis 单例、FIFO 时间有界排队、interactive/background 分级、acquire 携带 abort signal、幂等释放 + invocationId 防误释放、drain 重读配置热读、fail-closed 兜底、snapshot 与五事件 jsonl 观测）+ invokeCore 挂载（admission 非 queued 后、prepareRun 前，外层 finally 统一释放）+ 六入口 concurrencyClass 标注 + 失败面映射（UI 503 / bridge 429 / invoke_agent 前台 isError，后台五链零改动自然收口）+ `agent.concurrency` 配置登记链（zod → types → normalizer → 4 路由 meta 重生成，A2/A3 字段预留零行为）。
+- 验证：闸单测 9/9、harness 集成 4/4（8 并发 ≤2 运行段 + typed error + 三路径泄漏归零 + 配置热读）、harness 目录 377 全绿（低负载不变式主体证据）、tools/workflow-port/config 106、workflow/api-agent 152、shared/dto 42、http 45、bridge 13 全绿；typecheck 八层 0、lint ratchet 2145/1513 持平、docs:check 6081 零 failure、governance 零告警。
+- 偏差：超时错误经 failInvocation 收口为 error 结果 + errorInfo.code（admission 后裸抛会泄漏 invocation 状态；bridge「并列捕获」落地为 code 检查并列）；观测 rejected 事件语义归位为「排队中 abort」（时间有界排队无深度上限）；acquire 挂 IIFE try 首句（admission 后 prep 开销同纳运行段）；`acquireTimeoutMs` 下界 1000ms（实测 300 被 fail-closed 撞 vitest 60s 超时，印证守卫必要）。详见 walkthrough 偏差与决定节。
+- 观察：嵌套死锁降级专项 e2e 与饱和压测（p-010 验收 6）属后续 Task；A2/A3 实现无需再动配置链；生产低负载行为不变、配置热读免重启上调。

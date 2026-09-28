@@ -4,6 +4,7 @@ import type {AgentResolution} from "nbook/server/agent/tools/types";
 import type {ClientStateSnapshot} from "nbook/server/agent/variables/types";
 import type {ServerTimingSink} from "nbook/server/utils/server-timing-sink";
 import type {AgentInvokeCaller, AgentMessageIdentity} from "nbook/server/agent/harness/invocation-caller";
+import type {InvocationConcurrencyClass} from "nbook/server/agent/harness/invocation-concurrency-gate";
 import type {
     AgentAbortRequestDto,
     AgentAbortResult,
@@ -68,6 +69,11 @@ export type InvokeAgentInput = {
     onEvent?: (event: AgentRuntimeStreamEventDto) => void | Promise<void>;
     /** 内部取消传播：只绑定到本次 admission 接收的 invocation，不暴露给 HTTP DTO。 */
     signal?: AbortSignal;
+    /**
+     * 全局并发闸类别（p-010）：入口显式标注的内部字段，不进公开 DTO 与 durable 消息；
+     * 缺省 `interactive`（偏向不阻塞人）。background 同时占用 ≤ 上限减保留位。
+     */
+    concurrencyClass?: InvocationConcurrencyClass;
     internalQueued?: boolean;
     /** follow-up durable queue item；只允许 queue drain 内部设置。 */
     sourceQueueItemId?: string;

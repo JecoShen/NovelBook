@@ -126,6 +126,7 @@ import {
 } from "nbook/server/agent/profiles/profile-turn-context";
 import {resolvePiApiKeyForModelFromConfig, resolvePiModelFromConfig} from "nbook/server/agent/harness/model-resolver";
 import {resolvePiModelsFromConfig} from "nbook/server/agent/harness/pi-runtime-resolver";
+import {isInvocationConcurrencyLimitError, useInvocationConcurrencyGate} from "nbook/server/agent/harness/invocation-concurrency-gate";
 import {mergePiRequestHeaders, parsePiSimpleRequestOptions, piRequestAuthOptions} from "nbook/server/agent/harness/pi-request-options";
 import {planModeDirectory, planModeToolDirectory, resolvePlanModeFile} from "nbook/server/agent/plan-mode-path";
 import {projectSqlSchemaSummary} from "nbook/server/agent/tools/project-sql-schema-summary";
@@ -1292,8 +1293,21 @@ export class NeuroAgentHarness {
         }
         const invocationModelKey = input.modelKey ?? this.invocationModelOverrides.get(invocationId);
         let errorPhase: InvocationErrorPhase = "pre_loop";
+        // 全局并发闸释放函数（p-010 A1）：acquire 成功才赋值，统一走外层 finally 释放。
+        let releaseConcurrencySlot: (() => void) | undefined;
         const execution = (async (): Promise<AgentInvocationResult> => {
         try {
+            // 全局并发闸：admission 判定非 queued（本次真的进入运行段）之后、prepareRun 之前。
+            // 排队超时/abort 抛错走 catch → failInvocation 收口（typed error / 既有 aborted 终态），
+            // 槽位覆盖 prepareRun→runLoop→finalize/settle 全运行段；waiting 返回即随 finally 释放。
+            releaseConcurrencySlot = await useInvocationConcurrencyGate().acquire({
+                invocationId,
+                concurrencyClass: input.concurrencyClass ?? "interactive",
+                signal: abortController.signal,
+                // 每次 acquire 热读最新 effective config（agent.concurrency 为 global-only，
+                // project 遮蔽不存在）；已持有槽位与排队截止时间不受影响。
+                readLimits: async () => (await loadEffectiveConfig(this.configTargetForInvocation(invocationId))).agent.concurrency,
+            });
             if (hasResolutions) {
                 snapshot = snapshot ?? await this.repo.readSession(input.sessionId);
                 const profileRuntime = await this.resolveProfileRuntime(snapshot.metadata.profileKey);
@@ -1442,6 +1456,7 @@ export class NeuroAgentHarness {
         } finally {
             // watchdog 强制返回时，底层不合作 Promise 可能永不 settle；解绑必须跟公开 completion boundary 走。
             removeAbortListener?.();
+            releaseConcurrencySlot?.();
             this.invocationAcceptances.delete(invocationId);
         }
     }
@@ -1908,6 +1923,12 @@ export class NeuroAgentHarness {
             return this.forcedAbortResult(input.sessionId, input.invocationId, input.startedAt);
         }
         const errorInfo = toRunKernelErrorInfo(input.error, input.aborted ? "unknown" : input.errorPhase);
+        // 并发闸排队超时保留 typed code 与 retryable，各入口据 errorInfo.code 映射既有失败面
+        // （UI 503 / bridge 429 / invoke_agent 工具 isError）。
+        if (isInvocationConcurrencyLimitError(input.error)) {
+            errorInfo.code = input.error.code;
+            errorInfo.retryable = true;
+        }
         // 用户主动取消不是错误：durable 只记 status: "aborted"，不写 provider 原文。
         // SDK 抛的是英文 "Request was aborted"，以前它会被当成错误详情一路显示到界面上（Task 139）。
         // 日志与调用方返回值仍保留技术细节，那是诊断面不是用户面。
@@ -3487,6 +3508,8 @@ export class NeuroAgentHarness {
                         clientState: next.clientState,
                         queueIfBusy: false,
                         userMessageParentId: branchLeafId,
+                        // moveTree 随行 invoke 是人发起的编辑重跑，归 interactive（p-010 分级表）。
+                        concurrencyClass: "interactive",
                         source: {kind: "raw", message: next.message!},
                     }
                     : {
@@ -3494,6 +3517,7 @@ export class NeuroAgentHarness {
                         mode: "continue",
                         clientState: next.clientState,
                         queueIfBusy: false,
+                        concurrencyClass: "interactive",
                         source: {kind: "raw"},
                     };
                 const prepared = next.mode === "prompt"
@@ -4195,6 +4219,7 @@ export class NeuroAgentHarness {
             mode: "continue",
             caller: {kind: "system", sessionId: sourceSnapshot.metadata.sessionId, profileKey: sourceSnapshot.metadata.profileKey},
             messageIdentity: "system",
+            concurrencyClass: "background",
             internalQueued: true,
         });
         if (result.status === "error") {
@@ -6397,6 +6422,7 @@ export class NeuroAgentHarness {
                     modelKey: prepared.modelKey,
                     caller: next.caller ?? {kind: "user", sessionId},
                     messageIdentity: next.messageIdentity ?? "user",
+                    concurrencyClass: "background",
                     internalQueued: true,
                     sourceQueueItemId: next.id,
                 });

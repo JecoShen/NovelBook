@@ -2,6 +2,7 @@ import { createError } from 'h3'
 import { requireAgentSessionId, useAgentHarness } from 'nbook/server/agent/http'
 import { requireBridgeAuth } from 'nbook/server/agent/bridge/bridge-auth'
 import { BridgeConcurrencyLimitError, useBridgeRunRegistry } from 'nbook/server/agent/bridge/bridge-run-registry'
+import { AGENT_INVOCATION_CONCURRENCY_LIMIT_CODE } from 'nbook/server/agent/harness/invocation-concurrency-gate'
 import { projectPublicInvocationResult } from 'nbook/server/agent/events/public-invocation-result-projection'
 import { validateBody } from 'nbook/server/utils/novel-chapter'
 import { AGENT_IMAGE_POLICY } from 'nbook/shared/agent/agent-image-policy'
@@ -73,10 +74,20 @@ export default defineEventHandler(async (event) => {
       resolutions: body.resolutions,
       clientState: body.clientState,
       caller: { kind: 'external-cli' },
+      // bridge 服务批处理自动化，全局并发闸归 background（p-010 决策 2）；
+      // 闸排队超时与既有 BridgeConcurrencyLimitError 并列映射 429（SOP 依赖 429=占槽语义重试）。
+      concurrencyClass: 'background',
       block: true,
       queueIfBusy: false,
       signal: controller.signal,
     })
+    if (result.errorInfo?.code === AGENT_INVOCATION_CONCURRENCY_LIMIT_CODE) {
+      throw createError({
+        statusCode: 429,
+        message: result.error ?? 'Agent invocation 并发槽位排队超时',
+        data: { code: AGENT_INVOCATION_CONCURRENCY_LIMIT_CODE, retryable: true },
+      })
+    }
     return projectPublicInvocationResult(result)
   }
   finally {

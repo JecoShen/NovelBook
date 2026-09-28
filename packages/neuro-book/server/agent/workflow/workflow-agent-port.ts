@@ -29,6 +29,9 @@ export class HarnessAgentPort implements AgentPort {
             ...(opts.message === undefined || opts.message === null ? {} : {message: {text: opts.message}}),
             ...(opts.input === undefined ? {} : {payload: opts.input}),
             caller: {kind: "user"},
+            // workflow activity 归 background（p-010 分级表；caller.kind 刻意保持 "user" 不动，分类不靠它推导）；
+            // 闸超时走 status error → 下方既有 throw → activity 失败 → run failed。
+            concurrencyClass: "background",
             block: true,
             signal: opts.signal,
         });

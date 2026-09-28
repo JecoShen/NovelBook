@@ -28,6 +28,7 @@ import type {
     WorkspaceHistorySettingsConfig,
     LoreContextConfig,
     LoreRetrieverMode,
+    AgentConcurrencyConfig,
 } from "nbook/server/config/types";
 import {DEFAULT_PI_TRACE_MAX_BYTES_PER_BUCKET} from "nbook/server/config/types";
 import type {JsonValue} from "nbook/server/agent/messages/types";
@@ -110,6 +111,39 @@ const DEFAULT_LORE_CONTEXT: LoreContextConfig = {
 };
 
 const LORE_RETRIEVER_MODES: readonly LoreRetrieverMode[] = ["trigger", "shadow", "memory"];
+
+/** concurrency 默认值（p-010 决策 1：2/1/60s/4/32/4，9/23 本机实测支持保守起步；配置热读上调零代码成本）。 */
+const DEFAULT_AGENT_CONCURRENCY: AgentConcurrencyConfig = {
+    maxConcurrentInvocations: 2,
+    reservedInteractiveSlots: 1,
+    acquireTimeoutMs: 60_000,
+    maxParallelToolCallsPerTurn: 4,
+    maxToolCallsPerTurn: 32,
+    maxActiveJobs: 4,
+};
+
+/**
+ * 归一化 concurrency：逐字段类型/范围守卫，非法值丢弃回落对应字段默认（fail-closed）。
+ * v1 只做 global 配置，Project 覆盖不存在因此无需遮蔽处理。
+ * reservedInteractiveSlots 收敛到 < maxConcurrentInvocations，避免 background 永不可运行。
+ */
+function normalizeAgentConcurrency(input: Partial<AgentConcurrencyConfig> | null | undefined): AgentConcurrencyConfig {
+    const raw = input && typeof input === "object" ? input : {};
+    const integerInRange = (value: unknown, min: number, max: number, fallback: number): number =>
+        typeof value === "number" && Number.isInteger(value) && value >= min && value <= max ? value : fallback;
+    const maxConcurrentInvocations = integerInRange(raw.maxConcurrentInvocations, 1, 64, DEFAULT_AGENT_CONCURRENCY.maxConcurrentInvocations);
+    return {
+        maxConcurrentInvocations,
+        reservedInteractiveSlots: Math.min(
+            integerInRange(raw.reservedInteractiveSlots, 0, 63, DEFAULT_AGENT_CONCURRENCY.reservedInteractiveSlots),
+            maxConcurrentInvocations - 1,
+        ),
+        acquireTimeoutMs: integerInRange(raw.acquireTimeoutMs, 1_000, 600_000, DEFAULT_AGENT_CONCURRENCY.acquireTimeoutMs),
+        maxParallelToolCallsPerTurn: integerInRange(raw.maxParallelToolCallsPerTurn, 1, 32, DEFAULT_AGENT_CONCURRENCY.maxParallelToolCallsPerTurn),
+        maxToolCallsPerTurn: integerInRange(raw.maxToolCallsPerTurn, 1, 256, DEFAULT_AGENT_CONCURRENCY.maxToolCallsPerTurn),
+        maxActiveJobs: integerInRange(raw.maxActiveJobs, 1, 64, DEFAULT_AGENT_CONCURRENCY.maxActiveJobs),
+    };
+}
 
 /**
  * 归一化 loreContext：非法 retriever 值丢弃回落 trigger（fail-closed 到现状行为）。
@@ -202,6 +236,7 @@ export function createDefaultEffectiveConfig(): EffectiveConfig {
             profiles: {},
             visibleModels: [],
             loreContext: {...DEFAULT_LORE_CONTEXT},
+            concurrency: {...DEFAULT_AGENT_CONCURRENCY},
         },
         ui: {
             theme: DEFAULT_THEME,
@@ -242,6 +277,7 @@ export function normalizeGlobalConfig(input: Partial<StoredGlobalConfig> | null 
             profiles: normalizeAgentProfiles(raw.agent?.profiles),
             visibleModels: normalizeAgentVisibleModels(raw.agent?.visibleModels),
             loreContext: normalizeLoreContext(raw.agent?.loreContext),
+            concurrency: normalizeAgentConcurrency(raw.agent?.concurrency),
         },
         ui: {
             theme: normalizeTheme(raw.ui?.theme, customThemes),
@@ -327,6 +363,8 @@ export function resolveEffectiveConfig(globalConfig: StoredGlobalConfig, project
     effective.agent.visibleModels = normalizeAgentVisibleModels(globalConfig.agent?.visibleModels);
     // v1 global-only（p-008 决策 7）：不读 projectConfig，项目级覆盖后续追加。
     effective.agent.loreContext = normalizeLoreContext(globalConfig.agent?.loreContext);
+    // v1 global-only（p-010 决策 3：v1 不做 per-project 二级限额）：并发闸只读 global 配置。
+    effective.agent.concurrency = normalizeAgentConcurrency(globalConfig.agent?.concurrency);
     effective.ui.customThemes = normalizeCustomThemes(globalConfig.ui?.customThemes);
     effective.ui.theme = normalizeTheme(globalConfig.ui?.theme, effective.ui.customThemes);
     effective.ui.costCurrency = normalizeCostCurrency(globalConfig.ui?.costCurrency);

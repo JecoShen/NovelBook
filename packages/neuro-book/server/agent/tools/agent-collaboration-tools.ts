@@ -4,6 +4,7 @@ import {Value} from "typebox/value";
 import {defineAgentTool} from "nbook/server/agent/tools/types";
 import type {JsonValue} from "nbook/server/agent/messages/types";
 import {normalizeToolResultDetails} from "nbook/server/agent/messages/message-utils";
+import {AGENT_INVOCATION_CONCURRENCY_LIMIT_CODE} from "nbook/server/agent/harness/invocation-concurrency-gate";
 
 const CreateAgentSchema = Type.Object({
     profileKey: Type.String({description: "Agent profile key from AgentCatalog, e.g. writer or retrieval."}),
@@ -146,6 +147,8 @@ export const agentCollaborationTools = {
                     run: async (jobContext) => {
                         const result = await context.harness.invokeAgent({
                             ...invokeInput,
+                            // 后台 invoke job 归 background（p-010 分级表）；闸超时走 status error → job failed 回流。
+                            concurrencyClass: "background",
                             block: true,
                             queueIfBusy: false,
                             signal: jobContext.signal,
@@ -175,7 +178,12 @@ export const agentCollaborationTools = {
                     }),
                 };
             }
-            const result = await context.harness.invokeAgent({...invokeInput, signal});
+            // 前台/嵌套链归 interactive（p-010 分级表：偏向不阻塞人，缺省值此处显式标注）。
+            const result = await context.harness.invokeAgent({...invokeInput, concurrencyClass: "interactive", signal});
+            // 并发闸排队超时 → 工具 isError（p-010 失败面映射）：让模型按有界错误处理而不是读到普通文本。
+            if (result.errorInfo?.code === AGENT_INVOCATION_CONCURRENCY_LIMIT_CODE) {
+                throw new Error(result.error ?? "agent invocation 并发槽位排队超时");
+            }
             const compact = compactInvokeAgentResult(result, invocation.sessionId);
             const contentText = compact.finalMessage
                 || (typeof compact.error === "string" ? compact.error : compact.status);
