@@ -38,6 +38,7 @@
 - 修复 writer lore 选卡静态 import 撞 profile 编译依赖门禁、干净环境下 writer profile 必编译失败的问题（改经 runtime 宿主注入）。
 - 修复 Product Runtime 在 stdio 破损（EPIPE）下的隔离问题（上游 #230）；修复 Manager 打包产物的 Node 兼容导入（上游 #231/#232）。
 - llmlint 规则漂移修平：title 守卫、calibration fixture、manual 计数，并同步到产品 workspace 投影。
+- 修复 Source Authoring 类型投影缓存指纹目录名含冒号导致 Windows 上缓存重建必失败的问题（目录名改 `sha256-<hex>` 形态，缓存 schema 升级 v2，旧缓存自动作废）。
 
 ### 内部维护
 
