@@ -161,10 +161,10 @@ const PRODUCT_RUNTIME_OWNERS: readonly ProductRuntimeImageOwner[] = [
 
 // 2026-08-24：t135 资产安装 runtime 落地后 system-assets 全平台同源增长（442 files）；
 // Windows 行尾差异使 bytes 略高，POSIX 与 darwin 实测均为 5_856_353。
-// 2026-09-29：w00016 lore 检索图（lore-retriever → lore-memory-index → nb-memory/embedding）随
-// profile-sdk/lore.ts 进入 authoring kit，linux-x64-glibc 实测 529 files / 28_791_564 bytes
-//（+14.3MB 是记忆检索能力的既定镜像成本，瘦身后续见 w00016 范围登记）。fork CI 仅构建 linux，
-// 其余平台基线保留旧值，在那些平台实测构建时再跟随。
+// 2026-09-29：w00016 lore 检索图先以静态 import 进入 kit lore.mjs（实测 28.8MB），随后按
+// profile artifact 依赖门禁改经 ProfilePrepareContext.runtime 宿主注入，重图退出 kit，
+// linux-x64-glibc 实测回落至 529 files / 13_605_500 bytes（文件数 +20 为 w00016 类型投影
+// 新增条目，字节数低于原基线）。fork CI 仅构建 linux，其余平台基线保留旧值待实测。
 const PRODUCT_RUNTIME_OWNER_BASELINES: Partial<Record<ProductPlatform, readonly ProductRuntimeOwnerBaseline[]>> = {
     "windows-x64": [
         {name: "frontend", files: 177, bytes: 15_272_680},
@@ -179,7 +179,7 @@ const PRODUCT_RUNTIME_OWNER_BASELINES: Partial<Record<ProductPlatform, readonly 
         {name: "frontend", files: 177, bytes: 15_272_675},
         {name: "server-bundle", files: 1, bytes: 12_300_888},
         {name: "commands", files: 116, bytes: 10_866_185},
-        {name: "authoring-kit", files: 529, bytes: 28_791_564},
+        {name: "authoring-kit", files: 529, bytes: 13_605_500},
         {name: "native-islands", files: 2_062, bytes: 75_144_692},
         {name: "system-assets", files: 442, bytes: 5_856_353},
         {name: "runtime-meta", files: 3, bytes: 4_762},

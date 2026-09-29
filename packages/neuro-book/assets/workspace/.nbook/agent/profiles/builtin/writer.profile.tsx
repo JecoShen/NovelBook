@@ -534,7 +534,8 @@ async function renderChapterLoreContext(
         const carryOverPaths = await readRecentLoreInjections(project as LoreReadyProjectSessionRef, {limit: 3});
         // p-008：选卡走配置闸入口（trigger/shadow/memory）；默认 trigger 与旧
         // resolveForChapter 同语义同结果，memory 路任何失败自动退回 trigger。
-        const resolved = await resolveChapterLore({
+        // lore-retriever 重图经 ctx.runtime 宿主注入，不进 profile artifact 依赖闭包。
+        const resolved = await resolveChapterLore(ctx.runtime, {
             project: project as LoreReadyProjectSessionRef,
             chapterText: scanText,
             carryOverPaths,

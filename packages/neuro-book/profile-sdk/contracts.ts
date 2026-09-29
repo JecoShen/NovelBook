@@ -24,6 +24,32 @@ export type ReadyProjectSessionRef = {
     readonly generation: number;
 };
 
+/**
+ * p-008 lore 选卡宿主能力的输入/输出。与 server/agent/lore/lore-resolver.ts 的
+ * ResolveForChapterInput/Result 结构同形（ReadyProjectSessionRef 同款双定义先例）：
+ * 契约层不能 import 下游层模块，宿主实现按结构兼容注入。
+ */
+export type ProfileChapterLoreInput = {
+    readonly project: ReadyProjectSessionRef;
+    readonly chapterText: string;
+    /** 来自前章的「强相关」列表，无条件优先保留（即使本章未命中）。 */
+    readonly carryOverPaths?: readonly string[];
+    /** 注入上限，默认 8。 */
+    readonly maxPaths?: number;
+};
+
+export type ProfileChapterLoreResult = {
+    /** 排序后的注入路径列表（carryOver 优先，然后按命中 trigger 数量降序）。 */
+    readonly paths: readonly string[];
+    /** 每个 path 命中的 trigger 列表（debug 用）。 */
+    readonly hitsByPath: ReadonlyMap<string, readonly string[]>;
+    /** 总命中 trigger 数（metrics 用）。 */
+    readonly totalTriggersMatched: number;
+};
+
+/** 宿主在 prepare 时注入的 lore 选卡分发实现（trigger/shadow/memory）。 */
+export type ChapterLoreResolver = (input: ProfileChapterLoreInput) => Promise<ProfileChapterLoreResult>;
+
 export type ProfileTextContent = {
     type: "text";
     text: string;
@@ -472,7 +498,7 @@ export type ProfilePrepareContext<TInitial = ProfileJsonValue, TPayload = Profil
     skills: Array<{key: string; name: string; description?: string; whenToUse?: string; version?: string; source: "install" | "project"; rootPath: string; skillPath: string}>;
     workflows?: Array<{key: string; title: string; description: string; whenToUse?: string; source: "install" | "project"}>;
     agentVisibleModels?: Array<{modelKey: string; note: string}>;
-    runtime?: {now: string; promptUserTurnCount: number; currentProject?: ReadyProjectSessionRef | null; pendingUserMessage?: ProfileUserMessage; sqlSchemaSummary?: () => Promise<string>};
+    runtime?: {now: string; promptUserTurnCount: number; currentProject?: ReadyProjectSessionRef | null; pendingUserMessage?: ProfileUserMessage; sqlSchemaSummary?: () => Promise<string>; resolveChapterLore?: ChapterLoreResolver};
     home?: ProfileHomeFacade;
 } & ProfileSettingsContext<TSettings>;
 

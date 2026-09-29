@@ -27,7 +27,9 @@ import {
 } from "nbook/server/utils/runtime-artifact-compiler-context";
 
 // Profile artifact 从 v11 起只保存 authoring 声明；宿主在 import 后统一 materialize/normalize。
-export const PROFILE_ARTIFACT_COMPILER_VERSION = 11;
+// v12：bundle 插件解析语义修正（island 外部化 / importer 私有 imports / ESM 条件解析），
+// 需使 v11 记录的 compile_failed 缓存失效重编。
+export const PROFILE_ARTIFACT_COMPILER_VERSION = 12;
 export const PROFILE_COMPILED_DIR_NAME = ".compiled";
 export const PROFILE_COMPILED_ARTIFACTS_DIR_NAME = "artifacts";
 export const PROFILE_COMPILED_MANIFEST_FILE = "manifest.json";

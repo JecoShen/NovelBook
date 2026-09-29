@@ -33,6 +33,7 @@ import {requireActiveReadyProject, runReadyProjectOperation} from "nbook/server/
 import type {ReadyProjectSessionRef} from "nbook/server/workspace-files/project-session-types";
 import {projectWorkspaceRef} from "nbook/server/workspace-files/project-identity";
 import {projectSqlSchemaSummary} from "nbook/server/agent/tools/project-sql-schema-summary";
+import {resolveChapterLore as resolveChapterLoreHost, type ResolveChapterLoreInput} from "nbook/server/agent/lore/lore-retriever";
 import {assembleProfilePromptMessages} from "nbook/server/agent/profiles/prompt-order";
 import {mergeProfileTurnContextMessages, previewProfileTurnContexts} from "nbook/server/agent/profiles/profile-turn-context";
 import {resolveProfileRuntimeSettings} from "nbook/server/agent/profiles/profile-runtime-settings";
@@ -191,6 +192,8 @@ export async function previewAgentProfilePrepare(
                     promptUserTurnCount: sessionContext.messages.filter((message) => message.role === "user").length,
                     currentProject: readyProject,
                     sqlSchemaSummary: () => projectSqlSchemaSummary(readyProject),
+                    // 契约面入参是窄形（ProfileProjectWorkspace），宿主实际注入服务端宽形对象，边界显式收窄。
+                    resolveChapterLore: (input) => resolveChapterLoreHost(input as ResolveChapterLoreInput),
                 },
             });
             const historyMessages = prepared.historyInitMessages ?? [];

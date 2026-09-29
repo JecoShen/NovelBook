@@ -130,6 +130,8 @@ import {isInvocationConcurrencyLimitError, useInvocationConcurrencyGate} from "n
 import {mergePiRequestHeaders, parsePiSimpleRequestOptions, piRequestAuthOptions} from "nbook/server/agent/harness/pi-request-options";
 import {planModeDirectory, planModeToolDirectory, resolvePlanModeFile} from "nbook/server/agent/plan-mode-path";
 import {projectSqlSchemaSummary} from "nbook/server/agent/tools/project-sql-schema-summary";
+import {resolveChapterLore as resolveChapterLoreHost, type ResolveChapterLoreInput} from "nbook/server/agent/lore/lore-retriever";
+import type {ProfileChapterLoreInput} from "nbook/profile-sdk/contracts";
 import {absoluteFsPath, relativeFilePathInside, type AbsoluteFsPath} from "nbook/server/runtime/paths/file-path";
 import {
     canonicalProjectLocator,
@@ -3029,6 +3031,8 @@ export class NeuroAgentHarness {
                     promptUserTurnCount: this.countPromptUserTurns(snapshot),
                     currentProject: configTarget.project,
                     sqlSchemaSummary: () => projectSqlSchemaSummary(configTarget.project),
+                    // 契约面入参是窄形（ProfileProjectWorkspace），宿主实际注入服务端宽形对象，边界显式收窄。
+                    resolveChapterLore: (input: ProfileChapterLoreInput) => resolveChapterLoreHost(input as ResolveChapterLoreInput),
                 },
             };
             return compileProfileSystemPrompt(profile, prepareContext, await profileContext(prepareContext));
@@ -4076,6 +4080,8 @@ export class NeuroAgentHarness {
                 currentProject: configTarget.project,
                 pendingUserMessage: options.pendingUserMessage,
                 sqlSchemaSummary: () => projectSqlSchemaSummary(configTarget.project),
+                // 契约面入参是窄形（ProfileProjectWorkspace），宿主实际注入服务端宽形对象，边界显式收窄。
+                resolveChapterLore: (input) => resolveChapterLoreHost(input as ResolveChapterLoreInput),
             },
         });
         validateProfileTurnPlan(profile.manifest.key, prepared);

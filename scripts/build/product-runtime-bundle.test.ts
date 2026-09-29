@@ -148,7 +148,7 @@ describe("Product Runtime bundle", () => {
         expect(islands.opaqueImports).toEqual(productOpaqueImportDefinitions());
         expect(islands.opaqueImports).toContainEqual(expect.objectContaining({
             pathPattern: `commands/chunks/${PRODUCT_COMMAND_CHUNK_BASENAME}-*.mjs`,
-            count: 5,
+            count: 6,
         }));
         const islandPackages = islands.islands.flatMap((island) => island.packages);
         expect(islandPackages).toEqual(expect.arrayContaining(["jsdom", "typescript", "undici"]));

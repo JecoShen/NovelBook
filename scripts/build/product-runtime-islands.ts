@@ -155,27 +155,21 @@ export function productOpaqueImportDefinitions(): ProductOpaqueImportDefinition[
     return [
         {
             pathPattern: "index.mjs",
-            count: 5,
-            reason: "Nitro server bundle 保留运行时选择的 Profile、SQLite 与 Provider module loader；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（#scripts 主说明符与 Bun 文件 URL 回退），仅 Source 开发模式执行。",
+            count: 6,
+            reason: "Nitro server bundle 保留运行时选择的 Profile、SQLite 与 Provider module loader；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（#scripts 主说明符与 Bun 文件 URL 回退），仅 Source 开发模式执行。w00016 起 lore-retriever 记忆检索图（nb-memory 运行时 SQLite 驱动选择）经 runtime 注入进入服务端束，同族 +1。",
             smoke: "Product HTTP startup and authenticated shutdown; TypeScript and jsdom use Profile/Variable and web-fetch checks",
         },
         {
             pathPattern: "authoring/profile-compile-worker.mjs",
-            count: 4,
-            reason: "Profile Authoring Worker 按批准依赖和已编译 artifact 地址执行动态加载；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（同上），仅 Source 开发模式执行。",
+            count: 5,
+            reason: "Profile Authoring Worker 按批准依赖和已编译 artifact 地址执行动态加载；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（同上），仅 Source 开发模式执行。w00016 起 lore-retriever 记忆检索图（nb-memory 运行时 SQLite 驱动选择）经 runtime 注入进入 worker 束，同族 +1。",
             smoke: "Profile compiler compile/import with typebox",
         },
         {
             pathPattern: `commands/chunks/${PRODUCT_COMMAND_CHUNK_BASENAME}-*.mjs`,
-            count: 5,
-            reason: "Product command 的共享依赖按当前 Runtime 与平台选择 module implementation；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（同上），仅 Source 开发模式执行。",
+            count: 6,
+            reason: "Product command 的共享依赖按当前 Runtime 与平台选择 module implementation；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（同上），仅 Source 开发模式执行。w00016 起 lore-retriever 记忆检索图（nb-memory 运行时 SQLite 驱动选择）经 runtime 注入进入命令共享束，同族 +1。",
             smoke: "Product command start and database/application-state migrations",
-        },
-        {
-            pathPattern: "authoring/nbook/profile-sdk/lore.mjs",
-            count: 5,
-            reason: "p-008 起 lore SDK 运行时图经 lore-retriever/lore-memory-index 接入记忆索引与 embedding，保留与既有登记同族的五处 opaque dynamic import：runtime-artifact-import 按已编译 artifact 地址动态加载、运行时选择 SQLite 驱动（bun:sqlite/node:sqlite）、jiti TS module loader；另含 Source Authoring 类型投影加载器的两个编译期解耦 import（同上），仅 Source 开发模式执行。",
-            smoke: "Profile compile/import with lore SDK chapter lore resolution",
         },
     ];
 }
