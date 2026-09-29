@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url'
 import { lock } from 'proper-lockfile'
 import { absoluteFsPath, type AbsoluteFsPath } from 'nbook/server/runtime/paths/file-path'
 
-export const SOURCE_AUTHORING_TYPE_CACHE_SCHEMA = 'nbook.source-authoring-types/v1'
+// v2：指纹目录名 sha256:→sha256-（冒号在 Windows 文件名非法，2026-09-29 product-windows 发布红根因）；
+// schema bump 使旧冒号目录成孤儿，由既有 GC 收敛，缓存可丢弃零迁移。
+export const SOURCE_AUTHORING_TYPE_CACHE_SCHEMA = 'nbook.source-authoring-types/v2'
 export const SOURCE_AUTHORING_TYPE_CACHE_MIN_AGE_MS = 10 * 60 * 1_000
 export const SOURCE_AUTHORING_TYPE_CACHE_ORPHAN_BUDGET_BYTES = 256 * 1024 * 1024
 
@@ -255,7 +257,7 @@ function projectionBuildMemoKey(
     tsconfig: projectionModule.authoringSdkTsconfig(),
     inputFiles,
   })
-  return `sha256:${sha256(Buffer.from(identity, 'utf8'))}`
+  return `sha256-${sha256(Buffer.from(identity, 'utf8'))}`
 }
 
 function readProjectionBuildMemo(memoKey: string): ProjectionBuildMemoEntry | null {
@@ -500,7 +502,7 @@ function projectionFingerprint(input: Pick<ProjectionManifest, 'projectionSchema
     dependencyInstances: input.dependencyInstances,
     inputFiles: normalizeFiles(input.inputFiles),
   })
-  return `sha256:${sha256(Buffer.from(identity, 'utf8'))}`
+  return `sha256-${sha256(Buffer.from(identity, 'utf8'))}`
 }
 
 function normalizeFiles(files: readonly ProjectionFile[]): ProjectionFile[] {
@@ -518,7 +520,7 @@ function isSafeRelativePath(path: string): boolean {
 }
 
 function isFingerprint(value: unknown): value is string {
-  return typeof value === 'string' && /^sha256:[0-9a-f]{64}$/u.test(value)
+  return typeof value === 'string' && /^sha256-[0-9a-f]{64}$/u.test(value)
 }
 
 function stableStringify(value: unknown): string {
@@ -678,7 +680,7 @@ async function recoverGcQuarantine(authoringRoot: string, quarantineRoot: string
 }
 
 function quarantineFingerprint(name: string): string | null {
-  const fingerprint = /^(sha256:[0-9a-f]{64})-.+$/u.exec(name)?.[1]
+  const fingerprint = /^(sha256-[0-9a-f]{64})-.+$/u.exec(name)?.[1]
   return fingerprint && isFingerprint(fingerprint) ? fingerprint : null
 }
 

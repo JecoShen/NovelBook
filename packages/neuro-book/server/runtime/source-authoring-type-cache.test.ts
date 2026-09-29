@@ -133,7 +133,8 @@ describe('Source authoring type projection cache', () => {
     process.chdir(unrelatedCwd)
     try {
       const projection = await openFixture(fixture)
-      expect(projection.fingerprint).toMatch(/^sha256:[0-9a-f]{64}$/u)
+      // dash 形态是 Windows 合同：冒号目录名在 Windows 非法（2026-09-29 product-windows 发布红根因）。
+      expect(projection.fingerprint).toMatch(/^sha256-[0-9a-f]{64}$/u)
       expect(projectionMock.sourceRoots).toEqual([fixture.sourceRoot])
     }
     finally {
@@ -147,7 +148,7 @@ describe('Source authoring type projection cache', () => {
     const first = await openFixture(fixture)
     const second = await openFixture(fixture)
 
-    expect(first.fingerprint).toMatch(/^sha256:[0-9a-f]{64}$/u)
+    expect(first.fingerprint).toMatch(/^sha256-[0-9a-f]{64}$/u)
     expect(second).toEqual(first)
     expect(projectionMock.buildCalls).toBe(1)
     await expect(readFile(join(first.root, 'manifest.json'), 'utf8')).resolves.toContain(SOURCE_AUTHORING_TYPE_CACHE_SCHEMA)
@@ -248,7 +249,7 @@ describe('Source authoring type projection cache', () => {
     const fixture = await fixtureRoots()
     const current = await openFixture(fixture)
     const authoringRoot = join(fixture.cacheRoot, 'authoring-types')
-    const forgedFingerprint = `sha256:${'c'.repeat(64)}`
+    const forgedFingerprint = `sha256-${'c'.repeat(64)}`
     const forgedRoot = join(authoringRoot, forgedFingerprint)
     const manifest = JSON.parse(await readFile(join(current.root, 'manifest.json'), 'utf8')) as Record<string, unknown>
 
