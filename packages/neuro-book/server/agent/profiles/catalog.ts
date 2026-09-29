@@ -744,9 +744,23 @@ export class AgentProfileCatalog implements ProfileReleaseRegistrySink {
                 continue;
             }
             if (manifestEntry.status === "compile_failed") {
-                const issue = this.compileFailedIssue(source, file, manifestEntry);
+                // 失败记录只对记录时的源码指纹有效；失配重放会把 profile 卡在陈旧错误上
+                // （读路径曾不消费 sourceSha，project 级无 bootSweep，停机编辑后可永久重放）。
+                if (await this.freshness.sourceMatches(root, manifestEntry)) {
+                    const issue = this.compileFailedIssue(source, file, manifestEntry);
+                    issues.push(issue);
+                    unloadedSources.push(this.unloadedFromManifest(file, manifestEntry, source, builtin, "compile_failed", issue));
+                    continue;
+                }
+                const issue = this.notCompiledIssue(source, file);
                 issues.push(issue);
-                unloadedSources.push(this.unloadedFromManifest(file, manifestEntry, source, builtin, "compile_failed", issue));
+                unloadedSources.push(this.unloadedFromFile(file, source, builtin, "not_compiled", issue));
+                void this.enqueueBuild({fileName: file.fileName, reason: "compile_failed_source_changed"}).catch((error) => {
+                    void appLogger.warn("agent.profileCatalog.staleFailureEnqueueFailed", {
+                        error: error instanceof Error ? error.message : String(error),
+                        path: file.file,
+                    });
+                });
                 continue;
             }
             const freshness = await this.freshness.validate(root, rootLabel, manifestEntry, {checkDependencies: false});

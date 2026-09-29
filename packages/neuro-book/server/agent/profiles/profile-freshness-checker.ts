@@ -1,5 +1,7 @@
 import {stat} from "node:fs/promises";
+import {join, resolve} from "node:path";
 import {
+    hashFile,
     validateProfileArtifact,
     type ProfileArtifactManifest,
     type ProfileArtifactManifestItem,
@@ -28,6 +30,12 @@ export class ProfileFreshnessChecker {
     async validate(profileRoot: string, rootLabel: string, item: ProfileArtifactManifestItem, options: {requireTypeArtifact?: boolean; checkDependencies?: boolean} = {}): Promise<ProfileArtifactFreshness> {
         const artifactPathContext = await this.artifactPathContextProvider(profileRoot, rootLabel);
         return validateProfileArtifact(profileRoot, item, artifactPathContext, options);
+    }
+
+    /** 比较 manifest 记录的源码指纹与当前源码；compile_failed entry 无 artifact 字段，不能走 validate。 */
+    async sourceMatches(profileRoot: string, item: {fileName: string; sourceSha256: string; sourceBytes: number}): Promise<boolean> {
+        const sourceHash = await hashFile(join(resolve(profileRoot), ...item.fileName.split("/"))).catch(() => null);
+        return sourceHash !== null && sourceHash.sha256 === item.sourceSha256 && sourceHash.bytes === item.sourceBytes;
     }
 
     /** 生成 catalog dirty cache 的依赖文件签名；仅非 runtime registry 路径使用。 */

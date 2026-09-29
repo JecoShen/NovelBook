@@ -1089,6 +1089,43 @@ await __waitSourceSet(300);
         ]));
     });
 
+    it("compile_failed 记录对应源码未变化时维持重放", async () => {
+        await writeProfile(projectProfileRoot, "custom.failed-keep.profile.tsx", "export default null;");
+        await compileRoot(projectProfileRoot);
+        const catalog = createTestCatalog(installRoot, projectProfileRoot);
+
+        const first = await catalog.snapshot();
+        catalog.invalidate();
+        const second = await catalog.snapshot();
+
+        for (const snapshot of [first, second]) {
+            expect(snapshot.profiles.find((item) => item.key === "custom.failed-keep")).toEqual(expect.objectContaining({
+                loadStatus: "compile_failed",
+                issue: expect.objectContaining({code: "compile_failed"}),
+            }));
+        }
+    });
+
+    it("compile_failed 记录对应源码已变化时不再重放旧失败，按 not_compiled 收口", async () => {
+        await writeProfile(projectProfileRoot, "custom.failed-edit.profile.tsx", "export default null;");
+        await compileRoot(projectProfileRoot);
+        const catalog = createTestCatalog(installRoot, projectProfileRoot);
+        const failedSnapshot = await catalog.snapshot();
+        expect(failedSnapshot.profiles.find((item) => item.key === "custom.failed-edit")).toEqual(expect.objectContaining({
+            loadStatus: "compile_failed",
+        }));
+
+        await writeProfile(projectProfileRoot, "custom.failed-edit.profile.tsx", profileSource("custom.failed-edit", "Fixed Version"));
+        catalog.invalidate();
+        const snapshot = await catalog.snapshot();
+
+        expect(snapshot.profiles.find((item) => item.key === "custom.failed-edit")).toEqual(expect.objectContaining({
+            loadStatus: "not_compiled",
+            issue: expect.objectContaining({code: "not_compiled"}),
+        }));
+        expect(snapshot.issues.filter((issue) => issue.profileKey === "custom.failed-edit").map((issue) => issue.code)).not.toContain("compile_failed");
+    });
+
     it("用户 profile 依赖变化且 artifact 损坏时不可运行", async () => {
         await writeProfile(projectProfileRoot, "prompt-helper.ts", `export const helperText = "v1";`);
         await writeProfile(projectProfileRoot, "custom.broken-artifact.profile.tsx", `
