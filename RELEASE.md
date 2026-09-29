@@ -2,7 +2,7 @@
 
 这里只放当前版本。更早的版本见 [中文 changelog](vitepress/locales/zh-Hans/changelog/) 与 [English changelog](vitepress/locales/en-US/changelog/)。
 
-## 0.10.3-canary（限量 canary） - 2026-09-30
+## 0.10.4-canary（限量 canary） - 2026-09-30
 
 这一轮完成仓库从单体到 12 个 workspace 包的拆包迁移收口，恢复迁移中被覆盖的运行时接线与质量门禁，系统性补齐作品资产安全（回收区、自动备份、原子写、迁移事务），并带来 lore 检索可插拔、CJK token 估算修正、Agent 并发治理、会话中止持久性合同与一批上游 UI 修复。它仍是限量 canary。
 
