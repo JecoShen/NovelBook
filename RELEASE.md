@@ -2,28 +2,40 @@
 
 这里只放当前版本。更早的版本见 [中文 changelog](vitepress/locales/zh-Hans/changelog/) 与 [English changelog](vitepress/locales/en-US/changelog/)。
 
-## 0.10.3-canary（限量 canary） - 2026-09-13
+## 0.10.3-canary（限量 canary） - 2026-09-30
 
-这一轮完成仓库从单体到 12 个 workspace 包的拆包迁移收口，恢复迁移中被覆盖的运行时接线与质量门禁，并带来 Agent 会话中止持久性合同、lore 写作注入与一批上游 UI 修复。它仍是限量 canary。
+这一轮完成仓库从单体到 12 个 workspace 包的拆包迁移收口，恢复迁移中被覆盖的运行时接线与质量门禁，系统性补齐作品资产安全（回收区、自动备份、原子写、迁移事务），并带来 lore 检索可插拔、CJK token 估算修正、Agent 并发治理、会话中止持久性合同与一批上游 UI 修复。它仍是限量 canary。
 
 ### 新功能
 
+- 作品删除进入回收区：删除的作品 30 天内可从书架回收区恢复（此前删除即永久、无宽限）。
+- 本地每日自动备份：按本地日期每日首启自动备份，保留最近 7 份；与云备份共用同一排除规则。
 - Agent 写作链路接入 lore 解析与注入：章节写作提示词自动携带 lorebook 上下文，支持三章法滑动窗口的 carryOverPaths 记忆，lore 缓存带 TTL 与 LRU 上限。
+- writer lore 选卡检索器可插拔：新增 `agent.loreContext.retriever` 配置（`trigger`/`shadow`/`memory`，默认 `trigger` 行为不变），支持 nb-memory 检索 shadow 双跑观测，任何失败自动退回现状路径。
+- Agent invocation 全局并发闸：interactive/background 分级槽位（默认 2/1）、FIFO 有界排队（默认 60s 超时）、配置热读；饱和时 UI 返回 503、bridge 预审 429，低负载行为与上一版一致。
 - llmlint 新增中文结构「场景六问」软提示规则，以及场景总表、关系/状态等跨实体模板。
 
 ### 改进
 
+- 长中文会话 token 估算改用 CJK 分段系数：面板 token 读数更准确，上下文压缩触发点提前到真实预算内（此前 chars/4 对 CJK 文本低估约 2.4 倍，存在超配风险）。
+- 云备份与本地备份排除 traces/sessions/migrations 快照：修复排除规则前缀不命中导致约 945MB traces 进入每次云备份的问题，备份体积大幅下降。
+- traces 存储新增字节闸（默认每桶 64MB），并在启动时对存量桶自动收敛。
+- 安装期不再触发 harness 构建（postinstall 解耦），安装耗时显著下降。
 - Source Authoring 类型投影缓存落地：Profile 与写作 SDK 的类型检查按内容指纹复用投影，Authoring 链路的类型检查成本显著下降。
 - Agent 会话中止（abort）持久性合同移植收口：取消、清队列与断线恢复行为按 SSE 合同一致，附 33 项合同测试（上游 t159 fork-native 移植）。
 - 通知卡片改用主题状态色并满足 WCAG AA 对比度；Provider 列表长滚动保持可见；剧本编排面板窄视口自动换行；Profile 编辑器按钮补 Tooltip、响应式布局与嵌套主题宿主防御（上游移植）。
 
 ### 修复
 
+- 作品资产安全：章节正文与作品文件写盘改原子写（崩溃不再产生半截文件）；project.sqlite 12 步重建表包裹事务（崩溃不再丢表）。
+- 13 个 preview 探针页生产可达的问题：生产构建排除 preview 产物。
+- Profile 编译失败缓存：修复 `compile_failed` 记录在源码修改后仍被重放、不触发重编的问题；现在按「尚未编译」诚实呈现并自动后台重编。
 - 恢复拆包整树合并覆盖的 Source Authoring 类型投影接线；修复投影加载器并发打开时的 ELOCKED 文件锁错误（按 cacheRoot 进程内串行化）。
 - 修复 Source 投影根与仓库根耦合导致的运行时不稳定；投影模块改为编译期解耦，Product Authoring Kit 与 Product 镜像构建恢复通过。
 - 修复 external-cli 调用方三处类型定义在整树合并中被收窄的问题。
 - 修复 lore-carryover 使用相对项目根导致的 lore-writer-proj 目录泄漏。
 - 修复 summarizer 写回中断：profile-sdk 暴露 writePlan session_update 与 readTitleOwner，14/14 内置 Profile 恢复 0 违规。
+- 修复 writer lore 选卡静态 import 撞 profile 编译依赖门禁、干净环境下 writer profile 必编译失败的问题（改经 runtime 宿主注入）。
 - 修复 Product Runtime 在 stdio 破损（EPIPE）下的隔离问题（上游 #230）；修复 Manager 打包产物的 Node 兼容导入（上游 #231/#232）。
 - llmlint 规则漂移修平：title 守卫、calibration fixture、manual 计数，并同步到产品 workspace 投影。
 
@@ -32,11 +44,15 @@
 - 仓库从单体拆分为 12 个 workspace 包并完成 fork 适配；恢复被合并抹掉的门禁：lint（stylistic 关闭）、分层 typecheck 八层、docs:check 清零、代码门禁覆盖 main 直推；Full tests 单 worker 串行首次完整全绿。
 - 清理公开仓历史用户数据残留；生产 PM2 配置显式声明 Application/State/Cache Root 并关闭进程内 APM（Bun 下每 800ms 空烧半核）。
 - fork 发布门禁适配：`manager:verify-public` 改 dispatcher 分派，fork 模式以本地一致性校验（`manager:pack` + 版本断言）替代 npm provenance 校验，upstream 语义经开关一行恢复（p-011）。
+- 架构决策落地：ADR 0020（harness 范围冻结）与 ADR 0021（nb-ui 退役、单一设计系统）；nb-ui 归档出 workspaces/CI 面；lint ratchet 门禁（基线只降不升）入 Code Baseline；上游整树合并接线复核清单制度化。
+- 构建链加固：client 体积预算门禁（eager 口径，publish 前 fail-closed）；kit/command 构建 CLI 拒绝位置参数并强制显式输出根（9/28 生产覆盖事故守卫）；清除 14 条死依赖。
+- CI 与发布链 bun 对齐 1.4.2（release-container pin 同步）；修复 bun 下 `process.exitCode = undefined` 重置无效导致的 llmlint 测试轮静默 exit 1。
 
 ### 升级须知
 
 - 这是限量 canary。升级前请备份完整 State Root 和重要 Project Workspace 的 `.nbook/`、`project.yaml`；先在可丢弃的 Project 上测试。
 - 本版本无数据库 schema 迁移：`packages/neuro-book/prisma/` 自上版部署以来零改动。
+- 新增配置键均有保守默认值（`agent.loreContext.retriever=trigger`、`agent.concurrency` 2/1/60s），不配置时行为与上一版基本一致；lore 检索切换建议先经 shadow 双跑观测再评审。
 - 真实外部 Provider 连接与完整 Agent/Workflow 浏览器流程验收仍未完成；不要把自动化门禁结果当成人工全流程验收。
 
 ## 0.10.2-canary（限量 canary） - 2026-09-08
