@@ -1,6 +1,7 @@
 import {builtinModules} from "node:module";
 import {cp, mkdir, readFile, readdir, rm, stat, writeFile} from "node:fs/promises";
 import {dirname, isAbsolute, relative, resolve, sep} from "node:path";
+import {parseArgs} from "node:util";
 import {init as initModuleLexer, parse as parseModuleImports} from "es-module-lexer";
 import type {Metafile} from "esbuild";
 import {
@@ -261,6 +262,11 @@ async function directoryInventory(root: string): Promise<{files: number; bytes: 
 }
 
 if (import.meta.main) {
-    const outputRoot = resolve(process.env.NEURO_BOOK_OUTPUT_DIR ?? ".output");
-    console.log(await buildProductCommands(outputRoot));
+    // 9/28 事故守卫：位置参数曾静默忽略、输出根曾默认 .output 覆盖生产镜像；输出根只接受显式注入。
+    parseArgs({allowPositionals: false, options: {}, strict: true});
+    const outputRootEnv = process.env.NEURO_BOOK_OUTPUT_DIR?.trim();
+    if (!outputRootEnv) {
+        throw new Error("NEURO_BOOK_OUTPUT_DIR 未设置：本 CLI 必须由 Product Runtime Image Builder 注入输出根；本地测量请显式指向临时目录（basename 须为 .output）。");
+    }
+    console.log(await buildProductCommands(resolve(outputRootEnv)));
 }

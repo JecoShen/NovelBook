@@ -28,6 +28,34 @@ describe("Product Profile Authoring Kit", () => {
         )).toThrow("泄漏");
     });
 
+    it("CLI 拒绝位置参数，防止误写默认输出根", async () => {
+        const outputRoot = await mkdtemp(testHostPath("nbook-kit-guard-positional-"));
+        temporaryRoots.push(outputRoot);
+
+        // 9/28 事故命令形态：位置参数曾静默忽略并写入 cwd 的 .output（生产镜像）。
+        await expect(execFileAsync("bun", ["scripts/build/product-authoring-kit.ts", "/tmp/akit-measure"], {
+            cwd: process.cwd(),
+            env: {...process.env, NEURO_BOOK_OUTPUT_DIR: outputRoot},
+            windowsHide: true,
+        })).rejects.toThrow();
+        await expect(access(join(outputRoot, "server", "authoring"))).rejects.toThrow();
+    });
+
+    it("CLI 缺少 NEURO_BOOK_OUTPUT_DIR 时拒绝写入默认 .output", async () => {
+        const workRoot = await mkdtemp(testHostPath("nbook-kit-guard-env-"));
+        temporaryRoots.push(workRoot);
+        const env = {...process.env};
+        delete env.NEURO_BOOK_OUTPUT_DIR;
+
+        // cwd 用临时根：守卫回归时最坏只写临时 .output，不再重演生产覆盖。
+        await expect(execFileAsync("bun", [resolve("scripts/build/product-authoring-kit.ts")], {
+            cwd: workRoot,
+            env,
+            windowsHide: true,
+        })).rejects.toThrow(/NEURO_BOOK_OUTPUT_DIR/);
+        await expect(access(join(workRoot, ".output"))).rejects.toThrow();
+    });
+
     it("只投影 compiler、SDK 与可达声明图", async () => {
         const outputRoot = await mkdtemp(testHostPath("nbook-product-authoring-kit-"));
         temporaryRoots.push(outputRoot);

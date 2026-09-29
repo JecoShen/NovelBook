@@ -1,5 +1,7 @@
-import {mkdtemp, mkdir, readFile, readdir, rm, writeFile} from "node:fs/promises";
+import {execFile} from "node:child_process";
+import {access, mkdtemp, mkdir, readFile, readdir, rm, writeFile} from "node:fs/promises";
 import {join, relative, resolve} from "node:path";
+import {promisify} from "node:util";
 import type {Metafile} from "esbuild";
 import { testHostPath } from "@notnotype/neuro-book-test-support/test-path"
 
@@ -174,6 +176,37 @@ describe("Product command metafile", () => {
         const bootstrap = await readFile(resolve("packages", "neuro-book", "server", "runtime", "product-command.ts"), "utf8");
         expect(bootstrap).toContain("NEURO_BOOK_REPOSITORY_ROOT: applicationRoot");
         expect(bootstrap).not.toContain("import.meta.dirname");
+    });
+});
+
+describe("Product command bundle CLI 输出根守卫", () => {
+    const execFileAsync = promisify(execFile);
+
+    it("CLI 拒绝位置参数，防止误写默认输出根", async () => {
+        const outputRoot = await mkdtemp(testHostPath("nbook-command-guard-positional-"));
+        temporaryRoots.push(outputRoot);
+
+        await expect(execFileAsync("bun", ["scripts/build/product-command-bundle.ts", "/tmp/command-measure"], {
+            cwd: process.cwd(),
+            env: {...process.env, NEURO_BOOK_OUTPUT_DIR: outputRoot},
+            windowsHide: true,
+        })).rejects.toThrow();
+        await expect(access(join(outputRoot, "server", "commands"))).rejects.toThrow();
+    });
+
+    it("CLI 缺少 NEURO_BOOK_OUTPUT_DIR 时拒绝写入默认 .output", async () => {
+        const workRoot = await mkdtemp(testHostPath("nbook-command-guard-env-"));
+        temporaryRoots.push(workRoot);
+        const env = {...process.env};
+        delete env.NEURO_BOOK_OUTPUT_DIR;
+
+        // cwd 用临时根：守卫回归时最坏只写临时 .output，不再重演生产覆盖。
+        await expect(execFileAsync("bun", [resolve("scripts/build/product-command-bundle.ts")], {
+            cwd: workRoot,
+            env,
+            windowsHide: true,
+        })).rejects.toThrow(/NEURO_BOOK_OUTPUT_DIR/);
+        await expect(access(join(workRoot, ".output"))).rejects.toThrow();
     });
 });
 
