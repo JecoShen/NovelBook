@@ -45,7 +45,9 @@ describe("llmlint", () => {
 
     afterEach(async () => {
         vi.restoreAllMocks();
-        process.exitCode = undefined;
+        // bun 的 test runner 不认 `process.exitCode = undefined` 重置（探针实证 1.3/1.4 均无效），
+        // 只有显式置 0 才清除；残留 1 会让整轮 bun test 在 0 fail 下以 1 退出。
+        process.exitCode = 0;
         await Promise.all(tempRoots.map((root) => rm(root, {recursive: true, force: true})));
         tempRoots.length = 0;
     });

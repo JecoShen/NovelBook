@@ -13,7 +13,9 @@ describe("user state", () => {
 
     afterEach(async () => {
         vi.restoreAllMocks();
-        process.exitCode = undefined;
+        // bun 的 test runner 不认 `process.exitCode = undefined` 重置，只有显式置 0 才清除；
+        // 残留 1 会让整轮 bun test 在 0 fail 下以 1 退出（CI llmlint 红的根因）。
+        process.exitCode = 0;
         if (originalHome === undefined) {
             delete process.env.LLMLINT_HOME;
         } else {
@@ -131,12 +133,12 @@ describe("user state", () => {
         expect(error.mock.calls.at(-1)?.[0]).toContain("合法键");
         expect(existsSync(join(home, "settings.json"))).toBe(false);
 
-        process.exitCode = undefined;
+        process.exitCode = 0;
         await runCli(["bun", "llmlint", "config", "set", "sharing.tier", "private"]);
         expect(process.exitCode).toBe(1);
         expect(existsSync(join(home, "settings.json"))).toBe(false);
 
-        process.exitCode = undefined;
+        process.exitCode = 0;
         await runCli(["bun", "llmlint", "config", "set", "detector.chunkChars", "0"]);
         expect(process.exitCode).toBe(1);
         expect(existsSync(join(home, "settings.json"))).toBe(false);
