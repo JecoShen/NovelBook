@@ -105,6 +105,8 @@ export type AgentProfileBuildState = {
 export type AgentProfileBuildCoordinatorPort = {
     stateFor(profileKey: string): AgentProfileBuildState;
     enqueue(input: {fileName?: string; reason: string}): Promise<void> | void;
+    /** 启动期源码/manifest 对账：root 由 harness 启动时调用，project child 由 catalog 创建时调用。 */
+    bootSweep?(): Promise<void>;
     dispose?(): Promise<void>;
 };
 
@@ -224,7 +226,19 @@ export class AgentProfileCatalog implements ProfileReleaseRegistrySink {
         );
         owner.projectChildren.set(project.key, child);
         if (owner.buildCoordinatorFactory && child.projectRoot && child.projectRootLabel) {
-            child.attachBuildCoordinator(owner.buildCoordinatorFactory(child, child.projectRoot, child.projectRootLabel));
+            const coordinator = owner.buildCoordinatorFactory(child, child.projectRoot, child.projectRootLabel);
+            child.attachBuildCoordinator(coordinator);
+            // child 此前无启动期对账：停机增改 project profile 后只能靠 watcher/UI 保存恢复，
+            // 对齐 root 的 bootSweep 语义补一次；projectChildren 缓存保证每进程每项目只触发一次。
+            const bootSweep = coordinator.bootSweep?.();
+            if (bootSweep) {
+                void bootSweep.catch((error: unknown) => {
+                    void appLogger.warn("agent.profileBuild.bootSweepFailed", {
+                        profileRootLabel: child.projectRootLabel,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                });
+            }
         }
         if (owner.runtimeRegistryEnabled) child.enableRuntimeRegistry();
         if (owner.watching) void child.startWatching();

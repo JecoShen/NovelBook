@@ -134,6 +134,30 @@ describe("AgentProfileCatalog", {timeout: 60_000}, () => {
             reason: "watch:change",
         }]);
     });
+    it("Project child 创建时对 project coordinator 触发一次 bootSweep（对齐 root 启动对账）", async () => {
+        const ref = projectWorkspaceRef("project-sweep");
+        const projectRoot = join(root, "workspace", "project-sweep");
+        const workspace = resolvedProjectWorkspace(ref, absoluteFsPath(projectRoot), createProjectWorkspaceKey(absoluteFsPath(join(root, "workspace")), ref));
+        const catalog = createTestCatalog(installRoot);
+        const sweeps = {install: 0, project: 0};
+        const coordinator = (bucket: "install" | "project") => ({
+            stateFor: () => ({running: false, queued: false, reason: null, updatedAt: null}),
+            enqueue: async () => undefined,
+            bootSweep: async () => {
+                sweeps[bucket] += 1;
+            },
+        });
+        catalog.attachBuildCoordinator(coordinator("install"), () => coordinator("project"));
+
+        catalog.forProjectWorkspace(workspace);
+        await Promise.resolve();
+        expect(sweeps).toEqual({install: 0, project: 1});
+
+        // projectChildren 缓存命中同一 child：每进程每项目只触发一次
+        catalog.forProjectWorkspace(workspace);
+        await Promise.resolve();
+        expect(sweeps).toEqual({install: 0, project: 1});
+    });
     it("坏 profile 进入 issue，不阻断其他 profile", async () => {
         await writeProfile(installRoot, "good.profile.tsx", `
             import {Type, defineAgentProfile, toolset} from "nbook/profile-sdk";
