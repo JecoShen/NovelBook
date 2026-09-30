@@ -128,6 +128,9 @@ export class LocalAutoBackupService {
     private readonly keep: number;
     private timer: ReturnType<typeof setInterval> | null = null;
     private inFlight: Promise<LocalAutoBackupRunResult> | null = null;
+    // inFlight 只覆盖 runOnce 归档段；检查段（list+日期判定）横跨 stop 与日期翻转时，
+    // stop 后在途检查读到新日期仍会补一份（CI 实证 3≠2），故检查段同样纳入关停等待。
+    private pendingEnsure: Promise<void> | null = null;
 
     constructor(options: LocalAutoBackupServiceOptions = {}) {
         this.now = options.now ?? (() => new Date());
@@ -153,13 +156,14 @@ export class LocalAutoBackupService {
     }
 
     /**
-     * 停止调度并等待在途归档收尾，没有在进行中的任务时立即返回。
+     * 停止调度并等待在途检查与归档收尾，没有在进行中的任务时立即返回。
      */
     async stopScheduler(): Promise<void> {
         if (this.timer) {
             clearInterval(this.timer);
             this.timer = null;
         }
+        await this.pendingEnsure;
         await this.inFlight?.catch(() => undefined);
     }
 
@@ -268,12 +272,26 @@ export class LocalAutoBackupService {
         }
     }
 
-    private async guardedEnsureDaily(paths: RuntimePaths, reason: LocalAutoBackupReason): Promise<void> {
-        try {
-            await this.ensureDaily(paths, reason);
-        } catch (error) {
-            void this.logger.error("backup.local-auto.failed", {reason}, error, "本地自动备份失败");
+    // 周期 tick 在慢盘/高负载下会叠出并发检查段；与 runOnce 同型共享在途 Promise。
+    private guardedEnsureDaily(paths: RuntimePaths, reason: LocalAutoBackupReason): Promise<void> {
+        if (this.pendingEnsure) {
+            return this.pendingEnsure;
         }
+        const run = (async () => {
+            try {
+                await this.ensureDaily(paths, reason);
+            } catch (error) {
+                void this.logger.error("backup.local-auto.failed", {reason}, error, "本地自动备份失败");
+            }
+        })();
+        this.pendingEnsure = run;
+        const clear = () => {
+            if (this.pendingEnsure === run) {
+                this.pendingEnsure = null;
+            }
+        };
+        run.then(clear, clear);
+        return run;
     }
 }
 

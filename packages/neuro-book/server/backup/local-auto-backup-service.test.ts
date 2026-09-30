@@ -267,4 +267,34 @@ describe("LocalAutoBackupService 调度", () => {
         await new Promise((resolve) => setTimeout(resolve, 150));
         expect((await listLocalAutoBackups(directory)).length).toBe(2);
     });
+
+    it("stopScheduler 等待在途日期检查收尾，不只等归档段", async () => {
+        const fixture = await makeFixture({withKey: false});
+        const service = makeService({keyring: fixture.keyring});
+        let releaseCheck: (() => void) | undefined;
+        const checkGate = new Promise<void>((resolve) => {
+            releaseCheck = resolve;
+        });
+        let entered = 0;
+        service.ensureDaily = async () => {
+            entered += 1;
+            await checkGate;
+            return null;
+        };
+
+        service.startScheduler(fixture.paths, {intervalMs: 25});
+        await waitFor(async () => entered > 0, "启动检查进入检查段");
+
+        let stopped = false;
+        const stopPromise = service.stopScheduler().then(() => {
+            stopped = true;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        // 检查段（list+日期判定）未收尾前 stop 不得返回：旧实现只等 inFlight（归档段），
+        // 此处会过早放行——stop 后翻日，在途检查读到新日期仍会补一份（CI 实证 3≠2）。
+        expect(stopped).toBe(false);
+        releaseCheck!();
+        await stopPromise;
+        expect(stopped).toBe(true);
+    });
 });
