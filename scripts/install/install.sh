@@ -20,7 +20,7 @@ case "$HOST_OS:$(uname -m)" in
     *) echo "NeuroBook Manager v1 Stage 0 只支持 Linux/macOS x64或ARM64。" >&2; exit 1 ;;
 esac
 
-BUN_VERSION="1.3.14"
+BUN_VERSION="1.4.2"
 MANAGER_TAG="${NEURO_BOOK_MANAGER_TAG:-canary}"
 CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 RUNTIME_ROOT="$CACHE_HOME/neuro-book-manager/runtime/bun/$BUN_VERSION"
@@ -30,20 +30,20 @@ ASSET_URL="https://github.com/oven-sh/bun/releases/download/bun-v$BUN_VERSION/$B
 # 各平台/架构对应的archive和bun可执行文件sha256。
 case "$BUN_ASSET" in
     bun-linux-x64)
-        ARCHIVE_SHA256="951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f"
-        BUN_SHA256="9fd36f87e4b90b07632b987a2e4ec81ca15a62c81bf983190cea6d715be2ad74"
+        ARCHIVE_SHA256="36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913"
+        BUN_SHA256="a83d263767d839e4d2649ca8e35d07159c7afc99afdc96d731ced29e056dda0c"
         ;;
     bun-linux-aarch64)
-        ARCHIVE_SHA256="a27ffb63a8310375836e0d6f668ae17fa8d8d18b88c37c821c65331973a19a3b"
-        BUN_SHA256="37141662ebed915a2ab89313156e455e2a1374395f5f6760d06407f49406f086"
+        ARCHIVE_SHA256="54328bbc2d9c8e0c9f892c544d66c57a83b84139e34909e5ee81758f1ac8fda7"
+        BUN_SHA256="616f267a34278ff5ac282df37ffdfba1d7141f4f6926bca99af2cd6ef3ad32b1"
         ;;
     bun-darwin-x64)
-        ARCHIVE_SHA256="4183df3374623e5bab315c547cfa0974533cd457d86b73b639f7a87974cd6633"
-        BUN_SHA256="ea2f223e94bb2f4bf3050895113c3cf346438f6fa0501c8532284e063f72f7a0"
+        ARCHIVE_SHA256="80520d7e17526308c9185d261679ac6d27798d3803a0e9f7ff9121ab8affb012"
+        BUN_SHA256="2fa513af22ac59e03aae640cad302e73cb1ddb0f6398501e2ddccf7dcd613596"
         ;;
     bun-darwin-aarch64)
-        ARCHIVE_SHA256="d8b96221828ad6f97ac7ac0ab7e95872341af763001e8803e8267652c2652620"
-        BUN_SHA256="e0c90ec15d33363e6b70713d56bc3b2c7585c17f40a0fe0f8fd9305901d4e233"
+        ARCHIVE_SHA256="90987a3a16d7db556d886ac3d551e7b6d3edf0a1cf43acaed622e8676be1d12f"
+        BUN_SHA256="35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5"
         ;;
 esac
 

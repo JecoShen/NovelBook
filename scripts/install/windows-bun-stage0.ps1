@@ -5,10 +5,10 @@ param()
 # has no top-level installation side effects so the Desktop entry can prepare
 # Bun without running the ordinary Manager installation flow first.
 
-$script:NeuroBookBunVersion = "1.3.14"
+$script:NeuroBookBunVersion = "1.4.2"
 $script:NeuroBookBunAssetUrl = "https://github.com/oven-sh/bun/releases/download/bun-v$($script:NeuroBookBunVersion)/bun-windows-x64.zip"
-$script:NeuroBookBunArchiveSha256 = "0a0620930b6675d7ba440e81f4e0e00d3cfbe096c4b140d3fff02205e9e18922"
-$script:NeuroBookBunSha256 = "0187f68d843f825a72ada4a7eca60db896ed753759a7f8252edcd31ac1bf1b9c"
+$script:NeuroBookBunArchiveSha256 = "ce4c17497b2f29712a99d3d53f028de28cd42e3bacb8589599e7f000e49b6405"
+$script:NeuroBookBunSha256 = "15277c59ccd6c6c20f8dc9716c2b59c1776320d606b6a8658f70be8799519ca4"
 
 function Get-NeuroBookLocalAppData {
     if ($env:LOCALAPPDATA) { return $env:LOCALAPPDATA }

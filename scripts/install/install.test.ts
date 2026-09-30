@@ -21,10 +21,10 @@ let windowsStage0Script = "";
 let windowsCmd = "";
 
 const PLATFORM_CASES = [
-    {os: "Linux", arch: "x86_64", asset: "bun-linux-x64", archiveSha256: "951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f", executableSha256: "9fd36f87e4b90b07632b987a2e4ec81ca15a62c81bf983190cea6d715be2ad74", checksum: "sha256sum"},
-    {os: "Linux", arch: "aarch64", asset: "bun-linux-aarch64", archiveSha256: "a27ffb63a8310375836e0d6f668ae17fa8d8d18b88c37c821c65331973a19a3b", executableSha256: "37141662ebed915a2ab89313156e455e2a1374395f5f6760d06407f49406f086", checksum: "sha256sum"},
-    {os: "Darwin", arch: "x86_64", asset: "bun-darwin-x64", archiveSha256: "4183df3374623e5bab315c547cfa0974533cd457d86b73b639f7a87974cd6633", executableSha256: "ea2f223e94bb2f4bf3050895113c3cf346438f6fa0501c8532284e063f72f7a0", checksum: "shasum"},
-    {os: "Darwin", arch: "arm64", asset: "bun-darwin-aarch64", archiveSha256: "d8b96221828ad6f97ac7ac0ab7e95872341af763001e8803e8267652c2652620", executableSha256: "e0c90ec15d33363e6b70713d56bc3b2c7585c17f40a0fe0f8fd9305901d4e233", checksum: "shasum"},
+    {os: "Linux", arch: "x86_64", asset: "bun-linux-x64", archiveSha256: "36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913", executableSha256: "a83d263767d839e4d2649ca8e35d07159c7afc99afdc96d731ced29e056dda0c", checksum: "sha256sum"},
+    {os: "Linux", arch: "aarch64", asset: "bun-linux-aarch64", archiveSha256: "54328bbc2d9c8e0c9f892c544d66c57a83b84139e34909e5ee81758f1ac8fda7", executableSha256: "616f267a34278ff5ac282df37ffdfba1d7141f4f6926bca99af2cd6ef3ad32b1", checksum: "sha256sum"},
+    {os: "Darwin", arch: "x86_64", asset: "bun-darwin-x64", archiveSha256: "80520d7e17526308c9185d261679ac6d27798d3803a0e9f7ff9121ab8affb012", executableSha256: "2fa513af22ac59e03aae640cad302e73cb1ddb0f6398501e2ddccf7dcd613596", checksum: "shasum"},
+    {os: "Darwin", arch: "arm64", asset: "bun-darwin-aarch64", archiveSha256: "90987a3a16d7db556d886ac3d551e7b6d3edf0a1cf43acaed622e8676be1d12f", executableSha256: "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5", checksum: "shasum"},
 ] as const;
 
 beforeAll(async () => {
@@ -67,9 +67,9 @@ describe("Windows Stage 0合同", () => {
         expect(windowsScript).toContain("Architecture]::X64");
         expect(windowsScript).toContain("windows-bun-stage0.ps1");
         expect(windowsScript).toContain("Ensure-NeuroBookBun -AllowDownload -RequirePinnedRuntime -UseAsStage0");
-        expect(windowsStage0Script).toContain('$script:NeuroBookBunVersion = "1.3.14"');
-        expect(windowsStage0Script).toContain("0a0620930b6675d7ba440e81f4e0e00d3cfbe096c4b140d3fff02205e9e18922");
-        expect(windowsStage0Script).toContain("0187f68d843f825a72ada4a7eca60db896ed753759a7f8252edcd31ac1bf1b9c");
+        expect(windowsStage0Script).toContain('$script:NeuroBookBunVersion = "1.4.2"');
+        expect(windowsStage0Script).toContain("ce4c17497b2f29712a99d3d53f028de28cd42e3bacb8589599e7f000e49b6405");
+        expect(windowsStage0Script).toContain("15277c59ccd6c6c20f8dc9716c2b59c1776320d606b6a8658f70be8799519ca4");
         expect(windowsStage0Script).toContain("Test-NeuroBookBunExecutable -Path $bunExe -RequirePinnedDigest");
         expect(windowsStage0Script).toContain("Remove-Item -LiteralPath $cacheRoot -Recurse -Force");
         expect(windowsCmd).toContain("exit /b %ERRORLEVEL%");
@@ -194,7 +194,7 @@ describe("Windows Stage 0合同", () => {
         const [stage0Source, stage0ArchiveSha256, stage0ExecutableSha256] = stage0.stdout.trim().split("|");
         expect(stage0Source).toBe("local:explicit");
         expect(stage0ArchiveSha256).toBe(stage0ExecutableSha256);
-        expect(stage0ArchiveSha256).not.toBe("0a0620930b6675d7ba440e81f4e0e00d3cfbe096c4b140d3fff02205e9e18922");
+        expect(stage0ArchiveSha256).not.toBe("ce4c17497b2f29712a99d3d53f028de28cd42e3bacb8589599e7f000e49b6405");
 
         const rejectCommand = `. '${escapedStage0}'; try { Ensure-NeuroBookBun -ExplicitPath '${escapedFakeBun}' -RequirePinnedRuntime | Out-Null; exit 2 } catch { Write-Output $_.Exception.Message; exit 0 }`;
         const rejected = await spawnCommand(powershellCommand, ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", rejectCommand], process.env);
@@ -248,7 +248,7 @@ describePosix("POSIX Stage 0行为", () => {
     it("有效缓存不下载，损坏缓存会重建并再次校验", async () => {
         const first = await runStage0(PLATFORM_CASES[0]);
         expect(first.code).toBe(0);
-        await chmod(join(first.cacheRoot, "neuro-book-manager", "runtime", "bun", "1.3.14", PLATFORM_CASES[0].asset, "bun"), 0o644);
+        await chmod(join(first.cacheRoot, "neuro-book-manager", "runtime", "bun", "1.4.2", PLATFORM_CASES[0].asset, "bun"), 0o644);
         await rm(first.urlCapture, {force: true});
 
         const cached = await runStage0(PLATFORM_CASES[0], {root: first.root, curlFail: true});
@@ -258,7 +258,7 @@ describePosix("POSIX Stage 0行为", () => {
         const repaired = await runStage0(PLATFORM_CASES[0], {root: first.root, firstExecutableChecksumWrong: true});
         expect(repaired.code).toBe(0);
         expect(repaired.url).toContain("bun-linux-x64.zip");
-        expect(repaired.capture).toContain("version=1.3.14");
+        expect(repaired.capture).toContain("version=1.4.2");
     });
 
     it("缺少curl时在创建缓存或临时目录前失败", async () => {
@@ -394,7 +394,7 @@ async function runStage0(platformCase: PlatformCase, options: RunOptions = {}) {
         STUB_ARCH: platformCase.arch,
         STUB_ASSET: platformCase.asset,
         STUB_GLIBC: String(options.glibc ?? true),
-        STUB_BUN_VERSION: "1.3.14",
+        STUB_BUN_VERSION: "1.4.2",
         STUB_ARCHIVE_CHECKSUM: options.archiveChecksum ?? platformCase.archiveSha256,
         STUB_EXECUTABLE_CHECKSUM: options.executableChecksum ?? platformCase.executableSha256,
         STUB_FIRST_EXEC_WRONG: String(options.firstExecutableChecksumWrong ?? false),
