@@ -15,4 +15,12 @@ issueId: null
 
 - t01：kit 构建 CLI 输出根守卫——`parseArgs({allowPositionals:false, strict:true})` 拒位置参数（scripts/build 四兄弟 CLI 同模式）+ `NEURO_BOOK_OUTPUT_DIR` 缺失即抛（`product-runtime-bundle.ts:417` 同款）；不移植 `assertOutputRoot` 的 basename 规则（Builder 候选根叶名是 operationId，照搬会打断正式构建，`product-runtime-image-builder.ts:380`）。
 - t02：compile_failed 源码新鲜度——`ProfileFreshnessChecker` 增源码指纹比较（`hashFile` 已导出，`profile-artifact-compiler.ts:1224`）；指纹失配时按 `not_compiled` 收口并 fire-and-forget `enqueueBuild` 自愈（自限：重编成功转 loaded，再失败记录新指纹恢复重放）。
-- 后续（不预建）：project 级 child coordinator 的 bootSweep 对账评估；install.sh/windows-bun-stage0.ps1 用户侧 bun pin（带全平台 sha256 表）升级。
+- 后续：install.sh/windows-bun-stage0.ps1 用户侧 bun pin 升级已落地（f7be4785，1.3.14→1.4.2 全平台哈希表）。project 级 child coordinator bootSweep 对账评估已收口（2026-09-30，结论如下，实施待路由）。
+
+## bootSweep 对账评估结论（2026-09-30）
+
+**无完整性缺口，有自愈缺口（仅 project 级）。** 读路径对三类 manifest 状态全部过源码指纹：compiled 走 `validateProfileArtifact:1132`（失配→compile_stale 卸载）、compile_failed 走 t02 sourceMatches、无 entry→not_compiled——停机编辑不可能吃到陈旧 artifact，两级 catalog 行为一致，bootSweep 不是正确性依赖。
+
+缺口在自愈：读路径仅 t02 分支带 enqueueBuild，not_compiled/compile_stale 分支只卸载不重编。root 级由启动 bootSweep（`neuro-agent-harness.ts:682`）兜底重编；project child 在 `forProjectWorkspace`（`catalog.ts:213`）lazy 创建时只挂 coordinator+watcher，从不 bootSweep——停机期间磁盘增改 project profile 后，读到即卸载且无自动重编，只能靠 UI 保存/watcher 事件/手动 compile 恢复。
+
+**建议（待路由，不预建）**：child 创建时（`startWatching` 后）fire-and-forget 调 child coordinator `bootSweep()`，对齐 root 启动语义，每进程每项目一次，约 4 行 + 1 用例。不取读路径补 enqueue 的替代方案——读路径副作用应保持在 t02 级别的例外，且 watcher 已覆盖运行期编辑。
