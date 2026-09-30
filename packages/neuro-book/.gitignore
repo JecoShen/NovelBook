@@ -20,8 +20,6 @@ server/.agent/
 # 仅包根运行态 workspace/；裸模式会误伤 app/components/novel-ide/workspace、
 # assets/workspace、server/agent/harness/workspace 三个已跟踪源码目录(新文件被静默忽略)。
 /workspace/
-# 测试 global-setup 在 TEMP/TMP 缺失时把 app-cache 落到包根（mkdtemp 随机后缀）
-nbook-app-cache-*/
 
 # Package-local governance and runtime state
 .agent/

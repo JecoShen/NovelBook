@@ -1,5 +1,5 @@
 import {randomBytes} from "node:crypto";
-import {mkdtemp, rm} from "node:fs/promises";
+import {mkdir, mkdtemp, rm} from "node:fs/promises";
 import {fileURLToPath} from "node:url";
 import {dirname, join, resolve} from "node:path";
 import {
@@ -12,6 +12,7 @@ import {
     sweepStaleTmpRoots,
     TEST_RUN_ID_ENV,
 } from "@notnotype/neuro-book-test-support/tmp";
+import {resolveAgentTestRoot} from "@notnotype/neuro-book-test-support/paths";
 
 /** 仓库根：`packages/neuro-book/server/agent/test/global-setup.ts` 向上五级。 */
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "..");
@@ -30,9 +31,15 @@ let testCacheRoot: string | null = null;
  * 只投影一份 system 模板，而不是每个用例复制一份完整 `.nbook`。
  */
 export async function setup(): Promise<void> {
-    process.env[TEST_RUN_ID_ENV] = randomBytes(4).toString("hex");
-    testStateRoot = await mkdtemp(join(process.env.TEMP ?? process.env.TMP ?? ".", "nbook-app-state-"));
-    testCacheRoot = await mkdtemp(join(process.env.TEMP ?? process.env.TMP ?? ".", "nbook-app-cache-"));
+    const runId = randomBytes(4).toString("hex");
+    process.env[TEST_RUN_ID_ENV] = runId;
+    // state/cache 根必须落在 test-support 的受控 run 根内：POSIX 上 TEMP/TMP 通常未设，
+    // 直接向 shell 环境 fallback 会把目录创建进包根，强杀残留既无 marker 可 sweep 又被 lint 扫到。
+    // globalSetup 链中本文件先于 test-support 执行，run 根须由此处自行创建。
+    const runRoot = resolveAgentTestRoot(runId);
+    await mkdir(runRoot, {recursive: true});
+    testStateRoot = await mkdtemp(join(runRoot, "nbook-app-state-"));
+    testCacheRoot = await mkdtemp(join(runRoot, "nbook-app-cache-"));
     process.env.NEURO_BOOK_APPLICATION_ROOT = APPLICATION_ROOT;
     process.env.NEURO_BOOK_STATE_ROOT = testStateRoot;
     process.env.NEURO_BOOK_CACHE_ROOT = testCacheRoot;
