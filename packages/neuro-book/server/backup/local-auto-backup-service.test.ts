@@ -18,6 +18,7 @@ import {
     listLocalAutoBackups,
     localAutoBackupDirectory,
     LocalAutoBackupService,
+    LOCAL_AUTO_BACKUP_KEEP,
     type LocalAutoBackupLogger,
     type LocalAutoBackupMeta,
     type LocalAutoBackupRunResult,
@@ -25,7 +26,7 @@ import {
 } from "nbook/server/backup/local-auto-backup-service";
 
 // 本地自动备份端到端：假 State Root（含真 SQLite 与应排除物）→ 归档 + sidecar meta +
-// 保留 7 份 + 加密/明文双分支 + 目标目录不被收集 + 调度定时器不悬挂。
+// 保留份数收口（默认见 LOCAL_AUTO_BACKUP_KEEP）+ 加密/明文双分支 + 目标目录不被收集 + 调度定时器不悬挂。
 
 const cleanupRoots: string[] = [];
 const services: LocalAutoBackupService[] = [];
@@ -87,7 +88,8 @@ async function makeFixture(options: {withKey: boolean}): Promise<Fixture> {
 }
 
 function makeService(options: LocalAutoBackupServiceOptions): LocalAutoBackupService {
-    const service = new LocalAutoBackupService({logger: silentLogger, ...options});
+    // 调度类用例假定保留闸不触发；keep 显式给大值与生产默认份数解耦，options 传参仍可覆盖
+    const service = new LocalAutoBackupService({logger: silentLogger, keep: 10, ...options});
     services.push(service);
     return service;
 }
@@ -178,32 +180,37 @@ describe("LocalAutoBackupService 归档产物", () => {
 });
 
 describe("LocalAutoBackupService 保留策略", () => {
-    it("连续产出 8 份后只留最新 7 份，归档与 sidecar 成对删除", async () => {
+    it(`连续产出 ${LOCAL_AUTO_BACKUP_KEEP + 2} 份后只留最新 ${LOCAL_AUTO_BACKUP_KEEP} 份，归档与 sidecar 成对删除`, async () => {
         const fixture = await makeFixture({withKey: false});
         let currentNow = new Date("2026-09-10T08:00:00");
-        const service = makeService({now: () => currentNow, keyring: fixture.keyring});
+        // 保留策略是本案被测对象，显式取生产默认份数（makeService 的解耦大值会把它盖掉）
+        const service = makeService({now: () => currentNow, keyring: fixture.keyring, keep: LOCAL_AUTO_BACKUP_KEEP});
 
+        const totalRuns = LOCAL_AUTO_BACKUP_KEEP + 2;
         const results: LocalAutoBackupRunResult[] = [];
-        for (let day = 10; day <= 17; day += 1) {
-            currentNow = new Date(`2026-09-${day}T08:00:00`);
+        for (let run = 0; run < totalRuns; run += 1) {
+            currentNow = new Date(`2026-09-${10 + run}T08:00:00`);
             results.push(await service.runOnce(fixture.paths, "schedule"));
         }
 
         const directory = localAutoBackupDirectory(fixture.paths);
         const remaining = await listLocalAutoBackups(directory);
         expect(remaining.map((entry) => entry.name).sort()).toEqual(
-            results.slice(1).map((run) => basename(run.archivePath)).sort(),
+            results.slice(-LOCAL_AUTO_BACKUP_KEEP).map((run) => basename(run.archivePath)).sort(),
         );
-        // 最旧一份的归档与 meta 都被删除
-        await expect(stat(results[0]!.archivePath)).rejects.toThrow();
-        await expect(stat(results[0]!.metaPath)).rejects.toThrow();
-        expect(results[7]!.pruned).toContain(basename(results[0]!.archivePath));
+        // 超出保留份数的归档与 meta 成对删除
+        const dropped = results.slice(0, results.length - LOCAL_AUTO_BACKUP_KEEP);
+        for (const run of dropped) {
+            await expect(stat(run.archivePath)).rejects.toThrow();
+            await expect(stat(run.metaPath)).rejects.toThrow();
+        }
+        expect(results[results.length - 1]!.pruned).toContain(basename(dropped[dropped.length - 1]!.archivePath));
 
         const files = (await readdir(directory, {withFileTypes: true}))
             .filter((entry) => entry.isFile())
             .map((entry) => entry.name);
-        expect(files.filter((name) => name.endsWith(".nbbackup"))).toHaveLength(7);
-        expect(files.filter((name) => name.endsWith(".meta.json"))).toHaveLength(7);
+        expect(files.filter((name) => name.endsWith(".nbbackup"))).toHaveLength(LOCAL_AUTO_BACKUP_KEEP);
+        expect(files.filter((name) => name.endsWith(".meta.json"))).toHaveLength(LOCAL_AUTO_BACKUP_KEEP);
         // 无 staging 残留
         expect((await readdir(directory, {withFileTypes: true})).some((entry) => entry.name.startsWith(".staging-"))).toBe(false);
     });

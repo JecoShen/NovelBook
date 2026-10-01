@@ -6,13 +6,13 @@ import type {RuntimePaths} from "nbook/server/runtime/paths/runtime-paths";
 import {BackupArchiveService} from "nbook/server/backup/backup-archive-service";
 import {useBackupKeyringService, type BackupKeyringService} from "nbook/server/backup/backup-keyring-service";
 
-// 本地自动备份：每日一次把 State Root 归档落到 <stateRoot>/backups/local/，保留最新 7 份。
+// 本地自动备份：每日一次把 State Root 归档落到 <stateRoot>/backups/local/，保留最新 1 份。
 // 收集根只覆盖 workspace/ 与顶层 config.yaml/.env，backups/ 在收集范围之外，归档不会自我递归。
 // 已配置恢复码（keyring 有 active key）时产物与云备份同格式（envelope + keyId），
 // 未配置时产出未加密裸 zip 并在 meta 与 nb-backup.json 里明确记录 "none"——不因缺恢复码拒绝备份。
 
 /** 本地自动备份保留份数 */
-export const LOCAL_AUTO_BACKUP_KEEP = 7;
+export const LOCAL_AUTO_BACKUP_KEEP = 1;
 
 const LOCAL_AUTO_BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const ARCHIVE_SUFFIX = ".nbbackup";
